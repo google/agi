@@ -60,6 +60,7 @@ import com.google.gapid.util.Flags.Flag;
 import com.google.gapid.util.Messages;
 import com.google.gapid.util.OS;
 import com.google.gapid.util.Scheduler;
+import com.google.gapid.util.URLs;
 import com.google.gapid.widgets.ActionTextbox;
 import com.google.gapid.widgets.DialogBase;
 import com.google.gapid.widgets.FileTextbox;
@@ -78,6 +79,7 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.program.Program;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
@@ -93,6 +95,9 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Spinner;
 import org.eclipse.swt.widgets.Text;
 
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
+import java.beans.PropertyChangeSupport;
 import java.io.File;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -244,6 +249,14 @@ public class TracerDialog {
       traceInput.addModifyListener(modifyListener);
 
       modifyListener.handleEvent(null); // Set initial state of widgets.
+
+      traceInput.validationStatus.addListener(new PropertyChangeListener() {
+
+        @Override
+        public void propertyChange(PropertyChangeEvent event) {
+          ok.setEnabled(traceInput.isReady());
+        }
+      });
     }
 
     @Override
@@ -272,9 +285,9 @@ public class TracerDialog {
       private static final String MEC_LABEL_WARNING =
           "NOTE: Mid-Execution capture for %s is experimental";
       private static final String PERFETTO_LABEL = "Profile Config: ";
-      private static final String NO_GPU_PROFILING_CAPABILITY = "Warning: Selected device has no GPU profiling capability.";
       private static final String EMPTY_APP_WITH_RENDER_STAGE =
           "Warning: Application needs to be specified for GPU profiling data.";
+      private static final String VALIDATION_FAILED_LANDING_PAGE = "<a>Learn about device compatibility</a>";
 
       private final String date = TRACE_DATE_FORMAT.format(new Date());
 
@@ -285,6 +298,8 @@ public class TracerDialog {
       private final LoadingIndicator.Widget deviceLoader;
       private final ComboViewer api;
       private final Label apiLabel;
+      private final LoadingIndicator.WithImage validationStatusLoader;
+      private final Link validationStatusText;
       private final ActionTextbox traceTarget;
       private final Label targetLabel;
       private final Text arguments;
@@ -308,12 +323,13 @@ public class TracerDialog {
       private final Label fileLabel;
       private final Label pcsWarning;
       private final Label requiredFieldMessage;
-      private final Label gpuProfilingCapabilityWarning;
       private final Label emptyAppWarning;
 
       protected String friendlyName = "";
       protected boolean userHasChangedOutputFile = false;
       protected boolean userHasChangedTarget = false;
+
+      public final ListenableProperty<Boolean> validationStatus;
 
       public TraceInput(Composite parent, Models models, Widgets widgets, Runnable refreshDevices) {
         super(parent, SWT.NONE);
@@ -343,6 +359,19 @@ public class TracerDialog {
         apiLabel = createLabel(mainGroup, "Type*:");
         api = createApiDropDown(mainGroup);
         api.getCombo().setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+        // dummy label to fill the 3rd column
+        createLabel(mainGroup, "");
+
+        validationStatusLoader = widgets.loading.createWithImage(mainGroup, widgets.theme.smile(), widgets.theme.error());
+        validationStatusLoader.setLayoutData(
+            withIndents(new GridData(SWT.LEFT, SWT.BOTTOM, false, false), 0, 0));
+        validationStatusLoader.setVisible(false);
+        validationStatusText = createLink(mainGroup, "", e-> {
+          Program.launch(URLs.DEVICE_COMPATIBILITY);
+        });
+        validationStatusText.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+        validationStatusText.setVisible(false);
+        validationStatus = new ListenableProperty<Boolean>();
 
         Group appGroup  = withLayoutData(
             createGroup(this, "Application", new GridLayout(2, false)),
@@ -457,12 +486,6 @@ public class TracerDialog {
         requiredFieldMessage.setForeground(getDisplay().getSystemColor(SWT.COLOR_RED));
         requiredFieldMessage.setVisible(false);
 
-        gpuProfilingCapabilityWarning = withLayoutData(
-            createLabel(this, NO_GPU_PROFILING_CAPABILITY),
-            new GridData(SWT.FILL, SWT.FILL, true, false));
-        gpuProfilingCapabilityWarning.setForeground(getDisplay().getSystemColor(SWT.COLOR_DARK_YELLOW));
-        gpuProfilingCapabilityWarning.setVisible(false);
-
         Link adbWarning = withLayoutData(
             createLink(this, "Path to adb invalid/missing. " +
                 "To trace on Android, please fix it in the <a>preferences</a>.",
@@ -471,26 +494,15 @@ public class TracerDialog {
         adbWarning.setForeground(getDisplay().getSystemColor(SWT.COLOR_DARK_RED));
         adbWarning.setVisible(!models.settings.isAdbValid());
 
-        device.getCombo().addListener(SWT.Selection,
-            e -> updateOnDeviceChange(models.settings, getSelectedDevice()));
-        api.getCombo().addListener(SWT.Selection, e -> updateOnApiChange(trace, getSelectedApi()));
 
-        Listener gpuProfilingCapabilityListener = e -> {
-          // Skip if the device is not Android device, or trace type is not Perfetto.
-          if (getSelectedDevice() == null || !getSelectedDevice().isAndroid() ||
-              getSelectedApi() == null || getSelectedApi().getType() != TraceType.Perfetto) {
-            gpuProfilingCapabilityWarning.setVisible(false);
-            return;
-          }
-          Device.GPUProfiling gpuCaps = getPerfettoCaps().getGpuProfiling();
-          if (gpuCaps.getHasRenderStage() && gpuCaps.getGpuCounterDescriptor().getSpecsCount() > 0) {
-            gpuProfilingCapabilityWarning.setVisible(false);
-            return;
-          }
-          gpuProfilingCapabilityWarning.setVisible(true);
-        };
-        device.getCombo().addListener(SWT.Selection, gpuProfilingCapabilityListener);
-        api.getCombo().addListener(SWT.Selection, gpuProfilingCapabilityListener);
+        device.getCombo().addListener(SWT.Selection, e -> {
+          updateOnDeviceChange(models, getSelectedDevice());
+          runValidationCheck(models, getSelectedDevice(), getSelectedApi());
+        });
+        api.getCombo().addListener(SWT.Selection, e -> {
+          updateOnApiChange(trace, getSelectedDevice(), getSelectedApi());
+          runValidationCheck(models, getSelectedDevice(), getSelectedApi());
+        });
 
         emptyAppWarning = withLayoutData(
             createLabel(this, EMPTY_APP_WITH_RENDER_STAGE),
@@ -545,7 +557,7 @@ public class TracerDialog {
           return;
         }
 
-        requiredFieldMessage.setVisible(!this.isReady());
+        requiredFieldMessage.setVisible(!this.isInputReady());
         deviceLabel.setForeground(getSelectedDevice() == null ? theme.missingInput() : theme.filledInput());
         directoryLabel.setForeground(directory.getText().isEmpty() ? theme.missingInput() : theme.filledInput());
         fileLabel.setForeground(file.getText().isEmpty() ? theme.missingInput() : theme.filledInput());
@@ -601,6 +613,30 @@ public class TracerDialog {
         updatePerfettoConfigLabel(settings);
       }
 
+      private void runValidationCheck(Models models, DeviceCaptureInfo dev, TraceTypeCapabilities config) {
+        if (dev != null && isPerfetto(config)) {
+          validationStatusLoader.startLoading();
+          validationStatusText.setText("Device is being Validated");
+          models.devices.validateDevice(dev, () -> {
+            setValidationStatus(dev.validationStatus);
+          });
+        }
+      }
+
+      private void setValidationStatus(boolean status) {
+        validationStatusLoader.updateStatus(status);
+        validationStatusText.setText("Validation " + (status ? "Passed" : "Failed" + VALIDATION_FAILED_LANDING_PAGE));
+        validationStatusLoader.stopLoading();
+        validationStatus.set(status);
+      }
+
+      private void resetValidationStatus() {
+        validationStatusLoader.updateStatus(false);
+        validationStatusLoader.stopLoading();
+        validationStatusText.setText("Validation Status");
+        validationStatus.set(false);
+      }
+
       private void updateOnApiChange(
           SettingsProto.TraceOrBuilder trace, TraceTypeCapabilities config) {
         boolean pcs = config != null && config.getCanDisablePcs();
@@ -652,6 +688,9 @@ public class TracerDialog {
         durationUnit.requestLayout();
 
         perfettoConfig.setVisible(isPerfetto);
+        resetValidationStatus();
+        validationStatusLoader.setVisible(isPerfetto);
+        validationStatusText.setVisible(isPerfetto);
 
         if (!userHasChangedOutputFile) {
           file.setText(formatTraceName(friendlyName));
@@ -801,10 +840,21 @@ public class TracerDialog {
       }
 
       public boolean isReady() {
+        return isInputReady() && isDeviceValidated();
+      }
+
+      public boolean isInputReady() {
         TraceTypeCapabilities config = getSelectedApi();
         return getSelectedDevice() != null && config != null &&
             (!config.getRequiresApplication() || !traceTarget.getText().isEmpty()) &&
             !directory.getText().isEmpty() && !file.getText().isEmpty();
+      }
+
+      public boolean isDeviceValidated() {
+        if (isPerfetto(getSelectedApi())) {
+          return getSelectedDevice() != null && getSelectedDevice().validationStatus;
+        }
+        return true;
       }
 
       public void addModifyListener(Listener listener) {
@@ -972,6 +1022,24 @@ public class TracerDialog {
       private StartType(SettingsProto.Trace.Duration.Type proto) {
         this.proto = proto;
       }
+    }
+  }
+
+  public static class ListenableProperty<T> {
+    protected PropertyChangeSupport propertyChangeSupport;
+    private T property;
+
+    public ListenableProperty() {
+      propertyChangeSupport = new PropertyChangeSupport(this);
+    }
+
+    public void set(T value) {
+      property = value;
+      propertyChangeSupport.firePropertyChange("property", null, property);
+    }
+
+    public void addListener(PropertyChangeListener listener) {
+      propertyChangeSupport.addPropertyChangeListener(listener);
     }
   }
 
