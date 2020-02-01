@@ -367,7 +367,7 @@ public class TracerDialog {
             withIndents(new GridData(SWT.LEFT, SWT.BOTTOM, false, false), 0, 0));
         validationStatusLoader.setVisible(false);
         validationStatusText = createLink(mainGroup, "", e-> {
-          Program.launch(URLs.DEVICE_COMPATIBILITY);
+          Program.launch(URLs.DEVICE_COMPATIBILITY_URL);
         });
         validationStatusText.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
         validationStatusText.setVisible(false);
@@ -616,7 +616,7 @@ public class TracerDialog {
       private void runValidationCheck(Models models, DeviceCaptureInfo dev, TraceTypeCapabilities config) {
         if (dev != null && isPerfetto(config)) {
           validationStatusLoader.startLoading();
-          validationStatusText.setText("Device is being Validated");
+          validationStatusText.setText("Device is being validated");
           models.devices.validateDevice(dev, () -> {
             setValidationStatus(dev.validationStatus);
           });
@@ -625,7 +625,7 @@ public class TracerDialog {
 
       private void setValidationStatus(boolean status) {
         validationStatusLoader.updateStatus(status);
-        validationStatusText.setText("Validation " + (status ? "Passed" : "Failed" + VALIDATION_FAILED_LANDING_PAGE));
+        validationStatusText.setText("Validation " + (status ? "Passed." : "Failed. " + VALIDATION_FAILED_LANDING_PAGE));
         validationStatusLoader.stopLoading();
         validationStatus.set(status);
       }
