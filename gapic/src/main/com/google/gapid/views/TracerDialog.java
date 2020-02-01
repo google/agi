@@ -614,7 +614,7 @@ public class TracerDialog {
       }
 
       private void runValidationCheck(Models models, DeviceCaptureInfo dev, TraceTypeCapabilities config) {
-        if (dev != null && isPerfetto(config)) {
+        if (!isValidationSkipped() && dev != null && isPerfetto(config)) {
           validationStatusLoader.startLoading();
           validationStatusText.setText("Device is being validated");
           models.devices.validateDevice(dev, () -> {
@@ -689,8 +689,8 @@ public class TracerDialog {
 
         perfettoConfig.setVisible(isPerfetto);
         resetValidationStatus();
-        validationStatusLoader.setVisible(isPerfetto);
-        validationStatusText.setVisible(isPerfetto);
+        validationStatusLoader.setVisible(isPerfetto && !isValidationSkipped());
+        validationStatusText.setVisible(isPerfetto && !isValidationSkipped());
 
         if (!userHasChangedOutputFile) {
           file.setText(formatTraceName(friendlyName));
@@ -850,8 +850,12 @@ public class TracerDialog {
             !directory.getText().isEmpty() && !file.getText().isEmpty();
       }
 
+      public boolean isValidationSkipped() {
+          return Flags.skipDeviceValidation.get();
+      }
+
       public boolean isDeviceValidated() {
-        if (isPerfetto(getSelectedApi())) {
+        if (!isValidationSkipped() && isPerfetto(getSelectedApi())) {
           return getSelectedDevice() != null && getSelectedDevice().validationStatus;
         }
         return true;
