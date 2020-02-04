@@ -13,10 +13,10 @@
 # you will see them accessed via {{ site.title }}, {{ site.email }}, and so on.
 # You can create any custom variable you would like, and they will be accessible
 # in the templates via {{ site.myvariable }}.
-title: Graphics API Debugger
+title: Android GPU Inspector
 baseurl: "/"
-url: "https://gapid.dev" # the base hostname & protocol for your site, e.g. http://example.com
-project-url: "https://github.com/google/gapid"
+url: "https://gpuinspector.dev" # the base hostname & protocol for your site, e.g. http://example.com
+project-url: "https://github.com/google/agi"
 markdown: kramdown
 sass:
   sass_dir: assets
