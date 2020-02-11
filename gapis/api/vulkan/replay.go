@@ -845,7 +845,7 @@ func (a API) GetInitialPayload(ctx context.Context,
 	initialCmds, im, _ := initialcmds.InitialCommands(ctx, capture)
 	out.State().Allocator.ReserveRanges(im)
 
-	return transforms.TransformAll(ctx, initialCmds, uint64(len(initialCmds)), out)
+	return transforms.Transform(ctx, initialCmds, out)
 }
 
 func (a API) CleanupResources(ctx context.Context,
@@ -853,7 +853,7 @@ func (a API) CleanupResources(ctx context.Context,
 	out transform.Writer) error {
 	transforms := transform.Transforms{}
 	transforms.Add(&destroyResourcesAtEOS{})
-	return transforms.TransformAll(ctx, []api.Cmd{}, 0, out)
+	return transforms.Transform(ctx, []api.Cmd{}, out)
 }
 
 func (a API) Replay(
@@ -1090,7 +1090,7 @@ func (a API) Replay(
 		}
 	}
 
-	numberOfInitialCmds, err := expandCommands(optimize)
+	_, err = expandCommands(optimize)
 	if err != nil {
 		return err
 	}
@@ -1173,7 +1173,7 @@ func (a API) Replay(
 		transforms.Add(replay.NewMappingExporterWithPrint(ctx, "mappings.txt"))
 	}
 
-	return transforms.TransformAll(ctx, cmds, uint64(numberOfInitialCmds), out)
+	return transforms.Transform(ctx, cmds, out)
 }
 
 func (a API) QueryFramebufferAttachment(

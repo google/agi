@@ -24,9 +24,9 @@ import (
 // Transforms is a list of Transformer objects.
 type Transforms []Transformer
 
-// TransformAll sequentially transforms the commands by each of the transformers in
+// Transform sequentially transforms the commands by each of the transformers in
 // the list, before writing the final output to the output command Writer.
-func (l Transforms) TransformAll(ctx context.Context, cmds []api.Cmd, numberOfInitialCommands uint64, out Writer) error {
+func (l Transforms) Transform(ctx context.Context, cmds []api.Cmd, out Writer) error {
 	chain := out
 	for i := len(l) - 1; i >= 0; i-- {
 		s := chain.State()
@@ -43,12 +43,7 @@ func (l Transforms) TransformAll(ctx context.Context, cmds []api.Cmd, numberOfIn
 		chain = TransformWriter{s, l[i], chain}
 	}
 	err := api.ForeachCmd(ctx, cmds, true, func(ctx context.Context, id api.CmdID, cmd api.Cmd) error {
-		captureCmdID := api.CmdNoID
-		if uint64(id) > numberOfInitialCommands {
-			captureCmdID = id - api.CmdID(numberOfInitialCommands)
-		}
-
-		return chain.MutateAndWrite(ctx, captureCmdID, cmd)
+		return chain.MutateAndWrite(ctx, id, cmd)
 	})
 	if err != nil {
 		return err
