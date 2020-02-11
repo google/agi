@@ -41,11 +41,13 @@ unzip -q -d wix wix311-binaries.zip
 set WIX=%cd%\wix
 
 REM Fix up the MSYS environment.
+wget -q http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-binutils-2.33.1-1-any.pkg.tar.xz
 wget -q http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-9.2.0-2-any.pkg.tar.xz
 wget -q http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-libs-9.2.0-2-any.pkg.tar.xz
 c:\tools\msys64\usr\bin\bash --login -c "pacman -R --noconfirm catgets libcatgets"
 c:\tools\msys64\usr\bin\bash --login -c "pacman -Syu --noconfirm"
 c:\tools\msys64\usr\bin\bash --login -c "pacman -Sy --noconfirm mingw-w64-x86_64-crt-git patch"
+c:\tools\msys64\usr\bin\bash --login -c "pacman -U --noconfirm mingw-w64-x86_64-binutils-2.33.1-1-any.pkg.tar.xz"
 c:\tools\msys64\usr\bin\bash --login -c "pacman -U --noconfirm mingw-w64-x86_64-gcc*-9.2.0-2-any.pkg.tar.xz"
 set PATH=c:\tools\msys64\mingw64\bin;c:\tools\msys64\usr\bin;%PATH%
 set BAZEL_SH=C:\tools\msys64\usr\bin\bash.exe
