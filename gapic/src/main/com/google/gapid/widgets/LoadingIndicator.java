@@ -151,18 +151,20 @@ public class LoadingIndicator {
    * Can optionally show an image when done.
    */
   public class Widget extends Canvas implements Loadable, Repaintable {
-    private Image successImage;
-    private Image failureImage;
+    private final Image successImage;
+    private final Image failureImage;
 
     protected boolean loading = false;
     protected boolean status = false;
 
-    public boolean hasImage = false;
+    public final boolean hasImage;
 
     public Widget(Composite parent, Image success, Image failure) {
       super(parent, SWT.DOUBLE_BUFFERED);
       if (success != null || failure != null) {
         hasImage = true;
+      } else {
+        hasImage = false;
       }
       successImage = success;
       failureImage = failure;

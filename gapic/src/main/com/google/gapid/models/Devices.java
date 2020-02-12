@@ -338,7 +338,8 @@ public class Devices {
           .build();
     }
 
-    public DeviceValidationResult getValidationStatus(DeviceCaptureInfo device) {
+    // TODO(b/149406313): Move to UI thread to avoid synchronization
+    public synchronized DeviceValidationResult getValidationStatus(DeviceCaptureInfo device) {
       if (skipDeviceValidation.get()) {
         return DeviceValidationResult.getSkippedResult();
       }
@@ -349,7 +350,8 @@ public class Devices {
       return DeviceValidationResult.getFailedResult();
     }
 
-    public ListenableFuture<DeviceValidationResult> doValidation(DeviceCaptureInfo device) {
+    // TODO(b/149406313): Move to UI thread to avoid synchronization
+    public synchronized ListenableFuture<DeviceValidationResult> doValidation(DeviceCaptureInfo device) {
       if (device == null) {
         return immediateFuture(DeviceValidationResult.getFailedResult());
       }
@@ -364,7 +366,8 @@ public class Devices {
       });
     }
 
-    protected void updateValidationStatus(DeviceValidation.ValidationEntry entry, Service.ValidateDeviceResponse response) {
+    // TODO(b/149406313): Move to UI thread to avoid synchronization
+    protected synchronized void updateValidationStatus(DeviceValidation.ValidationEntry entry, Service.ValidateDeviceResponse response) {
       if (response == null || response.hasError()) {
         return;
       }
