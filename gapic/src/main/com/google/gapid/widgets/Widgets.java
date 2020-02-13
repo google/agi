@@ -389,6 +389,13 @@ public class Widgets {
     }
     result.setSelection(value);
 
+    // Clamp the value when users edit spinner with a keyboard.
+    // Use real-time min/max value because they may be updated after initialization.
+    result.addModifyListener( e-> {
+      int current = result.getText().isEmpty() ? 0 : Integer.parseInt(result.getText());
+      result.setSelection(Math.min(result.getMaximum(), Math.max(result.getMinimum(), current)));
+    });
+
     if (OS.isMac) {
       result.addListener(SWT.KeyUp, e -> {
         if ((e.stateMask & (SWT.CONTROL | SWT.COMMAND)) != 0) {
