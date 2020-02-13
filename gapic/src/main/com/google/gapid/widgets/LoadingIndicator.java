@@ -157,26 +157,18 @@ public class LoadingIndicator {
     protected boolean loading = false;
     protected boolean status = false;
 
-    public final boolean hasImage;
-
     public Widget(Composite parent, Image success, Image failure) {
       super(parent, SWT.DOUBLE_BUFFERED);
-      if (success != null || failure != null) {
-        hasImage = true;
-      } else {
-        hasImage = false;
-      }
       successImage = success;
       failureImage = failure;
       addListener(SWT.Paint, e -> {
         if (loading) {
           paint(e.gc, 0, 0, getSize(), "");
           scheduleForRedraw(this);
-        } else if (hasImage) {
-          if (status) {
-            paint(successImage, e.gc, 0, 0, getSize());
-          } else {
-            paint(failureImage, e.gc, 0, 0, getSize());
+        } else {
+          Image image = status ? successImage : failureImage;
+          if (image != null) {
+            paint(image, e.gc, 0, 0, getSize());
           }
         }
       });
