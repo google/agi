@@ -498,7 +498,7 @@ public class TracerDialog {
           runValidationCheck(getSelectedDevice());
         });
         api.getCombo().addListener(SWT.Selection, e -> {
-          updateOnApiChange(trace, getSelectedDevice(), getSelectedApi());
+          updateOnApiChange(trace, getSelectedApi());
         });
 
         emptyAppWarning = withLayoutData(
