@@ -53,7 +53,7 @@ public class VulkanEventTrack extends Track.WithQueryEngine<VulkanEventTrack.Dat
           "where ts >= %d - dur and ts <= %d order by ts";
   private static final String QUEUE_GROUP_START_SQL =
       "select submission_id, min(ts) start from gpu_track t left join gpu_slice s " +
-          "on (t.id = s.track_id) where t.name like \'queue%%\' group by submission_id";
+          "on (t.id = s.track_id) where t.scope = 'gpu_render_stage' group by submission_id";
   private static final String SLICES_WITH_DIST_SQL =
       "with basics as (" + SLICES_SQL + ")," +
       "queue_starts as ("+ QUEUE_GROUP_START_SQL + ") " +
@@ -145,7 +145,7 @@ public class VulkanEventTrack extends Track.WithQueryEngine<VulkanEventTrack.Dat
     public final long[] commandBuffers;
     public final long[] submissionIds;
     public final ArgSet[] args;
-    public final long[] dists;
+    public final long[] dists; // Distance between a vulkan event and the linked GPU queue events.
 
     public Data(DataRequest request, long[] ids, long[] starts, long[] ends, String[] names,
         int[] depths, long[] commandBuffers, long[] submissionIds, ArgSet[] args, long[] dists) {
