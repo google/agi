@@ -87,6 +87,27 @@ set -e
 mkdir $BUILD_ROOT/out
 $SRC/kokoro/linux/package.sh $BUILD_ROOT/out
 
+###############################################################################
+## Build is done, run some tests
+
+##
+## Test on a real device using swarming. See scripts on x20 at:
+## teams/android-graphics-tools/agi/kokoro/swarming/
+##
+
+git clone --depth 1 https://chromium.googlesource.com/infra/luci/luci-py
+export LUCI_CLIENT_ROOT="$PWD/luci-py/client"
+export SWARMING_AUTH_TOKEN_FILE=${KOKORO_KEYSTORE_DIR}/74894_kokoro_swarming_access_key
+
+# x20 seems to not allow executable files, force it on all files
+chmod -R a+x ${KOKORO_GFILE_DIR}
+cp -r bazel-bin/pkg ${KOKORO_GFILE_DIR}/files/agi
+
+(
+  cd ${KOKORO_GFILE_DIR}
+  ./swarming.sh
+)
+
 ##
 ## Test capture and replay of the Vulkan Sample App.
 ##
