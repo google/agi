@@ -16,6 +16,7 @@
 package com.google.gapid.perfetto.views;
 
 import static com.google.gapid.perfetto.views.State.MAX_ZOOM_SPAN_NSEC;
+import static com.google.gapid.perfetto.views.StyleConstants.FLAGS_Y;
 import static com.google.gapid.perfetto.views.StyleConstants.HIGHLIGHT_EDGE_NEARBY_WIDTH;
 import static com.google.gapid.perfetto.views.StyleConstants.LABEL_WIDTH;
 import static com.google.gapid.perfetto.views.StyleConstants.colors;
@@ -359,6 +360,19 @@ public abstract class RootPanel<S extends State> extends Panel.Base implements S
 
   @Override
   public Hover onMouseMove(Fonts.TextMeasurer m, double x, double y, int mods) {
+    if (mouseMode == MouseMode.Flagging) {
+      return new Hover() {
+        @Override
+        public boolean click() {
+          if ((mods & SWT.CTRL) == SWT.CTRL) {
+            state.searchAndRemove(x);
+          } else {
+            state.searchAndAdd(x, state.pxToTime(x - LABEL_WIDTH));
+          }
+          return true;
+        }
+      };
+    }
     double topHeight = top.getPreferredHeight();
     Hover result = (y < topHeight) ? top.onMouseMove(m, x, y, mods) :
       bottom.onMouseMove(m, x, y - topHeight + state.getScrollOffset(), mods)
@@ -454,6 +468,7 @@ public abstract class RootPanel<S extends State> extends Panel.Base implements S
 
     @Override
     protected void preTopUiRender(RenderContext ctx, Repainter repainter) {
+      renderFlags(ctx);
       if (showVSync && state.hasData() && state.getVSync().hasData()) {
         renderVSync(ctx, repainter, top, state.getVSync());
       }
@@ -464,6 +479,15 @@ public abstract class RootPanel<S extends State> extends Panel.Base implements S
       if (showVSync && state.hasData() && state.getVSync().hasData()) {
         renderVSync(ctx, repainter, bottom, state.getVSync());
       }
+    }
+
+    private void renderFlags(RenderContext ctx) {
+      state.getFlags().forEach(e -> {
+        double x = Math.rint(LABEL_WIDTH + state.timeToPx(e) - 6);
+        if (x > LABEL_WIDTH) {
+          ctx.drawIcon(ctx.theme.flag(), x, FLAGS_Y, 0);
+        }
+      });
     }
 
     private void renderVSync(RenderContext ctx, Repainter repainter, Panel panel, VSync vsync) {
@@ -501,7 +525,8 @@ public abstract class RootPanel<S extends State> extends Panel.Base implements S
     Select("Selection (1)", "Selection Mode (1): Drag to select items.", Theme::selectionMode),
     Pan("Pan (2)", "Pan Mode (2): Drag to pan the view.", Theme::panMode),
     Zoom("Zoom (3)", "Zoom Mode (3): Drag to zoom the view.", Theme::zoomMode),
-    TimeSelect("Timing (4)", "Timing Mode (4): Drag to select a time range.", Theme::timingMode);
+    TimeSelect("Timing (4)", "Timing Mode (4): Drag to select a time range.", Theme::timingMode),
+    Flagging("Add FLags (5)", "Flag Mode (5): Click to drop a flag on the time", Theme::flag);
 
     private final String label;
     private final String toolTip;

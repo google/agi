@@ -19,6 +19,7 @@ import static com.google.gapid.widgets.Widgets.scheduleIfNotDisposed;
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
 
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Maps;
 import com.google.common.math.DoubleMath;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
@@ -41,10 +42,14 @@ import org.eclipse.swt.graphics.RGBA;
 import org.eclipse.swt.widgets.Widget;
 
 import java.math.RoundingMode;
+import java.util.List;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 /**
  * Represents the current UI state.
@@ -68,6 +73,7 @@ public abstract class State {
   private final AtomicInteger lastSelectionUpdateId = new AtomicInteger(0);
   private HashMultimap<Long, Long> selectedThreads;     // upid -> utids
   private TimeSpan highlight = TimeSpan.ZERO;
+  private TreeMap<Double, Long> flags;
 
   private final Events.ListenerCollection<Listener> listeners = Events.listeners(Listener.class);
 
@@ -78,6 +84,7 @@ public abstract class State {
     this.width = 0;
     this.selection = null;
     this.selectedThreads = HashMultimap.create();
+    this.flags = Maps.newTreeMap();
   }
 
   public void update(TimeSpan newTraceTime) {
@@ -120,6 +127,28 @@ public abstract class State {
 
   public long deltaPxToDuration(double px) {
     return Math.round(px * nanosPerPx);
+  }
+
+  protected SortedMap<Double, Long> searchForFlag(double x) {
+    return flags.subMap(x - 12, x + 12);
+  }
+
+  public void searchAndRemove(double x) {
+    SortedMap<Double, Long> m = searchForFlag(x);
+    if (!m.isEmpty()) {
+      m.clear();
+    }
+  }
+
+  public void searchAndAdd(double x, long val) {
+    SortedMap<Double, Long> m = searchForFlag(x);
+    if (m.isEmpty()) {
+      flags.put(x, val);
+    }
+  }
+
+  public List<Long> getFlags() {
+    return flags.values().stream().collect(Collectors.toList());
   }
 
   public abstract CpuInfo getCpuInfo();

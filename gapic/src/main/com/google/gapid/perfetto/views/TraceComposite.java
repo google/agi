@@ -153,6 +153,10 @@ public abstract class TraceComposite<S extends State> extends Composite implemen
         case SWT.KEYPAD_4:
           modeSelector.accept(RootPanel.MouseMode.TimeSelect);
           break;
+        case '5':
+        case SWT.KEYPAD_5:
+          modeSelector.accept(RootPanel.MouseMode.Flagging);
+          break;
         case SWT.ESC:
           state.resetSelections(); // Already causes a redraw.
           break;

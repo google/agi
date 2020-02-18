@@ -43,6 +43,7 @@ public class StyleConstants {
   public static final double SELECTION_THRESHOLD = 0.333;
   public static final double ZOOM_FACTOR_SCALE = 0.05;
   public static final double ZOOM_FACTOR_SCALE_DRAG = 0.01;
+  public static final double FLAGS_Y = 24;
 
   // Keyboard handling constants.
   public static final int KB_DELAY = 20;
