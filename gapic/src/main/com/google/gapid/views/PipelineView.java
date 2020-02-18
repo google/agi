@@ -440,7 +440,7 @@ public class PipelineView extends Composite
             dataGroupComposite.setText(dataGroup.getGroupName() + " (table was set dynamically)");
           }
 
-          TableViewer groupTable = createTableViewer(dataGroupComposite, SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL);
+          TableViewer groupTable = createTableViewer(dataGroupComposite, SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL | SWT.FULL_SELECTION);
           List<API.Row> rows = dataTable.getRowsList();
 
           groupTable.setContentProvider(ArrayContentProvider.getInstance());
@@ -452,11 +452,9 @@ public class PipelineView extends Composite
             TableViewerColumn tvc = createTableColumn(groupTable, dataTable.getHeaders(i));
 
             StyledCellLabelProvider cellLabelProvider = new StyledCellLabelProvider() {
-              DataValue dv;
-
               @Override
               public void update(ViewerCell cell) {
-                dv = convertDataValue(((API.Row)cell.getElement()).getRowValues(col));
+                DataValue dv = convertDataValue(((API.Row)cell.getElement()).getRowValues(col));
 
                 cell.setText(dv.displayValue);
                 if (!dataTable.getActive()) {
@@ -475,6 +473,7 @@ public class PipelineView extends Composite
 
               @Override
               public String getToolTipText(Object element) {
+                DataValue dv = convertDataValue(((API.Row)element).getRowValues(col));
                 if (dv != null) {
                   if (!dataTable.getDependee().equals("")) {
                     if (dataTable.getActive()) {

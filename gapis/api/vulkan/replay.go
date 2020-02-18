@@ -828,11 +828,11 @@ func uniqueConfig() replay.Config {
 }
 
 type profileRequest struct {
-	overrides    *path.OverrideConfig
-	traceOptions *service.TraceOptions
-	handler      *replay.SignalHandler
-	buffer       *bytes.Buffer
-	mappings     *map[uint64][]service.VulkanHandleMappingItem
+	traceOptions   *service.TraceOptions
+	handler        *replay.SignalHandler
+	buffer         *bytes.Buffer
+	handleMappings *map[uint64][]service.VulkanHandleMappingItem
+	submissionIds  *map[api.CommandSubmissionKey][]uint64
 }
 
 func (a API) GetInitialPayload(ctx context.Context,
@@ -963,14 +963,8 @@ func (a API) Replay(
 	for _, rr := range rrs {
 		switch req := rr.Request.(type) {
 		case issuesRequest:
-			var numInitialCommands int
-			var err error
 			if issues == nil {
-				numInitialCommands, err = expandCommands(false)
-				if err != nil {
-					return err
-				}
-				issues = newFindIssues(ctx, c, numInitialCommands)
+				issues = newFindIssues(ctx, c)
 			}
 			issues.AddResult(rr.Result)
 			optimize = false
@@ -979,41 +973,31 @@ func (a API) Replay(
 			}
 			willLoop := req.loopCount > 1
 			if willLoop {
-				frameloop = newFrameLoop(ctx, c, api.CmdID(numInitialCommands), frameLoopEndCmdID(cmds), req.loopCount)
+				frameloop = newFrameLoop(ctx, c, api.CmdID(0), frameLoopEndCmdID(cmds), req.loopCount)
 			}
 		case timestampsRequest:
-			var numInitialCommands int
-			var err error
 			if timestamps == nil {
-				numInitialCommands, err = expandCommands(false)
-				if err != nil {
-					return err
-				}
 				willLoop := req.loopCount > 1
 				if willLoop {
-					frameloop = newFrameLoop(ctx, c, api.CmdID(numInitialCommands), frameLoopEndCmdID(cmds), req.loopCount)
+					frameloop = newFrameLoop(ctx, c, api.CmdID(0), frameLoopEndCmdID(cmds), req.loopCount)
 				}
 
-				timestamps = newQueryTimestamps(ctx, c, numInitialCommands, cmds, willLoop, req.handler)
+				timestamps = newQueryTimestamps(ctx, c, cmds, willLoop, req.handler)
 			}
 			timestamps.AddResult(rr.Result)
 			optimize = false
 		case framebufferRequest:
-
 			cfg := cfg.(drawConfig)
 			if cfg.disableReplayOptimization {
 				optimize = false
 			}
-			extraCommands, err := expandCommands(optimize)
-			if err != nil {
-				return err
-			}
-			cmdid := req.after[0] + uint64(extraCommands)
+
+			cmdID := req.after[0]
 
 			if optimize {
 				// Should have been built in expandCommands()
 				if dceBuilder != nil {
-					dceBuilder.Request(ctx, api.SubCmdIdx{cmdid})
+					dceBuilder.Request(ctx, api.SubCmdIdx{cmdID})
 				} else {
 					optimize = false
 				}
@@ -1021,21 +1005,20 @@ func (a API) Replay(
 
 			if cfg.drawMode == service.DrawMode_OVERDRAW {
 				// TODO(subcommands): Add subcommand support here
-				if err := earlyTerminator.Add(ctx, extraCommands, api.CmdID(cmdid), req.after[1:]); err != nil {
+				if err := earlyTerminator.Add(ctx, api.CmdID(cmdID), req.after[1:]); err != nil {
 					return err
 				}
 
 				if overdraw == nil {
 					overdraw = newStencilOverdraw()
 				}
-				overdraw.add(ctx, uint64(extraCommands), req.after, intent.Capture, rr.Result)
+				overdraw.add(ctx, req.after, intent.Capture, rr.Result)
 				break
 			}
-			if err := earlyTerminator.Add(ctx, extraCommands, api.CmdID(cmdid), api.SubCmdIdx{}); err != nil {
+			if err := earlyTerminator.Add(ctx, api.CmdID(cmdID), api.SubCmdIdx{}); err != nil {
 				return err
 			}
 			subIdx := append(api.SubCmdIdx{}, req.after...)
-			subIdx[0] = subIdx[0] + uint64(extraCommands)
 			splitter.Split(ctx, subIdx)
 			switch cfg.drawMode {
 			case service.DrawMode_WIREFRAME_ALL:
@@ -1065,24 +1048,10 @@ func (a API) Replay(
 			profile.AddResult(rr.Result)
 			makeReadable.imagesOnly = true
 			optimize = false
+			transforms.Add(newSliceCommandMapper(req.submissionIds))
 			transforms.Add(NewWaitForPerfetto(req.traceOptions, req.handler, req.buffer))
 			transforms.Add(&profilingLayers{})
-			transforms.Add(replay.NewMappingExporter(ctx, req.mappings))
-			if req.overrides.GetViewportSize() {
-				transforms.Add(minimizeViewport(ctx))
-			}
-			if req.overrides.GetTextureSize() {
-				transforms.Add(minimizeTextures(ctx))
-			}
-			if req.overrides.GetSampling() {
-				transforms.Add(simplifySampling(ctx))
-			}
-			if req.overrides.GetFragmentShader() {
-				transforms.Add(simplifyFragmentShader(ctx))
-			}
-			if req.overrides.GetVertexCount() {
-				transforms.Add(setPrimitiveCountToOne(ctx))
-			}
+			transforms.Add(replay.NewMappingExporter(ctx, req.handleMappings))
 		}
 	}
 
@@ -1262,17 +1231,17 @@ func (a API) Profile(
 	intent replay.Intent,
 	mgr replay.Manager,
 	hints *service.UsageHints,
-	traceOptions *service.TraceOptions,
-	overrides *path.OverrideConfig) (*service.ProfilingData, error) {
+	traceOptions *service.TraceOptions) (*service.ProfilingData, error) {
 
 	c := uniqueConfig()
 	handler := replay.NewSignalHandler()
 	var buffer bytes.Buffer
-	mappings := make(map[uint64][]service.VulkanHandleMappingItem)
-	r := profileRequest{overrides, traceOptions, handler, &buffer, &mappings}
+	handleMappings := make(map[uint64][]service.VulkanHandleMappingItem)
+	submissionIds := make(map[api.CommandSubmissionKey][]uint64)
+	r := profileRequest{traceOptions, handler, &buffer, &handleMappings, &submissionIds}
 	_, err := mgr.Replay(ctx, intent, c, r, a, hints, true)
 	handler.DoneSignal.Wait(ctx)
 
-	d, err := trace.ProcessProfilingData(ctx, intent.Device, &buffer, &mappings)
+	d, err := trace.ProcessProfilingData(ctx, intent.Device, intent.Capture, &buffer, &handleMappings, &submissionIds)
 	return d, err
 }

@@ -23,6 +23,7 @@ import static com.google.gapid.widgets.Widgets.scheduleIfNotDisposed;
 import com.google.common.base.Throwables;
 import com.google.gapid.Server.GapisInitException;
 import com.google.gapid.models.Analytics;
+import com.google.gapid.models.Devices;
 import com.google.gapid.models.Follower;
 import com.google.gapid.models.Models;
 import com.google.gapid.models.Settings;
@@ -36,6 +37,7 @@ import com.google.gapid.util.Flags.Flag;
 import com.google.gapid.util.Logging;
 import com.google.gapid.util.Messages;
 import com.google.gapid.util.Scheduler;
+import com.google.gapid.views.TracerDialog;
 import com.google.gapid.widgets.Theme;
 import com.google.gapid.widgets.Widgets;
 
@@ -195,6 +197,7 @@ public class Main {
     Flags.help,
     Flags.fullHelp,
     Flags.version,
+    Devices.skipDeviceValidation,
     GapiPaths.gapidPath,
     GapiPaths.adbPath,
     GapisProcess.disableGapisTimeout,
@@ -209,5 +212,7 @@ public class Main {
     Follower.logFollowRequests,
     Server.useCache,
     PanelCanvas.showRedraws,
+    TracerDialog.maxFrames,
+    TracerDialog.maxPerfetto,
   };
 }

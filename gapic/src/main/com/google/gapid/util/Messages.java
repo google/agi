@@ -20,6 +20,7 @@ import static com.google.gapid.util.GapidVersion.GAPID_VERSION;
 public interface Messages {
   public static final String WINDOW_TITLE = "Android GPU Inspector";
   public static final String LOADING_CAPTURE = "Loading capture...";
+  public static final String LOADING_PROFILE = "Profiling replay...";
   public static final String CAPTURE_LOAD_FAILURE = "Failed to load capture.";
   public static final String NO_FRAMES_IN_CONTEXT = "No frames in selected context.";
   public static final String SELECT_COMMAND = "Select a frame or command.";
@@ -84,4 +85,6 @@ public interface Messages {
   public static final String GEO_SEMANTICS_HINT = "Manually configure the vertex stream semantics:";
   public static final String QUERY_VIEW_WINDOW_TITLE = "AGI - Query Shell";
   public static final String KEYBOARD_MOUSE_HELP_TITLE = "Keyboard/Mouse Shortcut Help";
+  public static final String PROFILE_NO_SLICES =
+      "GPU Profiling is not supported on this device or for this capture";
 }
