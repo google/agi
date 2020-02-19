@@ -19,7 +19,7 @@ import static com.google.gapid.widgets.Widgets.scheduleIfNotDisposed;
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
 
 import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.google.common.math.DoubleMath;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
@@ -43,8 +43,8 @@ import org.eclipse.swt.widgets.Widget;
 
 import java.math.RoundingMode;
 import java.util.List;
-import java.util.SortedMap;
-import java.util.TreeMap;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -73,7 +73,7 @@ public abstract class State {
   private final AtomicInteger lastSelectionUpdateId = new AtomicInteger(0);
   private HashMultimap<Long, Long> selectedThreads;     // upid -> utids
   private TimeSpan highlight = TimeSpan.ZERO;
-  private TreeMap<Double, Long> flags;
+  private TreeSet<Long> flags;
 
   private final Events.ListenerCollection<Listener> listeners = Events.listeners(Listener.class);
 
@@ -84,7 +84,7 @@ public abstract class State {
     this.width = 0;
     this.selection = null;
     this.selectedThreads = HashMultimap.create();
-    this.flags = Maps.newTreeMap();
+    this.flags = Sets.newTreeSet();
   }
 
   public void update(TimeSpan newTraceTime) {
@@ -129,26 +129,30 @@ public abstract class State {
     return Math.round(px * nanosPerPx);
   }
 
-  protected SortedMap<Double, Long> searchForFlag(double x) {
-    return flags.subMap(x - 12, x + 12);
+  protected SortedSet<Long> searchForFlag(double x) {
+    long time = pxToTime(x);
+    // To remove the need to click exactly within the flag boundaries, add an offset
+    // of 12 pixels to the left and to the right of the click
+    long offset = deltaPxToDuration(12);
+    return flags.subSet(time - offset, time + offset);
   }
 
   public void searchAndRemove(double x) {
-    SortedMap<Double, Long> m = searchForFlag(x);
-    if (!m.isEmpty()) {
-      m.clear();
+    SortedSet<Long> subSet = searchForFlag(x);
+    if (!subSet.isEmpty()) {
+      subSet.clear();
     }
   }
 
-  public void searchAndAdd(double x, long val) {
-    SortedMap<Double, Long> m = searchForFlag(x);
-    if (m.isEmpty()) {
-      flags.put(x, val);
+  public void searchAndAdd(double x) {
+    SortedSet<Long> subSet = searchForFlag(x);
+    if (subSet.isEmpty()) {
+      flags.add(pxToTime(x));
     }
   }
 
   public List<Long> getFlags() {
-    return flags.values().stream().collect(Collectors.toList());
+    return flags.stream().collect(Collectors.toList());
   }
 
   public abstract CpuInfo getCpuInfo();

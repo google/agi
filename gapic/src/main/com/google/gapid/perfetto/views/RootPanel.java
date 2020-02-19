@@ -16,7 +16,6 @@
 package com.google.gapid.perfetto.views;
 
 import static com.google.gapid.perfetto.views.State.MAX_ZOOM_SPAN_NSEC;
-import static com.google.gapid.perfetto.views.StyleConstants.FLAGS_Y;
 import static com.google.gapid.perfetto.views.StyleConstants.HIGHLIGHT_EDGE_NEARBY_WIDTH;
 import static com.google.gapid.perfetto.views.StyleConstants.LABEL_WIDTH;
 import static com.google.gapid.perfetto.views.StyleConstants.colors;
@@ -57,6 +56,7 @@ public abstract class RootPanel<S extends State> extends Panel.Base implements S
   private static final double HIGHLIGHT_BOTTOM = 30;
   private static final double HIGHLIGHT_CENTER = (HIGHLIGHT_TOP + HIGHLIGHT_BOTTOM) / 2;
   private static final double HIGHLIGHT_PADDING = 3;
+  public static final double FLAGS_Y = 24;
 
   protected final Settings settings;
   protected final TimelinePanel timeline;
@@ -212,6 +212,10 @@ public abstract class RootPanel<S extends State> extends Panel.Base implements S
       return Dragger.NONE;
     }
 
+    if (mouseMode == MouseMode.Flagging) {
+      return Dragger.NONE;
+    }
+
     if (sy <= timeline.getPreferredHeight() || isHighlightStartHovered || isHighlightEndHovered) {
       return timeSelectDragger(sx);
     }
@@ -361,17 +365,7 @@ public abstract class RootPanel<S extends State> extends Panel.Base implements S
   @Override
   public Hover onMouseMove(Fonts.TextMeasurer m, double x, double y, int mods) {
     if (mouseMode == MouseMode.Flagging) {
-      return new Hover() {
-        @Override
-        public boolean click() {
-          if ((mods & SWT.CTRL) == SWT.CTRL) {
-            state.searchAndRemove(x);
-          } else {
-            state.searchAndAdd(x, state.pxToTime(x - LABEL_WIDTH));
-          }
-          return true;
-        }
-      };
+      return flagHover(x, mods);
     }
     double topHeight = top.getPreferredHeight();
     Hover result = (y < topHeight) ? top.onMouseMove(m, x, y, mods) :
@@ -394,6 +388,20 @@ public abstract class RootPanel<S extends State> extends Panel.Base implements S
       result = result.withRedraw(Area.FULL);
     }
     return result;
+  }
+
+  private Hover flagHover(double x, int mods) {
+    return new Hover() {
+      @Override
+      public boolean click() {
+        if ((mods & SWT.CTRL) == SWT.CTRL) {
+          state.searchAndRemove(x - LABEL_WIDTH);
+        } else {
+          state.searchAndAdd(x - LABEL_WIDTH);
+        }
+        return true;
+      }
+    };
   }
 
   private double findHighlightFixedEnd(double sx) {
@@ -482,8 +490,8 @@ public abstract class RootPanel<S extends State> extends Panel.Base implements S
     }
 
     private void renderFlags(RenderContext ctx) {
-      state.getFlags().forEach(e -> {
-        double x = Math.rint(LABEL_WIDTH + state.timeToPx(e) - 6);
+      state.getFlags().forEach(t -> {
+        double x = Math.rint(LABEL_WIDTH + state.timeToPx(t) - 6);
         if (x > LABEL_WIDTH) {
           ctx.drawIcon(ctx.theme.flag(), x, FLAGS_Y, 0);
         }
