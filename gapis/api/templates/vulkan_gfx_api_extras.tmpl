@@ -73,7 +73,7 @@
     return std::any_of(std::begin(kValidationLayerNames),
                        std::end(kValidationLayerNames),
                        [layer](const char* val) -> bool {
-                         return strcmp(layer, val) == 0;
+                         return std::strcmp(layer, val) == 0;
                        });
   }
 ¶
