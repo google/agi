@@ -74,6 +74,7 @@ public interface Theme {
   @Icon(file = "expand_more.png") public Image expandMore();
   @Icon(file = "faceted.png") public Image faceted();
   @Icon(file = "flag.png") public Image flag();
+  @Icon(file = "flag_filled.png") public Image flagFilled();
   @Icon(file = "flat.png") public Image flat();
   @Icon(file = "flip_vertically.png") public Image flipVertically();
   @Icon(file = "fullscreen.png") public Image fullscreen();

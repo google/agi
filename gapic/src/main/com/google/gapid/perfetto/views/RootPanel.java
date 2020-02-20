@@ -34,6 +34,7 @@ import com.google.gapid.perfetto.canvas.Size;
 import com.google.gapid.perfetto.models.Selection;
 import com.google.gapid.perfetto.models.TrackConfig;
 import com.google.gapid.perfetto.models.VSync;
+import com.google.gapid.util.Colors;
 import com.google.gapid.widgets.Theme;
 
 import org.eclipse.swt.SWT;
@@ -56,7 +57,7 @@ public abstract class RootPanel<S extends State> extends Panel.Base implements S
   private static final double HIGHLIGHT_BOTTOM = 30;
   private static final double HIGHLIGHT_CENTER = (HIGHLIGHT_TOP + HIGHLIGHT_BOTTOM) / 2;
   private static final double HIGHLIGHT_PADDING = 3;
-  public static final double FLAGS_Y = 24;
+  public static final double FLAGS_Y = 30;
 
   protected final Settings settings;
   protected final TimelinePanel timeline;
@@ -125,6 +126,8 @@ public abstract class RootPanel<S extends State> extends Panel.Base implements S
         });
       });
     }
+
+    renderFlags(ctx, bottom);
 
     TimeSpan highlight = state.getHighlight();
     if (highlight != TimeSpan.ZERO) {
@@ -197,6 +200,7 @@ public abstract class RootPanel<S extends State> extends Panel.Base implements S
 
   protected abstract void preTopUiRender(RenderContext ctx, Repainter repainter);
   protected abstract void preMainUiRender(RenderContext ctx, Repainter repainter);
+  protected abstract void renderFlags(RenderContext ctx, Panel panel);
 
   @Override
   public void visit(Visitor v, Area area) {
@@ -209,10 +213,6 @@ public abstract class RootPanel<S extends State> extends Panel.Base implements S
   @Override
   public Dragger onDragStart(double sx, double sy, int mods) {
     if (sx < LABEL_WIDTH || (mods & SWT.BUTTON1) != SWT.BUTTON1) {
-      return Dragger.NONE;
-    }
-
-    if (mouseMode == MouseMode.Flagging) {
       return Dragger.NONE;
     }
 
@@ -364,9 +364,6 @@ public abstract class RootPanel<S extends State> extends Panel.Base implements S
 
   @Override
   public Hover onMouseMove(Fonts.TextMeasurer m, double x, double y, int mods) {
-    if (mouseMode == MouseMode.Flagging) {
-      return flagHover(x, mods);
-    }
     double topHeight = top.getPreferredHeight();
     Hover result = (y < topHeight) ? top.onMouseMove(m, x, y, mods) :
       bottom.onMouseMove(m, x, y - topHeight + state.getScrollOffset(), mods)
@@ -388,20 +385,6 @@ public abstract class RootPanel<S extends State> extends Panel.Base implements S
       result = result.withRedraw(Area.FULL);
     }
     return result;
-  }
-
-  private Hover flagHover(double x, int mods) {
-    return new Hover() {
-      @Override
-      public boolean click() {
-        if ((mods & SWT.CTRL) == SWT.CTRL) {
-          state.searchAndRemove(x - LABEL_WIDTH);
-        } else {
-          state.searchAndAdd(x - LABEL_WIDTH);
-        }
-        return true;
-      }
-    };
   }
 
   private double findHighlightFixedEnd(double sx) {
@@ -476,7 +459,6 @@ public abstract class RootPanel<S extends State> extends Panel.Base implements S
 
     @Override
     protected void preTopUiRender(RenderContext ctx, Repainter repainter) {
-      renderFlags(ctx);
       if (showVSync && state.hasData() && state.getVSync().hasData()) {
         renderVSync(ctx, repainter, top, state.getVSync());
       }
@@ -489,11 +471,18 @@ public abstract class RootPanel<S extends State> extends Panel.Base implements S
       }
     }
 
-    private void renderFlags(RenderContext ctx) {
-      state.getFlags().forEach(t -> {
-        double x = Math.rint(LABEL_WIDTH + state.timeToPx(t) - 6);
+    @Override
+    protected void renderFlags(RenderContext ctx, Panel panel) {
+      state.getFlags().forEach((k,v) -> {
+        double x = Math.rint(LABEL_WIDTH + state.timeToPx(k));
         if (x > LABEL_WIDTH) {
-          ctx.drawIcon(ctx.theme.flag(), x, FLAGS_Y, 0);
+          if (v) {
+            ctx.drawIcon(ctx.theme.flagFilled(), x - 5, FLAGS_Y, 0);
+            ctx.setForegroundColor(Colors.rgb(0, 0, 0));
+            ctx.drawLine(x, FLAGS_Y, x, panel.getPreferredHeight());
+          } else {
+            ctx.drawIcon(ctx.theme.flag(), x - 5, FLAGS_Y, 0);
+          }
         }
       });
     }
@@ -533,8 +522,7 @@ public abstract class RootPanel<S extends State> extends Panel.Base implements S
     Select("Selection (1)", "Selection Mode (1): Drag to select items.", Theme::selectionMode),
     Pan("Pan (2)", "Pan Mode (2): Drag to pan the view.", Theme::panMode),
     Zoom("Zoom (3)", "Zoom Mode (3): Drag to zoom the view.", Theme::zoomMode),
-    TimeSelect("Timing (4)", "Timing Mode (4): Drag to select a time range.", Theme::timingMode),
-    Flagging("Add FLags (5)", "Flag Mode (5): Click to drop a flag on the time", Theme::flag);
+    TimeSelect("Timing (4)", "Timing Mode (4): Drag to select a time range.", Theme::timingMode);
 
     private final String label;
     private final String toolTip;
