@@ -36,11 +36,9 @@ cd $SRC
 BUILD_SHA=${KOKORO_GITHUB_COMMIT:-$KOKORO_GITHUB_PULL_REQUEST_COMMIT}
 
 function bazel {
-  echo $(date): Starting bazel command $@...
-  $BUILD_ROOT/bazel/bin/bazel \
+  "${BUILD_ROOT}/bazel/bin/bazel" \
     --output_base="${TMP}/bazel_out_dbg" \
     "$@"
-  echo $(date): bazel command completed.
 }
 
 function test {
