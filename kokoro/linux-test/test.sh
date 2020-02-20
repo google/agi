@@ -41,7 +41,7 @@ function bazel {
     "$@"
 }
 
-function test {
+function bazel-test {
     echo $(date): Starting test for $@...
     $BUILD_ROOT/bazel/bin/bazel \
         --output_base="${TMP}/bazel_out" \
@@ -68,14 +68,26 @@ export VK_LOADER_DEBUG=all
 bazel build -c dbg //cmd/vulkan_sample:vulkan_sample
 
 # Run it.
+
 SAMPLE_PATH="$(bazel run -c dbg --run_under "echo" //cmd/vulkan_sample:vulkan_sample)"
+
+# Allow non-zero exit status.
+set +e
+
 timeout --preserve-status -s INT -k 10 5 xvfb-run -e xvfb.log -a "${SAMPLE_PATH}"
+APP_EXIT_STATUS="${?}"
+
+set -e
+
+# This line will exit with status 1 if the app's exit status
+# was anything other than 130 (128+SIGINT).
+test "${APP_EXIT_STATUS}" -eq 130
 
 # Running all the tests in one go leads to an out-of-memory error on Kokoro, hence the division in smaller test sets
-test tests-core
-test tests-gapis-api
-test tests-gapis-replay-resolve
-test tests-gapis-other
-test tests-gapir
-test tests-gapil
-test tests-general
+bazel-test tests-core
+bazel-test tests-gapis-api
+bazel-test tests-gapis-replay-resolve
+bazel-test tests-gapis-other
+bazel-test tests-gapir
+bazel-test tests-gapil
+bazel-test tests-general
