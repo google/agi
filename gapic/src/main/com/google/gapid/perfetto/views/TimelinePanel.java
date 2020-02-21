@@ -47,23 +47,6 @@ public class TimelinePanel extends Panel.Base {
   }
 
   @Override
-  public Panel.Hover onMouseMove(Fonts.TextMeasurer m, double x, double y, int mods) {
-    return new Panel.Hover() {
-      @Override
-      public boolean click() {
-        state.searchAndAdd(x - LABEL_WIDTH);
-        return true;
-      }
-
-      @Override
-      public boolean rightClick() {
-        state.searchAndRemove(x - LABEL_WIDTH);
-        return true;
-      }
-    };
-  }
-
-  @Override
   public void render(RenderContext ctx, Repainter repainter) {
     ctx.trace("TimelinePanel", () -> {
       TimeSpan visible = state.getVisibleTime();

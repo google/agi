@@ -135,7 +135,7 @@ public interface Panel {
 
     /** Returns whether the screen should be redrawn. */
     public default boolean click() { return false; }
-    public default boolean rightClick() { return false; }
+    public default boolean rightClick() { return click(); }
 
     public default Panel.Hover translated(double dx, double dy) {
       return transformed(a -> a.translate(dx, dy));

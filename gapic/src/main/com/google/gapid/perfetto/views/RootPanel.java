@@ -364,27 +364,61 @@ public abstract class RootPanel<S extends State> extends Panel.Base implements S
 
   @Override
   public Hover onMouseMove(Fonts.TextMeasurer m, double x, double y, int mods) {
-    double topHeight = top.getPreferredHeight();
-    Hover result = (y < topHeight) ? top.onMouseMove(m, x, y, mods) :
-      bottom.onMouseMove(m, x, y - topHeight + state.getScrollOffset(), mods)
-          .transformed(a -> a.translate(0, topHeight - state.getScrollOffset()));
-    if (x >= LABEL_WIDTH && y >= topHeight && result == Hover.NONE) {
-      result = result.withClick(() -> state.resetSelections());
+    if (y >= (timeline.getPreferredHeight()/2) && y <= timeline.getPreferredHeight() && x > LABEL_WIDTH) {
+      return flagHover(x);
+    } else {
+      double topHeight = top.getPreferredHeight();
+      Hover result = (y < topHeight) ? top.onMouseMove(m, x, y, mods) :
+        bottom.onMouseMove(m, x, y - topHeight + state.getScrollOffset(), mods)
+            .transformed(a -> a.translate(0, topHeight - state.getScrollOffset()));
+      if (x >= LABEL_WIDTH && y >= topHeight && result == Hover.NONE) {
+        result = result.withClick(() -> state.resetSelections());
+      }
+      if (x >= LABEL_WIDTH) {
+        result = result.withClick(() -> {
+          TimeSpan highlight = state.getHighlight();
+          if (!highlight.isEmpty() && !highlight.contains(state.pxToTime(x - LABEL_WIDTH))) {
+            state.setHighlight(TimeSpan.ZERO);
+            return true;
+          }
+          return false;
+        });
+      }
+      if (checkHighlightEdgeHovered(x)) {
+        result = result.withRedraw(Area.FULL);
+      }
+      return result;
     }
-    if (x >= LABEL_WIDTH) {
-      result = result.withClick(() -> {
-        TimeSpan highlight = state.getHighlight();
-        if (!highlight.isEmpty() && !highlight.contains(state.pxToTime(x - LABEL_WIDTH))) {
-          state.setHighlight(TimeSpan.ZERO);
-          return true;
-        }
-        return false;
-      });
-    }
-    if (checkHighlightEdgeHovered(x)) {
-      result = result.withRedraw(Area.FULL);
-    }
-    return result;
+  }
+
+  private Hover flagHover(double x) {
+    state.setFlagHover(x);
+    return new Panel.Hover() {
+      @Override
+      public Area getRedraw() {
+        TimeSpan visible = state.getVisibleTime();
+        // Redraw the entire visible range
+        return new Area(
+            state.timeToPx(visible.start), 0, bottom.getPreferredHeight(), state.timeToPx(visible.end));
+      }
+
+      @Override
+      public boolean click() {
+        state.searchAndAddFlag(x - LABEL_WIDTH);
+        return true;
+      }
+
+      @Override
+      public boolean rightClick() {
+        state.searchAndRemoveFlag(x - LABEL_WIDTH);
+        return true;
+      }
+
+      @Override
+      public void stop() {
+        state.resetFlagHover();
+      }
+    };
   }
 
   private double findHighlightFixedEnd(double sx) {
@@ -478,13 +512,19 @@ public abstract class RootPanel<S extends State> extends Panel.Base implements S
         if (x > LABEL_WIDTH) {
           if (v) {
             ctx.drawIcon(ctx.theme.flagFilled(), x - 5, FLAGS_Y, 0);
-            ctx.setForegroundColor(Colors.rgb(0, 0, 0));
+            ctx.setForegroundColor(Colors.BLACK_RGBA);
             ctx.drawLine(x, FLAGS_Y, x, panel.getPreferredHeight());
           } else {
             ctx.drawIcon(ctx.theme.flag(), x - 5, FLAGS_Y, 0);
           }
         }
       });
+      if (state.isFlagHovered()) {
+        double x = state.getFlagHoverXpos();
+        ctx.drawIcon(ctx.theme.flagGreyed(), x - 5, FLAGS_Y, 0);
+        ctx.setForegroundColor(Colors.GREY_RGBA);
+        ctx.drawLine(x, FLAGS_Y, x, panel.getPreferredHeight());
+      }
     }
 
     private void renderVSync(RenderContext ctx, Repainter repainter, Panel panel, VSync vsync) {

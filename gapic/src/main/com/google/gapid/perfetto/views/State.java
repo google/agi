@@ -15,6 +15,7 @@
  */
 package com.google.gapid.perfetto.views;
 
+import static com.google.gapid.perfetto.views.StyleConstants.LABEL_WIDTH;
 import static com.google.gapid.widgets.Widgets.scheduleIfNotDisposed;
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
 
@@ -73,6 +74,8 @@ public abstract class State {
   private HashMultimap<Long, Long> selectedThreads;     // upid -> utids
   private TimeSpan highlight = TimeSpan.ZERO;
   private TreeMap<Long, Boolean> flags;
+  private boolean flagHovered = false;
+  private double flagHoverXpos;
 
   private final Events.ListenerCollection<Listener> listeners = Events.listeners(Listener.class);
 
@@ -138,14 +141,35 @@ public abstract class State {
     return flags.subMap(time - rightOffset, time + leftOffset);
   }
 
-  public void searchAndRemove(double x) {
+  public void setFlagHover(double x) {
+    if (searchForFlag(x - LABEL_WIDTH).isEmpty()) {
+      flagHovered = true;
+      flagHoverXpos = x;
+    } else {
+      flagHovered = false;
+    }
+  }
+
+  public void resetFlagHover() {
+    flagHovered = false;
+  }
+
+  public boolean isFlagHovered() {
+    return flagHovered;
+  }
+
+  public double getFlagHoverXpos() {
+    return flagHoverXpos;
+  }
+
+  public void searchAndRemoveFlag(double x) {
     SortedMap<Long, Boolean> subMap = searchForFlag(x);
     if (!subMap.isEmpty()) {
       subMap.clear();
     }
   }
 
-  public void searchAndAdd(double x) {
+  public void searchAndAddFlag(double x) {
     SortedMap<Long, Boolean> subMap = searchForFlag(x);
     if (subMap.isEmpty()) {
       flags.put(pxToTime(x), true);
