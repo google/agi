@@ -178,7 +178,7 @@ public class CounterPanel extends TrackPanel<CounterPanel> implements Selectable
       return Hover.NONE;
     }
 
-    long t = data.ts[idx];
+    long id = data.ids[idx];
     double startX = state.timeToPx(data.ts[idx]);
     double endX = (idx >= data.ts.length - 1) ? startX : state.timeToPx(data.ts[idx + 1]);
     hovered = new HoverCard(m, track.getCounter(), data.values[idx], startX, endX, x);
@@ -202,10 +202,10 @@ public class CounterPanel extends TrackPanel<CounterPanel> implements Selectable
       public boolean click() {
         if ((mods & SWT.MOD1) == SWT.MOD1) {
           state.addSelection(Selection.Kind.Counter,
-              transform(track.getValue(t), d -> new CounterTrack.Values(track.getCounter().name, d)));
+              transform(track.getValue(id), d -> new CounterTrack.Values(track.getCounter().name, d)));
         } else {
           state.setSelection(Selection.Kind.Counter,
-              transform(track.getValue(t), d -> new CounterTrack.Values(track.getCounter().name, d)));
+              transform(track.getValue(id), d -> new CounterTrack.Values(track.getCounter().name, d)));
         }
         return true;
       }

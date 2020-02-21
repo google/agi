@@ -50,7 +50,7 @@ public class CounterTrack extends Track.WithQueryEngine<CounterTrack.Data> {
         "(select *, first_value(id) over (partition by quantum_ts order by dur desc) as best_id from %s) " +
       "group by quantum_ts";
   private static final String COUNTER_SQL = "select ts, ts + dur, value, id from %s";
-  private static final String VALUE_SQL = "select ts, ts + dur, value, id from %s where ts = %d";
+  private static final String VALUE_SQL = "select ts, ts + dur, value, id from %s where id = %d";
   private static final String RANGE_SQL =
       "select ts, ts + dur, value, id from %s " +
       "where ts + dur >= %d and ts <= %d order by ts";
@@ -123,8 +123,8 @@ public class CounterTrack extends Track.WithQueryEngine<CounterTrack.Data> {
     return format(COUNTER_SQL, tableName("span"));
   }
 
-  public ListenableFuture<Data> getValue(long t) {
-    return transform(expectOneRow(qe.query(valueSql(t))), row -> {
+  public ListenableFuture<Data> getValue(long id) {
+    return transform(expectOneRow(qe.query(valueSql(id))), row -> {
       Data data = new Data(null, new long[2], new double[2], new long[2]);
       data.ts[0] = row.getLong(0);
       data.ts[1] = row.getLong(1);
@@ -156,8 +156,8 @@ public class CounterTrack extends Track.WithQueryEngine<CounterTrack.Data> {
     });
   }
 
-  private String valueSql(long t) {
-    return format(VALUE_SQL, tableName("vals"), t);
+  private String valueSql(long id) {
+    return format(VALUE_SQL, tableName("vals"), id);
   }
 
   private String rangeSql(TimeSpan ts) {
