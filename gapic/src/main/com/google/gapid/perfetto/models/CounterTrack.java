@@ -31,7 +31,6 @@ import com.google.gapid.perfetto.TimeSpan;
 import com.google.gapid.perfetto.views.CountersSelectionView;
 import com.google.gapid.perfetto.views.State;
 
-import java.util.stream.Collectors;
 import org.eclipse.swt.widgets.Composite;
 
 import java.util.Arrays;
@@ -40,7 +39,7 @@ import java.util.function.Consumer;
 
 public class CounterTrack extends Track.WithQueryEngine<CounterTrack.Data> {
   private static final String VIEW_SQL_DELTA =
-      "select ts + 1 ts, lead(ts) over win - ts dur, lead(value) over win value, id " +
+      "select ts + 1 ts, lead(ts) over win - ts dur, lead(value) over win value, lead(id) over win id " +
       "from counter where track_id = %d window win as (order by ts)";
   private static final String VIEW_SQL_EVENT =
       "select ts, lead(ts, 1, (select end_ts from trace_bounds)) over win - ts dur, value, id " +
@@ -206,7 +205,7 @@ public class CounterTrack extends Track.WithQueryEngine<CounterTrack.Data> {
 
     private void initKeys() {
       for (long[] keys : ids) {
-        valueKeys.addAll(Arrays.stream(keys).boxed().collect(Collectors.toSet()));
+        Arrays.stream(keys).forEach(valueKeys::add);
       }
     }
 
