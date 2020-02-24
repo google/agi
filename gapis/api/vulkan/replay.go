@@ -832,7 +832,7 @@ type profileRequest struct {
 	handler        *replay.SignalHandler
 	buffer         *bytes.Buffer
 	handleMappings *map[uint64][]service.VulkanHandleMappingItem
-	submissionIds  *map[api.CommandSubmissionKey][]uint64
+	submissionIds  *map[api.CommandSubmissionKey][][]uint64
 }
 
 func (a API) GetInitialPayload(ctx context.Context,
@@ -1237,7 +1237,7 @@ func (a API) Profile(
 	handler := replay.NewSignalHandler()
 	var buffer bytes.Buffer
 	handleMappings := make(map[uint64][]service.VulkanHandleMappingItem)
-	submissionIds := make(map[api.CommandSubmissionKey][]uint64)
+	submissionIds := make(map[api.CommandSubmissionKey][][]uint64)
 	r := profileRequest{traceOptions, handler, &buffer, &handleMappings, &submissionIds}
 	_, err := mgr.Replay(ctx, intent, c, r, a, hints, true)
 	handler.DoneSignal.Wait(ctx)
