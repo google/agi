@@ -19,10 +19,14 @@ import static com.google.gapid.perfetto.views.State.MAX_ZOOM_SPAN_NSEC;
 import static com.google.gapid.perfetto.views.StyleConstants.HIGHLIGHT_EDGE_NEARBY_WIDTH;
 import static com.google.gapid.perfetto.views.StyleConstants.LABEL_WIDTH;
 import static com.google.gapid.perfetto.views.StyleConstants.colors;
+import static com.google.gapid.perfetto.views.StyleConstants.flag;
+import static com.google.gapid.perfetto.views.StyleConstants.flagFilled;
+import static com.google.gapid.perfetto.views.StyleConstants.flagGreyed;
 import static com.google.gapid.widgets.Widgets.createToggleToolItem;
 import static com.google.gapid.widgets.Widgets.exclusiveSelection;
 import static java.util.Arrays.stream;
 
+import com.google.common.collect.Maps;
 import com.google.gapid.models.Settings;
 import com.google.gapid.perfetto.TimeSpan;
 import com.google.gapid.perfetto.canvas.Area;
@@ -34,7 +38,6 @@ import com.google.gapid.perfetto.canvas.Size;
 import com.google.gapid.perfetto.models.Selection;
 import com.google.gapid.perfetto.models.TrackConfig;
 import com.google.gapid.perfetto.models.VSync;
-import com.google.gapid.util.Colors;
 import com.google.gapid.widgets.Theme;
 
 import org.eclipse.swt.SWT;
@@ -44,6 +47,8 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.ToolBar;
 import org.eclipse.swt.widgets.ToolItem;
 
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntConsumer;
@@ -57,6 +62,7 @@ public abstract class RootPanel<S extends State> extends Panel.Base implements S
   private static final double HIGHLIGHT_BOTTOM = 30;
   private static final double HIGHLIGHT_CENTER = (HIGHLIGHT_TOP + HIGHLIGHT_BOTTOM) / 2;
   private static final double HIGHLIGHT_PADDING = 3;
+  private static final double FLAG_WIDTH = 17;  // Width of the actual flag, not the image's pixel width
   public static final double FLAGS_Y = 30;
 
   protected final Settings settings;
@@ -72,11 +78,16 @@ public abstract class RootPanel<S extends State> extends Panel.Base implements S
   private boolean isHighlightStartHovered = false;
   private boolean isHighlightEndHovered = false;
 
+  protected TreeMap<Long, Boolean> flags;
+  protected boolean flagHovered = false;
+  protected double flagHoverXpos;
+
   public RootPanel(S state, Settings settings) {
     this.settings = settings;
     this.timeline = new TimelinePanel(state);
     this.state = state;
     this.showVSync = settings.ui().getPerfetto().getShowVsync();
+    this.flags = Maps.newTreeMap();
     state.addListener(this);
   }
 
@@ -106,6 +117,36 @@ public abstract class RootPanel<S extends State> extends Panel.Base implements S
     bottom.setSize(w, h - topHeight);
     state.setWidth(w - LABEL_WIDTH);
     state.setMaxScrollOffset(bottomHeight - h + topHeight);
+  }
+
+  private SortedMap<Long, Boolean> searchForFlag(double x) {
+    long time = state.pxToTime(x);
+    // If the click falls within the flag icon's boundaries, the flag is considered to be hit.
+    // Leave an additional two pixels to the left of the flag to get a better hit box
+    long rightOffset = state.deltaPxToDuration(FLAG_WIDTH);
+    long leftOffset = state.deltaPxToDuration(2);
+
+    return flags.subMap(time - rightOffset, time + leftOffset);
+  }
+
+  protected void searchAndRemoveFlag(double x) {
+    SortedMap<Long, Boolean> subMap = searchForFlag(x);
+    if (!subMap.isEmpty()) {
+      subMap.clear();
+    }
+  }
+
+  protected void searchAndAddFlag(double x) {
+    SortedMap<Long, Boolean> subMap = searchForFlag(x);
+    if (subMap.isEmpty()) {
+      flags.put(state.pxToTime(x), true);
+    } else {
+      toggleFlag(subMap);
+    }
+  }
+
+  private static void toggleFlag(SortedMap<Long, Boolean> subMap) {
+    subMap.replaceAll((k,v) -> v = v ^ true);
   }
 
   @Override
@@ -366,33 +407,37 @@ public abstract class RootPanel<S extends State> extends Panel.Base implements S
   public Hover onMouseMove(Fonts.TextMeasurer m, double x, double y, int mods) {
     if (y >= (timeline.getPreferredHeight()/2) && y <= timeline.getPreferredHeight() && x > LABEL_WIDTH) {
       return flagHover(x);
-    } else {
-      double topHeight = top.getPreferredHeight();
-      Hover result = (y < topHeight) ? top.onMouseMove(m, x, y, mods) :
-        bottom.onMouseMove(m, x, y - topHeight + state.getScrollOffset(), mods)
-            .transformed(a -> a.translate(0, topHeight - state.getScrollOffset()));
-      if (x >= LABEL_WIDTH && y >= topHeight && result == Hover.NONE) {
-        result = result.withClick(() -> state.resetSelections());
-      }
-      if (x >= LABEL_WIDTH) {
-        result = result.withClick(() -> {
-          TimeSpan highlight = state.getHighlight();
-          if (!highlight.isEmpty() && !highlight.contains(state.pxToTime(x - LABEL_WIDTH))) {
-            state.setHighlight(TimeSpan.ZERO);
-            return true;
-          }
-          return false;
-        });
-      }
-      if (checkHighlightEdgeHovered(x)) {
-        result = result.withRedraw(Area.FULL);
-      }
-      return result;
     }
+    double topHeight = top.getPreferredHeight();
+    Hover result = (y < topHeight) ? top.onMouseMove(m, x, y, mods) :
+      bottom.onMouseMove(m, x, y - topHeight + state.getScrollOffset(), mods)
+          .transformed(a -> a.translate(0, topHeight - state.getScrollOffset()));
+    if (x >= LABEL_WIDTH && y >= topHeight && result == Hover.NONE) {
+      result = result.withClick(() -> state.resetSelections());
+    }
+    if (x >= LABEL_WIDTH) {
+      result = result.withClick(() -> {
+        TimeSpan highlight = state.getHighlight();
+        if (!highlight.isEmpty() && !highlight.contains(state.pxToTime(x - LABEL_WIDTH))) {
+          state.setHighlight(TimeSpan.ZERO);
+          return true;
+        }
+        return false;
+      });
+    }
+    if (checkHighlightEdgeHovered(x)) {
+      result = result.withRedraw(Area.FULL);
+    }
+    return result;
   }
 
   private Hover flagHover(double x) {
-    state.setFlagHover(x);
+    if (searchForFlag(x - LABEL_WIDTH).isEmpty()) {
+      flagHovered = true;
+      flagHoverXpos = x;
+    } else {
+      flagHovered = false;
+    }
     return new Panel.Hover() {
       @Override
       public Area getRedraw() {
@@ -404,19 +449,19 @@ public abstract class RootPanel<S extends State> extends Panel.Base implements S
 
       @Override
       public boolean click() {
-        state.searchAndAddFlag(x - LABEL_WIDTH);
+        searchAndAddFlag(x - LABEL_WIDTH);
         return true;
       }
 
       @Override
       public boolean rightClick() {
-        state.searchAndRemoveFlag(x - LABEL_WIDTH);
+        searchAndRemoveFlag(x - LABEL_WIDTH);
         return true;
       }
 
       @Override
       public void stop() {
-        state.resetFlagHover();
+        flagHovered = false;
       }
     };
   }
@@ -507,22 +552,22 @@ public abstract class RootPanel<S extends State> extends Panel.Base implements S
 
     @Override
     protected void renderFlags(RenderContext ctx, Panel panel) {
-      state.getFlags().forEach((k,v) -> {
+      flags.forEach((k,v) -> {
         double x = Math.rint(LABEL_WIDTH + state.timeToPx(k));
         if (x > LABEL_WIDTH) {
           if (v) {
-            ctx.drawIcon(ctx.theme.flagFilled(), x - 5, FLAGS_Y, 0);
-            ctx.setForegroundColor(Colors.BLACK_RGBA);
+            ctx.drawIcon(flagFilled(ctx.theme), x - 5, FLAGS_Y, 0);
+            ctx.setForegroundColor(colors().flagLine);
             ctx.drawLine(x, FLAGS_Y, x, panel.getPreferredHeight());
           } else {
-            ctx.drawIcon(ctx.theme.flag(), x - 5, FLAGS_Y, 0);
+            ctx.drawIcon(flag(ctx.theme), x - 5, FLAGS_Y, 0);
           }
         }
       });
-      if (state.isFlagHovered()) {
-        double x = state.getFlagHoverXpos();
-        ctx.drawIcon(ctx.theme.flagGreyed(), x - 5, FLAGS_Y, 0);
-        ctx.setForegroundColor(Colors.GREY_RGBA);
+      if (flagHovered) {
+        double x = flagHoverXpos;
+        ctx.drawIcon(flagGreyed(ctx.theme), x - 5, FLAGS_Y, 0);
+        ctx.setForegroundColor(colors().flagHover);
         ctx.drawLine(x, FLAGS_Y, x, panel.getPreferredHeight());
       }
     }

@@ -26,8 +26,6 @@ public class Colors {
   public static final int DARK_LUMINANCE8_THRESHOLD = 165;
   public static final RGB BLACK = new RGB(0, 0, 0);
   public static final RGB WHITE = new RGB(255, 255, 255);
-  public static final RGBA BLACK_RGBA = new RGBA(0, 0, 0, 255);
-  public static final RGBA GREY_RGBA = new RGBA(128, 128, 128, 255);
   // https://en.wikipedia.org/wiki/Golden_angle
   private static final double GOLDEN_ANGLE = 2.39996322972865332;
 

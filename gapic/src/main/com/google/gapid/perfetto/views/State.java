@@ -15,12 +15,10 @@
  */
 package com.google.gapid.perfetto.views;
 
-import static com.google.gapid.perfetto.views.StyleConstants.LABEL_WIDTH;
 import static com.google.gapid.widgets.Widgets.scheduleIfNotDisposed;
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
 
 import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Maps;
 import com.google.common.math.DoubleMath;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
@@ -43,8 +41,6 @@ import org.eclipse.swt.graphics.RGBA;
 import org.eclipse.swt.widgets.Widget;
 
 import java.math.RoundingMode;
-import java.util.SortedMap;
-import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -59,7 +55,6 @@ public abstract class State {
   private static final Logger LOG = Logger.getLogger(State.class.getName());
 
   private static final double MIN_WIDTH = 32;
-  private static final double FLAG_WIDTH = 17;  // Width of the actual flag, not the image's pixel width
 
   private final Widget owner;
   private TimeSpan traceTime;
@@ -73,9 +68,6 @@ public abstract class State {
   private final AtomicInteger lastSelectionUpdateId = new AtomicInteger(0);
   private HashMultimap<Long, Long> selectedThreads;     // upid -> utids
   private TimeSpan highlight = TimeSpan.ZERO;
-  private TreeMap<Long, Boolean> flags;
-  private boolean flagHovered = false;
-  private double flagHoverXpos;
 
   private final Events.ListenerCollection<Listener> listeners = Events.listeners(Listener.class);
 
@@ -86,7 +78,6 @@ public abstract class State {
     this.width = 0;
     this.selection = null;
     this.selectedThreads = HashMultimap.create();
-    this.flags = Maps.newTreeMap();
   }
 
   public void update(TimeSpan newTraceTime) {
@@ -129,61 +120,6 @@ public abstract class State {
 
   public long deltaPxToDuration(double px) {
     return Math.round(px * nanosPerPx);
-  }
-
-  protected SortedMap<Long, Boolean> searchForFlag(double x) {
-    long time = pxToTime(x);
-    // If the click falls within the flag icon's boundaries, the flag is considered to be hit.
-    // Leave an additional two pixels to the left of the flag to get a better hit box
-    long rightOffset = deltaPxToDuration(FLAG_WIDTH);
-    long leftOffset = deltaPxToDuration(2);
-
-    return flags.subMap(time - rightOffset, time + leftOffset);
-  }
-
-  public void setFlagHover(double x) {
-    if (searchForFlag(x - LABEL_WIDTH).isEmpty()) {
-      flagHovered = true;
-      flagHoverXpos = x;
-    } else {
-      flagHovered = false;
-    }
-  }
-
-  public void resetFlagHover() {
-    flagHovered = false;
-  }
-
-  public boolean isFlagHovered() {
-    return flagHovered;
-  }
-
-  public double getFlagHoverXpos() {
-    return flagHoverXpos;
-  }
-
-  public void searchAndRemoveFlag(double x) {
-    SortedMap<Long, Boolean> subMap = searchForFlag(x);
-    if (!subMap.isEmpty()) {
-      subMap.clear();
-    }
-  }
-
-  public void searchAndAddFlag(double x) {
-    SortedMap<Long, Boolean> subMap = searchForFlag(x);
-    if (subMap.isEmpty()) {
-      flags.put(pxToTime(x), true);
-    } else {
-      toggleFlag(subMap);
-    }
-  }
-
-  public static void toggleFlag(SortedMap<Long, Boolean> subMap) {
-    subMap.replaceAll((k,v) -> v = v ^ true);
-  }
-
-  public TreeMap<Long, Boolean> getFlags() {
-    return flags;
   }
 
   public abstract CpuInfo getCpuInfo();
