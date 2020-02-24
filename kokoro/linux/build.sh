@@ -95,6 +95,8 @@ $SRC/kokoro/linux/package.sh $BUILD_ROOT/out
 sudo apt-get -qy install libvulkan1 xvfb
 
 # Get prebuilt SwiftShader.
+# This is the latest commit at the time of writing.
+# Should be updated periodically.
 curl -fsSL -o swiftshader.zip https://github.com/google/gfbuild-swiftshader/releases/download/github%2Fgoogle%2Fgfbuild-swiftshader%2F0bbf7ba9f909092f0328b1d519d5f7db1773be57/gfbuild-swiftshader-0bbf7ba9f909092f0328b1d519d5f7db1773be57-Linux_x64_Debug.zip
 unzip -d swiftshader swiftshader.zip
 
@@ -107,7 +109,7 @@ export VK_LOADER_DEBUG=all
 # Allow non-zero exit status.
 set +e
 
-xvfb-run -e xvfb.log -a timeout --preserve-status -s INT -k 10 5 bazel-bin/cmd/vulkan_sample/vulkan_sample
+xvfb-run -e xvfb.log -a timeout --preserve-status -s INT -k 5 5 bazel-bin/cmd/vulkan_sample/vulkan_sample
 
 APP_EXIT_STATUS="${?}"
 
@@ -121,6 +123,8 @@ fi
 # was anything other than 130 (128+SIGINT).
 test "${APP_EXIT_STATUS}" -eq 130
 
+# TODO(https://github.com/google/gapid/issues/3163): The coherent memory
+#  tracker must be disabled with SwiftShader for now.
 xvfb-run -e xvfb.log -a bazel-bin/pkg/gapit trace -device host -disable-coherentmemorytracker -disable-pcs -disable-unknown-extensions -record-errors -no-buffer -api vulkan -start-at-frame 5 -capture-frames 10 -observe-frames 1 -out vulkan_sample.gfxtrace bazel-bin/cmd/vulkan_sample/vulkan_sample
 
-xvfb-run -e xvfb.log -a bazel-bin/pkg/gapit video -gapir-nofallback -type sxs -frames-minimum 3 -out vulkan_sample.mp4 vulkan_sample.gfxtrace
+xvfb-run -e xvfb.log -a bazel-bin/pkg/gapit video -gapir-nofallback -type sxs -frames-minimum 10 -out vulkan_sample.mp4 vulkan_sample.gfxtrace
