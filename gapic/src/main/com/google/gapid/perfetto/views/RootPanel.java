@@ -168,7 +168,7 @@ public abstract class RootPanel<S extends State> extends Panel.Base implements S
       });
     }
 
-    renderFlags(ctx, bottom);
+    postMainUiRender(ctx);
 
     TimeSpan highlight = state.getHighlight();
     if (highlight != TimeSpan.ZERO) {
@@ -241,7 +241,7 @@ public abstract class RootPanel<S extends State> extends Panel.Base implements S
 
   protected abstract void preTopUiRender(RenderContext ctx, Repainter repainter);
   protected abstract void preMainUiRender(RenderContext ctx, Repainter repainter);
-  protected abstract void renderFlags(RenderContext ctx, Panel panel);
+  protected abstract void postMainUiRender(RenderContext ctx);
 
   @Override
   public void visit(Visitor v, Area area) {
@@ -551,7 +551,12 @@ public abstract class RootPanel<S extends State> extends Panel.Base implements S
     }
 
     @Override
-    protected void renderFlags(RenderContext ctx, Panel panel) {
+    protected void postMainUiRender(RenderContext ctx) {
+      // Render the Flag in the timeline panel and the vertical line in the bottom panel group
+      renderFlags(ctx, bottom);
+    }
+
+    private void renderFlags(RenderContext ctx, Panel panel) {
       flags.forEach((k,v) -> {
         double x = Math.rint(LABEL_WIDTH + state.timeToPx(k));
         if (x > LABEL_WIDTH) {

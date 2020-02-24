@@ -211,7 +211,7 @@ public class ProfileView extends Composite implements Tab, Capture.Listener, Pro
         }
 
         @Override
-        protected void renderFlags(RenderContext ctx, Panel panel) {
+        protected void postMainUiRender(RenderContext ctx) {
           // Do nothing.
         }
       };
