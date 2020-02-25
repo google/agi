@@ -146,7 +146,7 @@ public abstract class RootPanel<S extends State> extends Panel.Base implements S
   }
 
   private static void toggleFlag(SortedMap<Long, Boolean> subMap) {
-    subMap.replaceAll((k,v) -> v = v ^ true);
+    subMap.replaceAll((k,v) -> v = !v);
   }
 
   @Override
