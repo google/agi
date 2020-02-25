@@ -79,7 +79,7 @@ func (vtTransform *vulkanTerminator) Add(ctx context.Context, id api.CmdID, subc
 	id += vtTransform.realCommandOffset
 
 	if id > vtTransform.lastRequest {
-		vtTransform.lastRequest = id
+		vtTransform.lastRequest = vtTransform.syncData.UnblockingCommands[id-vtTransform.realCommandOffset]
 	}
 
 	// If we are not trying to index a subcommand, then just continue on our way.
@@ -124,7 +124,9 @@ func (vtTransform *vulkanTerminator) ClearTransformResources(ctx context.Context
 
 func (vtTransform *vulkanTerminator) TransformCommand(ctx context.Context, id transform.CommandID, inputCommands []api.Cmd, inputState *api.GlobalState) ([]api.Cmd, error) {
 	if vtTransform.terminated {
-		return nil, nil
+		if len(GetState(inputState).deferredSubmissions) == 0 {
+			return nil, nil
+		}
 	}
 
 	outputCmds := make([]api.Cmd, 0)

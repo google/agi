@@ -27,6 +27,11 @@ type FenceState struct {
 	statuses []uint32
 }
 
+type SemaphoreState struct {
+	semaphores []VkSemaphore
+	values     []uint64
+}
+
 func init() {
 	protoconv.Register(
 		func(ctx context.Context, o *FenceState) (*vulkan_pb.FenceState, error) {
@@ -49,12 +54,47 @@ func init() {
 			}
 			fs.statuses = append(fs.statuses, p.Statuses...)
 			return fs, nil
-		})
+		},
+	)
+
+	protoconv.Register(
+		func(ctx context.Context, o *SemaphoreState) (*vulkan_pb.SemaphoreState, error) {
+			ss := &vulkan_pb.SemaphoreState{
+				Semaphores: []uint64{},
+				Values:     []uint64{},
+			}
+			for i := 0; i < len(o.semaphores); i++ {
+				ss.Semaphores = append(ss.Semaphores, uint64(o.semaphores[i]))
+			}
+			ss.Values = append(ss.Values, o.values...)
+			return ss, nil
+		}, func(ctx context.Context, p *vulkan_pb.SemaphoreState) (*SemaphoreState, error) {
+			ss := &SemaphoreState{
+				[]VkSemaphore{},
+				[]uint64{},
+			}
+			for i := 0; i < len(p.Semaphores); i++ {
+				ss.semaphores = append(ss.semaphores, VkSemaphore(p.Semaphores[i]))
+			}
+			ss.values = append(ss.values, p.Values...)
+			return ss, nil
+		},
+	)
 }
 
 func findFenceState(extras *api.CmdExtras) *FenceState {
 	for _, e := range extras.All() {
 		if res, ok := e.(*FenceState); ok {
+			return res
+		}
+	}
+	return nil
+}
+
+func findSemaphoreState(extras *api.CmdExtras) *SemaphoreState {
+	for _, e := range extras.All() {
+		if res, ok := e.(*SemaphoreState); ok {
+
 			return res
 		}
 	}

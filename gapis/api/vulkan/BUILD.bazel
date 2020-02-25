@@ -60,7 +60,6 @@ go_library(
     name = "go_default_library",
     srcs = [
         "allocation_tracker.go",
-        "buffer_command.go",
         "command_buffer_rebuilder.go",
         "custom_replay.go",
         "doc.go",

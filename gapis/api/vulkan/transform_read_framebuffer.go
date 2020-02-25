@@ -127,7 +127,7 @@ func (framebufferTransform *readFramebuffer) TransformCommand(ctx context.Contex
 		}
 
 		if _, ok := cmd.(*VkQueueSubmit); ok {
-			if len(framebufferTransform.pendingReads) > 0 {
+			if len(framebufferTransform.pendingReads) > 0 && len(GetState(inputState).deferredSubmissions) == 0 {
 				if err := framebufferTransform.FlushPending(ctx, inputState); err != nil {
 					return nil, err
 				}

@@ -16,6 +16,7 @@ package resolve
 
 import (
 	"context"
+	"sort"
 
 	"github.com/google/gapid/core/fault"
 	"github.com/google/gapid/core/log"
@@ -71,7 +72,6 @@ func (r *FramebufferChangesResolvable) Resolve(ctx context.Context) (interface{}
 	}
 
 	out := &AttachmentFramebufferChanges{
-		// TODO: Remove hardcoded upper limit
 		attachments: make([]framebufferAttachmentChanges, 0),
 	}
 
@@ -118,5 +118,14 @@ func (r *FramebufferChangesResolvable) Resolve(ctx context.Context) (interface{}
 	}
 
 	sync.MutateWithSubcommands(ctx, r.Capture, c.Commands, postCmd, nil, postSubCmd)
+
+	numOfAttachments := len(out.attachments)
+	// Since subcommands may have been executed out of order, this will sort them back into the proper order.
+	for ii := 0; ii < numOfAttachments; ii++ {
+		sort.Slice(out.attachments[ii].changes, func(i, j int) bool {
+			return out.attachments[ii].changes[i].After.LessThan(out.attachments[ii].changes[j].After)
+		})
+	}
+
 	return out, nil
 }

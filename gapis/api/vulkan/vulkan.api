@@ -135,9 +135,11 @@ extern bool hasDynamicProperty(const VkPipelineDynamicStateCreateInfo* info, VkD
 extern void enterSubcontext()
 extern void nextSubcontext()
 extern void leaveSubcontext()
-extern void resetSubcontext()
 extern void onPreSubcommand(ref!CommandReference ref)
 extern void onPostSubcommand(ref!CommandReference ref)
+extern void deferSubmit(ref!Submission sub)
+extern void executeDeferredSubmit(ref!Submission sub)
+extern void finishedExecuteDeferredSubmit(ref!Submission sub)
 extern void onCommandAdded(VkCommandBuffer buffer)
 extern void resetCmd(VkCommandBuffer buffer)
 extern ref!PhysicalDevicesAndProperties fetchPhysicalDeviceProperties(VkInstance instance, VkPhysicalDevice[] devs)
@@ -281,6 +283,7 @@ sub ref!ExtensionSet supportedDeviceExtensions() {
   supported.ExtensionNames["VK_KHR_shader_float16_int8"] = true
   supported.ExtensionNames["VK_KHR_shader_atomic_int64"] = true
   supported.ExtensionNames["VK_KHR_driver_properties"] = true
+  supported.ExtensionNames["VK_KHR_timeline_semaphore"] = true
   return supported
 }
 

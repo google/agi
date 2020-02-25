@@ -21,3 +21,8 @@ message FenceState {
   repeated uint64 fences = 1;
   repeated uint32 statuses = 2;
 }
+
+message SemaphoreState {
+  repeated uint64 semaphores = 1;
+  repeated uint64 values = 2;
+}

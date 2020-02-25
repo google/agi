@@ -95,6 +95,11 @@ type Data struct {
 	// created to organize psubmits, command buffers, etc.
 	SubcommandNames   *api.SubCmdIdxTrie
 	SubmissionIndices map[api.CmdSubmissionKey][]api.SubCmdIdx
+	// UnblockingCommands is a map of what command fully unblocks
+	// some other command. Or to put it another way, the command that answers
+	// the question: If we want to play up to command N, what command do we
+	// have to replay until, in order to prevent a deadlock.
+	UnblockingCommands map[api.CmdID]api.CmdID
 }
 
 type subCommandMarkerGroupTrie struct {
@@ -130,6 +135,7 @@ func NewData() *Data {
 		SubcommandLookup:       new(api.SubCmdIdxTrie),
 		SubcommandNames:        new(api.SubCmdIdxTrie),
 		SubmissionIndices:      map[api.CmdSubmissionKey][]api.SubCmdIdx{},
+		UnblockingCommands:     map[api.CmdID]api.CmdID{},
 	}
 }
 
