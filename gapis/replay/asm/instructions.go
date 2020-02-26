@@ -46,7 +46,7 @@ const (
 	//                                      ▕         EXTEND 26       ▕
 )
 
-// Instruction is the interface of all instruction types.
+// baba Instruction is the interface of all instruction types.
 //
 // Encode writes the instruction's opcodes to the binary writer w, translating
 // all pointers to their final, resolved addresses using the PointerResolver r.
