@@ -272,7 +272,7 @@ public class RenderContext implements Fonts.TextMeasurer, AutoCloseable {
     }
   }
 
-  // draws text centered vertically, left truncated to fit into the given width.
+  // draws text centered vertically, right truncated to fit into the given width.
   public void drawTextRightTruncate(
       Fonts.Style style, String text, double x, double y, double w, double h) {
     drawTextRightTruncate(style, text, x, y, w, h, false);

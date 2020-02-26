@@ -121,7 +121,7 @@ public class TrackContainer {
     private final boolean sep;
     protected final BiConsumer<T, Boolean> filter;
     private final PinState pinState;
-    private final Truncate truncate; // false -> left, true -> right
+    private final Truncate truncate;
 
     protected boolean filtered;
     protected boolean hovered = false;
