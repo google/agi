@@ -272,6 +272,18 @@ public class RenderContext implements Fonts.TextMeasurer, AutoCloseable {
     }
   }
 
+  // draws text centered vertically and horizontally, left truncated to fit into the given width.
+  // If the primary text is too long, it falls back to using the alternative.
+  public void drawTextLeftTruncate(
+      Fonts.Style style, String text, String alternative, double x, double y, double w, double h) {
+    Size size = fontContext.measure(style, text);
+    if (size.w < w) {
+      drawText(style, text, x + (w - size.w)/ 2 , y + (h - size.h) / 2);
+    } else {
+      drawTextCenteredLeftTruncate(style, alternative, x, y, w, h);
+    }
+  }
+
   // draws text centered vertically, right truncated to fit into the given width.
   public void drawTextRightTruncate(
       Fonts.Style style, String text, double x, double y, double w, double h) {
@@ -299,18 +311,6 @@ public class RenderContext implements Fonts.TextMeasurer, AutoCloseable {
         break;
       }
       toDisplay = text.substring(0, l) + "...";
-    }
-  }
-
-  // draws text centered vertically and horizontally, left truncated to fit into the given width.
-  // If the primary text is too long, it falls back to using the alternative.
-  public void drawTextLeftTruncate(
-      Fonts.Style style, String text, String alternative, double x, double y, double w, double h) {
-    Size size = fontContext.measure(style, text);
-    if (size.w < w) {
-      drawText(style, text, x + (w - size.w)/ 2 , y + (h - size.h) / 2);
-    } else {
-      drawTextCenteredLeftTruncate(style, alternative, x, y, w, h);
     }
   }
 
