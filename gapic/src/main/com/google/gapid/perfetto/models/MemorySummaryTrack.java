@@ -30,6 +30,7 @@ import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gapid.models.Perfetto;
 import com.google.gapid.perfetto.views.MemorySummaryPanel;
+import com.google.gapid.perfetto.views.TrackContainer.Truncate;
 
 /**
  * {@link Track} containing the total system memory usage data.
@@ -146,7 +147,7 @@ public class MemorySummaryTrack extends Track.WithQueryEngine<MemorySummaryTrack
     MemorySummaryTrack track = new MemorySummaryTrack(
         data.qe, (long)total.max, total.id, free.id, buffers.id, cached.id, swapCached.id);
     data.tracks.addTrack(null, track.getId(), "Memory Usage",
-        single(state -> new MemorySummaryPanel(state, track), true));
+        single(state -> new MemorySummaryPanel(state, track), true, Truncate.left));
     return data;
   }
 

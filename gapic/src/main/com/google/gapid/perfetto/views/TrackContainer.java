@@ -52,20 +52,40 @@ public class TrackContainer {
   private TrackContainer() {
   }
 
+  public static enum Truncate {
+    left {
+      @Override
+      public void drawTextTruncate(RenderContext ctx, Fonts.Style style, String text,
+          double x, double y, double w, double h) {
+        ctx.drawTextLeftTruncate(Fonts.Style.Normal, text, x, y, w, h);
+      }
+    },
+    right {
+      @Override
+      public void drawTextTruncate(RenderContext ctx, Fonts.Style style, String text,
+          double x, double y, double w, double h) {
+        ctx.drawTextRightTruncate(Fonts.Style.Normal, text, x, y, w, h);
+      }
+    };
+
+    public abstract void drawTextTruncate(RenderContext ctx, Fonts.Style style, String text,
+        double x, double y, double w, double h);
+  }
+
   public static <T extends TrackPanel<T>> TrackConfig.Track.UiFactory<Panel> single(
-      TrackConfig.Track.UiFactory<T> track, boolean sep) {
-    return state -> new Single<T>(state, track.createPanel(state), sep, null, true);
+      TrackConfig.Track.UiFactory<T> track, boolean sep, Truncate truncate) {
+    return state -> new Single<T>(state, track.createPanel(state), sep, null, true, truncate);
   }
 
   public static <T extends TrackPanel<T>> TrackConfig.Track.UiFactory<Panel> single(
       TrackConfig.Track.UiFactory<T> track, boolean sep, BiConsumer<T, Boolean> filter,
-      boolean initial) {
+      boolean initial, Truncate truncate) {
     return state -> {
       T panel = track.createPanel(state);
       if (initial) {
         filter.accept(panel, initial);
       }
-      return new Single<T>(state, panel, sep, filter, initial);
+      return new Single<T>(state, panel, sep, filter, initial, truncate);
     };
   }
 
@@ -101,31 +121,33 @@ public class TrackContainer {
     private final boolean sep;
     protected final BiConsumer<T, Boolean> filter;
     private final PinState pinState;
+    private final Truncate truncate; // false -> left, true -> right
 
     protected boolean filtered;
     protected boolean hovered = false;
 
     public Single(State.ForSystemTrace state, T track, boolean sep, BiConsumer<T, Boolean> filter,
-        boolean filtered) {
-      this(track ,sep, filter, filtered, new PinState(state));
+        boolean filtered, Truncate truncate) {
+      this(track ,sep, filter, filtered, new PinState(state), truncate);
     }
 
     private Single(T track, boolean sep, BiConsumer<T, Boolean> filter,
-        boolean filtered, PinState pinState) {
+        boolean filtered, PinState pinState, Truncate truncate) {
       this.track = track;
       this.sep = sep;
       this.filter = filter;
       this.pinState = pinState;
       this.filtered = filtered;
+      this.truncate = truncate;
     }
 
     @Override
     public Single<T> copy() {
-      return new Single<T>(track.copy(), sep, filter, filtered, pinState);
+      return new Single<T>(track.copy(), sep, filter, filtered, pinState, truncate);
     }
 
     private Single<T> copyWithSeparator() {
-      return new Single<T>(track.copy(), true, filter, filtered, pinState);
+      return new Single<T>(track.copy(), true, filter, filtered, pinState, truncate);
     }
 
     @Override
@@ -143,7 +165,7 @@ public class TrackContainer {
     public void render(RenderContext ctx, Repainter repainter) {
       ctx.withClip(0, 0, LABEL_WIDTH, height, () -> {
         ctx.setForegroundColor(colors().textMain);
-        ctx.drawTextLeftTruncate(Fonts.Style.Normal, track.getTitle(), LABEL_OFFSET, 0,
+        truncate.drawTextTruncate(ctx, Fonts.Style.Normal, track.getTitle(), LABEL_OFFSET, 0,
             ((filter == null) ? LABEL_PIN_X  : LABEL_TOGGLE_X) - LABEL_MARGIN - LABEL_OFFSET,
             TITLE_HEIGHT);
         if (filter != null) {

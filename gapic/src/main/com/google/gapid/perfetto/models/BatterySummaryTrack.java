@@ -30,6 +30,7 @@ import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gapid.models.Perfetto;
 import com.google.gapid.perfetto.views.BatterySummaryPanel;
+import com.google.gapid.perfetto.views.TrackContainer.Truncate;
 
 public class BatterySummaryTrack extends Track.WithQueryEngine<BatterySummaryTrack.Data>{
   private static final String VIEW_SQL =
@@ -135,7 +136,7 @@ public class BatterySummaryTrack extends Track.WithQueryEngine<BatterySummaryTra
 
     BatterySummaryTrack track = new BatterySummaryTrack(data.qe, battCap, battCharge, battCurrent);
     data.tracks.addTrack(null, track.getId(), "Battery Usage",
-        single(state -> new BatterySummaryPanel(state, track), true));
+        single(state -> new BatterySummaryPanel(state, track), true, Truncate.left));
     return data;
   }
 
