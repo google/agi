@@ -315,8 +315,8 @@ public class RenderContext implements Fonts.TextMeasurer, AutoCloseable {
   }
 
   public void drawTextTruncate(
-      Fonts.Style style, String text, double x, double y, double w, double h, boolean truncate) {
-    if (truncate) {
+      Fonts.Style style, String text, double x, double y, double w, double h, boolean rightTruncate) {
+    if (rightTruncate) {
       drawTextRightTruncate(style, text, x, y, w, h);
     } else {
       drawTextLeftTruncate(style, text, x, y, w, h);
