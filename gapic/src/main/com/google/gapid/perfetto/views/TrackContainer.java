@@ -53,22 +53,22 @@ public class TrackContainer {
   }
 
   public static enum Truncate {
-    left {
+    Left {
       @Override
-      public void drawTextTruncate(RenderContext ctx, Fonts.Style style, String text,
+      public void drawText(RenderContext ctx, Fonts.Style style, String text,
           double x, double y, double w, double h) {
         ctx.drawTextLeftTruncate(Fonts.Style.Normal, text, x, y, w, h);
       }
     },
-    right {
+    Right {
       @Override
-      public void drawTextTruncate(RenderContext ctx, Fonts.Style style, String text,
+      public void drawText(RenderContext ctx, Fonts.Style style, String text,
           double x, double y, double w, double h) {
         ctx.drawTextRightTruncate(Fonts.Style.Normal, text, x, y, w, h);
       }
     };
 
-    public abstract void drawTextTruncate(RenderContext ctx, Fonts.Style style, String text,
+    public abstract void drawText(RenderContext ctx, Fonts.Style style, String text,
         double x, double y, double w, double h);
   }
 
@@ -165,7 +165,7 @@ public class TrackContainer {
     public void render(RenderContext ctx, Repainter repainter) {
       ctx.withClip(0, 0, LABEL_WIDTH, height, () -> {
         ctx.setForegroundColor(colors().textMain);
-        truncate.drawTextTruncate(ctx, Fonts.Style.Normal, track.getTitle(), LABEL_OFFSET, 0,
+        truncate.drawText(ctx, Fonts.Style.Normal, track.getTitle(), LABEL_OFFSET, 0,
             ((filter == null) ? LABEL_PIN_X  : LABEL_TOGGLE_X) - LABEL_MARGIN - LABEL_OFFSET,
             TITLE_HEIGHT);
         if (filter != null) {

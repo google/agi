@@ -147,7 +147,7 @@ public class MemorySummaryTrack extends Track.WithQueryEngine<MemorySummaryTrack
     MemorySummaryTrack track = new MemorySummaryTrack(
         data.qe, (long)total.max, total.id, free.id, buffers.id, cached.id, swapCached.id);
     data.tracks.addTrack(null, track.getId(), "Memory Usage",
-        single(state -> new MemorySummaryPanel(state, track), true, Truncate.left));
+        single(state -> new MemorySummaryPanel(state, track), true, Truncate.Left));
     return data;
   }
 

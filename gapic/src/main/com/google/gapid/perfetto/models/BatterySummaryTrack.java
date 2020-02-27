@@ -136,7 +136,7 @@ public class BatterySummaryTrack extends Track.WithQueryEngine<BatterySummaryTra
 
     BatterySummaryTrack track = new BatterySummaryTrack(data.qe, battCap, battCharge, battCurrent);
     data.tracks.addTrack(null, track.getId(), "Battery Usage",
-        single(state -> new BatterySummaryPanel(state, track), true, Truncate.left));
+        single(state -> new BatterySummaryPanel(state, track), true, Truncate.Left));
     return data;
   }
 
