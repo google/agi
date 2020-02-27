@@ -29,7 +29,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gapid.models.Perfetto;
-import com.google.gapid.perfetto.canvas.RenderContext.Truncate;
 import com.google.gapid.perfetto.views.MemorySummaryPanel;
 
 /**
@@ -147,7 +146,7 @@ public class MemorySummaryTrack extends Track.WithQueryEngine<MemorySummaryTrack
     MemorySummaryTrack track = new MemorySummaryTrack(
         data.qe, (long)total.max, total.id, free.id, buffers.id, cached.id, swapCached.id);
     data.tracks.addTrack(null, track.getId(), "Memory Usage",
-        single(state -> new MemorySummaryPanel(state, track), true, Truncate.Left));
+        single(state -> new MemorySummaryPanel(state, track), true, false));
     return data;
   }
 

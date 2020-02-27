@@ -35,7 +35,6 @@ import com.google.gapid.perfetto.canvas.Area;
 import com.google.gapid.perfetto.canvas.Fonts;
 import com.google.gapid.perfetto.canvas.Panel;
 import com.google.gapid.perfetto.canvas.RenderContext;
-import com.google.gapid.perfetto.canvas.RenderContext.Truncate;
 import com.google.gapid.perfetto.models.TrackConfig;
 
 import org.eclipse.swt.SWT;
@@ -54,19 +53,19 @@ public class TrackContainer {
   }
 
   public static <T extends TrackPanel<T>> TrackConfig.Track.UiFactory<Panel> single(
-      TrackConfig.Track.UiFactory<T> track, boolean sep, Truncate truncate) {
+      TrackConfig.Track.UiFactory<T> track, boolean sep, boolean truncate) {
     return state -> new Single<T>(state, track.createPanel(state), sep, null, true, truncate);
   }
 
   public static <T extends TrackPanel<T>> TrackConfig.Track.UiFactory<Panel> single(
       TrackConfig.Track.UiFactory<T> track, boolean sep, BiConsumer<T, Boolean> filter,
-      boolean initial, Truncate truncate) {
+      boolean initial, boolean rightTruncate) {
     return state -> {
       T panel = track.createPanel(state);
       if (initial) {
         filter.accept(panel, initial);
       }
-      return new Single<T>(state, panel, sep, filter, initial, truncate);
+      return new Single<T>(state, panel, sep, filter, initial, rightTruncate);
     };
   }
 
@@ -102,18 +101,18 @@ public class TrackContainer {
     private final boolean sep;
     protected final BiConsumer<T, Boolean> filter;
     private final PinState pinState;
-    private final Truncate truncate;
+    private final boolean truncate; // False -> Left truncate, True -> Right truncate
 
     protected boolean filtered;
     protected boolean hovered = false;
 
     public Single(State.ForSystemTrace state, T track, boolean sep, BiConsumer<T, Boolean> filter,
-        boolean filtered, Truncate truncate) {
+        boolean filtered, boolean truncate) {
       this(track ,sep, filter, filtered, new PinState(state), truncate);
     }
 
     private Single(T track, boolean sep, BiConsumer<T, Boolean> filter,
-        boolean filtered, PinState pinState, Truncate truncate) {
+        boolean filtered, PinState pinState, boolean truncate) {
       this.track = track;
       this.sep = sep;
       this.filter = filter;
@@ -146,7 +145,7 @@ public class TrackContainer {
     public void render(RenderContext ctx, Repainter repainter) {
       ctx.withClip(0, 0, LABEL_WIDTH, height, () -> {
         ctx.setForegroundColor(colors().textMain);
-        ctx.drawTextTruncated(Fonts.Style.Normal, track.getTitle(), LABEL_OFFSET, 0,
+        ctx.drawTextTruncate(Fonts.Style.Normal, track.getTitle(), LABEL_OFFSET, 0,
             ((filter == null) ? LABEL_PIN_X  : LABEL_TOGGLE_X) - LABEL_MARGIN - LABEL_OFFSET,
             TITLE_HEIGHT, truncate);
         if (filter != null) {
