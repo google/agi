@@ -75,6 +75,7 @@ func (n *FramebufferObservation) Path() *Any    { return &Any{Path: &Any_FBO{n}}
 func (n *Field) Path() *Any                     { return &Any{Path: &Any_Field{n}} }
 func (n *GlobalState) Path() *Any               { return &Any{Path: &Any_GlobalState{n}} }
 func (n *ImageInfo) Path() *Any                 { return &Any{Path: &Any_ImageInfo{n}} }
+func (n *ImageView) Path() *Any                 { return &Any{Path: &Any_ImageView{n}} }
 func (n *MapIndex) Path() *Any                  { return &Any{Path: &Any_MapIndex{n}} }
 func (n *Memory) Path() *Any                    { return &Any{Path: &Any_Memory{n}} }
 func (n *MemoryAsType) Path() *Any              { return &Any{Path: &Any_MemoryAsType{n}} }
@@ -115,6 +116,7 @@ func (n FramebufferObservation) Parent() Node    { return n.Command }
 func (n Field) Parent() Node                     { return oneOfNode(n.Struct) }
 func (n GlobalState) Parent() Node               { return n.After }
 func (n ImageInfo) Parent() Node                 { return nil }
+func (n ImageView) Parent() Node                 { return nil }
 func (n MapIndex) Parent() Node                  { return oneOfNode(n.Map) }
 func (n Memory) Parent() Node                    { return n.After }
 func (n MemoryAsType) Parent() Node              { return n.After }
@@ -152,6 +154,7 @@ func (n *Events) SetParent(p Node)                    { n.Capture, _ = p.(*Captu
 func (n *FramebufferObservation) SetParent(p Node)    { n.Command, _ = p.(*Command) }
 func (n *GlobalState) SetParent(p Node)               { n.After, _ = p.(*Command) }
 func (n *ImageInfo) SetParent(p Node)                 {}
+func (n *ImageView) SetParent(p Node)                 {}
 func (n *Memory) SetParent(p Node)                    { n.After, _ = p.(*Command) }
 func (n *MemoryAsType) SetParent(p Node)              { n.After, _ = p.(*Command) }
 func (n *Metrics) SetParent(p Node)                   { n.Command, _ = p.(*Command) }
@@ -231,6 +234,9 @@ func (n GlobalState) Format(f fmt.State, c rune) { fmt.Fprintf(f, "%v.global-sta
 
 // Format implements fmt.Formatter to print the path.
 func (n ImageInfo) Format(f fmt.State, c rune) { fmt.Fprintf(f, "image-info<%x>", n.ID) }
+
+// Format implements fmt.Formatter to print the path.
+func (n ImageView) Format(f fmt.State, c rune) { fmt.Fprintf(f, "image-view<%s>", n.ID) }
 
 // Format implements fmt.Formatter to print the path.
 func (n MapIndex) Format(f fmt.State, c rune) { fmt.Fprintf(f, "%v[%x]", n.Parent(), n.Key) }
@@ -499,6 +505,11 @@ func NewBlob(id id.ID) *Blob {
 // NewImageInfo returns a new ImageInfo path node with the given ID.
 func NewImageInfo(id id.ID) *ImageInfo {
 	return &ImageInfo{ID: image.NewID(id)}
+}
+
+// NewImageView returns a new ImageView path node
+func NewImageView(viewImage id.ID) *ImageView {
+	return &ImageView{ID: NewID(viewImage)}
 }
 
 // NewField returns a new Field path.

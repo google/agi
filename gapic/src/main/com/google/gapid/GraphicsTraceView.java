@@ -108,6 +108,11 @@ public class GraphicsTraceView extends Composite implements MainWindow.MainView 
       public void onStateFollowed(Path.Any path) {
         tabs.showTab(MainTab.Type.ApiState);
       }
+
+      @Override
+      public void onTextureFollowed(Path.ImageView path) {
+        tabs.showTab(MainTab.Type.Textures);
+      }
     });
   }
 

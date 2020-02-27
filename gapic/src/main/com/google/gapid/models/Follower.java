@@ -231,6 +231,9 @@ public class Follower {
       case STATE:
         listeners.fire().onStateFollowed(path);
         break;
+      case IMAGE_VIEW:
+        listeners.fire().onTextureFollowed(path.getImageView());
+        break;
       default:
         LOG.log(WARNING, "Unknown follow path result: " + path);
     }
@@ -259,6 +262,8 @@ public class Follower {
      * Event indicating that a link with the given path to a memory region was followed.
      */
     public default void onMemoryFollowed(Path.Memory path)  { /* empty */ }
+
+    public default void onTextureFollowed(Path.ImageView path) {}
   }
 
   public static interface Prefetcher<K> {

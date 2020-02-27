@@ -44,27 +44,28 @@ message Any {
     Field field = 18;
     GlobalState global_state = 19;
     ImageInfo image_info = 20;
-    MapIndex map_index = 21;
-    Memory memory = 22;
-    MemoryAsType memoryAsType = 23;
-    Mesh mesh = 24;
-    Metrics metrics = 25;
-    Messages messages = 26;
-    MultiResourceData multi_resource_data = 27;
-    Parameter parameter = 28;
-    Pipelines pipelines = 29;
-    Report report = 30;
-    ResourceData resource_data = 31;
-    Resources resources = 32;
-    Result result = 33;
-    Slice slice = 34;
-    State state = 35;
-    StateTree state_tree = 36;
-    StateTreeNode state_tree_node = 37;
-    StateTreeNodeForPath state_tree_node_for_path = 38;
-    Stats stats = 39;
-    Thumbnail thumbnail = 40;
-    Type type = 41;
+    ImageView image_view = 21;
+    MapIndex map_index = 22;
+    Memory memory = 23;
+    MemoryAsType memoryAsType = 24;
+    Mesh mesh = 25;
+    Metrics metrics = 26;
+    Messages messages = 27;
+    MultiResourceData multi_resource_data = 28;
+    Parameter parameter = 29;
+    Pipelines pipelines = 30;
+    Report report = 31;
+    ResourceData resource_data = 32;
+    Resources resources = 33;
+    Result result = 34;
+    Slice slice = 35;
+    State state = 36;
+    StateTree state_tree = 37;
+    StateTreeNode state_tree_node = 38;
+    StateTreeNodeForPath state_tree_node_for_path = 39;
+    Stats stats = 40;
+    Thumbnail thumbnail = 41;
+    Type type = 42;
   }
 }
 
@@ -294,6 +295,10 @@ message CommandTreeNodeForCommand {
 // ImageInfo is a path that refers to a image.Info.
 message ImageInfo {
   image.ID ID = 1;  // The ImageInfo's unique identifier.
+}
+
+message ImageView {
+  ID ID = 1;
 }
 
 // MapIndex is a path to a value held inside a map.
