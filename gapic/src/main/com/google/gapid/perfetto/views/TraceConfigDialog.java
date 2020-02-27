@@ -512,7 +512,7 @@ public class TraceConfigDialog extends DialogBase {
 
         if (gpuCaps.getHasFrameLifecycle()) {
           gpuFrame = createCheckbox(
-              gpuGroup, "Frame Lifecycle", sGpu.getSurfaceFlinger(), e -> updateGpu());
+              gpuGroup, "Frame Lifecycle", false, e -> updateGpu());
         } else {
           gpuFrame = null;
         }
