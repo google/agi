@@ -29,8 +29,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gapid.models.Perfetto;
+import com.google.gapid.perfetto.canvas.RenderContext.Truncate;
 import com.google.gapid.perfetto.views.BatterySummaryPanel;
-import com.google.gapid.perfetto.views.TrackContainer.Truncate;
 
 public class BatterySummaryTrack extends Track.WithQueryEngine<BatterySummaryTrack.Data>{
   private static final String VIEW_SQL =

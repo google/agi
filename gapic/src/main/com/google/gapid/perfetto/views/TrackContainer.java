@@ -35,6 +35,7 @@ import com.google.gapid.perfetto.canvas.Area;
 import com.google.gapid.perfetto.canvas.Fonts;
 import com.google.gapid.perfetto.canvas.Panel;
 import com.google.gapid.perfetto.canvas.RenderContext;
+import com.google.gapid.perfetto.canvas.RenderContext.Truncate;
 import com.google.gapid.perfetto.models.TrackConfig;
 
 import org.eclipse.swt.SWT;
@@ -50,26 +51,6 @@ import java.util.function.BiConsumer;
  */
 public class TrackContainer {
   private TrackContainer() {
-  }
-
-  public static enum Truncate {
-    Left {
-      @Override
-      public void drawText(RenderContext ctx, Fonts.Style style, String text,
-          double x, double y, double w, double h) {
-        ctx.drawTextLeftTruncate(Fonts.Style.Normal, text, x, y, w, h);
-      }
-    },
-    Right {
-      @Override
-      public void drawText(RenderContext ctx, Fonts.Style style, String text,
-          double x, double y, double w, double h) {
-        ctx.drawTextRightTruncate(Fonts.Style.Normal, text, x, y, w, h);
-      }
-    };
-
-    public abstract void drawText(RenderContext ctx, Fonts.Style style, String text,
-        double x, double y, double w, double h);
   }
 
   public static <T extends TrackPanel<T>> TrackConfig.Track.UiFactory<Panel> single(
@@ -165,9 +146,9 @@ public class TrackContainer {
     public void render(RenderContext ctx, Repainter repainter) {
       ctx.withClip(0, 0, LABEL_WIDTH, height, () -> {
         ctx.setForegroundColor(colors().textMain);
-        truncate.drawText(ctx, Fonts.Style.Normal, track.getTitle(), LABEL_OFFSET, 0,
+        ctx.drawTextTruncated(Fonts.Style.Normal, track.getTitle(), LABEL_OFFSET, 0,
             ((filter == null) ? LABEL_PIN_X  : LABEL_TOGGLE_X) - LABEL_MARGIN - LABEL_OFFSET,
-            TITLE_HEIGHT);
+            TITLE_HEIGHT, truncate);
         if (filter != null) {
           ctx.drawIcon(filtered ? unfoldMore(ctx.theme) : unfoldLess(ctx.theme),
               LABEL_TOGGLE_X, 0, TITLE_HEIGHT);

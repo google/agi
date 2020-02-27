@@ -314,6 +314,15 @@ public class RenderContext implements Fonts.TextMeasurer, AutoCloseable {
     }
   }
 
+  public void drawTextTruncated(
+      Fonts.Style style, String text, double x, double y, double w, double h, Truncate truncate) {
+    if (truncate == Truncate.Left) {
+      drawTextLeftTruncate(style, text, x, y, w, h);
+    } else {
+      drawTextRightTruncate(style, text, x, y, w, h);
+    }
+  }
+
   // draws the text centered vertically and on the left of x.
   public void drawTextRightJustified(Fonts.Style style, String text, double x, double y, double h) {
     Size size = fontContext.measure(style, text);
@@ -406,6 +415,11 @@ public class RenderContext implements Fonts.TextMeasurer, AutoCloseable {
 
   private static Rectangle rect(double x, double y, double w, double h) {
     return new Rectangle(scale(x), scale(y), scale(w), scale(h));
+  }
+
+  public static enum Truncate {
+    Left,
+    Right,
   }
 
   public class Path {

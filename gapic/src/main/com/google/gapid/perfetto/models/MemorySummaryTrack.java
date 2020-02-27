@@ -29,8 +29,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gapid.models.Perfetto;
+import com.google.gapid.perfetto.canvas.RenderContext.Truncate;
 import com.google.gapid.perfetto.views.MemorySummaryPanel;
-import com.google.gapid.perfetto.views.TrackContainer.Truncate;
 
 /**
  * {@link Track} containing the total system memory usage data.
