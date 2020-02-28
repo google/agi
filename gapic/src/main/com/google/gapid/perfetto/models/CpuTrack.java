@@ -49,8 +49,10 @@ import java.util.function.Consumer;
  */
 public class CpuTrack extends Track.WithQueryEngine<CpuTrack.Data> {
   private static final String SUMMARY_SQL =
-      "select quantum_ts, sum(dur)/cast(%d as float) " +
-      "from %s where cpu = %d and utid != 0 " +
+      "select quantum_ts, id, utid, sum(dur)/cast(%d as float) util from(" +
+          "select *, first_value(row_id) over win id, first_value(utid) over win utid " +
+          "from %s where cpu = %d and utid != 0 " +
+          "window win as (partition by quantum_ts order by dur desc)) " +
       "group by quantum_ts";
   private static final String SLICES_SQL =
       "select ts, dur, utid, row_id from %s where cpu = %d and utid != 0";
@@ -96,8 +98,13 @@ public class CpuTrack extends Track.WithQueryEngine<CpuTrack.Data> {
 
   private ListenableFuture<Data> computeSummary(DataRequest req, Window w) {
     return transform(qe.query(summarySql(w.bucketSize)), result -> {
-      Data data = new Data(req, w.bucketSize, new double[w.getNumberOfBuckets()]);
-      result.forEachRow(($, r) -> data.utilizations[r.getInt(0)] = r.getDouble(1));
+      int len = w.getNumberOfBuckets();
+      Data data = new Data(req, w.bucketSize, new long[len], new long[len], new double[len]);
+      result.forEachRow(($, r) -> {
+        data.ids[r.getInt(0)] = r.getLong(1);
+        data.utids[r.getInt(0)] = r.getLong(2);
+        data.utilizations[r.getInt(0)] = r.getDouble(3);
+      });
       return data;
     });
   }
@@ -163,33 +170,33 @@ public class CpuTrack extends Track.WithQueryEngine<CpuTrack.Data> {
 
   public static class Data extends Track.Data {
     public final Kind kind;
+    public final long[] ids;
+    public final long[] utids;
     // Summary.
     public final long bucketSize;
     public final double[] utilizations;
     // Slice.
-    public final long[] ids;
     public final long[] starts;
     public final long[] ends;
-    public final long[] utids;
 
-    public Data(DataRequest request, long bucketSize, double[] utilizations) {
+    public Data(DataRequest request, long bucketSize, long[] ids, long[] utids, double[] utilizations) {
       super(request);
       this.kind = Kind.summary;
+      this.ids = ids;
+      this.utids = utids;
       this.bucketSize = bucketSize;
       this.utilizations = utilizations;
-      this.ids = null;
       this.starts = null;
       this.ends = null;
-      this.utids = null;
     }
 
     public Data(DataRequest request, long[] ids, long[] starts, long[] ends, long[] utids) {
       super(request);
       this.kind = Kind.slice;
       this.ids = ids;
+      this.utids = utids;
       this.starts = starts;
       this.ends = ends;
-      this.utids = utids;
       this.bucketSize = 0;
       this.utilizations = null;
     }

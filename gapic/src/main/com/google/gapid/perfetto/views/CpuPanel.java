@@ -97,6 +97,9 @@ public class CpuPanel extends TrackPanel<CpuPanel> implements Selectable {
   private void renderSummary(RenderContext ctx, CpuTrack.Data data, double w, double h) {
     long tStart = data.request.range.start;
     int start = Math.max(0, (int)((state.getVisibleTime().start - tStart) / data.bucketSize));
+    Selection<Long> selected = state.getSelection(Selection.Kind.Cpu);
+    List<Integer> visibleSelected = Lists.newArrayList();
+
     gradient(track.getCpu().id).applyBase(ctx);
     ctx.path(path -> {
       path.moveTo(0, h);
@@ -107,11 +110,22 @@ public class CpuPanel extends TrackPanel<CpuPanel> implements Selectable {
         path.lineTo(x, y);
         path.lineTo(x, nextY);
         y = nextY;
+        if (selected.contains(data.ids[i])) {
+          visibleSelected.add(i);
+        }
       }
       path.lineTo(x, h);
       path.close();
       ctx.fillPath(path);
     });
+
+    // Draw Highlight line after the whole graph is rendered, so that the highlight is on the top.
+    ctx.setBackgroundColor(gradient(track.getCpu().id).highlight);
+    for (int index : visibleSelected) {
+      ctx.fillRect(state.timeToPx(tStart + index * data.bucketSize),
+          Math.round(h * (1 - data.utilizations[index])) - 1,
+          state.durationToDeltaPx(data.bucketSize), 3);
+    }
 
     if (hovered != null && hovered.bucket >= start) {
       double x = state.timeToPx(tStart + hovered.bucket * data.bucketSize + data.bucketSize / 2);
@@ -197,7 +211,7 @@ public class CpuPanel extends TrackPanel<CpuPanel> implements Selectable {
 
     switch (data.kind) {
       case slice: return sliceHover(data, m, x, mods);
-      case summary: return summaryHover(data, m, x);
+      case summary: return summaryHover(data, m, x, mods);
       default: return Hover.NONE;
     }
   }
@@ -251,7 +265,7 @@ public class CpuPanel extends TrackPanel<CpuPanel> implements Selectable {
     return Hover.NONE;
   }
 
-  private Hover summaryHover(CpuTrack.Data data, Fonts.TextMeasurer m, double x) {
+  private Hover summaryHover(CpuTrack.Data data, Fonts.TextMeasurer m, double x, int mods) {
     long time = state.pxToTime(x);
     int bucket = (int)((time - data.request.range.start) / data.bucketSize);
     if (bucket < 0 || bucket >= data.utilizations.length) {
@@ -267,6 +281,9 @@ public class CpuPanel extends TrackPanel<CpuPanel> implements Selectable {
         data.request.range.start + hovered.bucket * data.bucketSize + data.bucketSize / 2);
     double dx = HOVER_PADDING + hovered.size.w + HOVER_PADDING;
     double dy = height;
+    long id = data.ids[bucket];
+    long utid = data.utids[bucket];
+
     return new Hover() {
       @Override
       public Area getRedraw() {
@@ -276,6 +293,18 @@ public class CpuPanel extends TrackPanel<CpuPanel> implements Selectable {
       @Override
       public void stop() {
         hovered = null;
+      }
+
+      @Override
+      public boolean click() {
+        if ((mods & SWT.MOD1) == SWT.MOD1) {
+          state.addSelection(Selection.Kind.Cpu, track.getSlice(id));
+          state.addSelectedThread(state.getThreadInfo(utid));
+        } else {
+          state.setSelection(Selection.Kind.Cpu, track.getSlice(id));
+          state.setSelectedThread(state.getThreadInfo(utid));
+        }
+        return true;
       }
     };
   }
