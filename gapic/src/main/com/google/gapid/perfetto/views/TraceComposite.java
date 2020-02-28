@@ -56,16 +56,24 @@ public abstract class TraceComposite<S extends State> extends Composite implemen
 
   private final RootPanel<S> rootPanel;
   private final PanelCanvas canvas;
+  protected final TopBar topBar;
+  protected FilterDialog filterDialog;
 
   public TraceComposite(Composite parent, Analytics analytics, Theme theme) {
     super(parent, SWT.NONE);
     this.state = createState();
     this.rootPanel = createRootPanel();
+    this.filterDialog = createFilterDialog();
     state.addListener(this);
 
     setLayout(withMargin(new GridLayout(1, false), 0, 0));
-    TopBar topBar = withLayoutData(new TopBar(this, analytics, theme),
+    topBar = withLayoutData(new TopBar(this, analytics, theme),
         new GridData(SWT.FILL, SWT.TOP, true, false));
+    if (filterDialog != null) {
+      withLayoutData(
+          createButtonWithImage(topBar, theme.filter(), e -> filterDialog.open()),
+          new GridData(SWT.END, SWT.CENTER, false, false));
+    }
     canvas = withLayoutData(new PanelCanvas(this, SWT.H_SCROLL | SWT.V_SCROLL, theme, rootPanel),
         new GridData(SWT.FILL, SWT.FILL, true, true));
 
@@ -200,6 +208,7 @@ public abstract class TraceComposite<S extends State> extends Composite implemen
 
   protected abstract S createState();
   protected abstract RootPanel<S> createRootPanel();
+  protected abstract FilterDialog createFilterDialog();
 
   public S getState() {
     return state;
@@ -292,7 +301,7 @@ public abstract class TraceComposite<S extends State> extends Composite implemen
 
     public TopBar(Composite parent, Analytics analytics, Theme theme) {
       super(parent, SWT.NONE);
-      setLayout(new GridLayout(3, false));
+      setLayout(new GridLayout(4, false));
       withLayoutData(createLabel(this, "Mode:"),
           new GridData(SWT.BEGINNING, SWT.CENTER, false, false));
       toolBar = withLayoutData(new ToolBar(this, SWT.FLAT | SWT.HORIZONTAL | SWT.TRAIL),

@@ -43,10 +43,28 @@ public class TrackConfig {
     public final String name;
     protected final T uiFactory;
 
+    // Track filtering info
+    protected boolean checked;
+    public Element<?> parent;
+
     public Element(String id, String name, T uiFactory) {
       this.id = id;
       this.name = name;
       this.uiFactory = uiFactory;
+      this.checked = true;
+      this.parent = null;
+    }
+
+    public void setChecked(boolean checked) {
+      this.checked = checked;
+    }
+
+    public boolean getChecked() {
+      return checked;
+    }
+
+    public void setParent(Element<?> parent) {
+      this.parent = parent;
     }
 
     public abstract CopyablePanel<?> createUi(State.ForSystemTrace state);
@@ -59,6 +77,9 @@ public class TrackConfig {
 
     @Override
     public T createUi(State.ForSystemTrace state) {
+      if (!checked) {
+        return null;
+      }
       return uiFactory.createPanel(state);
     }
 
@@ -77,9 +98,28 @@ public class TrackConfig {
 
     @Override
     public CopyablePanel<?> createUi(State.ForSystemTrace state) {
+      if (!checked) {
+        return null;
+      }
       ImmutableList.Builder<CopyablePanel<?>> children = ImmutableList.builder();
-      tracks.forEach(track -> children.add(track.createUi(state)));
+      tracks.forEach(track -> {
+        CopyablePanel<?> panel = track.createUi(state);
+        if (panel != null) {
+          children.add(panel);
+        }
+      });
       return uiFactory.createPanel(state, children.build());
+    }
+
+    @Override
+    public void setChecked(boolean checked) {
+      this.checked = checked;
+      tracks.forEach(track -> track.setChecked(checked));
+    }
+
+    // Set the checked for the group but without propagating to the children
+    public void setCheckedWithoutChildren(boolean checked) {
+      this.checked = checked;
     }
 
     public interface UiFactory {
@@ -138,8 +178,8 @@ public class TrackConfig {
 
     private Group buildGroup(String id) {
       Preconditions.checkState(groups.containsKey(id));
-      ElementBuilder track = (id == null) ? ROOT : tracks.get(id);
-      Preconditions.checkState(track != null);
+      ElementBuilder trackBuilder = (id == null) ? ROOT : tracks.get(id);
+      Preconditions.checkState(trackBuilder != null);
       ImmutableList.Builder<Element<?>> children = ImmutableList.builder();
       for (ElementBuilder child : groups.get(id)) {
         if (groups.containsKey(child.id)) {
@@ -148,7 +188,9 @@ public class TrackConfig {
           children.add(child.track());
         }
       }
-      return track.group(children.build());
+      Group result = trackBuilder.group(children.build());
+      result.tracks.forEach(track -> track.setParent(result));
+      return result;
     }
 
     private static class ElementBuilder {

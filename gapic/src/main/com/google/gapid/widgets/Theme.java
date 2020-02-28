@@ -79,6 +79,7 @@ public interface Theme {
   @Icon(file = "flag_white.png") public Image flagDark();
   @Icon(file = "flag_white_filled.png") public Image flagFilledDark();
   @Icon(file = "flag_greyed.png") public Image flagGreyed();
+  @Icon(file = "filter.png") public Image filter();
   @Icon(file = "flat.png") public Image flat();
   @Icon(file = "flip_vertically.png") public Image flipVertically();
   @Icon(file = "fullscreen.png") public Image fullscreen();

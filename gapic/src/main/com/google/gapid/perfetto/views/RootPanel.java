@@ -531,7 +531,10 @@ public abstract class RootPanel<S extends State> extends Panel.Base implements S
         top.add(timeline);
         top.add(state.getPinnedTracks());
         for (TrackConfig.Element<?> el : state.getTracks().elements) {
-          bottom.add(el.createUi(state));
+          Panel panel = el.createUi(state);
+          if (panel != null) {
+            bottom.add(panel);
+          }
         }
       }
     }

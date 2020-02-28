@@ -19,6 +19,7 @@ import com.google.gapid.models.Capture;
 import com.google.gapid.models.Models;
 import com.google.gapid.models.Perfetto;
 import com.google.gapid.perfetto.models.Selection;
+import com.google.gapid.perfetto.views.FilterDialog;
 import com.google.gapid.perfetto.views.RootPanel;
 import com.google.gapid.perfetto.views.SelectionView;
 import com.google.gapid.perfetto.views.State;
@@ -81,6 +82,11 @@ public class TraceView extends Composite
       @Override
       protected RootPanel<State.ForSystemTrace> createRootPanel() {
         return new RootPanel.ForSystemTrace(state, models.settings);
+      }
+
+      @Override
+      protected FilterDialog createFilterDialog() {
+        return new FilterDialog(parent.getShell(), theme, state);
       }
     };
   }

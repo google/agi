@@ -61,8 +61,6 @@ public class TrackSelector extends Composite implements State.Listener {
     tree = createTree(container, theme);
     tree.getTree().setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
-    state.addListener(this);
-
     search.addListener(SWT.Modify, e -> {
       String query = search.getText().trim().toLowerCase();
       if (query.isEmpty()) {
@@ -123,7 +121,7 @@ public class TrackSelector extends Composite implements State.Listener {
 
       @Override
       public Object getParent(Object element) {
-        return null;
+        return ((TrackConfig.Element<?>)element).parent;
       }
     });
     tree.setCheckStateProvider(new ICheckStateProvider() {
@@ -134,7 +132,7 @@ public class TrackSelector extends Composite implements State.Listener {
 
       @Override
       public boolean isChecked(Object element) {
-        return true;
+        return ((TrackConfig.Element<?>)element).getChecked();
       }
     });
     tree.setLabelProvider(new DelegatingStyledCellLabelProvider(new ElementLabelProvider(theme)));

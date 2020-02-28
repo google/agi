@@ -42,6 +42,7 @@ import com.google.gapid.perfetto.models.GpuInfo;
 import com.google.gapid.perfetto.models.ProcessInfo;
 import com.google.gapid.perfetto.models.SliceTrack;
 import com.google.gapid.perfetto.models.ThreadInfo;
+import com.google.gapid.perfetto.views.FilterDialog;
 import com.google.gapid.perfetto.views.GpuQueuePanel;
 import com.google.gapid.perfetto.views.RootPanel;
 import com.google.gapid.perfetto.views.State;
@@ -218,6 +219,11 @@ public class ProfileView extends Composite implements Tab, Capture.Listener, Pro
           // Do nothing.
         }
       };
+    }
+
+    @Override
+    protected FilterDialog createFilterDialog() {
+      return null;
     }
 
     protected abstract Settings settings();
