@@ -21,6 +21,7 @@ import static com.google.gapid.perfetto.views.StyleConstants.TRACK_MARGIN;
 import static com.google.gapid.perfetto.views.StyleConstants.colors;
 import static com.google.gapid.perfetto.views.StyleConstants.gradient;
 import static com.google.gapid.perfetto.views.StyleConstants.mainGradient;
+import static com.google.gapid.util.MoreFutures.transform;
 
 import com.google.common.collect.Lists;
 import com.google.gapid.perfetto.TimeSpan;
@@ -29,6 +30,7 @@ import com.google.gapid.perfetto.canvas.Fonts;
 import com.google.gapid.perfetto.canvas.RenderContext;
 import com.google.gapid.perfetto.canvas.Size;
 import com.google.gapid.perfetto.models.CpuInfo;
+import com.google.gapid.perfetto.models.CpuTrack;
 import com.google.gapid.perfetto.models.ProcessSummaryTrack;
 import com.google.gapid.perfetto.models.Selection;
 import com.google.gapid.perfetto.models.ThreadInfo;
@@ -123,8 +125,11 @@ public class ProcessSummaryPanel extends TrackPanel<ProcessSummaryPanel> {
         path.lineTo(x, y);
         path.lineTo(x, nextY);
         y = nextY;
-        if (selected.contains(data.ids[i])) {
-          visibleSelected.add(i);
+        for (String id : data.concatedIds[i].split(",")) {
+          if (!id.isEmpty() && selected.contains(Long.parseLong(id))) {
+            visibleSelected.add(i);
+            break;
+          }
         }
       }
       path.lineTo(x, h);
@@ -292,8 +297,7 @@ public class ProcessSummaryPanel extends TrackPanel<ProcessSummaryPanel> {
         data.request.range.start + hovered.bucket * data.bucketSize + data.bucketSize / 2);
     double dx = HOVER_PADDING + hovered.size.w + HOVER_PADDING;
     double dy = height;
-    long id = data.ids[bucket];
-    long utid = data.utids[bucket];
+    String ids = data.concatedIds[bucket];
 
     return new Hover() {
       @Override
@@ -308,15 +312,20 @@ public class ProcessSummaryPanel extends TrackPanel<ProcessSummaryPanel> {
 
       @Override
       public boolean click() {
-        if (utid < 0) {
+        if (ids.isEmpty()) {
           return false;
         }
         if ((mods & SWT.MOD1) == SWT.MOD1) {
-          state.addSelection(Selection.Kind.Cpu, track.getSlice(id));
-          state.addSelectedThread(state.getThreadInfo(utid));
+          state.addSelection(Selection.Kind.Cpu, transform(track.getSlices(ids), r -> {
+            r.stream().forEach(s -> state.addSelectedThread(state.getThreadInfo(s.utid)));
+            return new CpuTrack.SlicesBuilder(r).build();
+          }));
         } else {
-          state.setSelection(Selection.Kind.Cpu, track.getSlice(id));
-          state.setSelectedThread(state.getThreadInfo(utid));
+          state.clearSelectedThreads();
+          state.setSelection(Selection.Kind.Cpu, transform(track.getSlices(ids), r -> {
+            r.stream().forEach(s -> state.addSelectedThread(state.getThreadInfo(s.utid)));
+            return new CpuTrack.SlicesBuilder(r).build();
+          }));
         }
         return true;
       }
