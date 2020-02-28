@@ -27,6 +27,7 @@ import static java.util.stream.Collectors.joining;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gapid.perfetto.models.CpuTrack.Slice;
+import java.util.Arrays;
 
 /**
  * {@link Track} containing CPU usage data of all threads in a process.
@@ -80,7 +81,10 @@ public class ProcessSummaryTrack extends Track.WithQueryEngine<ProcessSummaryTra
   private ListenableFuture<Data> computeSummary(DataRequest req, Window w) {
     return transform(qe.query(summarySql(w.bucketSize)), result -> {
       int len = w.getNumberOfBuckets();
-      Data data = new Data(req, w.bucketSize, new long[len], new long[len], new double[len]);
+      long[] ids = new long[len], utids = new long[len];
+      Arrays.fill(ids, -1);
+      Arrays.fill(utids, -1);
+      Data data = new Data(req, w.bucketSize, ids, utids, new double[len]);
       result.forEachRow(($, r) -> {
         data.ids[r.getInt(0)] = r.getLong(1);
         data.utids[r.getInt(0)] = r.getLong(2);

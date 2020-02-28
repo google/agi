@@ -36,6 +36,7 @@ import com.google.gapid.perfetto.views.CpuSliceSelectionView;
 import com.google.gapid.perfetto.views.CpuSlicesSelectionView;
 import com.google.gapid.perfetto.views.State;
 
+import java.util.Arrays;
 import org.eclipse.swt.widgets.Composite;
 
 import java.util.Collections;
@@ -99,7 +100,10 @@ public class CpuTrack extends Track.WithQueryEngine<CpuTrack.Data> {
   private ListenableFuture<Data> computeSummary(DataRequest req, Window w) {
     return transform(qe.query(summarySql(w.bucketSize)), result -> {
       int len = w.getNumberOfBuckets();
-      Data data = new Data(req, w.bucketSize, new long[len], new long[len], new double[len]);
+      long[] ids = new long[len], utids = new long[len];
+      Arrays.fill(ids, -1);
+      Arrays.fill(utids, -1);
+      Data data = new Data(req, w.bucketSize, ids, utids, new double[len]);
       result.forEachRow(($, r) -> {
         data.ids[r.getInt(0)] = r.getLong(1);
         data.utids[r.getInt(0)] = r.getLong(2);

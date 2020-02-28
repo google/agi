@@ -308,6 +308,9 @@ public class ProcessSummaryPanel extends TrackPanel<ProcessSummaryPanel> {
 
       @Override
       public boolean click() {
+        if (utid < 0) {
+          return false;
+        }
         if ((mods & SWT.MOD1) == SWT.MOD1) {
           state.addSelection(Selection.Kind.Cpu, track.getSlice(id));
           state.addSelectedThread(state.getThreadInfo(utid));
