@@ -50,10 +50,8 @@ import java.util.function.Consumer;
  */
 public class CpuTrack extends Track.WithQueryEngine<CpuTrack.Data> {
   private static final String SUMMARY_SQL =
-      "select quantum_ts, id, utid, sum(dur)/cast(%d as float) util from(" +
-          "select *, first_value(row_id) over win id, first_value(utid) over win utid " +
-          "from %s where cpu = %d and utid != 0 " +
-          "window win as (partition by quantum_ts order by dur desc)) " +
+      "select quantum_ts, group_concat(row_id) ids, sum(dur)/cast(%d as float) util " +
+      "from %s where cpu = %d and utid != 0 " +
       "group by quantum_ts";
   private static final String SLICES_SQL =
       "select ts, dur, utid, row_id from %s where cpu = %d and utid != 0";
@@ -64,6 +62,10 @@ public class CpuTrack extends Track.WithQueryEngine<CpuTrack.Data> {
       "select row_id, ts, dur, cpu, utid, upid, end_state, priority " +
       "from sched left join thread using(utid) " +
       "where cpu = %d and utid != 0 and ts < %d and ts_end >= %d";
+  private static final String SLICE_RANGE_FOR_IDS_SQL =
+      "select row_id, ts, dur, cpu, utid, upid, end_state, priority " +
+      "from sched left join thread using(utid) " +
+      "where cpu = %d and row_id in (%s)";
   private static final String SLICE_RANGE_FOR_THREAD_SQL =
       "select row_id, ts, dur, cpu, utid, upid, end_state, priority " +
       "from sched left join thread using(utid) " +
@@ -100,14 +102,12 @@ public class CpuTrack extends Track.WithQueryEngine<CpuTrack.Data> {
   private ListenableFuture<Data> computeSummary(DataRequest req, Window w) {
     return transform(qe.query(summarySql(w.bucketSize)), result -> {
       int len = w.getNumberOfBuckets();
-      long[] ids = new long[len], utids = new long[len];
-      Arrays.fill(ids, -1);
-      Arrays.fill(utids, -1);
-      Data data = new Data(req, w.bucketSize, ids, utids, new double[len]);
+      String[] concatedIds = new String[len];
+      Arrays.fill(concatedIds, "");
+      Data data = new Data(req, w.bucketSize, concatedIds, new double[len]);
       result.forEachRow(($, r) -> {
-        data.ids[r.getInt(0)] = r.getLong(1);
-        data.utids[r.getInt(0)] = r.getLong(2);
-        data.utilizations[r.getInt(0)] = r.getDouble(3);
+        data.concatedIds[r.getInt(0)] = r.getString(1);
+        data.utilizations[r.getInt(0)] = r.getDouble(2);
       });
       return data;
     });
@@ -156,6 +156,14 @@ public class CpuTrack extends Track.WithQueryEngine<CpuTrack.Data> {
     });
   }
 
+  public ListenableFuture<List<Slice>> getSlices(String ids) {
+    return transform(qe.query(sliceRangeForIdsSql(cpu.id, ids)), result -> {
+      List<Slice> slices = Lists.newArrayList();
+      result.forEachRow((i, r) -> slices.add(new Slice(r)));
+      return slices;
+    });
+  }
+
   public static ListenableFuture<List<Slice>> getSlices(QueryEngine qe, long utid, TimeSpan ts) {
     return transform(qe.query(sliceRangeForThreadSql(utid, ts)), result -> {
       List<Slice> slices = Lists.newArrayList();
@@ -168,40 +176,47 @@ public class CpuTrack extends Track.WithQueryEngine<CpuTrack.Data> {
     return format(SLICE_RANGE_SQL, cpu, ts.end, ts.start);
   }
 
+  private static String sliceRangeForIdsSql(int cpu, String ids) {
+    return format(SLICE_RANGE_FOR_IDS_SQL, cpu, ids);
+  }
+
   private static String sliceRangeForThreadSql(long utid, TimeSpan ts) {
     return format(SLICE_RANGE_FOR_THREAD_SQL, utid, ts.end, ts.start);
   }
 
   public static class Data extends Track.Data {
     public final Kind kind;
-    public final long[] ids;
-    public final long[] utids;
     // Summary.
     public final long bucketSize;
+    public final String[] concatedIds;    // Concated ids for all cpu slices in a each time bucket.
     public final double[] utilizations;
     // Slice.
+    public final long[] ids;
     public final long[] starts;
     public final long[] ends;
+    public final long[] utids;
 
-    public Data(DataRequest request, long bucketSize, long[] ids, long[] utids, double[] utilizations) {
+    public Data(DataRequest request, long bucketSize, String[] concatedIds, double[] utilizations) {
       super(request);
       this.kind = Kind.summary;
-      this.ids = ids;
-      this.utids = utids;
       this.bucketSize = bucketSize;
+      this.concatedIds = concatedIds;
       this.utilizations = utilizations;
+      this.ids = null;
       this.starts = null;
       this.ends = null;
+      this.utids = null;
     }
 
     public Data(DataRequest request, long[] ids, long[] starts, long[] ends, long[] utids) {
       super(request);
       this.kind = Kind.slice;
       this.ids = ids;
-      this.utids = utids;
       this.starts = starts;
       this.ends = ends;
+      this.utids = utids;
       this.bucketSize = 0;
+      this.concatedIds = null;
       this.utilizations = null;
     }
 
