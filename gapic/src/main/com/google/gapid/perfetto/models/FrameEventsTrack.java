@@ -69,6 +69,8 @@ public class FrameEventsTrack extends Track.WithQueryEngine<FrameEventsTrack.Dat
   private static final String RANGE_FOR_IDS_SQL =
       "select " + BASE_COLUMNS + " from %s where id in (%s)";
 
+  private static final long SIGNAL_MARGIN_NS = 10000;
+
   private final long trackId;
 
   public FrameEventsTrack(QueryEngine qe, long trackId) {
@@ -284,6 +286,8 @@ public class FrameEventsTrack extends Track.WithQueryEngine<FrameEventsTrack.Dat
     public void getRange(Consumer<TimeSpan> span) {
       if (dur > 0) {
         span.accept(new TimeSpan(time, time + dur));
+      } else { // Expand the zoom/highlight time range for signal selections whose dur is 0.
+        span.accept(new TimeSpan(time, time + dur).expand(SIGNAL_MARGIN_NS));
       }
     }
 
