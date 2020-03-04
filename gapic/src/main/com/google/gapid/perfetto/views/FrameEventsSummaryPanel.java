@@ -76,6 +76,11 @@ public class FrameEventsSummaryPanel extends TrackPanel<FrameEventsSummaryPanel>
   }
 
   @Override
+  public String getTooltip() {
+    return "\\b" + buffer.getDisplay();
+  }
+
+  @Override
   public double getHeight() {
     return buffer.maxDepth * SLICE_HEIGHT;
   }
