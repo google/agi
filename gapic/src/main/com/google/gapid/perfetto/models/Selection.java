@@ -202,10 +202,10 @@ public interface Selection<Key> {
 
   @SuppressWarnings("unused")
   public static class Kind<Key> implements Comparable<Kind<?>>{
-    public static final Kind<Slice.Key> Thread = new Kind<Slice.Key>(0);
-    public static final Kind<StateSlice.Key> ThreadState = new Kind<StateSlice.Key>(1);
+    public static final Kind<Long> Thread = new Kind<Long>(0);
+    public static final Kind<Long> ThreadState = new Kind<Long>(1);
     public static final Kind<Long> Cpu = new Kind<Long>(2);
-    public static final Kind<Slice.Key> Gpu = new Kind<Slice.Key>(3);
+    public static final Kind<Long> Gpu = new Kind<Long>(3);
     public static final Kind<Long> VulkanEvent = new Kind<Long>(4);
     public static final Kind<Long> Counter = new Kind<Long>(5);
     public static final Kind<Long> FrameEvents = new Kind<Long>(6);
