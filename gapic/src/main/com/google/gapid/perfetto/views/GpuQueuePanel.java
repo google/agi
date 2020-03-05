@@ -93,7 +93,7 @@ public class GpuQueuePanel extends TrackPanel<GpuQueuePanel> implements Selectab
       }
 
       TimeSpan visible = state.getVisibleTime();
-      Selection<Long> selected = state.getSelection(Selection.Kind.Gpu);
+      Selection selected = state.getSelection(Selection.Kind.Gpu);
       List<Highlight> visibleSelected = Lists.newArrayList();
 
       Set<Long> selectedSIds = getSelectedSubmissionIdsInVulkanEventTrack(state);
@@ -286,7 +286,7 @@ public class GpuQueuePanel extends TrackPanel<GpuQueuePanel> implements Selectab
   }
 
   private static Set<Long> getSelectedSubmissionIdsInVulkanEventTrack(State state) {
-    Selection<Long> selection = state.getSelection(Selection.Kind.VulkanEvent);
+    Selection selection = state.getSelection(Selection.Kind.VulkanEvent);
     Set<Long> res = Sets.newHashSet();    // On Vulkan Event Track.
     if (selection instanceof VulkanEventTrack.Slice) {
       res = Sets.newHashSet(((VulkanEventTrack.Slice)selection).submissionId);

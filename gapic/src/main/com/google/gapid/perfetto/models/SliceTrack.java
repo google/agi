@@ -198,7 +198,7 @@ public abstract class SliceTrack extends Track<SliceTrack.Data> {/*extends Track
     }
   }
 
-  public static abstract class Slice implements Selection<Long> {
+  public static abstract class Slice implements Selection {
     public final long id;
     public final long time;
     public final long dur;
@@ -319,7 +319,7 @@ public abstract class SliceTrack extends Track<SliceTrack.Data> {/*extends Track
     }
   }
 
-  public static class Slices implements Selection<Long> {
+  public static class Slices implements Selection {
     private final List<Slice> slices;
     private final String title;
     public final ImmutableList<Node> nodes;
@@ -405,7 +405,7 @@ public abstract class SliceTrack extends Track<SliceTrack.Data> {/*extends Track
     }
 
     @Override
-    public Selection<Long> build() {
+    public Selection build() {
       return new Slices(slices, title, roots.stream()
           .filter(not(byStack::containsKey))
           .flatMap(root -> byParent.get(root).stream())

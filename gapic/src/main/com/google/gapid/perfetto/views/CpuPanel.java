@@ -97,7 +97,7 @@ public class CpuPanel extends TrackPanel<CpuPanel> implements Selectable {
   private void renderSummary(RenderContext ctx, CpuTrack.Data data, double w, double h) {
     long tStart = data.request.range.start;
     int start = Math.max(0, (int)((state.getVisibleTime().start - tStart) / data.bucketSize));
-    Selection<Long> selected = state.getSelection(Selection.Kind.Cpu);
+    Selection selected = state.getSelection(Selection.Kind.Cpu);
     List<Integer> visibleSelected = Lists.newArrayList();
 
     gradient(track.getCpu().id).applyBase(ctx);
@@ -148,7 +148,7 @@ public class CpuPanel extends TrackPanel<CpuPanel> implements Selectable {
 
   private void renderSlices(RenderContext ctx, CpuTrack.Data data, double h) {
     TimeSpan visible = state.getVisibleTime();
-    Selection<Long> selected = state.getSelection(Selection.Kind.Cpu);
+    Selection selected = state.getSelection(Selection.Kind.Cpu);
     List<Highlight> visibleSelected = Lists.newArrayList();
     for (int i = 0; i < data.starts.length; i++) {
       long tStart = data.starts[i];

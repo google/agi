@@ -113,7 +113,7 @@ public class ProcessSummaryPanel extends TrackPanel<ProcessSummaryPanel> impleme
     // TODO: dedupe with CpuRenderer
     long tStart = data.request.range.start;
     int start = Math.max(0, (int)((state.getVisibleTime().start - tStart) / data.bucketSize));
-    Selection<Long> selected = state.getSelection(Selection.Kind.Cpu);
+    Selection selected = state.getSelection(Selection.Kind.Cpu);
     List<Integer> visibleSelected = Lists.newArrayList();
 
     mainGradient().applyBaseAndBorder(ctx);
@@ -166,7 +166,7 @@ public class ProcessSummaryPanel extends TrackPanel<ProcessSummaryPanel> impleme
   private void renderSlices(RenderContext ctx, ProcessSummaryTrack.Data data, double h) {
     // TODO: dedupe with CpuRenderer
     TimeSpan visible = state.getVisibleTime();
-    Selection<Long> selected = state.getSelection(Selection.Kind.Cpu);
+    Selection selected = state.getSelection(Selection.Kind.Cpu);
     List<Highlight> visibleSelected = Lists.newArrayList();
     int cpuCount = state.getCpuInfo().count();
     double cpuH = (h - cpuCount + 1) / cpuCount;

@@ -82,7 +82,7 @@ public class MemorySummaryPanel extends TrackPanel<MemorySummaryPanel> implement
         return;
       }
 
-      Selection<Long> selected = state.getSelection(Selection.Kind.Memory);
+      Selection selected = state.getSelection(Selection.Kind.Memory);
       List<Integer> visibleSelected = Lists.newArrayList();
 
       memoryBuffersGradient().applyBase(ctx);

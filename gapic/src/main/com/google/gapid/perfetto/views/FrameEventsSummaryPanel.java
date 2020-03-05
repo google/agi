@@ -107,7 +107,7 @@ public class FrameEventsSummaryPanel extends TrackPanel<FrameEventsSummaryPanel>
       RenderContext ctx, FrameEventsTrack.Data data, double w, double h) {
     long tStart = data.request.range.start;
     int start = Math.max(0, (int)((state.getVisibleTime().start - tStart) / data.bucketSize));
-    Selection<Long> selected = state.getSelection(Selection.Kind.FrameEvents);
+    Selection selected = state.getSelection(Selection.Kind.FrameEvents);
     List<Integer> visibleSelected = Lists.newArrayList();
 
     mainGradient().applyBaseAndBorder(ctx);
@@ -160,7 +160,7 @@ public class FrameEventsSummaryPanel extends TrackPanel<FrameEventsSummaryPanel>
 
   public void renderSlices(RenderContext ctx, FrameEventsTrack.Data data) {
     TimeSpan visible = state.getVisibleTime();
-    Selection<Long> selected = state.getSelection(Selection.Kind.FrameEvents);
+    Selection selected = state.getSelection(Selection.Kind.FrameEvents);
     List<Highlight> visibleSelected = Lists.newArrayList();
 
     for (int i = 0; i < data.starts.length; i++) {

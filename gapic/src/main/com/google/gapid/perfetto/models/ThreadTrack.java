@@ -199,7 +199,7 @@ public class ThreadTrack extends Track.WithQueryEngine<ThreadTrack.Data> {
     }
   }
 
-  public static class StateSlice implements Selection<Long> {
+  public static class StateSlice implements Selection {
     public final long time;
     public final long dur;
     public final long utid;
@@ -253,7 +253,7 @@ public class ThreadTrack extends Track.WithQueryEngine<ThreadTrack.Data> {
     }
   }
 
-  public static class StateSlices implements Selection<Long> {
+  public static class StateSlices implements Selection {
     private final List<StateSlice> slices;
     public final ImmutableList<Entry> entries;
     public final ImmutableSet<Long> sliceKeys;
@@ -327,7 +327,7 @@ public class ThreadTrack extends Track.WithQueryEngine<ThreadTrack.Data> {
     }
 
     @Override
-    public Selection<Long> build() {
+    public Selection build() {
       return new StateSlices(slices, byState.entrySet().stream()
           .map(e -> new StateSlices.Entry(e.getKey(), e.getValue()))
           .sorted((e1, e2) -> Long.compare(e2.totalDur, e1.totalDur))

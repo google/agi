@@ -80,7 +80,7 @@ public class BatterySummaryPanel extends TrackPanel<BatterySummaryPanel> impleme
       }
 
       double maxAbs = track.getMaxAbsCurrent();
-      Selection<Long> selected = state.getSelection(Selection.Kind.Battery);
+      Selection selected = state.getSelection(Selection.Kind.Battery);
       List<Integer> visibleSelected = Lists.newArrayList();
 
       // Draw outgoing battery current above the x axis.

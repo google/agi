@@ -95,7 +95,7 @@ public class CounterPanel extends TrackPanel<CounterPanel> implements Selectable
       CounterInfo counter = track.getCounter();
       double min = counter.range.min, range = counter.range.range();
 
-      Selection<Long> selected = state.getSelection(Selection.Kind.Counter);
+      Selection selected = state.getSelection(Selection.Kind.Counter);
       List<Integer> visibleSelected = Lists.newArrayList();
       mainGradient().applyBaseAndBorder(ctx);
       ctx.path(path -> {

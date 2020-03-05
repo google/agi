@@ -109,9 +109,9 @@ public class ThreadPanel extends TrackPanel<ThreadPanel> implements Selectable {
       }
 
       TimeSpan visible = state.getVisibleTime();
-      Selection<Long> selectedCpu = state.getSelection(Selection.Kind.Cpu);
-      Selection<Long> selectedThreadState = state.getSelection(Selection.Kind.ThreadState);
-      Selection<Long> selectedThread = state.getSelection(Selection.Kind.Thread);
+      Selection selectedCpu = state.getSelection(Selection.Kind.Cpu);
+      Selection selectedThreadState = state.getSelection(Selection.Kind.ThreadState);
+      Selection selectedThread = state.getSelection(Selection.Kind.Thread);
       List<Highlight> visibleSelected = Lists.newArrayList();
 
       boolean merging = false;

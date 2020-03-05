@@ -228,7 +228,7 @@ public class FrameEventsTrack extends Track.WithQueryEngine<FrameEventsTrack.Dat
     }
   }
 
-  public static class Slice implements Selection<Long> {
+  public static class Slice implements Selection {
     public final long id;
     public final long time;
     public final long dur;
@@ -293,7 +293,7 @@ public class FrameEventsTrack extends Track.WithQueryEngine<FrameEventsTrack.Dat
 
   }
 
-  public static class Slices implements Selection<Long> {
+  public static class Slices implements Selection {
     private final List<Slice> slices;
     private final String title;
     public final ImmutableList<Node> nodes;
@@ -361,7 +361,7 @@ public class FrameEventsTrack extends Track.WithQueryEngine<FrameEventsTrack.Dat
     }
 
     @Override
-    public Selection<Long> build() {
+    public Selection build() {
       return new Slices(slices, title, ImmutableList.copyOf(roots.values()),
           ImmutableSet.copyOf(sliceKeys));
     }
