@@ -160,6 +160,10 @@ func newDevice(ctx context.Context, serial string, status bind.Status) (*binding
 	// Collect the API version
 	if version, err := d.SystemProperty(ctx, "ro.build.version.sdk"); err == nil {
 		v, _ := strconv.Atoi(version)
+		if preview, err := d.SystemProperty(ctx, "ro.build.version.preview_sdk"); err == nil {
+			p, _ := strconv.Atoi(preview)
+			v += p
+		}
 		d.To.Configuration.OS.APIVersion = int32(v)
 	}
 
