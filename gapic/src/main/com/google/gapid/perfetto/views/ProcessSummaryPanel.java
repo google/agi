@@ -312,6 +312,11 @@ public class ProcessSummaryPanel extends TrackPanel<ProcessSummaryPanel> impleme
       }
 
       @Override
+      public Cursor getCursor(Display display) {
+        return ids.isEmpty() ? null : display.getSystemCursor(SWT.CURSOR_HAND);
+      }
+
+      @Override
       public boolean click() {
         if (ids.isEmpty()) {
           return false;

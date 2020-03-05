@@ -298,6 +298,11 @@ public class CpuPanel extends TrackPanel<CpuPanel> implements Selectable {
       }
 
       @Override
+      public Cursor getCursor(Display display) {
+        return ids.isEmpty() ? null : display.getSystemCursor(SWT.CURSOR_HAND);
+      }
+
+      @Override
       public boolean click() {
         if (ids.isEmpty()) {
           return false;
