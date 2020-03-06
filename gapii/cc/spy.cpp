@@ -65,7 +65,7 @@ const uint32_t kMaxFramebufferObservationHeight = 2560;
 
 const int32_t kSuspendIndefinitely = -1;
 
-thread_local gapii::CallObserver* gContext = nullptr;
+thread_local gapii::CallObserver* tl_callObserver = nullptr;
 
 }  // anonymous namespace
 
@@ -239,18 +239,18 @@ Spy::~Spy() {
 
 CallObserver* Spy::enter(const char* name, uint32_t api) {
   lock();
-  auto ctx = new CallObserver(this, gContext, api);
-  ctx->setCurrentCommandName(name);
-  gContext = ctx;
-  return ctx;
+  // This code assumes we only deal with one 'api' in the trace (that is the
+  // case in AGI, which only handles Vulkan): it creates a fresh observer
+  // (per-thread, since tl_callObserver is thread_local) for that API the first
+  // time and reuses it in subsequent calls.
+  if (tl_callObserver == nullptr) {
+    tl_callObserver = new CallObserver(this, api);
+  }
+  tl_callObserver->beginCommand(name);
+  return tl_callObserver;
 }
 
-void Spy::exit() {
-  auto context = gContext;
-  gContext = context->getParent();
-  delete context;
-  unlock();
-}
+void Spy::exit() { unlock(); }
 
 void Spy::endTraceIfRequested() {
   if (!is_suspended() && mCaptureFrames < 0) {

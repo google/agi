@@ -42,29 +42,28 @@ const size_t MEMORY_MERGE_THRESHOLD = 256;
 namespace gapii {
 // Creates a CallObserver with a given spy and applies the memory space for
 // observation data from the spy instance.
-CallObserver::CallObserver(SpyBase* spy, CallObserver* parent, uint8_t api)
+CallObserver::CallObserver(SpyBase* spy, uint8_t api)
     : mSpy(spy),
-      mParent(parent),
       mSeenReferences{{nullptr, 0}},
       mCurrentCommandName(nullptr),
       mObserveApplicationPool(spy->shouldObserveApplicationPool()),
       mApi(api),
       mShouldTrace(false),
       mCurrentThread(core::Thread::current().id()) {
-  // context_t initialization.
-  this->context_t::id = 0;
-  this->context_t::next_pool_id = &spy->next_pool_id();
-  this->context_t::globals = nullptr;
-  this->context_t::arena = reinterpret_cast<arena_t*>(spy->arena());
-  mShouldTrace = mSpy->should_trace(mApi);
-
-  if (parent) {
-    mEncoderStack.push(mShouldTrace ? parent->encoder() : mSpy->nullEncoder());
-  } else {
-    mEncoderStack.push(mSpy->getEncoder(mApi));
-  }
-
   mPendingObservations.setMergeThreshold(MEMORY_MERGE_THRESHOLD);
+  this->context_t::arena = reinterpret_cast<arena_t*>(mSpy->arena());
+  this->context_t::globals = nullptr;
+  this->context_t::id = 0;
+}
+
+void CallObserver::beginCommand(const char* name) {
+  this->context_t::next_pool_id = &mSpy->next_pool_id();
+  mShouldTrace = mSpy->should_trace(mApi);
+  mEncoderStack.push(mSpy->getEncoder(mApi));
+  mObserveApplicationPool = mSpy->shouldObserveApplicationPool();
+  mSeenReferences.clear();
+  mPendingObservations.clear();
+  mCurrentCommandName = name;
 }
 
 // Releases the observation data memory at the end.
