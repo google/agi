@@ -33,8 +33,10 @@ import org.eclipse.jface.window.Window;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 import java.util.ArrayList;
@@ -64,6 +66,7 @@ public class GotoCommand {
   private static class GotoDialog extends MessageDialog {
     private final CommandStream commands;
     private Text text;
+    private Label error;
     public List<Long> value;
 
     public GotoDialog(Shell shell, CommandStream commands) {
@@ -78,24 +81,47 @@ public class GotoCommand {
     }
 
     @Override
+    protected void createButtonsForButtonBar(Composite parent) {
+      super.createButtonsForButtonBar(parent);
+      Button ok = getButton(IDialogConstants.OK_ID);
+      ok.setEnabled(false);
+    }
+
+    @Override
     protected Control createCustomArea(Composite parent) {
       Composite container = createComposite(parent, new GridLayout(2, false));
       container.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
       createLabel(container, Messages.COMMAND_ID + ":");
       text = createTextbox(container, "");
       text.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+      error = createLabel(container, "");
+      error.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+      error.setForeground(parent.getDisplay().getSystemColor(SWT.COLOR_DARK_RED));
+      text.addListener(SWT.Modify, evt -> {
+        String input = text.getText();
+        Button button = getButton(IDialogConstants.OK_ID);
+        error.setVisible(false);
+        error.setText("");
+        if (button != null) {
+          button.setEnabled(false);
+          if (input.length() > 0) {
+            try {
+              String[] strings = input.split("\\.");
+              value = new ArrayList<Long>();
+              for (String s : strings) {
+                value.add(Long.parseLong(s));
+              }
+              button.setEnabled(true);
+            } catch (NumberFormatException e) {
+              error.setText("Invalid index: " + e.getMessage());
+              error.setVisible(true);
+              error.requestLayout();
+            }
+          }
+        }
+      });
 
       return container;
-    }
-
-    @Override
-    protected void buttonPressed(int buttonId) {
-      String[] strings = text.getText().split("\\.");
-      value = new ArrayList<Long>();
-      for (String s : strings) {
-        value.add(Long.parseLong(s));
-      }
-      super.buttonPressed(buttonId);
     }
   }
 }
