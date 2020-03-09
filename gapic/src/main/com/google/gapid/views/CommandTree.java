@@ -157,7 +157,7 @@ public class CommandTree extends Composite
           // Copy before loaded. Not ideal, but this is unlikely.
           result.append("Loading...");
         } else {
-          result.append(Formatter.toString(cmd, models.constants::getConstants));
+          result.append(Formatter.toString(cmd, models.constants::getConstants, data.getRepresentation().getIndicesCount() > 1));
         }
       } else {
         result.append(data.getCommands().getFrom(0)).append(": ").append(data.getGroup());
@@ -352,6 +352,7 @@ public class CommandTree extends Composite
             string.append("Loading...", string.structureStyle());
           } else {
             Formatter.format(cmd, models.constants::getConstants, follower::canFollow,
+                data.getRepresentation().getIndicesCount() > 1,
                 string, string.identifierStyle());
           }
         } else {

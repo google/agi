@@ -52,19 +52,35 @@ public class Formatter {
   public static void format(API.Command command,
       Function<Path.ConstantSet, Service.ConstantSet> constantResolver,
       Function<String, Path.Any> followResolver,
+      boolean isSubcommand,
       StylingString string, Style style) {
-    string.append(command.getName(), string.labelStyle());
+    if (isSubcommand && command.getName().startsWith("vkCmd")) {
+      // HACK: if this command is an execution of a subcommand, then squash the vkCmd prefix
+      // to reclaim space
+      string.append(command.getName().substring(5), string.labelStyle());
+    }
+    else {
+      string.append(command.getName(), string.labelStyle());
+    }
     string.append("(", string.structureStyle());
     boolean needComma = false;
 
     for (int i = 0; i < command.getParametersCount(); ++i) {
       API.Parameter field = command.getParameters(i);
+
+      // HACK: if this command is an execution of a subcommand, then squash
+      // the initial commandBuffer parameter to reclaim space
+      if (isSubcommand && field.getName().equals("commandBuffer")) {
+        continue;
+      }
+
       if (needComma) {
         string.append(", ", string.structureStyle());
       }
       needComma = true;
       Path.Any follow = followResolver.apply(field.getName());
       Style paramStyle = (follow == null) ? style : string.linkStyle();
+
       string.startLink(follow);
       string.append(field.getName(), paramStyle);
       string.append(":", (follow == null) ? string.structureStyle() : string.linkStyle());
@@ -88,9 +104,10 @@ public class Formatter {
   }
 
   public static String toString(API.Command command,
-      Function<Path.ConstantSet, Service.ConstantSet> constantResolver) {
+      Function<Path.ConstantSet, Service.ConstantSet> constantResolver,
+      boolean isSubcommand) {
     NoStyleStylingString string = new NoStyleStylingString();
-    format(command, constantResolver, s -> null, string, null);
+    format(command, constantResolver, s -> null, isSubcommand, string, null);
     return string.toString();
   }
 

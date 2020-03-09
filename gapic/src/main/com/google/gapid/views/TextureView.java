@@ -628,7 +628,8 @@ public class TextureView extends Composite
             protected String onRpcThread(Rpc.Result<API.Command> result)
                 throws RpcException, ExecutionException {
               return Formatter.commandIndex(path) + ": " +
-                Formatter.toString(result.get(), models.constants::getConstants);
+                Formatter.toString(result.get(), models.constants::getConstants,
+                    path.getIndicesCount() > 1);
             }
 
             @Override
