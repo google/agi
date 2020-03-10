@@ -193,6 +193,9 @@ class StagingBuffer {
       device_functions_.vkDestroyBuffer(device_, staging_buffer_, nullptr);
     }
     if (staging_memory_) {
+      if (bound_memory_) {
+        device_functions_.vkUnmapMemory(device_, staging_memory_);
+      }
       device_functions_.vkFreeMemory(device_, staging_memory_, nullptr);
     }
   }
