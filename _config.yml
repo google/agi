@@ -14,7 +14,7 @@
 # You can create any custom variable you would like, and they will be accessible
 # in the templates via {{ site.myvariable }}.
 title: Android GPU Inspector
-baseurl: "/"
+baseurl: ""
 url: "https://gpuinspector.dev" # the base hostname & protocol for your site, e.g. http://example.com
 project-url: "https://github.com/google/agi"
 markdown: kramdown
