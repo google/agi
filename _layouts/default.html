@@ -5,10 +5,10 @@
 
   <body>
     <div class="sidebar-title">
-      <a href="{{ item.url | absolute_url }}/about/"><img src="https://raw.githubusercontent.com/google/gapid/master/gapic/res/icons/logo_128.png"
-          width="64" height="64" alt="GAPID logo"/>
-            <div class="site-name">{{site.title}}</div>
-            <div class="clear"></div></a>
+      <a href="{{site.baseurl}}/about/">
+        <img src="https://raw.githubusercontent.com/google/agi/master/tools/logo/logo.svg?sanitize=true" width="32" height="32" alt="AGI logo"/>
+        <div class="site-name">{{site.title}}</div></a>
+        <div class="clear"></div>
     </div>
     <div class="page">
       {% include sidebar.html %}
