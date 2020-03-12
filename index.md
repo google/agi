@@ -1,5 +1,6 @@
 ---
 layout: empty
+title: Home
 ---
 
 ## Android GPU Inspector
