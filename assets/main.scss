@@ -7,6 +7,7 @@
 @import "callouts.scss";
 @import "sidebar.scss";
 @import "tabs.scss";
+@import "footer.scss";
 
 // @import "https://fonts.googleapis.com/css?family=Roboto:300";
 // @import "https://fonts.googleapis.com/css?family=Roboto:400";
@@ -80,46 +81,8 @@ a:hover {
   color:#5f6368;
 }
 
-.site-footer {
-  margin-top: 20px;
-  text-align: Left;
-  font-size: 14px;
-  // padding: 5px;
-  padding: 12px 24px;
-  border-top: solid 1px #e8eaed;
-  color: #4a4a4a;
-  position: absolute;
-  bottom: 0;
-  width: 100%;
-  box-sizing: border-box;
-  -webkit-box-sizing: border-box;
-}
-
-.site-footer .trademark-info {
-  color: #7a7a7a;
-  font-size:11px;
-  margin-top: 12px;
-}
-
-.site-footer a {
-  color: #4a4a4a;
-  text-decoration: none;
-}
-
 .clear {
  clear: both;
-}
-
-.site-footer a:hover,
-.site-footer a:focus {
-  // color: rgba(0,0,0,0.8);
-  color:#0068da;
-}
-
-.site-footer .sep { padding: 0 5px 0 5px; }
-.site-footer .material-icons {
-  font-size: 16px;
-  vertical-align: -3px;
 }
 
 h1 {
