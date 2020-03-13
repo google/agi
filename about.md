@@ -6,11 +6,11 @@ permalink: /about/
 
 GAPID is a developer tool for recording and inspecting calls made by an application to the graphics driver.
 
-It is open-source: [https://github.com/google/gapid](https://github.com/google/gapid)
+It is open-source: [{{site.project-url}}]({{site.project-url}})
 
-[Download a GAPID release](https://github.com/google/gapid/releases)
+[Download a GAPID release]({{site.project-url}}/releases)
 
-Unstable developer releases are also available [here](https://github.com/google/gapid-dev-releases).
+Unstable developer releases are also available [here](https://github.com/google/agi-dev-releases).
 
 <div style="text-align: center;">
     <img src="../images/hero.gif" alt="GAPID image" width="540" height="337">
@@ -36,4 +36,4 @@ GAPID can also visualize the textures, shaders and draw call geometry used by th
 
 While GAPID is primarily targeted for games developers, it can also help developers to inspect low-level 2D graphics calls made by the Android graphics framework.
 
-GAPID is under active development and has some [known issues](https://github.com/google/gapid/issues). Your feedback is appreciated!
+GAPID is under active development and has some [known issues]({{site.project-url}}/issues). Your feedback is appreciated!

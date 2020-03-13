@@ -20,8 +20,8 @@ The following table describes the operations you can perform with the toolbar bu
     </tr>
     <tr>
       <td>
-        <img class="toolbar-btn" src="https://raw.githubusercontent.com/google/gapid/master/gapic/res/icons/yup%402x.png" alt="Y-up"/>
-        <img class="toolbar-btn" src="https://raw.githubusercontent.com/google/gapid/master/gapic/res/icons/zup%402x.png" alt="Z-up"/>
+        <img class="toolbar-btn" src="https://raw.githubusercontent.com/google/agi/master/gapic/res/icons/yup%402x.png" alt="Y-up"/>
+        <img class="toolbar-btn" src="https://raw.githubusercontent.com/google/agi/master/gapic/res/icons/zup%402x.png" alt="Z-up"/>
       </td>
       <td>
         Click the button to toggle between y axis up and z axis up. In OpenGL ES, the default is the y axis pointing up, the x axis horizontal, and the z axis as depth.
@@ -30,8 +30,8 @@ The following table describes the operations you can perform with the toolbar bu
     </tr>
     <tr>
       <td>
-        <img class="toolbar-btn"  src="https://raw.githubusercontent.com/google/gapid/master/gapic/res/icons/winding_cw%402x.png" alt="Winding CW"/>
-        <img class="toolbar-btn" src="https://raw.githubusercontent.com/google/gapid/master/gapic/res/icons/winding_ccw%402x.png" alt="Winding CCW"/>
+        <img class="toolbar-btn"  src="https://raw.githubusercontent.com/google/agi/master/gapic/res/icons/winding_cw%402x.png" alt="Winding CW"/>
+        <img class="toolbar-btn" src="https://raw.githubusercontent.com/google/agi/master/gapic/res/icons/winding_ccw%402x.png" alt="Winding CCW"/>
       </td>
       <td>
         Toggle between counterclockwise and clockwise triangle winding to view front- versus back-facing triangles.
@@ -40,7 +40,7 @@ The following table describes the operations you can perform with the toolbar bu
     </tr>
     <tr>
       <td>
-        <img class="toolbar-btn" src="https://raw.githubusercontent.com/google/gapid/master/gapic/res/icons/wireframe_none%402x.png" alt="Shaded"/>
+        <img class="toolbar-btn" src="https://raw.githubusercontent.com/google/agi/master/gapic/res/icons/wireframe_none%402x.png" alt="Shaded"/>
       </td>
       <td>
         Show the geometry rendered as shaded polygons.
@@ -49,7 +49,7 @@ The following table describes the operations you can perform with the toolbar bu
     </tr>
     <tr>
       <td>
-        <img class="toolbar-btn" src="https://raw.githubusercontent.com/google/gapid/master/gapic/res/icons/wireframe_all%402x.png" alt="Wireframe"/>
+        <img class="toolbar-btn" src="https://raw.githubusercontent.com/google/agi/master/gapic/res/icons/wireframe_all%402x.png" alt="Wireframe"/>
       </td>
       <td>
         Show the geometry rendered as a wireframe.
@@ -58,7 +58,7 @@ The following table describes the operations you can perform with the toolbar bu
     </tr>
     <tr>
       <td>
-        <img class="toolbar-btn" src="https://raw.githubusercontent.com/google/gapid/master/gapic/res/icons/point_cloud%402x.png" alt="Point Cloud"/>
+        <img class="toolbar-btn" src="https://raw.githubusercontent.com/google/agi/master/gapic/res/icons/point_cloud%402x.png" alt="Point Cloud"/>
       </td>
       <td>
         Show the geometry rendered as vertex data points.
@@ -67,7 +67,7 @@ The following table describes the operations you can perform with the toolbar bu
     </tr>
     <tr>
       <td>
-        <img class="toolbar-btn" src="https://raw.githubusercontent.com/google/gapid/master/gapic/res/icons/smooth%402x.png" alt="Authored Normals"/>
+        <img class="toolbar-btn" src="https://raw.githubusercontent.com/google/agi/master/gapic/res/icons/smooth%402x.png" alt="Authored Normals"/>
       </td>
       <td>
         Select this button to display smooth normals as specified in your code. The button is unavailable if you haven't authored normals in your mesh.
@@ -76,7 +76,7 @@ The following table describes the operations you can perform with the toolbar bu
     </tr>
     <tr>
       <td>
-        <img class="toolbar-btn" src="https://raw.githubusercontent.com/google/gapid/master/gapic/res/icons/faceted%402x.png" alt="Faceted Normals"/>
+        <img class="toolbar-btn" src="https://raw.githubusercontent.com/google/agi/master/gapic/res/icons/faceted%402x.png" alt="Faceted Normals"/>
       </td>
       <td>
         Select this button to see the lit geometry without using smooth normals. It renders the geometry as if each polygon were flat instead of smoothed, using computed face normals.
@@ -85,8 +85,8 @@ The following table describes the operations you can perform with the toolbar bu
     </tr>
     <tr>
       <td>
-        <img class="toolbar-btn" src="https://raw.githubusercontent.com/google/gapid/master/gapic/res/icons/culling_disabled%402x.png" alt="Backface Culling Disabled"/>
-        <img class="toolbar-btn" src="https://raw.githubusercontent.com/google/gapid/master/gapic/res/icons/culling_enabled%402x.png" alt="Backface Culling Enabled"/>
+        <img class="toolbar-btn" src="https://raw.githubusercontent.com/google/agi/master/gapic/res/icons/culling_disabled%402x.png" alt="Backface Culling Disabled"/>
+        <img class="toolbar-btn" src="https://raw.githubusercontent.com/google/agi/master/gapic/res/icons/culling_enabled%402x.png" alt="Backface Culling Enabled"/>
       </td>
       <td>
         Click this button to toggle backface culling, which when enabled hides polygons facing away from the camera.
@@ -95,7 +95,7 @@ The following table describes the operations you can perform with the toolbar bu
     </tr>
     <tr>
       <td>
-        <img class="toolbar-btn" src="https://raw.githubusercontent.com/google/gapid/master/gapic/res/icons/lit%402x.png" alt="Lit"/>
+        <img class="toolbar-btn" src="https://raw.githubusercontent.com/google/agi/master/gapic/res/icons/lit%402x.png" alt="Lit"/>
       </td>
       <td>
         Select this button to render the mesh with a simple directional light.
@@ -104,7 +104,7 @@ The following table describes the operations you can perform with the toolbar bu
     </tr>
     <tr>
       <td>
-        <img class="toolbar-btn" src="https://raw.githubusercontent.com/google/gapid/master/gapic/res/icons/flat%402x.png" alt="Flat"/>
+        <img class="toolbar-btn" src="https://raw.githubusercontent.com/google/agi/master/gapic/res/icons/flat%402x.png" alt="Flat"/>
       </td>
       <td>
         Select this button to render the mesh with just ambient light.
@@ -113,7 +113,7 @@ The following table describes the operations you can perform with the toolbar bu
     </tr>
     <tr>
       <td>
-        <img class="toolbar-btn" src="https://raw.githubusercontent.com/google/gapid/master/gapic/res/icons/normals%402x.png" alt="Normals"/>
+        <img class="toolbar-btn" src="https://raw.githubusercontent.com/google/agi/master/gapic/res/icons/normals%402x.png" alt="Normals"/>
       </td>
       <td>
         Select this button to view normals. Red indicates a positive x axis value, green a positive y axis value, and blue a positive z axis value.

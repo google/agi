@@ -27,7 +27,7 @@ You can perform operations on the image using the following buttons:
     </tr>
     <tr>
       <td>
-        <img class="toolbar-btn" src="https://raw.githubusercontent.com/google/gapid/master/gapic/res/icons/zoom_fit%402x.png" alt="Zoom to Fit"/>
+        <img class="toolbar-btn" src="https://raw.githubusercontent.com/google/agi/master/gapic/res/icons/zoom_fit%402x.png" alt="Zoom to Fit"/>
       </td>
       <td>
         Adjusts the image to fit completely within the pane. You can also right-click the image to adjust the zoom to fit the image.
@@ -38,7 +38,7 @@ You can perform operations on the image using the following buttons:
     </tr>
     <tr>
       <td>
-        <img class="toolbar-btn" src="https://raw.githubusercontent.com/google/gapid/master/gapic/res/icons/zoom_actual%402x.png" alt="Zoom to Actual Size"/>
+        <img class="toolbar-btn" src="https://raw.githubusercontent.com/google/agi/master/gapic/res/icons/zoom_actual%402x.png" alt="Zoom to Actual Size"/>
       </td>
       <td>Displays the image at no scale, where one device pixel is equivalent to one screen pixel.</td>
       <td>
@@ -47,7 +47,7 @@ You can perform operations on the image using the following buttons:
     </tr>
     <tr>
       <td>
-        <img class="toolbar-btn" src="https://raw.githubusercontent.com/google/gapid/master/gapic/res/icons/zoom_in%402x.png" alt="Zoom In"/>
+        <img class="toolbar-btn" src="https://raw.githubusercontent.com/google/agi/master/gapic/res/icons/zoom_in%402x.png" alt="Zoom In"/>
       </td>
       <td>Zooms in on the image. You can also use your mouse wheel, or two-finger swipes on a touchpad, to zoom in and out. You can drag the image with your cursor.</td>
       <td>
@@ -56,7 +56,7 @@ You can perform operations on the image using the following buttons:
     </tr>
     <tr>
       <td>
-        <img class="toolbar-btn" src="https://raw.githubusercontent.com/google/gapid/master/gapic/res/icons/zoom_out%402x.png" alt="Zoom Out"/>
+        <img class="toolbar-btn" src="https://raw.githubusercontent.com/google/agi/master/gapic/res/icons/zoom_out%402x.png" alt="Zoom Out"/>
       </td>
       <td>Zooms out on the image. You can also use your mouse wheel, or two-finger swipes on a touchpad, to zoom in and out.</td>
       <td>
@@ -65,7 +65,7 @@ You can perform operations on the image using the following buttons:
     </tr>
     <tr>
       <td>
-        <img class="toolbar-btn" src="https://raw.githubusercontent.com/google/gapid/master/gapic/res/icons/histogram%402x.png" alt="Color Histogram"/>
+        <img class="toolbar-btn" src="https://raw.githubusercontent.com/google/agi/master/gapic/res/icons/histogram%402x.png" alt="Color Histogram"/>
       </td>
       <td>Displays the color histogram for the image. You can select the control handles on either side to limit the color values displayed.
       </td>
@@ -75,7 +75,7 @@ You can perform operations on the image using the following buttons:
     </tr>
     <tr>
       <td>
-        <img class="toolbar-btn" src="https://raw.githubusercontent.com/google/gapid/master/gapic/res/icons/color_channels_15%402x.png" alt="Color Channels"/>
+        <img class="toolbar-btn" src="https://raw.githubusercontent.com/google/agi/master/gapic/res/icons/color_channels_15%402x.png" alt="Color Channels"/>
       </td>
       <td>Select the color channels to render. The options are <b>Red</b>, <b>Green</b>, <b>Blue</b>, and <b>Alpha</b> (transparency).</td>
       <td>
@@ -84,7 +84,7 @@ You can perform operations on the image using the following buttons:
     </tr>
     <tr>
       <td>
-        <img class="toolbar-btn" src="https://raw.githubusercontent.com/google/gapid/master/gapic/res/icons/transparency%402x.png" alt="Background"/>
+        <img class="toolbar-btn" src="https://raw.githubusercontent.com/google/agi/master/gapic/res/icons/transparency%402x.png" alt="Background"/>
       </td>
       <td>Select a checkerboard pattern or a solid color for the image background.</td>
       <td>
@@ -93,7 +93,7 @@ You can perform operations on the image using the following buttons:
     </tr>
     <tr>
       <td>
-        <img class="toolbar-btn" src="https://raw.githubusercontent.com/google/gapid/master/gapic/res/icons/flip_vertically%402x.png" alt="Flip Vertically"/>
+        <img class="toolbar-btn" src="https://raw.githubusercontent.com/google/agi/master/gapic/res/icons/flip_vertically%402x.png" alt="Flip Vertically"/>
       </td>
       <td>Flips the image vertically.</td>
       <td>
@@ -102,7 +102,7 @@ You can perform operations on the image using the following buttons:
     </tr>
     <tr>
       <td>
-        <img class="toolbar-btn" src="https://raw.githubusercontent.com/google/gapid/master/gapic/res/icons/save%402x.png" alt="Save To File"/>
+        <img class="toolbar-btn" src="https://raw.githubusercontent.com/google/agi/master/gapic/res/icons/save%402x.png" alt="Save To File"/>
       </td>
       <td>Saves the image to a file.</td>
       <td>
@@ -110,7 +110,7 @@ You can perform operations on the image using the following buttons:
     </tr>
     <tr>
       <td>
-        <img class="toolbar-btn" src="https://raw.githubusercontent.com/google/gapid/master/gapic/res/icons/jump%402x.png" alt="Accesses / Modifications"/>
+        <img class="toolbar-btn" src="https://raw.githubusercontent.com/google/agi/master/gapic/res/icons/jump%402x.png" alt="Accesses / Modifications"/>
       </td>
       <td>Displays the list of all calls that updated the texture to this point. Select a call to view the image after the call completes; the selected frame thumbnail and the pane will update accordingly.</td>
       <td>
