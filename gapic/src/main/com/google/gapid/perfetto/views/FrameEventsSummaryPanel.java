@@ -36,6 +36,7 @@ import com.google.gapid.perfetto.models.GpuInfo;
 import com.google.gapid.perfetto.models.Selection;
 import com.google.gapid.perfetto.models.Selection.CombiningBuilder;
 
+import com.google.gapid.util.Arrays;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Cursor;
 import org.eclipse.swt.graphics.RGBA;
@@ -120,8 +121,8 @@ public class FrameEventsSummaryPanel extends TrackPanel<FrameEventsSummaryPanel>
         path.lineTo(x, y);
         path.lineTo(x, nextY);
         y = nextY;
-        for (String id : data.concatedIds[i].split(",")) {
-          if (!id.isEmpty() && selected.contains(Long.parseLong(id))) {
+        for (String id : Arrays.getOrDefault(data.concatedIds, i, "").split(",")) {
+          if (!id.isEmpty() && !selected.isEmpty() && selected.contains(Long.parseLong(id))) {
             visibleSelected.add(i);
             break;
           }
@@ -272,7 +273,7 @@ public class FrameEventsSummaryPanel extends TrackPanel<FrameEventsSummaryPanel>
         data.request.range.start + hovered.bucket * data.bucketSize + data.bucketSize / 2);
     double dx = HOVER_PADDING + hovered.size.w + HOVER_PADDING;
     double dy = height;
-    String ids = data.concatedIds[bucket];
+    String ids = Arrays.getOrDefault(data.concatedIds, bucket, "");
 
     return new Hover() {
       @Override
