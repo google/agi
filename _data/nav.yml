@@ -1,6 +1,32 @@
 toc:
-  - title: About
-    url: about/
+  - title: About AGI
+    url: docs/
+    subnav:
+      - title: Download
+        url: docs/download
+      - title: Getting Started
+        url: docs/tutorial
+      - title: Supported Extensions
+        url: docs/extensions
+      - title: Troubleshooting
+        url: docs/troubleshooting
+  - title: GPU counters
+    url: gpu-counters/
+    subnav:
+      - title: Arm® Mali™ Counters
+        url: gpu-counters/arm
+      - title: Qualcomm® Adreno™ Counters
+        url: gpu-counters/qualcomm
+  - title: System requirements
+    url: requirements
+  - title: CLI documentation
+    url: cli
+  - title: Releases
+    class: external-link
+    target: external
+    url: https://github.com/google/agi/releases
+
+old:
   - title: Tutorials
     subnav:
       - title: Capture a trace
@@ -40,11 +66,3 @@ toc:
         url: inspect/state
       - title: Textures pane
         url: inspect/textures
-  - title: CLI documentation
-    url: cli/
-  - title: System requirements
-    url: requirements/
-  - title: Releases
-    class: external-link
-    target: external
-    url: https://github.com/google/agi/releases
