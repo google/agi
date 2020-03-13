@@ -1,26 +1,19 @@
 <!DOCTYPE html>
 <html lang="{{ page.lang | default: site.lang | default: "en" }}">
+{% include head.html %}
+<body>
 
-  {% include head.html %}
-
-  <body>
-    <div class="sidebar-title">
-      <a href="{{site.baseurl}}/about/">
-        <img src="https://raw.githubusercontent.com/google/agi/master/tools/logo/logo.svg?sanitize=true" width="32" height="32" alt="AGI logo"/>
-        <div class="site-name">{{site.title}}</div></a>
-        <div class="clear"></div>
+{% include banner.html %}
+<div class="page">
+  {% include sidebar.html %}
+  <main class="page-content" aria-label="Content">
+    {% include header.html %}
+    <div class="page-margin">
+      {{ content }}
     </div>
-    <div class="page">
-      {% include sidebar.html %}
+    {% include footer.html %}
+  </main>
+</div>
 
-      <main class="page-content" aria-label="Content">
-        {% include header.html %}
-        <div class="page-margin">
-          {{ content }}
-        </div>
-        {% include footer.html %}
-      </main>
-    </div>
-  </body>
-
+</body>
 </html>

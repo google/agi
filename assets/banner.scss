@@ -1,0 +1,36 @@
+.banner {
+  background-color: #fdfdfd;
+  color: #202020;
+  font-size: 16px;
+  font-weight: 300;
+  line-height: 36px;
+  padding: 6px 12px;
+  box-shadow: 0px 1px 4px 1px rgba(0, 0, 0, 0.45);
+  z-index: 99;
+  position: fixed;
+  width: 100%;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+.banner-logo {
+  float: left;
+}
+
+.banner a, .banner-logo a:hover {
+  color: #5f6368;
+  text-decoration: none;
+}
+
+.banner-title {
+  padding-left: 6px;
+  font-size: 18px;
+}
+
+.banner-nav {
+  text-align: right;
+}
+
+.banner-nav a {
+  padding-left: 7px;
+}
