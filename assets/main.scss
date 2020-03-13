@@ -174,9 +174,15 @@ figcaption {
 // Code blocks
 code {
   background: rgba(0,0,0,0.1);
-  padding: 3px;
+  padding: 0 3px;
   border-radius: 3px;
   white-space: pre-wrap;
+  display: inline-block;
+}
+
+pre code {
+  padding: 5px 10px;
+  border: 1px solid #ddd;
 }
 
 // Info, Warning blocks
