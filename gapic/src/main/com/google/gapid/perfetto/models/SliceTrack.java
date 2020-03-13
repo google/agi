@@ -181,20 +181,20 @@ public abstract class SliceTrack extends Track<SliceTrack.Data> {/*extends Track
       this.args = args;
     }
 
-    public void putExtraLongs(String s, long[] longs) {
-      extraLongs.put(s, longs);
+    public void putExtraLongs(String name, long[] longs) {
+      extraLongs.put(name, longs);
     }
 
-    public long[] getExtraLongs(String s) {
-      return extraLongs.getOrDefault(s, new long[0]);
+    public long[] getExtraLongs(String name) {
+      return extraLongs.getOrDefault(name, new long[0]);
     }
 
-    public void putExtraStrings(String s, String[] longs) {
-      extraStrings.put(s, longs);
+    public void putExtraStrings(String name, String[] strings) {
+      extraStrings.put(name, strings);
     }
 
-    public String[] getExtraStrings(String s) {
-      return extraStrings.getOrDefault(s, new String[0]);
+    public String[] getExtraStrings(String name) {
+      return extraStrings.getOrDefault(name, new String[0]);
     }
   }
 
