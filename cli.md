@@ -1,7 +1,7 @@
 ---
 title: CLI documentation - GAPIT
 layout: default
-permalink: /cli/
+permalink: /cli
 ---
 
 The AGI package contains a command line tool named `gapit` that  can be used
