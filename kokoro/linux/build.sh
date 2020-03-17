@@ -22,13 +22,74 @@ SRC=$PWD/github/agi/
 mkdir -p $BUILD_ROOT/out/dist
 echo "test" > $BUILD_ROOT/out/dist/test.gfxtrace
 
+# Get bazel.
+BAZEL_VERSION=2.0.0
+curl -L -k -O -s https://github.com/bazelbuild/bazel/releases/download/${BAZEL_VERSION}/bazel-${BAZEL_VERSION}-installer-linux-x86_64.sh
+mkdir bazel
+bash bazel-${BAZEL_VERSION}-installer-linux-x86_64.sh --prefix=$PWD/bazel
+
+# Get GCC 8
+sudo rm /etc/apt/sources.list.d/cuda.list*
+sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+sudo apt-get -q update
+sudo apt-get -qy install gcc-8 g++-8
+export CC=/usr/bin/gcc-8
+
+# Get the Android NDK
+curl -L -k -O -s https://dl.google.com/android/repository/android-ndk-r21-linux-x86_64.zip
+unzip -q android-ndk-r21-linux-x86_64.zip
+export ANDROID_NDK_HOME=$PWD/android-ndk-r21
+
+# Get recent build tools
+echo y | $ANDROID_HOME/tools/bin/sdkmanager --install 'build-tools;29.0.2'
+
+cd $SRC
+BUILD_SHA=${DEV_PREFIX}${KOKORO_GITHUB_COMMIT:-$KOKORO_GITHUB_PULL_REQUEST_COMMIT}
+
+function build {
+  echo $(date): Starting build for $@...
+  $BUILD_ROOT/bazel/bin/bazel \
+    --output_base="${TMP}/bazel_out" \
+    build -c opt --config symbols \
+    --define AGI_BUILD_NUMBER="$KOKORO_BUILD_NUMBER" \
+    --define AGI_BUILD_SHA="$BUILD_SHA" \
+    $@
+  echo $(date): Build completed.
+}
+
+# Build each API package separately first, as the go-compiler needs ~8GB of
+# RAM for each of the big API packages.
+# for api in gles vulkan gvr; do
+#   build //gapis/api/$api:go_default_library
+# done
+
+# # Build the package and symbol file.
+# build //:pkg //:symbols
+
+# Build the Vulkan sample
+build //cmd/vulkan_sample:vulkan_sample
+
+# # Build and run the smoketests.
+# set +e
+# build //cmd/smoketests:smoketests
+# echo $(date): Run smoketests...
+# # Using "bazel run //cmd/smoketests seems to make 'bazel-bin/pkg/gapit'
+# # disappear, hence we call the binary directly
+# bazel-bin/cmd/smoketests/linux_amd64_stripped/smoketests -gapit bazel-bin/pkg/gapit -traces test/traces
+# for i in smoketests.*/*/*.log
+# do
+#   echo "============================================================"
+#   echo $i
+#   cat $i
+# done
+
 ARTIFACTS_PREFIX=$BUILD_ROOT/out/dist
 mkdir -p $ARTIFACTS_PREFIX
 
 curl -fsSL -o agi.zip https://github.com/google/agi-dev-releases/releases/download/v0.9.0-dev-20200317/agi-0.9.0-dev-20200317-linux.zip
-unzip -d agi agi.zip
-mkdir -p bazel-bin/pkg
-cp -r agi/* bazel-bin/pkg/
+unzip agi.zip
+# mkdir -p bazel-bin/pkg
+# cp -r agi/* bazel-bin/pkg/
 
 ##
 ## Test capture and replay of the Vulkan Sample App.
@@ -68,10 +129,10 @@ test "${APP_EXIT_STATUS}" -eq 130
 
 # TODO(https://github.com/google/gapid/issues/3163): The coherent memory
 #  tracker must be disabled with SwiftShader for now.
-xvfb-run -e xvfb.log -a bazel-bin/pkg/gapit trace -device host -disable-coherentmemorytracker -disable-pcs -disable-unknown-extensions -record-errors -no-buffer -api vulkan -start-at-frame 5 -capture-frames 10 -observe-frames 1 -out ${ARTIFACTS_PREFIX}/vulkan_sample.gfxtrace bazel-bin/cmd/vulkan_sample/vulkan_sample
+xvfb-run -e xvfb.log -a agi/gapit trace -device host -disable-coherentmemorytracker -disable-pcs -disable-unknown-extensions -record-errors -no-buffer -api vulkan -start-at-frame 5 -capture-frames 10 -observe-frames 1 -out ${ARTIFACTS_PREFIX}/vulkan_sample.gfxtrace bazel-bin/cmd/vulkan_sample/vulkan_sample
 
 sync
 ls ${ARTIFACTS_PREFIX}
 
-xvfb-run -e xvfb.log -a bazel-bin/pkg/gapit video -gapir-nofallback -type sxs -frames-minimum 10 -out vulkan_sample.mp4  ${ARTIFACTS_PREFIX}/vulkan_sample.gfxtrace
+xvfb-run -e xvfb.log -a agi/gapit video -gapir-nofallback -type sxs -frames-minimum 10 -out vulkan_sample.mp4  ${ARTIFACTS_PREFIX}/vulkan_sample.gfxtrace
 
