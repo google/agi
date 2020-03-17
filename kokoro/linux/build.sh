@@ -95,18 +95,29 @@ $SRC/kokoro/linux/package.sh $BUILD_ROOT/out
 ## teams/android-graphics-tools/agi/kokoro/swarming/
 ##
 
-git clone --depth 1 https://chromium.googlesource.com/infra/luci/luci-py
+# Grab the LUCI scripts
+curl -fsSL -o luci-py.tar.gz https://chromium.googlesource.com/infra/luci/luci-py.git/+archive/0b027452e658080df1f174c403946914443d2aa6.tar.gz
+mkdir luci-py
+tar xzvf luci-py.tar.gz --directory luci-py
 export LUCI_CLIENT_ROOT="$PWD/luci-py/client"
+
+# Credentials come from Keystore
 export SWARMING_AUTH_TOKEN_FILE=${KOKORO_KEYSTORE_DIR}/74894_kokoro_swarming_access_key
 
 # x20 seems to not allow executable files, force it on all files
 chmod -R a+x ${KOKORO_GFILE_DIR}
 cp -r bazel-bin/pkg ${KOKORO_GFILE_DIR}/files/agi
 
+# Run swarming script from its own directory, in a sub-shell
 (
   cd ${KOKORO_GFILE_DIR}
   ./swarming.sh
 )
+SWARMING_RESULT=$?
+if test ${SWARMING_RESULT} -ne 0; then
+  echo "Error: Swarming test failed"
+  exit 1
+fi
 
 ##
 ## Test capture and replay of the Vulkan Sample App.
