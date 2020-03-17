@@ -19,6 +19,11 @@ set -ex
 BUILD_ROOT=$PWD
 SRC=$PWD/github/agi/
 
+mkdir -p $BUILD_ROOT/out/dist/
+echo "test" > $BUILD_ROOT/out/dist/test.gfxtrace
+
+exit 0
+
 # Get bazel.
 BAZEL_VERSION=2.0.0
 curl -L -k -O -s https://github.com/bazelbuild/bazel/releases/download/${BAZEL_VERSION}/bazel-${BAZEL_VERSION}-installer-linux-x86_64.sh
