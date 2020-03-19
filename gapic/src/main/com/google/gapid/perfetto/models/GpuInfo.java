@@ -16,6 +16,7 @@
 package com.google.gapid.perfetto.models;
 
 import static com.google.gapid.util.MoreFutures.transform;
+import static com.google.gapid.util.MoreFutures.transformAsync;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -35,6 +36,11 @@ public class GpuInfo {
   private static final String MAX_DEPTH_QUERY =
       "select t.id, t.name, t.scope, max(depth) + 1 " +
       "from gpu_track t left join gpu_slice s on (t.id = s.track_id) " +
+      "group by t.id " +
+      "order by t.id";
+  private static final String FRAME_SLICE_QUERY =
+      "select t.id, t.name, t.scope, max(depth) + 1 " +
+      "from gpu_track t join frame_slice s on (t.id = s.track_id) " +
       "group by t.id " +
       "order by t.id";
 
@@ -81,28 +87,39 @@ public class GpuInfo {
   }
 
   private static ListenableFuture<GpuInfo> info(QueryEngine qe) {
-    return transform(qe.queries(MAX_DEPTH_QUERY), res -> {
-      List<Queue> queues = Lists.newArrayList();
-      List<VkApiEvent> vkApiEvents = Lists.newArrayList();
-      List<Buffer> buffers = Lists.newArrayList();
-      res.forEachRow(($, r) -> {
-        switch (r.getString(2)) {
-          case "gpu_render_stage":
-            queues.add(new Queue(r));
-            break;
-          case "vulkan_events":
-            vkApiEvents.add(new VkApiEvent(r));
-            break;
-          case "graphics_frame_event":
-            buffers.add(new Buffer(r));
-            break;
-        }
-      });
+    return
+        transformAsync(qe.queries(MAX_DEPTH_QUERY), res ->
+          transform(qe.queries(FRAME_SLICE_QUERY), frame -> {
+            List<Queue> queues = Lists.newArrayList();
+            List<VkApiEvent> vkApiEvents = Lists.newArrayList();
+            List<Buffer> buffers = Lists.newArrayList();
+            res.forEachRow(($, r) -> {
+              switch (r.getString(2)) {
+                case "gpu_render_stage":
+                  queues.add(new Queue(r));
+                  break;
+                case "vulkan_events":
+                  vkApiEvents.add(new VkApiEvent(r));
+                  break;
+              }
+            });
 
-      // Sort buffers by name, the query is sorted by track id for the queues.
-      buffers.sort((b1, b2) -> b1.name.compareTo(b2.name));
-      return new GpuInfo(queues, vkApiEvents, buffers);
-    });
+            frame.forEachRow(($, r) -> {
+              buffers.add(new Buffer(r));
+            });
+
+            // Sort buffers by name, the query is sorted by track id for the queues.
+            buffers.sort((b1, b2) -> {
+              // Displayed Frame track should always be at top
+              if (b1.name.equals("Displayed Frame")) {
+                return -1;
+              } else if(b2.name.equals("Displayed Frame")) {
+                return 1;
+              }
+              return b1.name.compareTo(b2.name);
+            });
+            return new GpuInfo(queues, vkApiEvents, buffers);
+          }));
   }
 
   public static class Queue {
