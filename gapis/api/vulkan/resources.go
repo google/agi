@@ -1133,7 +1133,7 @@ func commonShaderDataGroups(ctx context.Context,
 							viewPath := path.NewField("ImageViews", resolve.APIStateAfter(path.FindCommand(cmd), ID)).MapIndex(viewHandle).Path()
 
 							imageView, _ := vkState.ImageViews().Lookup(viewHandle)
-							imageViewPath := path.NewImageView(resources[imageView.Image().ResourceHandle()]).Path()
+							imageViewPath := cmd.ResourceAfter(path.NewID(resources[imageView.Image().ResourceHandle()])).Path()
 							currentSetData = append(currentSetData, api.CreateLinkedDataValue("url", []*path.Any{viewPath, imageViewPath}, api.CreatePoDDataValue("VkImageView", viewHandle)))
 
 							currentSetData = append(currentSetData, api.CreateEnumDataValue("VkImageLayout", descInfo.ImageLayout()))
@@ -1151,7 +1151,7 @@ func commonShaderDataGroups(ctx context.Context,
 							viewPath := path.NewField("ImageViews", resolve.APIStateAfter(path.FindCommand(cmd), ID)).MapIndex(viewHandle).Path()
 
 							imageView, _ := vkState.ImageViews().Lookup(viewHandle)
-							imageViewPath := path.NewImageView(resources[imageView.Image().ResourceHandle()]).Path()
+							imageViewPath := cmd.ResourceAfter(path.NewID(resources[imageView.Image().ResourceHandle()])).Path()
 							currentSetData = append(currentSetData, api.CreateLinkedDataValue("url", []*path.Any{viewPath, imageViewPath}, api.CreatePoDDataValue("VkImageView", viewHandle)))
 
 							currentSetData = append(currentSetData, api.CreateEnumDataValue("VkImageLayout", descInfo.ImageLayout()))

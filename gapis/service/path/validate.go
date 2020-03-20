@@ -198,11 +198,6 @@ func (n *ImageInfo) Validate() error {
 }
 
 // Validate checks the path is valid.
-func (n *ImageView) Validate() error {
-	return checkNotNilAndValidate(n, n.ID, "image_index")
-}
-
-// Validate checks the path is valid.
 func (n *MapIndex) Validate() error {
 	return anyErr(
 		checkNotNilAndValidate(n, protoutil.OneOf(n.Map), "map"),

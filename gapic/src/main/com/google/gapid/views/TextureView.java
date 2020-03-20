@@ -239,12 +239,12 @@ public class TextureView extends Composite
   }
 
   @Override
-  public void onTextureFollowed(Path.ImageView path) {
+  public void onTextureFollowed(Service.Resource resource) {
     TableItem[] items = textureTable.getTable().getItems();
     for (int i = 0; i < items.length; i++) {
       Data d = (Data)(items[i].getData());
 
-      if (d.info.getID().equals(path.getID())) {
+      if (d.info.getID().equals(resource.getID())) {
         textureTable.getTable().setSelection(items[i]);
         updateSelection();
         break;
