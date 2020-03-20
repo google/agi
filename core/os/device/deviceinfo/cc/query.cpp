@@ -94,14 +94,6 @@ void buildDeviceInstance(const query::Option& opt, device::Instance** out) {
 
   const char* backupVendor = "";
   const char* backupName = "";
-  if (query::hasGLorGLES()) {
-    // Instance.Configuration.Drivers.OpenGLDriver
-    auto opengl_driver = new OpenGLDriver();
-    query::glDriver(opengl_driver);
-    drivers->set_allocated_opengl(opengl_driver);
-    backupVendor = opengl_driver->vendor().c_str();
-    backupName = opengl_driver->renderer().c_str();
-  }
 
   // Checks if the device supports Vulkan (have Vulkan loader) first, then
   // populates the VulkanDriver message.
