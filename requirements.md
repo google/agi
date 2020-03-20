@@ -28,9 +28,9 @@ The following Android devices are supported by AGI:
 
 Device name                        | GPU name
 ---------------------------------- | -------------------
-Google Pixel 4 (standard and XL)   | Qualcomm Adreno 640
+Google Pixel 4 (standard and XL)   | Qualcomm® Adreno™ 640
 Samsung Galaxy Note 10 (EU market) | ARM Mali G76
-Samsung Galaxy Note 10 (NA market) | Qualcomm Adreno 640
+Samsung Galaxy Note 10 (NA market) | Qualcomm® Adreno™ 640
 
 Android emulators are not supported.
 

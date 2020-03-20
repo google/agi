@@ -2,9 +2,9 @@ toc:
   - title: About AGI
     url: docs/
     subnav:
-      - title: Install AGI
-        url: docs/install
-      - title: Tutorial
+      - title: Download
+        url: docs/download
+      - title: Getting Started
         url: docs/tutorial
       - title: Supported Extensions
         url: docs/extensions

@@ -32,5 +32,9 @@
 }
 
 .banner-nav a {
-  padding-left: 7px;
+  padding-left: 20px;
+}
+
+.banner-nav a:last-child {
+  padding-right: 20px;
 }
