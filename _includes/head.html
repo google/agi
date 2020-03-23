@@ -1,13 +1,17 @@
 <head>
   <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  {% capture title %}{{site.title}}{% if page.title != "Home" %} &middot; {{ page.title }}{% endif %}{% endcapture %}
 
-  <title>
-    {% if page.title == "Home" %}
-      {{ site.title }}
-    {% else %}
-      {{ page.title }} &middot; {{ site.title }}
-    {% endif %}
-  </title>
+  <title>{{ title }}</title>
+  <meta itemprop="name" content="{{ title }}">
+  <meta itemprop="description" content="Android GPU Inspector is a single tool that will help you profile and debug graphics on Android.">
+  <meta itemprop="image" content="https://raw.githubusercontent.com/google/agi/master/tools/logo/logo_512.png">
+  <meta property="og:url" content="{{site.baseurl}}">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="{{site.title}}">
+  <meta property="og:title" content="{{title}}">
+  <meta property="og:description" content="Android GPU Inspector is a single tool that will help you profile and debug graphics on Android.">
+  <meta property="og:image" content="https://raw.githubusercontent.com/google/agi/master/tools/logo/logo_512.png">
   <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/google/agi/master/tools/logo/logo_32.png">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:400">
