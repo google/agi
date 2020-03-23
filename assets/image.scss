@@ -1,0 +1,40 @@
+#image-view {
+  background-color: black;
+  position: fixed;
+  top: 60px;
+  bottom: 5px;
+  left: 5px;
+  right: 5px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 10px;
+  opacity: 0;
+  height: 0;
+  overflow: hidden;
+  transition: opacity 0.5s ease-in;
+  visibility: hidden;
+}
+
+#image-view.show {
+  opacity: 1;
+  height: auto;
+  visibility: visible;
+}
+
+#image-view .back {
+  position: absolute;
+  top: 20px;
+  left: 10px;
+  font-size: 32px;
+  color: white;
+  cursor: pointer;
+  user-select: none;
+  background: rgba(0, 0, 0, .4);
+  padding: 0 10px;
+}
+
+#image-view .image {
+  max-width: 100%;
+  max-height: 100%;
+}

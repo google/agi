@@ -23,7 +23,7 @@ title: Home
 
 <div class="row">
   <div class="col3-l">
-    <a href="{{site.baseurl}}/images/optimization.png">
+    <a class="preview" href="{{site.baseurl}}/images/optimization.png">
       <img src="{{site.baseurl}}/images/optimization.png" width="256">
     </a>
     <p class="larger">
@@ -32,7 +32,7 @@ title: Home
     </p>
   </div>
   <div class="col3-m">
-    <a href="{{site.baseurl}}/images/gpu_activity.png">
+    <a class="preview" href="{{site.baseurl}}/images/gpu_activity.png">
       <img src="{{site.baseurl}}/images/gpu_activity.png" width="256">
     </a>
     <p class="larger">
@@ -41,7 +41,7 @@ title: Home
     </p>
   </div>
   <div class="col3-r">
-    <a href="{{site.baseurl}}/images/frame_debug.gif">
+    <a class="preview" href="{{site.baseurl}}/images/frame_debug.gif">
       <img src="{{site.baseurl}}/images/frame_debug.gif" width="256">
     </a>    <p class="larger">
       <b>Dive deep into a single frame</b><br/>
