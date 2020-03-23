@@ -1,0 +1,160 @@
+---
+# CSS used on the landing page.
+---
+
+@charset "utf-8";
+
+@import "banner.scss";
+@import "footer.scss";
+
+$base-font-family: "Roboto", Helvetica, Arial, sans-serif !default;
+$base-font-size:   16px !default;
+$base-font-weight: 400 !default;
+$base-line-height: 1.5 !default;
+$background-color: #ffffff !default;
+$base-text-color:  #202124 !default;
+
+$small-font-size:  $base-font-size * 0.875 !default;
+
+html, body {
+  height: 100%;
+}
+
+body {
+  margin: 0px;
+  background-color: $background-color;
+  font-size: $base-font-size;
+  font-family: $base-font-family;
+  font-weight: $base-font-weight;
+  line-height: $base-line-height;
+  color: $base-text-color;
+}
+
+.smaller {
+  font-size: $small-font-size;
+}
+
+a {
+  color:#0068da;
+  text-decoration:none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+h1 {
+  padding-bottom: 8px;
+  font-size: 34px;
+  font-weight: 200;
+  color: #202124;
+}
+
+h2 {
+  padding-bottom: 8px;
+  font-size: 24px;
+  font-weight: 200;
+  color: #202124;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.col2-l {
+  flex: 0 0 50%;
+  max-width: 50%;
+  order: 1;
+  position: relative;
+}
+
+.col2-r {
+  flex: 0 0 50%;
+  max-width: 50%;
+  order: 2;
+  position: relative;
+}
+
+.col3-l {
+  flex: 0 0 33%;
+  max-width: 33%;
+  order: 1;
+  position: relative;
+  padding-right: 3rem;
+  box-sizing: border-box;
+}
+
+.col3-m {
+  flex: 0 0 33%;
+  max-width: 33%;
+  order: 2;
+  position: relative;
+}
+
+.col3-r {
+  flex: 0 0 33%;
+  max-width: 33%;
+  order: 3;
+  position: relative;
+  padding-left: 3rem;
+  box-sizing: border-box;
+}
+
+.framed {
+  max-height: 100%;
+  max-width: 100%;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  margin: auto;
+}
+
+.centered {
+  display: block;
+  margin: 0 auto;
+}
+
+.home-signup {
+  display: inline-block;
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 18px;
+  line-height: 32px;
+  background: #039be5;
+  color: #fff;
+  padding: 10px 20px;
+  transition: background-color .2s, box-shadow .2s;
+  text-transform: uppercase;
+}
+
+.home-signup:hover {
+  background: #0388ca;
+  box-shadow: 0 1px 3px 1px rgba(66,133,244,0.15);
+  text-decoration: none;
+}
+
+.page {
+  display: flex;
+  flex-direction: row;
+  padding-top: 64px;
+  min-height: 100%;
+  box-sizing: border-box;
+}
+
+.page-content {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  position: relative;
+  padding-bottom: 120px;
+}
+
+.page-margin {
+  max-width: 960px;
+  margin-right: auto;
+  margin-left: auto;
+  padding: 0 15px;
+}
