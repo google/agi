@@ -120,7 +120,14 @@ DEVICE_TYPE="flame" # pixel4
 $LUCI_CLIENT_ROOT/isolate.py archive $AUTH_FLAG --isolate-server $ISOLATE_SERVER --isolate ${SRC}/test/swarming/task.isolate --isolated task.isolated
 ISOLATED_SHA=`sha1sum task.isolated | awk '{ print $1 }' `
 
-$LUCI_CLIENT_ROOT/swarming.py trigger $AUTH_FLAG --swarming $SWARMING_SERVER --isolate-server $ISOLATE_SERVER --isolated $ISOLATED_SHA --task-name 'KokoroSwarming' --dump-json task.json --dimension pool $SWARMING_POOL --dimension device_type "$DEVICE_TYPE"
+# Priority: lower is more priority, defaults to 200: PR short test tasks should be of higher priority than the default
+PRIORITY=100
+# Hard timeout: maximum number of seconds for the task to terminate
+HARD_TIMEOUT=300
+# Expiration: number of seconds to wait for a bot to be available
+EXPIRATION=600
+
+$LUCI_CLIENT_ROOT/swarming.py trigger $AUTH_FLAG --swarming $SWARMING_SERVER --isolate-server $ISOLATE_SERVER --isolated $ISOLATED_SHA --task-name ${TASK_NAME} --dump-json task.json --dimension pool $SWARMING_POOL --dimension device_type "$DEVICE_TYPE" --priority=$PRIORITY --expiration=$EXPIRATION --hard-timeout=$HARD_TIMEOUT
 
 # Collect task results: if the task failed, then the 'swarming.py collect'
 # command returns non-zero, making the build fail.
