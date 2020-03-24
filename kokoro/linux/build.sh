@@ -91,33 +91,40 @@ $SRC/kokoro/linux/package.sh $BUILD_ROOT/out
 ## Build is done, run some tests
 
 ##
-## Test on a real device using swarming. See scripts on x20 at:
-## teams/android-graphics-tools/agi/kokoro/swarming/
+## Test on a real device using swarming. APKs are stoed on x20, under:
+## teams/android-graphics-tools/agi/kokoro/swarming/apk/*.apk
 ##
 
-# Grab the LUCI scripts
+# Install LUCI
 curl -fsSL -o luci-py.tar.gz https://chromium.googlesource.com/infra/luci/luci-py.git/+archive/0b027452e658080df1f174c403946914443d2aa6.tar.gz
 mkdir luci-py
 tar xzvf luci-py.tar.gz --directory luci-py
-export LUCI_CLIENT_ROOT="$PWD/luci-py/client"
+LUCI_CLIENT_ROOT="$PWD/luci-py/client"
 
 # Credentials come from Keystore
-export SWARMING_AUTH_TOKEN_FILE=${KOKORO_KEYSTORE_DIR}/74894_kokoro_swarming_access_key
+SWARMING_AUTH_TOKEN_FILE=${KOKORO_KEYSTORE_DIR}/74894_kokoro_swarming_access_key
 
-# x20 seems to not allow executable files, force it on all files
-chmod -R a+x ${KOKORO_GFILE_DIR}
-cp -r bazel-bin/pkg ${KOKORO_GFILE_DIR}/files/agi
+# Prepare task files
+TASK_FILES_DIR=${SRC}/test/swarming/task-files
+cp -r bazel-bin/pkg ${TASK_FILES_DIR}/agi
+cp -r ${KOKORO_GFILE_DIR}/apk ${TASK_FILES_DIR}/
 
-# Run swarming script from its own directory, in a sub-shell
-(
-  cd ${KOKORO_GFILE_DIR}
-  ./swarming.sh
-)
-SWARMING_RESULT=$?
-if test ${SWARMING_RESULT} -ne 0; then
-  echo "Error: Swarming test failed"
-  exit 1
-fi
+# Trigger task
+AUTH_FLAG="--auth-service-account-json=$SWARMING_AUTH_TOKEN_FILE"
+TASK_NAME="Kokoro_PR${KOKORO_GITHUB_PULL_REQUEST_NUMBER}"
+ISOLATE_SERVER='https://chrome-isolated.appspot.com'
+SWARMING_SERVER='https://chrome-swarming.appspot.com'
+SWARMING_POOL='SkiaInternal'
+DEVICE_TYPE="flame" # pixel4
+
+$LUCI_CLIENT_ROOT/isolate.py archive $AUTH_FLAG --isolate-server $ISOLATE_SERVER --isolate ${SRC}/test/swarming/task.isolate --isolated task.isolated
+ISOLATED_SHA=`sha1sum task.isolated | awk '{ print $1 }' `
+
+$LUCI_CLIENT_ROOT/swarming.py trigger $AUTH_FLAG --swarming $SWARMING_SERVER --isolate-server $ISOLATE_SERVER --isolated $ISOLATED_SHA --task-name 'KokoroSwarming' --dump-json task.json --dimension pool $SWARMING_POOL --dimension device_type "$DEVICE_TYPE"
+
+# Collect task results: if the task failed, then the 'swarming.py collect'
+# command returns non-zero, making the build fail.
+$LUCI_CLIENT_ROOT/swarming.py collect $AUTH_FLAG --swarming $SWARMING_SERVER --json task.json --task-summary-json summary.json
 
 ##
 ## Test capture and replay of the Vulkan Sample App.
