@@ -12,4 +12,17 @@
     <a href="{{site.feedback-url}}">Feedback</a>
     <a href="{{site.project-url}}">GitHub</a>
   </div>
+  <div class="banner-menu">
+    <span class="material-icons" onclick="toggleMenu(this)">menu</span>
+  </div>
+  <script>
+    function toggleMenu(e) {
+      var nav = e.parentElement.parentElement.getElementsByClassName("banner-nav")[0];
+      if (nav.style.display != "block") {
+        nav.style.display = "block";
+      } else {
+        nav.style.display = "none";
+      }
+    }
+  </script>
 </div>

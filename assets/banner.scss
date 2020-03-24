@@ -1,3 +1,5 @@
+$min-screen: 600px;
+
 .banner {
   background-color: #fdfdfd;
   color: #202020;
@@ -28,10 +30,47 @@
 }
 
 .banner-nav {
-  text-align: right;
-  padding-right: 20px;
+  display: none;
+  position: fixed;
+  right: 0;
+  top: 36px;
+  background: #f7f9fa;
+  padding: 5px 20px;
+  border: 1px solid #e7e9ea;
 }
 
 .banner-nav a {
-  padding-left: 20px;
+  display: block;
+}
+
+.banner-menu {
+  text-align: right;
+  padding-right: 10px;
+}
+
+.banner-menu > span {
+  vertical-align: middle;
+  cursor: pointer;
+  user-select: none;
+}
+
+@media screen and (min-width: $min-screen) {
+  .banner-nav {
+    display: block !important;
+    position: relative;
+    top: 0;
+    background: initial;
+    padding: 0 20px 0 0;
+    text-align: right;
+    border: 0;
+  }
+
+  .banner-nav a {
+    padding-left: 20px;
+    display: initial;
+  }
+
+  .banner-menu {
+    display: none;
+  }
 }

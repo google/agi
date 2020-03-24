@@ -16,6 +16,7 @@ $background-color: #ffffff !default;
 $base-text-color:  #202124 !default;
 
 $small-font-size:  $base-font-size * 0.875 !default;
+$min-screen:       900px;
 
 html, body {
   height: 100%;
@@ -47,14 +48,14 @@ a:hover {
 h1 {
   padding-bottom: 8px;
   font-size: 34px;
-  font-weight: 200;
+  font-weight: 500;
   color: #202124;
 }
 
 h2 {
   padding-bottom: 8px;
   font-size: 24px;
-  font-weight: 200;
+  font-weight: 500;
   color: #202124;
 }
 
@@ -63,54 +64,61 @@ h2 {
   flex-wrap: wrap;
 }
 
-.col2-l {
-  flex: 0 0 50%;
-  max-width: 50%;
-  order: 1;
+.col2-l, .col2-r {
   position: relative;
-}
-
-.col2-r {
-  flex: 0 0 50%;
-  max-width: 50%;
-  order: 2;
-  position: relative;
-}
-
-.col3-l {
-  flex: 0 0 33%;
-  max-width: 33%;
-  order: 1;
-  position: relative;
-  padding-right: 3rem;
+  width: 100%;
   box-sizing: border-box;
 }
 
-.col3-m {
-  flex: 0 0 33%;
-  max-width: 33%;
-  order: 2;
-  position: relative;
+.row h1 {
+  text-align: center;
 }
 
-.col3-r {
-  flex: 0 0 33%;
-  max-width: 33%;
-  order: 3;
+@media screen and (min-width: $min-screen) {
+  .col2-l {
+    flex: 0 0 50%;
+    max-width: 50%;
+    order: 1;
+  }
+
+  .col2-r {
+    flex: 0 0 50%;
+    max-width: 50%;
+    order: 2;
+  }
+}
+
+.col3-l, .col3-m, .col3-r {
   position: relative;
-  padding-left: 3rem;
   box-sizing: border-box;
+  padding-bottom: 3rem;
 }
 
-.framed {
-  max-height: 100%;
-  max-width: 100%;
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  margin: auto;
+@media screen and (min-width: $min-screen) {
+  .col3-l {
+    flex: 0 0 33%;
+    max-width: 33%;
+    order: 1;
+    position: relative;
+    padding-right: 3rem;
+    box-sizing: border-box;
+  }
+
+  .col3-m {
+    flex: 0 0 33%;
+    max-width: 33%;
+    order: 2;
+    position: relative;
+  }
+
+  .col3-r {
+    flex: 0 0 33%;
+    max-width: 33%;
+    order: 3;
+    position: relative;
+    padding-left: 3rem;
+    box-sizing: border-box;
+  }
 }
 
 .centered {
@@ -147,10 +155,11 @@ h2 {
 
 .page-content {
   display: flex;
-  width: 100%;
   flex-direction: column;
+  width: 100%;
   position: relative;
   padding-bottom: 120px;
+  box-sizing: border-box;
 }
 
 .page-margin {
