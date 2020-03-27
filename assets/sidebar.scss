@@ -1,42 +1,98 @@
 @charset "utf-8";
 
+$min-screen: 600px;
+
 .sidebar {
+  position: fixed;
+  width: 25px;
+  font-size: .9rem;
+  overflow-y: auto;
+  color: #4a4a4a;
+  background-color: #f7f9fa;
+  box-shadow: 0px 0px 4px 0px rgba(0, 0, 0, 0.45);
+  z-index: 1;
+  min-height: 100%;
+}
+
+.sidebar.open {
+  width: 15em;
+}
+
+.page-content {
+  margin-left: 10px;
+}
+
+@media screen and (min-width: $min-screen) {
+  .sidebar {
     flex: 0 0 15em;
-    font-size: .9rem;
-    overflow-y: auto;
-    color: #4a4a4a;
-    background-color: #f7f9fa;
-    box-shadow: 0px 0px 4px 0px rgba(0, 0, 0, 0.45);
-    z-index: 1;
-    min-height: 100%;
+    position: initial;
+  }
+
+  .page-content {
+    margin-left: 0;
+  }
+}
+
+.sidebar-menu {
+  float: right;
+  margin-top: 15px;
+  text-align: right;
+  cursor: pointer;
+  user-select: none;
+}
+
+.sidebar-menu span.material-icons:after {
+  content: "chevron_right";
+}
+
+.sidebar.open .sidebar-menu span.material-icons:after {
+  content: "chevron_left";
+}
+
+.sidebar-items {
+  display: none;
+}
+
+.sidebar.open .sidebar-items {
+  display: initial;
+}
+
+@media screen and (min-width: $min-screen) {
+  .sidebar-menu {
+    display: none;
+  }
+
+  .sidebar-items {
+    display: initial;
+  }
 }
 
 // Sidebar nav
 .sidebar-item.child {
-    padding-left: 35px;
+  padding-left: 35px;
 }
 
 .sidebar ul {
-    padding-top: 2px;
-    padding-bottom: 2px;
-    padding-left: 15px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  padding-left: 15px;
 }
 
 .sidebar ul.level0 {
-    padding-left: 2px;
-    margin-top: 0px;
+  padding-left: 2px;
+  margin-top: 0px;
 }
 
 .sidebar li {
-    list-style: none;
-    padding-top: 0px;
+  list-style: none;
+  padding-top: 0px;
 }
 
 .sidebar-item.active,
 .sidebar-item:hover,
 .sidebar-item:focus {
-    color: #0068da;
-    background-color: rgba(255, 255, 255, 0.1);
+  color: #0068da;
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 a.sidebar-item:hover {
@@ -45,22 +101,22 @@ a.sidebar-item:hover {
 
 .sidebar-item-heading,
 .sidebar-item {
-    display: block;
-    padding: 5px;
-    padding-left: 12px;
-    color: #4a4a4a;
-    text-decoration: none;
-    font-size: 14px;
+  display: block;
+  padding: 5px;
+  padding-left: 12px;
+  color: #4a4a4a;
+  text-decoration: none;
+  font-size: 14px;
 }
 
 .sidebar-item-heading {
-    font-weight: 500;
+  font-weight: 500;
 }
 
 .sidebar-sep {
-    border-bottom: solid 1px #e5e5e5;
+  border-bottom: solid 1px #e5e5e5;
 }
 
 .level0 > li {
-    margin-top: 15px;
+  margin-top: 15px;
 }
