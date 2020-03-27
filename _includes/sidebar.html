@@ -1,4 +1,18 @@
-<div class="sidebar">
-  {% assign level = 0 %}
-  {% include nav.html nav=site.data.nav.toc heading=level %}
+<div class="sidebar" onclick="toggleSidebar(this)">
+  <div class="sidebar-menu">
+    <span class="material-icons""></span>
+  </div>
+  <div class="sidebar-items">
+    {% assign level = 0 %}
+    {% include nav.html nav=site.data.nav.toc heading=level %}
+  </div>
 </div>
+<script>
+function toggleSidebar(e) {
+  if (e.classList.contains("open")) {
+    e.classList.remove("open");
+  } else {
+    e.classList.add("open");
+  }
+}
+</script>
