@@ -2,6 +2,7 @@
 layout: default
 title: Textures Pane
 permalink: /inspect/textures
+published: false
 ---
 
 The **Textures** pane displays all the texture resources created up to and including the selected command.

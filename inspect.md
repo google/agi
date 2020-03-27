@@ -2,6 +2,7 @@
 layout: default
 title: Inspecting a trace
 permalink: /inspecting/
+published: false
 ---
 
 Once you've finished taking a trace, the capture will automatically open. You can also open previously created `.gfxtrace` files using the `File` &rarr; `Open` toolbar item.

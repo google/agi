@@ -2,11 +2,12 @@
 layout: default
 title: How do I create a video of my trace?
 permalink: /tutorials/createvideo
+published: false
 ---
 
 AGI has the ability to export a captured trace as a video.
 
-This feature is only available via the command line tool [`gapit`](../cli).
+This feature is only available via the command line tool [`gapit`](../docs/cli).
 
 ### Prerequisites
 * A previously captured trace file ending in *.gfxtrace

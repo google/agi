@@ -2,6 +2,7 @@
 layout: default
 title: Check Vulkan render state
 permalink: /tutorials/renderstate
+published: false
 ---
 
 The state of rendering of Vulkan applications is reflected in two parts in

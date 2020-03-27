@@ -2,6 +2,7 @@
 layout: default
 title: State Pane
 permalink: /inspect/state
+published: false
 ---
 
 The **State** pane displays the driver state immediately after executing the selected command.

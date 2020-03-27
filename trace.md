@@ -2,6 +2,7 @@
 layout: default
 title: Capturing a trace
 permalink: /trace/
+published: false
 ---
 
 GAPID supports capturing from both Android devices and Windows/Linux desktop machines. On Android devices, GAPID supports tracing all OpenGL ES and Vulkan calls made by either a pure Java, native or hybrid application. On Windows/Linux desktop machines, GAPID supports tracing Vulkan calls.

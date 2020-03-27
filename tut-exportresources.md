@@ -2,6 +2,7 @@
 layout: default
 title: How do I use GAPID to export my resources?
 permalink: /tutorials/export
+published: false
 ---
 
 GAPID provides the ability to export geometry and texture data from your trace.

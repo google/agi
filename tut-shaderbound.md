@@ -2,6 +2,7 @@
 layout: default
 title: How do I see the currently bound shader?
 permalink: /tutorials/seeboundshaders
+published: false
 ---
 
 <h4>Select the graphics API used:</h4>
