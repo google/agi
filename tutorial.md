@@ -1,101 +1,85 @@
 ---
-title: Tutorial - Profile a Vulkan Application on Android
+title: Getting Started
 layout: default
-permalink: /docs/tutorial
+permalink: /docs/getting-started
 ---
-
-> (Short walkthrough: download, install, capture system trace, capture API
-> trace, replay, show counters)
 
 ## Install adb
 
-Make sure the `adb` tool is installed on your host computer. See the
-[adb documentation](https://developer.android.com/studio/command-line/adb) for
-installation instructions.
+Make sure the `adb` tool is installed on your host computer. See the [adb documentation](https://developer.android.com/studio/command-line/adb) for installation instructions.
 
-## Profile a Vulkan application
+## Prepare your device
 
-Connect one of the
-[supported devices](../requirements#supported-android-devices)
-to your host computer with a USB cable. Your device must have
-[`adb` debugging enabled](https://developer.android.com/studio/command-line/adb#Enabling)
+For the duration of the developer preview, instructions on how to set up the beta GPU drivers will be e-mailed to you.
+
+## Prepare your application
+
+* The target application must be debuggable; the [debuggable attribute] in the Android manifest of the application must be set to `true`. This attribute enables AGI to add its own Vulkan layer when the application starts.
+  ```xml
+  <application [...] android:debuggable="true">
+  ```
+[debuggable attribute]: https://developer.android.com/guide/topics/manifest/application-element#debug
+
+## Capturing a systems profile of a Vulkan application
+
+1. Connect one of the [supported devices](../requirements#supported-android-devices) to your host computer with a USB cable. Your device must have [`adb` debugging enabled](https://developer.android.com/studio/command-line/adb#Enabling)
 such that it can be accessed via `adb`.
 
-The first time you launch AGI, you face a pop-up windows prompting for some
-options and the path to the `adb` tool. Fill this up and close the window.
-Settings are saved in the `.agic` file in your HOME folder.
+2. The first time you launch AGI, you will see a pop-up windows prompting for some options and the path to the `adb` tool. Fill this and close the window. Settings are saved in the `.agic` file in your HOME folder.
 
-<img src="../images/system_profiler/startup.png" width="500px">
+    <img src="../images/system_profiler/startup.png" width="500px">
 
-You now face the welcome window. Click on the "Capture a new trace" option,
-which brings you to the capture option menu.
+3. You will now see the welcome window. Click on the "Capture a new trace" option, which will then bring you to the capture option menu.
 
-<img src="../images/system_profiler/welcome.png" width="500px">
+    <img src="../images/system_profiler/welcome.png" width="500px">
 
-The first thing to do is to select the Android device you want to capture on. If
-your device does not shows up in the "Device" list, you can refresh the device
-list by clicking on the reload arrow next to the drop-down menu.
+4. The first thing to do is to select the Android device you want to capture on. If your device does not shows up in the "Device" list, you can refresh the device list by clicking on the reload arrow next to the drop-down menu.
 
-<img src="../images/system_profiler/capture-dialog.png" width="500px">
+    <img src="../images/system_profiler/capture-dialog.png" width="500px">
 
-In "Type", select "System profile".
+5. In "Type", select "System profile".
 
-Next, you need to select which application you want to trace. AGI comes with a
-simple Vulkan application that we are going to use as an example here. Click on
-the "..." button right next to the "Application" text entry to list applications
-that can be traces on the selected device. This pops-up the "Select an
-Application to Trace" window. Type "gapid" in the filter text box to filter down
-applications to the ones that contain "gapid" in their package name. Expand the
-package, select "com.google.android.gapid.VkSampleActivity", and press "OK". This
-brings you back to the capture options window, with the "Application" field
-populated by the Application you selected.
+6. Select which application you want to trace. 
 
-You may also choose another Vulkan application if you prefer.  If there is only
-one activity in the package, you can simply select the package instead of the Activity.
+    <div class="info" markdown="span">	
+    AGI comes with a simple Vulkan application that we are going to use as an example.<br><br>
+    1. Click on the "..." button right next to the "Application" text entry to list applications that can be traced on the selected device.<br>
+    2. This pops-up the "Select an Application to Trace" window.<br>
+    3. Type "gapid" in the filter text box to filter down applications to the ones that contain "gapid" in their package name.<br>
+    4. Expand the package, select "com.google.android.gapid.VkSampleActivity", and press "OK".<br>
+    5. This brings you back to the capture options window, with the "Application" field populated by the Application you selected.<br>
+    </div>
 
-In the "Application" section, you can leave the other fields empty.
+    You may also choose another Vulkan application if you prefer.  If there is only one activity in the package, you can simply select the package instead of the Activity.
 
-Under "Start and Duration" section, set "Start at" to "Manual", and "Duration"
-to 2.
+7. In the "Application" section, you can leave the other fields empty.
 
-In the "Trace Option" section, click on the "Configure" button to pop-up a
-configuration window where you can select which can of performance counters you
-want to be captured.
+8. Under "Start and Duration" section, set "Start at" to "Manual", and "Duration" to 2.
 
-<img src="../images/system_profiler/capture-config.png" width="500px">
+9. In the "Trace Option" section, click on the "Configure" button to pop-up a configuration window where you can select which can of performance counters you want to be captured.
 
-In the "Output" section, please select an "Output Directory" where the capture
-file will be stored. The "File Name" should be auto-filled, you can edit the
-file name if need be.
+    <img src="../images/system_profiler/capture-config.png" width="500px">
 
-In the GPU section, click on "Select" to bring up the counter selection dialog.
-Click on "default" to select the set of default counters and press "OK".
+10. In the "Output" section, please select an "Output Directory" where the capture file will be stored. The "File Name" should be auto-filled. You can also edit the file name.
 
-<img src="../images/system_profiler/counter-config.png" width="500px">
+11. In the GPU section, click on "Select" to bring up the counter selection dialog. Click on "default" to select the set of default counters and press "OK".
 
-Once all this is done, press "OK". This starts the selected app on the Android
-device, and creates a pop-up window with a "Start" button. Click the "Start"
-button to start the performance capture, and wait for a couple of seconds for
+    <img src="../images/system_profiler/counter-config.png" width="500px">
+
+12. Once all this is done, press "OK". This starts the selected app on the Android device, and creates a pop-up window with a "Start" button. Click the "Start" button to start the performance capture, and wait for a couple of seconds for
 the trace to terminate.
 
-Once the capture is completed, click on "Open Trace". This leads to a view
-similar to [systrace](https://developer.android.com/studio/profile/systrace).
+13. Once the capture is completed, click on "Open Trace". This leads to a view similar to [systrace](https://developer.android.com/studio/profile/systrace).
 
-<img src="../images/system_profiler/system-profile.png" width="500px">
+    <img src="../images/system_profiler/system-profile.png" width="500px">
 
-Compare to systrace, there are now additional information relating to the GPU.
-The GPU Queue section shows when GPU commands are submitted and when the GPU
-actually starts work.  The GPU Counters shows various performance counters to
-help optimize the graphics works in the app.
+    Compare to systrace, there are now additional information relating to the GPU. The GPU Queue section shows when GPU commands are submitted and when the GPU actually starts work.  The GPU Counters shows various performance counters to help optimize the graphics works in the app.
 
 ## Validate Vulkan on Android
 
-The official Android documentation contains a section about
-[Vulkan Validation layers](https://developer.android.com/ndk/guides/graphics/validation-layer).
+The official Android documentation contains a section about [Vulkan Validation layers](https://developer.android.com/ndk/guides/graphics/validation-layer).
 
-If your app does not already have a setup to run with the validation layers, you
-can use the following commands to force it to run with the validation layers
-shipped in the GAPID apk:
+If your app does not already have a setup to run with the validation layers, you can use the following commands to force it to run with the validation layers shipped in the GAPID apk:
 
 ```sh
 app_package=<YOUR APP PACKAGE NAME HERE>

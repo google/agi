@@ -1,7 +1,7 @@
 ---
 title: Qualcomm Counters
 layout: default
-permalink: /gpu-counters/qualcomm
+permalink: /docs/gpu-counters/qualcomm
 ---
 
 * `% Anisotropic Filtered`

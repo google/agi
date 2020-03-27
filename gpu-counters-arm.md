@@ -1,7 +1,7 @@
 ---
 title: Arm® Mali™ GPU Counters
 layout: default
-permalink: /gpu-counters/arm
+permalink: /docs/gpu-counters/arm
 ---
 
 * `MaliFragActiveCy`
