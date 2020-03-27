@@ -19,6 +19,9 @@ toc:
         url: docs/gpu-counters/qualcomm
   - title: System requirements
     url: docs/requirements
+    subnav:
+      - title: Device Validation
+        url: validation
   - title: CLI documentation
     url: docs/cli
   - title: Releases
