@@ -22,10 +22,10 @@ For the duration of the developer preview, instructions on how to set up the bet
 
 ## Capturing a systems profile of a Vulkan application
 
-1. Connect one of the [supported devices](../requirements#supported-android-devices) to your host computer with a USB cable. Your device must have [`adb` debugging enabled](https://developer.android.com/studio/command-line/adb#Enabling)
+1. Connect one of the [supported devices](requirements#supported-android-devices) to your host computer with a USB cable. Your device must have [`adb` debugging enabled](https://developer.android.com/studio/command-line/adb#Enabling)
 such that it can be accessed via `adb`.
 
-2. The first time you launch AGI, you will see a pop-up windows prompting for some options and the path to the `adb` tool. Fill this and close the window. Settings are saved in the `.agic` file in your HOME folder.
+2. The first time you launch AGI, you will see a pop-up window prompting for some options and the path to the `adb` tool. Fill this and close the window. Settings are saved in the `.agic` file in your HOME folder.
 
     <img src="../images/system_profiler/startup.png" width="500px">
 
@@ -56,15 +56,15 @@ such that it can be accessed via `adb`.
 
 8. Under "Start and Duration" section, set "Start at" to "Manual", and "Duration" to 2.
 
-9. In the "Trace Option" section, click on the "Configure" button to pop-up a configuration window where you can select which can of performance counters you want to be captured.
+9. In the "Trace Option" section, click on the "Configure" button to pop-up a configuration window where you can select which performance counters you want to be captured.
 
     <img src="../images/system_profiler/capture-config.png" width="500px">
 
-10. In the "Output" section, please select an "Output Directory" where the capture file will be stored. The "File Name" should be auto-filled. You can also edit the file name.
-
-11. In the GPU section, click on "Select" to bring up the counter selection dialog. Click on "default" to select the set of default counters and press "OK".
+10. In the GPU section, click on "Select" to bring up the counter selection dialog. Click on "default" to select the set of default counters and press "OK".
 
     <img src="../images/system_profiler/counter-config.png" width="500px">
+
+11. In the "Output" section, please select an "Output Directory" where the capture files will be stored. The "File Name" should be auto-filled. You can also edit the file name.
 
 12. Once all this is done, press "OK". This starts the selected app on the Android device, and creates a pop-up window with a "Start" button. Click the "Start" button to start the performance capture, and wait for a couple of seconds for
 the trace to terminate.
@@ -73,7 +73,7 @@ the trace to terminate.
 
     <img src="../images/system_profiler/system-profile.png" width="500px">
 
-    Compare to systrace, there are now additional information relating to the GPU. The GPU Queue section shows when GPU commands are submitted and when the GPU actually starts work.  The GPU Counters shows various performance counters to help optimize the graphics works in the app.
+    In addition to the data available in systrace, AGI also shows GPU performance information. The GPU Queue section shows when GPU commands are submitted and when the GPU actually starts work.  The GPU Counters shows various performance counters to help optimize the graphics works in the app.
 
 ## Validate Vulkan on Android
 
@@ -88,10 +88,7 @@ abi=arm64v8a # Possible values: arm64v8a, armeabi-v7a, x86
 adb shell settings put global enable_gpu_debug_layers 1
 adb shell settings put global gpu_debug_app ${app_package}
 adb shell settings put global gpu_debug_layer_app com.google.android.gapid.${abi}
-# The order of layers matter
-adb shell settings put global gpu_debug_layers VK_LAYER_GOOGLE_threading:VK_LAYER_LUNARG_parameter_validation:VK_LAYER_LUNARG_object_tracker:VK_LAYER_LUNARG_core_validation:VK_LAYER_GOOGLE_unique_objects
-# Once NDK r21 stable release is done, we can use the unified layer:
-# adb shell settings put global gpu_debug_layers VK_LAYER_KHRONOS_validation
+adb shell settings put global gpu_debug_layers VK_LAYER_KHRONOS_validation
 ```
 
 To disable validation layers:
