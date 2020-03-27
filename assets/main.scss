@@ -125,7 +125,9 @@ h4 {
 
 .page-content {
   display: flex;
-  width: 100%;
+  // width: 100%;
+  max-width: 800px;
+  min-width: 450px;
   flex-direction: column;
   // padding: 5px 5px 5px 1rem;
   position: relative;
