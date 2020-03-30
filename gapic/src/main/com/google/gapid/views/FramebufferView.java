@@ -17,11 +17,14 @@ package com.google.gapid.views;
 
 import static com.google.gapid.util.Loadable.MessageType.Error;
 import static com.google.gapid.util.Loadable.MessageType.Info;
+import static com.google.gapid.util.Logging.throttleLogRpcError;
 import static com.google.gapid.widgets.Widgets.createBaloonToolItem;
 import static com.google.gapid.widgets.Widgets.createComposite;
 import static com.google.gapid.widgets.Widgets.createSeparator;
 import static com.google.gapid.widgets.Widgets.createToggleToolItem;
 import static com.google.gapid.widgets.Widgets.exclusiveSelection;
+
+import static java.util.logging.Level.SEVERE;
 
 import com.google.gapid.image.FetchedImage;
 import com.google.gapid.image.MultiLayerAndLevelImage;
@@ -35,6 +38,7 @@ import com.google.gapid.proto.device.Device;
 import com.google.gapid.proto.service.Service;
 import com.google.gapid.proto.service.Service.ClientAction;
 import com.google.gapid.proto.service.api.API;
+import com.google.gapid.proto.service.path.Path;
 import com.google.gapid.rpc.Rpc;
 import com.google.gapid.rpc.RpcException;
 import com.google.gapid.rpc.SingleInFlight;
@@ -248,6 +252,37 @@ public class FramebufferView extends Composite
 
         @Override
         protected void onUiThreadError(Loadable.Message message) {
+          imagePanel.showMessage(message);
+        }
+      });
+
+      Rpc.listen(models.resources.loadFramebufferAttachments(),
+          new UiErrorCallback<API.FramebufferAttachments, String, Loadable.Message>(this, LOG) {
+        @Override
+        protected ResultOrError<String, Loadable.Message> onRpcThread(
+            Rpc.Result<API.FramebufferAttachments> result) {
+          try {
+            return success(result.get().getName());
+          }  catch (DataUnavailableException e) {
+            return error(Loadable.Message.error(e));
+          } catch (RpcException e) {
+            models.analytics.reportException(e);
+            return error(Loadable.Message.error(e));
+          } catch (ExecutionException e) {
+            models.analytics.reportException(e);
+            throttleLogRpcError(LOG, "Failed to load framebuffer attachments", e);
+            return error(Loadable.Message.error(e.getCause().getMessage()));
+          }
+        }
+
+        @Override
+        protected void onUiThreadSuccess(String n) {
+          LOG.log(SEVERE, "MESSAGE: " + n);
+        }
+
+        @Override
+        protected void onUiThreadError(Loadable.Message message) {
+          LOG.log(SEVERE, "IT REACHES HERE!");
           imagePanel.showMessage(message);
         }
       });

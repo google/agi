@@ -72,6 +72,7 @@ func (n *Device) Path() *Any                    { return &Any{Path: &Any_Device{
 func (n *DeviceTraceConfiguration) Path() *Any  { return &Any{Path: &Any_TraceConfig{n}} }
 func (n *Events) Path() *Any                    { return &Any{Path: &Any_Events{n}} }
 func (n *FramebufferObservation) Path() *Any    { return &Any{Path: &Any_FBO{n}} }
+func (n *FramebufferAttachments) Path() *Any    { return &Any{Path: &Any_FramebufferAttachments{n}} }
 func (n *Field) Path() *Any                     { return &Any{Path: &Any_Field{n}} }
 func (n *GlobalState) Path() *Any               { return &Any{Path: &Any_GlobalState{n}} }
 func (n *ImageInfo) Path() *Any                 { return &Any{Path: &Any_ImageInfo{n}} }
@@ -112,6 +113,7 @@ func (n Device) Parent() Node                    { return nil }
 func (n DeviceTraceConfiguration) Parent() Node  { return n.Device }
 func (n Events) Parent() Node                    { return n.Capture }
 func (n FramebufferObservation) Parent() Node    { return n.Command }
+func (n FramebufferAttachments) Parent() Node    { return n.After }
 func (n Field) Parent() Node                     { return oneOfNode(n.Struct) }
 func (n GlobalState) Parent() Node               { return n.After }
 func (n ImageInfo) Parent() Node                 { return nil }
@@ -150,6 +152,7 @@ func (n *Device) SetParent(p Node)                    {}
 func (n *DeviceTraceConfiguration) SetParent(p Node)  { n.Device, _ = p.(*Device) }
 func (n *Events) SetParent(p Node)                    { n.Capture, _ = p.(*Capture) }
 func (n *FramebufferObservation) SetParent(p Node)    { n.Command, _ = p.(*Command) }
+func (n *FramebufferAttachments) SetParent(p Node)    { n.After, _ = p.(*Command) }
 func (n *GlobalState) SetParent(p Node)               { n.After, _ = p.(*Command) }
 func (n *ImageInfo) SetParent(p Node)                 {}
 func (n *Memory) SetParent(p Node)                    { n.After, _ = p.(*Command) }
@@ -628,6 +631,10 @@ func (n *Command) ResourcesAfter(ids []*ID) *MultiResourceData {
 		IDs:   ids,
 		After: n,
 	}
+}
+
+func (n *Command) FramebufferAttachmentsAfter(ids []*ID) *FramebufferAttachments {
+	return &FramebufferAttachments{After: n}
 }
 
 // FramebufferObservation returns the path node to framebuffer observation

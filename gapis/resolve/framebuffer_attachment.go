@@ -30,6 +30,22 @@ import (
 	"github.com/google/gapid/gapis/service/path"
 )
 
+func FramebufferAttachments(ctx context.Context, p *path.FramebufferAttachments, r *path.ResolveConfig) (interface{}, error) {
+	obj, err := database.Build(ctx, &FramebufferAttachmentsResolvable{Path: p, Config: r})
+	if err != nil {
+		return nil, err
+	}
+	return obj, nil
+}
+
+func (r *FramebufferAttachmentsResolvable) Resolve(ctx context.Context) (interface{}, error) {
+	s := "It works!"
+	return &api.FramebufferAttachments{
+		Name: string(s),
+		Test: true,
+	}, nil
+}
+
 // FramebufferAttachment resolves the specified framebuffer attachment at the
 // specified point in a capture.
 func FramebufferAttachment(

@@ -45,6 +45,11 @@ message FramebufferAttachmentResolvable {
   path.ResolveConfig config = 6;
 }
 
+message FramebufferAttachmentsResolvable {
+  path.FramebufferAttachments path = 1;
+  path.ResolveConfig config = 2;
+}
+
 message FramebufferChangesResolvable {
   path.Capture capture = 1;
   path.ResolveConfig config = 2;

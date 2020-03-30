@@ -89,6 +89,23 @@ enum FramebufferAttachment {
   Color3 = 5;
 }
 
+enum FramebufferAttachmentType {
+  DepthAttachment = 0;
+  ColorAttachment = 1;
+}
+
+message FramebufferAttachments {
+  string name = 1;
+  bool test = 2;
+}
+
+message FramebufferAttachmentVulkan {
+  uint32 index = 1;
+  FramebufferAttachmentType type = 2;
+  image.Info info = 3;
+  string label = 4;
+}
+
 enum ShaderType {
   Vertex = 0;
   Geometry = 1;
