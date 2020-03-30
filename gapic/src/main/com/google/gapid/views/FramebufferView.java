@@ -70,27 +70,27 @@ public class FramebufferView extends Composite
     implements Tab, Capture.Listener, Devices.Listener, CommandStream.Listener {
   private static final Logger LOG = Logger.getLogger(FramebufferView.class.getName());
   private static final int MAX_SIZE = 0xffff;
-  private static final Service.RenderSettings RENDER_SHADED = Service.RenderSettings.newBuilder()
+  private static final Path.RenderSettings RENDER_SHADED = Path.RenderSettings.newBuilder()
       .setMaxHeight(MAX_SIZE).setMaxWidth(MAX_SIZE)
-      .setDrawMode(Service.DrawMode.NORMAL)
+      .setDrawMode(Path.DrawMode.NORMAL)
       .build();
-  private static final Service.RenderSettings RENDER_OVERLAY = Service.RenderSettings.newBuilder()
+  private static final Path.RenderSettings RENDER_OVERLAY = Path.RenderSettings.newBuilder()
       .setMaxHeight(MAX_SIZE).setMaxWidth(MAX_SIZE)
-      .setDrawMode(Service.DrawMode.WIREFRAME_OVERLAY)
+      .setDrawMode(Path.DrawMode.WIREFRAME_OVERLAY)
       .build();
-  private static final Service.RenderSettings RENDER_WIREFRAME = Service.RenderSettings.newBuilder()
+  private static final Path.RenderSettings RENDER_WIREFRAME = Path.RenderSettings.newBuilder()
       .setMaxHeight(MAX_SIZE).setMaxWidth(MAX_SIZE)
-      .setDrawMode(Service.DrawMode.WIREFRAME_ALL)
+      .setDrawMode(Path.DrawMode.WIREFRAME_ALL)
       .build();
-  private static final Service.RenderSettings RENDER_OVERDRAW = Service.RenderSettings.newBuilder()
+  private static final Path.RenderSettings RENDER_OVERDRAW = Path.RenderSettings.newBuilder()
       .setMaxHeight(MAX_SIZE).setMaxWidth(MAX_SIZE)
-      .setDrawMode(Service.DrawMode.OVERDRAW)
+      .setDrawMode(Path.DrawMode.OVERDRAW)
       .build();
 
   private final Models models;
   private final SingleInFlight rpcController = new SingleInFlight();
   protected final ImagePanel imagePanel;
-  private Service.RenderSettings renderSettings = RENDER_SHADED;
+  private Path.RenderSettings renderSettings = RENDER_SHADED;
   private API.FramebufferAttachment target = API.FramebufferAttachment.Color0;
   private ToolItem targetItem;
 
@@ -285,6 +285,7 @@ public class FramebufferView extends Composite
           LOG.log(SEVERE, "IT REACHES HERE!");
           imagePanel.showMessage(message);
         }
+      
       });
     }
   }

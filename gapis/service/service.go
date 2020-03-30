@@ -112,11 +112,11 @@ type Service interface {
 	// dimensions of the image, as well as applying debug visualizations.
 	GetFramebufferAttachment(
 		ctx context.Context,
-		replaySettings *ReplaySettings,
+		replaySettings *path.ReplaySettings,
 		after *path.Command,
 		attachment api.FramebufferAttachment,
-		settings *RenderSettings,
-		hints *UsageHints) (*path.ImageInfo, error)
+		settings *path.RenderSettings,
+		hints *path.UsageHints) (*path.ImageInfo, error)
 
 	// Get resolves and returns the object, value or memory at the path p.
 	Get(ctx context.Context, p *path.Any, c *path.ResolveConfig) (interface{}, error)

@@ -133,9 +133,9 @@ func (verb *screenshotVerb) writeSingleFrame(frame image.Image, fn string) error
 
 func (verb *screenshotVerb) getSingleFrame(ctx context.Context, cmd *path.Command, device *path.Device, client service.Service) (*image.NRGBA, error) {
 	ctx = log.V{"cmd": cmd.Indices}.Bind(ctx)
-	settings := &service.RenderSettings{MaxWidth: uint32(0xFFFFFFFF), MaxHeight: uint32(0xFFFFFFFF)}
+	settings := &path.RenderSettings{MaxWidth: uint32(0xFFFFFFFF), MaxHeight: uint32(0xFFFFFFFF)}
 	if verb.Overdraw {
-		settings.DrawMode = service.DrawMode_OVERDRAW
+		settings.DrawMode = path.DrawMode_OVERDRAW
 	}
 
 	attachment, err := verb.getAttachment(ctx)
@@ -143,7 +143,7 @@ func (verb *screenshotVerb) getSingleFrame(ctx context.Context, cmd *path.Comman
 		return nil, log.Errf(ctx, err, "Get color attachment failed")
 	}
 	iip, err := client.GetFramebufferAttachment(ctx,
-		&service.ReplaySettings{
+		&path.ReplaySettings{
 			Device:                    device,
 			DisableReplayOptimization: verb.NoOpt,
 			DisplayToSurface:          verb.DisplayToSurface,

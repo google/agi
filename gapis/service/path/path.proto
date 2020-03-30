@@ -219,6 +219,73 @@ message FramebufferObservation {
   Command command = 1;
 }
 
+// UsageHints hints to the server the intended usage of the result of a request.
+// This can be used to improve performance and responsiveness of the RPCs.
+message UsageHints {
+  // Preview indicates that the request has been made for a thumbnail or
+  // low-quality representation of the underlying data. Previews are considered
+  // non-critical and non-urgent; the server may consider scheduling other work
+  // ahead of previews, and possibly delay the processing of the request to
+  // batch together requests.
+  bool preview = 1;
+
+  // Primary indicates that the request has been made for the primary view.
+  // Primary requests are prioritized and are low-latency.
+  bool primary = 2;
+
+  // Background indicates that this request is non-critical, non-urgent and
+  // should process in the background. All other non-background processes should
+  // be considered more urgent. Background requests may be interrupted for
+  // non-background requests.
+  bool background = 3;
+}
+
+// DrawMode is an enumerator of draw modes that can be used by RenderSettings.
+enum DrawMode {
+  // NORMAL indicates that the draw calls should be rendered as usual
+  NORMAL = 0;
+  // WIREFRAME_OVERLAY indicates that the single draw call should be overlayed
+  // with the wireframe of the mesh.
+  WIREFRAME_OVERLAY = 1;
+  // WIREFRAME_ALL indicates that all draw calls should be displayed in
+  // wireframe.
+  WIREFRAME_ALL = 2;
+  // OVERDRAW indicates that the draw calls should render their overdraw counts
+  // instead of colours.
+  OVERDRAW = 3;
+}
+
+// RenderSettings contains settings and flags to be used in replaying and
+// returning a bound render target's color buffer.
+message RenderSettings {
+  // The desired maximum width of the image. The returned image may be larger
+  // than this.
+  uint32 max_width = 1;
+  // The desired minimum height of the image. The returned image may be larger
+  // than this.
+  uint32 max_height = 2;
+  // The draw mode to use when rendering.
+  DrawMode draw_mode = 3;
+}
+
+message ReplaySettings {
+  Device device = 1;
+  bool disable_replay_optimization = 2;
+  bool display_to_surface = 3;
+}
+
+message FramebufferAttachment {
+  Command after = 1;
+  uint32 index = 2;
+  ReplaySettings replay_settings = 3;
+  RenderSettings render_settings = 4;
+  UsageHints hints = 5;
+}
+
+message FramebufferAttachments {
+  Command after = 1;
+}
+
 // Field is a path to a field in a struct.
 message Field {
   string name = 1;
@@ -232,11 +299,6 @@ message Field {
     Parameter parameter = 8;
   }
 }
-
-message FramebufferAttachments {
-  Command after = 1;
-}
-
 
 // CommandFilter are the optional filters applied to CommandTrees and Events.
 message CommandFilter {

@@ -37,11 +37,11 @@ message FollowResolvable {
 }
 
 message FramebufferAttachmentResolvable {
-  service.ReplaySettings replay_settings = 1;
+  path.ReplaySettings replay_settings = 1;
   path.Command after = 2;
   api.FramebufferAttachment attachment = 3;
-  service.RenderSettings settings = 4;
-  service.UsageHints hints = 5;
+  path.RenderSettings settings = 4;
+  path.UsageHints hints = 5;
   path.ResolveConfig config = 6;
 }
 
@@ -56,13 +56,13 @@ message FramebufferChangesResolvable {
 }
 
 message FramebufferAttachmentBytesResolvable {
-  service.ReplaySettings replaySettings = 1;
+  path.ReplaySettings replaySettings = 1;
   path.Command after = 2;
   uint32 width = 3;
   uint32 height = 4;
   api.FramebufferAttachment attachment = 5;
-  service.DrawMode draw_mode = 6;
-  service.UsageHints hints = 7;
+  path.DrawMode draw_mode = 6;
+  path.UsageHints hints = 7;
   image.Format image_format = 8;
   uint32 framebuffer_index = 9;
   path.ResolveConfig config = 10;

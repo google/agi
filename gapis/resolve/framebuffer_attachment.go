@@ -50,11 +50,11 @@ func (r *FramebufferAttachmentsResolvable) Resolve(ctx context.Context) (interfa
 // specified point in a capture.
 func FramebufferAttachment(
 	ctx context.Context,
-	replaySettings *service.ReplaySettings,
+	replaySettings *path.ReplaySettings,
 	after *path.Command,
 	attachment api.FramebufferAttachment,
-	settings *service.RenderSettings,
-	hints *service.UsageHints,
+	settings *path.RenderSettings,
+	hints *path.UsageHints,
 	config *path.ResolveConfig,
 ) (*path.ImageInfo, error) {
 
@@ -108,7 +108,7 @@ func (r *FramebufferAttachmentResolvable) Resolve(ctx context.Context) (interfac
 	}
 
 	format := fbInfo.Format
-	if r.Settings.DrawMode == service.DrawMode_OVERDRAW {
+	if r.Settings.DrawMode == path.DrawMode_OVERDRAW {
 		format = image.NewUncompressed("Count_U8", fmts.Count_U8)
 	}
 

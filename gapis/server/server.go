@@ -393,11 +393,11 @@ func (s *server) GetDevicesForReplay(ctx context.Context, p *path.Capture) ([]*p
 
 func (s *server) GetFramebufferAttachment(
 	ctx context.Context,
-	replaySettings *service.ReplaySettings,
+	replaySettings *path.ReplaySettings,
 	after *path.Command,
 	attachment api.FramebufferAttachment,
-	settings *service.RenderSettings,
-	hints *service.UsageHints,
+	settings *path.RenderSettings,
+	hints *path.UsageHints,
 ) (*path.ImageInfo, error) {
 
 	ctx = status.Start(ctx, "RPC GetFramebufferAttachment")

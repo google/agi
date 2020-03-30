@@ -43,7 +43,7 @@ public class ImagesModel {
   public static final int THUMB_SIZE = 192;
   private static final int MIN_SIZE = DPIUtil.autoScaleUp(18);
   private static final int THUMB_PIXELS = DPIUtil.autoScaleUp(THUMB_SIZE);
-  private static final Service.UsageHints FB_HINTS = Service.UsageHints.newBuilder()
+  private static final Path.UsageHints FB_HINTS = Path.UsageHints.newBuilder()
       .setPrimary(true)
       .build();
 
@@ -64,7 +64,7 @@ public class ImagesModel {
   }
 
   public ListenableFuture<FetchedImage> getFramebuffer(CommandIndex command,
-      API.FramebufferAttachment attachment, Service.RenderSettings renderSettings) {
+      API.FramebufferAttachment attachment, Path.RenderSettings renderSettings) {
     return FetchedImage.load(client, getReplayDevice(), client.getFramebufferAttachment(
         getReplayDevice(), command.getCommand(), attachment, renderSettings,
         FB_HINTS, shouldDisableReplayOptimization()));

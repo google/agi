@@ -23,10 +23,12 @@ import (
 
 	"github.com/google/gapid/core/app/auth"
 	"github.com/google/gapid/core/assert"
+
 	//"github.com/google/gapid/core/event/task"
 	"github.com/google/gapid/core/log"
 	"github.com/google/gapid/core/net/grpcutil"
 	"github.com/google/gapid/core/os/device/bind"
+
 	//"github.com/google/gapid/core/os/device/host"
 	"github.com/google/gapid/gapis/api"
 	gapis "github.com/google/gapid/gapis/client"
@@ -173,7 +175,7 @@ func TestGetFramebufferAttachment(t *testing.T) {
 	after := capture.Command(swapCmdIndex)
 	attachment := api.FramebufferAttachment_Color0
 	settings := &service.RenderSettings{}
-	renderSettings := &service.ReplaySettings{Device: devices[0]}
+	renderSettings := &path.ReplaySettings{Device: devices[0]}
 	got, err := server.GetFramebufferAttachment(ctx, renderSettings, after, attachment, settings, nil)
 	assert.For(ctx, "err").ThatError(err).Succeeded()
 	assert.For(ctx, "got").That(got).IsNotNil()

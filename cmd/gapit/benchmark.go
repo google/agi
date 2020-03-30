@@ -238,7 +238,7 @@ func (verb *benchmarkVerb) Run(ctx context.Context, flags flag.FlagSet) error {
 
 		gotThumbnails := sync.WaitGroup{}
 		//Get thumbnails
-		settings := &service.RenderSettings{MaxWidth: uint32(256), MaxHeight: uint32(256)}
+		settings := &path.RenderSettings{MaxWidth: uint32(256), MaxHeight: uint32(256)}
 		numThumbnails := 10
 		if len(events) < 10 {
 			numThumbnails = len(events)
@@ -246,10 +246,10 @@ func (verb *benchmarkVerb) Run(ctx context.Context, flags flag.FlagSet) error {
 		commandToClick = events[len(events)-1].Command
 		for i := len(events) - numThumbnails; i < len(events); i++ {
 			gotThumbnails.Add(1)
-			hints := &service.UsageHints{Preview: true}
+			hints := &path.UsageHints{Preview: true}
 			go func(i int) {
 				iip, err := client.GetFramebufferAttachment(ctx,
-					&service.ReplaySettings{
+					&path.ReplaySettings{
 						Device:                    device,
 						DisableReplayOptimization: verb.NoOpt,
 						DisplayToSurface:          false,
@@ -306,8 +306,8 @@ func (verb *benchmarkVerb) Run(ctx context.Context, flags flag.FlagSet) error {
 		}
 		gotThumbnails := sync.WaitGroup{}
 		gotNodes := sync.WaitGroup{}
-		settings := &service.RenderSettings{MaxWidth: uint32(64), MaxHeight: uint32(64)}
-		hints := &service.UsageHints{Background: true}
+		settings := &path.RenderSettings{MaxWidth: uint32(64), MaxHeight: uint32(64)}
+		hints := &path.UsageHints{Background: true}
 		tnCtx := status.Start(oldCtx, "Resolving Command Thumbnails")
 		for i := 0; i < numChildren; i++ {
 			gotThumbnails.Add(1)
@@ -321,7 +321,7 @@ func (verb *benchmarkVerb) Run(ctx context.Context, flags flag.FlagSet) error {
 				child := boxedChild.(*service.CommandTreeNode)
 				gotNodes.Done()
 				iip, err := client.GetFramebufferAttachment(tnCtx,
-					&service.ReplaySettings{
+					&path.ReplaySettings{
 						Device:                    device,
 						DisableReplayOptimization: verb.NoOpt,
 						DisplayToSurface:          false,
@@ -384,10 +384,10 @@ func (verb *benchmarkVerb) Run(ctx context.Context, flags flag.FlagSet) error {
 		ctx = status.Start(oldCtx, "Getting Framebuffer")
 		defer status.Finish(ctx)
 		defer interactionWG.Done()
-		hints := &service.UsageHints{Primary: true}
-		settings := &service.RenderSettings{MaxWidth: uint32(0xFFFFFFFF), MaxHeight: uint32(0xFFFFFFFF)}
+		hints := &path.UsageHints{Primary: true}
+		settings := &path.RenderSettings{MaxWidth: uint32(0xFFFFFFFF), MaxHeight: uint32(0xFFFFFFFF)}
 		iip, err := client.GetFramebufferAttachment(ctx,
-			&service.ReplaySettings{
+			&path.ReplaySettings{
 				Device:                    device,
 				DisableReplayOptimization: verb.NoOpt,
 				DisplayToSurface:          false,
