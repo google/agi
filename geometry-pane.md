@@ -2,6 +2,7 @@
 layout: default
 title: Geometry Pane
 permalink: /inspect/geometry
+published: false
 ---
 
 <img src="../images/geometry-pane.png" width="727px" height="445px"/>

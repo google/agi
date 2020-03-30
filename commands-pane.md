@@ -2,6 +2,7 @@
 layout: default
 title: Commands Pane
 permalink: /inspect/commands
+published: false
 ---
 
 

@@ -2,6 +2,7 @@
 layout: default
 title: Framebuffer Pane
 permalink: /inspect/framebuffer
+published: false
 ---
 
 The **Framebuffer** pane shows the contents of the currently-bound framebuffer. Depending on the item you select in the **Commands** pane, the 

@@ -1,7 +1,7 @@
 ---
 title: GPU counters
 layout: default
-permalink: /gpu-counters/
+permalink: /docs/gpu-counters/
 ---
 
 The available counters are GPU specific. Use the following links for more

@@ -2,6 +2,7 @@
 layout: default
 title: Memory Pane
 permalink: /inspect/memory
+published: false
 ---
 
 

@@ -6,8 +6,6 @@ permalink: /docs/extensions
 
 Android GPU Inspector supports the following Vulkan extensions:
 
-TODO: See go/gapid-extensions, must be refreshed before public publishing
-
 Extension                                 | Support | Note
 ----------------------------------------- | ------- | --------------------
 VK_KHR_16bit_storage                      | Yes     | Core in Vk 1.1

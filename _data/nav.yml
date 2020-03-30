@@ -5,22 +5,22 @@ toc:
       - title: Download
         url: docs/download
       - title: Getting Started
-        url: docs/tutorial
+        url: docs/getting-started
       - title: Supported Extensions
         url: docs/extensions
       - title: Troubleshooting
         url: docs/troubleshooting
   - title: GPU counters
-    url: gpu-counters/
+    url: docs/gpu-counters/
     subnav:
       - title: Arm® Mali™ Counters
-        url: gpu-counters/arm
+        url: docs/gpu-counters/arm
       - title: Qualcomm® Adreno™ Counters
-        url: gpu-counters/qualcomm
+        url: docs/gpu-counters/qualcomm
   - title: System requirements
-    url: requirements
+    url: docs/requirements
   - title: CLI documentation
-    url: cli
+    url: docs/cli
   - title: Releases
     class: external-link
     target: external

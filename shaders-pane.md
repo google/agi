@@ -2,6 +2,7 @@
 layout: default
 title: Shaders Pane
 permalink: /inspect/shaders
+published: false
 ---
 
 

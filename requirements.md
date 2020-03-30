@@ -1,7 +1,7 @@
 ---
 title: Minimum System Requirements
 layout: default
-permalink: /requirements
+permalink: /docs/requirements
 ---
 
 ## Android
@@ -31,6 +31,8 @@ Device name                         | GPU name
 Google Pixel 4 (standard and XL)    | Qualcomm® Adreno™ 640
 Samsung Galaxy Note 10 (Exynos)     | Arm® Mali™-G76
 Samsung Galaxy Note 10 (Snapdragon) | Qualcomm® Adreno™ 640
+Samsung Galaxy S10 (Exynos)         | Arm® Mali™-G76
+Samsung Galaxy S10 (Snapdragon)     | Qualcomm® Adreno™ 640
 
 Android emulators are not supported.
 
@@ -42,7 +44,7 @@ application using a desktop or laptop:
 ### Windows
 
 * Windows 7 or later
-* [Vulkan] GPU drivers for desktop trace/replay
+* [Vulkan] GPU drivers for desktop frame profiling
 
 ### macOS
 
@@ -52,10 +54,10 @@ application using a desktop or laptop:
 
 * Ubuntu 'Trusty Tahr' (14.04) or later recommended
 * Java 64-bit JDK or JRE 1.8 (or newer)
-* [Vulkan] GPU drivers for desktop trace/replay
+* [Vulkan] GPU drivers for desktop frame profiling
 
 
 [adb debugging enabled]: https://developer.android.com/studio/command-line/adb#Enabling
-[Vulkan]: https://en.wikipedia.org/wiki/Vulkan_(API)#Compatibility)
-[debuggable attribute]: (https://developer.android.com/guide/topics/manifest/application-element#debug)
-[Vulkan validation layers]: (https://developer.android.com/ndk/guides/graphics/validation-layer)
+[Vulkan]: https://en.wikipedia.org/wiki/Vulkan_(API)#Compatibility
+[debuggable attribute]: https://developer.android.com/guide/topics/manifest/application-element#debug
+[Vulkan validation layers]: https://developer.android.com/ndk/guides/graphics/validation-layer

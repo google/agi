@@ -2,6 +2,7 @@
 layout: default
 title: How do I use GAPID to optimize my application?
 permalink: /tutorials/optimize
+published: false
 ---
 
 Whilst GAPID does not yet support profiling, you can still use GAPID to optimize your application. Here are some tips on what to look for.

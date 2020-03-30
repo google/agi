@@ -2,6 +2,7 @@
 layout: default
 title: Report Pane
 permalink: /inspect/report
+published: false
 ---
 
 <img src="../images/report-pane.png" width="386" height="297"/>
