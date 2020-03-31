@@ -79,6 +79,14 @@ func (s *State) SetupInitialState(ctx context.Context, state *api.GlobalState) {
 	}
 }
 
+// func (API) GetFramebufferAttachments(
+// 	ctx context.Context,
+// 	after []uint64,
+// 	state *api.GlobalState,
+// 	thread uint64) (info *api.FramebufferAttachmentInfo, err error) {
+
+// }
+
 func (API) GetFramebufferAttachmentInfo(
 	ctx context.Context,
 	after []uint64,
@@ -86,7 +94,7 @@ func (API) GetFramebufferAttachmentInfo(
 	thread uint64,
 	attachment api.FramebufferAttachment) (info api.FramebufferAttachmentInfo, err error) {
 
-	w, h, form, i, r, err := GetState(state).getFramebufferAttachmentInfo(attachment)
+	w, h, form, i, r, t, err := GetState(state).getFramebufferAttachmentInfo(attachment)
 	if err != nil {
 		return api.FramebufferAttachmentInfo{}, err
 	}
@@ -99,13 +107,13 @@ func (API) GetFramebufferAttachmentInfo(
 		if err != nil {
 			return api.FramebufferAttachmentInfo{}, fmt.Errorf("Unknown format for Depth attachment: %v", form)
 		}
-		return api.FramebufferAttachmentInfo{w, h, i, format, r}, err
+		return api.FramebufferAttachmentInfo{w, h, i, format, r, t}, err
 	default:
 		format, err := getImageFormatFromVulkanFormat(form)
 		if err != nil {
 			return api.FramebufferAttachmentInfo{}, fmt.Errorf("Unknown format for Color attachment: %v", form)
 		}
-		return api.FramebufferAttachmentInfo{w, h, i, format, r}, err
+		return api.FramebufferAttachmentInfo{w, h, i, format, r, t}, err
 	}
 }
 

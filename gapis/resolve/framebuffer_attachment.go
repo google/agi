@@ -39,11 +39,38 @@ func FramebufferAttachments(ctx context.Context, p *path.FramebufferAttachments,
 }
 
 func (r *FramebufferAttachmentsResolvable) Resolve(ctx context.Context) (interface{}, error) {
-	s := "It works!"
-	return &api.FramebufferAttachments{
-		Name: string(s),
-		Test: true,
-	}, nil
+	changes, err := FramebufferChanges(ctx, r.Path.After.Capture, r.Config)
+	if err != nil {
+		return []*api.FramebufferAttachmentVulkan{}, err
+	}
+
+	out := []*api.FramebufferAttachmentVulkan{}
+	for _, att := range changes.attachments {
+		info, err := att.after(ctx, api.SubCmdIdx(r.Path.After.Indices))
+		if err != nil {
+			return []*api.FramebufferAttachmentVulkan{}, err
+		}
+
+		if info.Err == nil {
+			out = append(out, &api.FramebufferAttachmentVulkan{
+				Index: info.Index,
+				Type:  info.Type,
+				Label: fmt.Sprintf("%s_%d", typeToString(info.Type), info.Index),
+			})
+		}
+	}
+	return &api.FramebufferAttachments{Attachments: out}, nil
+}
+
+func typeToString(t api.FramebufferAttachmentType) string {
+	switch t {
+	case api.FramebufferAttachmentType_ColorAttachment:
+		return "Color"
+	case api.FramebufferAttachmentType_DepthAttachment:
+		return "Depth"
+	default:
+		return "Unknown"
+	}
 }
 
 // FramebufferAttachment resolves the specified framebuffer attachment at the
@@ -176,6 +203,9 @@ type FramebufferAttachmentInfo struct {
 	// Format of the attachment.
 	Format *image.Format
 
+	// Type of the attachment.
+	Type api.FramebufferAttachmentType
+
 	// The error returned by the API. If this is non-null then all other fields
 	// may contain undefined values.
 	Err error
@@ -187,7 +217,7 @@ func (f FramebufferAttachmentInfo) equal(o FramebufferAttachmentInfo) bool {
 		return false
 	}
 	if f.Err == nil {
-		return fe && f.Width == o.Width && f.Height == o.Height && f.Index == o.Index && f.CanResize == o.CanResize
+		return fe && f.Width == o.Width && f.Height == o.Height && f.Index == o.Index && f.CanResize == o.CanResize && f.Type == o.Type
 	}
 	return f.Err.Error() == o.Err.Error()
 }

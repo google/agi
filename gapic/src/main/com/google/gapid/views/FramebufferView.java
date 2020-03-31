@@ -60,6 +60,7 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.ToolBar;
 import org.eclipse.swt.widgets.ToolItem;
 
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Logger;
 
@@ -257,12 +258,12 @@ public class FramebufferView extends Composite
       });
 
       Rpc.listen(models.resources.loadFramebufferAttachments(),
-          new UiErrorCallback<API.FramebufferAttachments, String, Loadable.Message>(this, LOG) {
+          new UiErrorCallback<API.FramebufferAttachments, List<API.FramebufferAttachmentVulkan>, Loadable.Message>(this, LOG) {
         @Override
-        protected ResultOrError<String, Loadable.Message> onRpcThread(
+        protected ResultOrError<List<API.FramebufferAttachmentVulkan>, Loadable.Message> onRpcThread(
             Rpc.Result<API.FramebufferAttachments> result) {
           try {
-            return success(result.get().getName());
+            return success(result.get().getAttachmentsList());
           }  catch (DataUnavailableException e) {
             return error(Loadable.Message.error(e));
           } catch (RpcException e) {
@@ -276,8 +277,11 @@ public class FramebufferView extends Composite
         }
 
         @Override
-        protected void onUiThreadSuccess(String n) {
-          LOG.log(SEVERE, "MESSAGE: " + n);
+        protected void onUiThreadSuccess(List<API.FramebufferAttachmentVulkan> n) {
+          LOG.log(SEVERE, "" + n.size());
+          for (API.FramebufferAttachmentVulkan fbv : n) {
+            LOG.log(SEVERE, fbv.getLabel());
+          }
         }
 
         @Override
