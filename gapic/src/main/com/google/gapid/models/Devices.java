@@ -93,7 +93,7 @@ public class Devices {
     selectedReplayDevice = null;
   }
 
-  protected void loadReplayDevices(Path.Capture capturePath) {
+  public void loadReplayDevices(Path.Capture capturePath) {
     rpcController.start().listen(MoreFutures.transformAsync(client.getDevicesForReplay(capturePath),
         devs -> Futures.allAsList(devs.stream()
             .map(dev -> client.get(Paths.device(dev), dev))
@@ -127,7 +127,7 @@ public class Devices {
 
   protected void updateReplayDevices(List<Device.Instance> devs) {
     replayDevices = devs;
-    selectedReplayDevice = (devs == null) ? null : devs.get(0);
+    selectedReplayDevice = null;
     listeners.fire().onReplayDevicesLoaded();
   }
 

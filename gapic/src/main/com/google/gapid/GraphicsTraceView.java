@@ -21,6 +21,7 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.gapid.models.Analytics.View;
+import com.google.gapid.models.Devices;
 import com.google.gapid.models.Follower;
 import com.google.gapid.models.Models;
 import com.google.gapid.models.Settings;
@@ -29,6 +30,7 @@ import com.google.gapid.proto.service.Service;
 import com.google.gapid.proto.service.Service.ClientAction;
 import com.google.gapid.proto.service.path.Path;
 import com.google.gapid.views.CommandTree;
+import com.google.gapid.views.DeviceDialog;
 import com.google.gapid.views.FramebufferView;
 import com.google.gapid.views.GeometryView;
 import com.google.gapid.views.LogView;
@@ -102,6 +104,13 @@ public class GraphicsTraceView extends Composite implements MainWindow.MainView,
     models.follower.addListener(this);
     addListener(SWT.Dispose, e -> {
       models.follower.removeListener(this);
+    });
+
+    models.devices.addListener(new Devices.Listener() {
+      @Override
+      public void onReplayDevicesLoaded() {
+        DeviceDialog.showSelectReplayDeviceDialog(getShell(), models, widgets);
+      }
     });
   }
 
