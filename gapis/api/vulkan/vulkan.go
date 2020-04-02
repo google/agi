@@ -203,7 +203,7 @@ func (API) ResolveSynchronization(ctx context.Context, d *sync.Data, c *path.Cap
 
 			switch args := GetCommandArgs(ctx, cb.CommandReferences().Get(uint32(i)), st).(type) {
 			case VkCmdExecuteCommandsArgsʳ:
-				d.SubcommandNames.SetValue(nv, "VkCmdExecuteCommandsArgs: ")
+				d.SubcommandNames.SetValue(nv, "") // Clear the group name so that the original commnd is shown.
 				for j := uint64(0); j < uint64(args.CommandBuffers().Len()); j++ {
 					cbo := st.CommandBuffers().Get(args.CommandBuffers().Get(uint32(j)))
 					subIdx := append(api.SubCmdIdx{}, idx...)
