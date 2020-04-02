@@ -47,6 +47,7 @@ import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ComboViewer;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.LabelProvider;
+import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -73,9 +74,12 @@ public class DeviceDialog {
   private DeviceDialog() {
   }
 
-  // We need to guard to avoid opening new dialog windows every time replay devices are loaded.
   public static void showSelectReplayDeviceDialog(Shell shell, Models models, Widgets widgets) {
     SelectReplayDeviceDialog dialog = null;
+
+    // This method is called every time the list replay devices are refreshed,
+    // and the dialog it opens may itself refresh the list of replay device.
+    // Thus, make sure to have only one dialog open at a time.
     synchronized (mutex) {
       if (!dialogExists) {
         dialog = new SelectReplayDeviceDialog(shell, models, widgets);
@@ -84,10 +88,20 @@ public class DeviceDialog {
     }
 
     if (dialog != null) {
+      // Skip dialog if there is only one compatible replay device,
+      // which is validated or validation-skipped.
+      boolean skipDialog = false;
+      Device.Instance device = null;
       if (models.devices.getReplayDevices() != null
           && models.devices.getReplayDevices().size() == 1) {
-        // Only one compatible replay device: skip the dialog
-        models.devices.selectReplayDevice(models.devices.getReplayDevices().get(0));
+        device = models.devices.getReplayDevices().get(0);
+        DeviceValidationResult result = models.devices.getValidationStatus(
+            new DeviceCaptureInfo(Paths.device(device.getID()), device, null, null));
+        skipDialog = result.passed || result.skipped;
+      }
+
+      if (skipDialog) {
+        models.devices.selectReplayDevice(device);
       } else {
         dialog.setBlockOnOpen(true);
         dialog.open();
@@ -191,9 +205,6 @@ public class DeviceDialog {
 
       deviceCombo.getCombo().addListener(SWT.Selection, e -> {
         runValidationCheck(getSelectedDevice());
-        if (openTrace != null) {
-          openTrace.setEnabled(validationPassed);
-        }
       });
 
       models.devices.addListener(new Devices.Listener() {
@@ -222,16 +233,20 @@ public class DeviceDialog {
     }
 
     protected void replayDevicesLoaded() {
+      boolean noReplayDevices =
+          models.devices.getReplayDevices() == null || models.devices.getReplayDevices().isEmpty();
 
-      noCompatibleDeviceFound.setVisible(
-          models.devices.getReplayDevices() == null || models.devices.getReplayDevices().isEmpty());
+      noCompatibleDeviceFound.setVisible(noReplayDevices);
       noCompatibleDeviceFound.requestLayout();
 
       deviceCombo.setInput(models.devices.getReplayDevices());
-      deviceCombo.setSelection(null);
+      if (noReplayDevices) {
+        deviceCombo.setSelection(null);
+      } else {
+        deviceCombo.setSelection(new StructuredSelection(models.devices.getReplayDevices().get(0)));
+      }
       deviceCombo.getCombo().notifyListeners(SWT.Selection, new Event());
       deviceLoader.stopLoading();
-
     }
 
     private Device.Instance getSelectedDevice() {
@@ -295,6 +310,9 @@ public class DeviceDialog {
             + (result.passed ? "Passed." : "Failed. " + Messages.VALIDATION_FAILED_LANDING_PAGE));
         validationStatusLoader.stopLoading();
         validationPassed = result.passed;
+      }
+      if (openTrace != null) {
+        openTrace.setEnabled(validationPassed);
       }
     }
 
