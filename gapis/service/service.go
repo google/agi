@@ -295,7 +295,7 @@ func NewValue(v interface{}) *Value {
 		return &Value{Val: &Value_Device{v}}
 	case *api.MultiResourceData:
 		return &Value{Val: &Value_MultiResourceData{v}}
-	case *api.FramebufferAttachments:
+	case *FramebufferAttachments:
 		return &Value{Val: &Value_FramebufferAttachments{v}}
 	case *DeviceTraceConfiguration:
 		return &Value{Val: &Value_TraceConfig{v}}

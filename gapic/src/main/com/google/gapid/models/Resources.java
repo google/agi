@@ -139,7 +139,7 @@ public class Resources extends CaptureDependentModel.ForValue<Resources.Data, Re
   }
 
 
-  public ListenableFuture<API.FramebufferAttachments> loadFramebufferAttachments() {
+  public ListenableFuture<Service.FramebufferAttachments> loadFramebufferAttachments() {
     CommandIndex after = commands.getSelectedCommands();
     if (after == null) {
       return Futures.immediateFailedFuture(new RuntimeException("No command selected"));

@@ -38,6 +38,16 @@ func FramebufferChanges(ctx context.Context, c *path.Capture, r *path.ResolveCon
 	return obj.(*AttachmentFramebufferChanges), nil
 }
 
+// FramebufferChanges returns the list of attachment changes over the span of
+// the entire capture.
+func FramebufferChangesVulkan(ctx context.Context, c *path.Capture, r *path.ResolveConfig) (*AttachmentFramebufferChanges, error) {
+	obj, err := database.Build(ctx, &FramebufferChangesVulkanResolvable{Capture: c, Config: r})
+	if err != nil {
+		return nil, err
+	}
+	return obj.(*AttachmentFramebufferChanges), nil
+}
+
 // AttachmentFramebufferChanges describes the list of attachment changes over
 // the span of the entire capture.
 type AttachmentFramebufferChanges struct {
@@ -97,5 +107,54 @@ func (r *FramebufferChangesResolvable) Resolve(ctx context.Context) (interface{}
 	}
 
 	sync.MutateWithSubcommands(ctx, r.Capture, c.Commands, postCmdAndSubCmd, nil, postCmdAndSubCmd)
+	return out, nil
+}
+
+// Resolve implements the database.Resolver interface.
+func (r *FramebufferChangesVulkanResolvable) Resolve(ctx context.Context) (interface{}, error) {
+	ctx = SetupContext(ctx, r.Capture, r.Config)
+
+	c, err := capture.ResolveGraphics(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	out := &AttachmentFramebufferChanges{
+		// TODO: Remove hardcoded upper limit
+		attachments: make([]framebufferAttachmentChanges, 0),
+	}
+
+	postCmdAndSubCmd := func(s *api.GlobalState, subcommandIndex api.SubCmdIdx, cmd api.Cmd) {
+		api := cmd.API()
+		count, _ := api.GetFramebufferAttachmentCount(ctx, s)
+		idx := append([]uint64(nil), subcommandIndex...)
+		for i := uint32(0); i < count; i++ {
+			//att := allFramebufferAttachments[i]
+			//log.E(ctx, "Attachment index: %d %d", i, att)
+			info := FramebufferAttachmentInfo{After: idx}
+			if api != nil {
+				if inf, err := api.GetFramebufferAttachmentInfoVulkan(ctx, idx, s, cmd.Thread(), i); err == nil && inf.Format != nil {
+					info.Width, info.Height, info.Index, info.Format, info.CanResize, info.Type = inf.Width, inf.Height, inf.Index, inf.Format, inf.CanResize, inf.Type
+				} else {
+					info.Err = err
+				}
+			} else {
+				info.Err = errNoAPI
+			}
+			if uint32(len(out.attachments)) == i {
+				log.E(ctx, "Added after seeing %d. Length: %d", i, len(out.attachments))
+				out.attachments = append(out.attachments, framebufferAttachmentChanges{changes: make([]FramebufferAttachmentInfo, 0)})
+			}
+			if last := out.attachments[i].last(); !last.equal(info) {
+				log.E(ctx, "Index: %d", i)
+				attachment := out.attachments[i]
+				attachment.changes = append(attachment.changes, info)
+				out.attachments[i] = attachment
+			}
+		}
+	}
+
+	sync.MutateWithSubcommands(ctx, r.Capture, c.Commands, postCmdAndSubCmd, nil, postCmdAndSubCmd)
+	log.E(ctx, "Final Length: %d", len(out.attachments))
 	return out, nil
 }

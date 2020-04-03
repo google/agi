@@ -89,7 +89,7 @@ message Value {
     api.Mesh mesh = 32;
     api.Metrics metrics = 33;
     api.MultiResourceData multi_resource_data = 34;
-    api.FramebufferAttachments framebuffer_attachments = 35;
+    FramebufferAttachments framebuffer_attachments = 35;
 
     image.Info image_info = 40;
 
@@ -422,6 +422,17 @@ message GetFramebufferAttachmentResponse {
     path.ImageInfo image = 1;
     Error error = 2;
   }
+}
+
+message FramebufferAttachments {
+  repeated FramebufferAttachmentVulkan attachments = 1;
+}
+
+message FramebufferAttachmentVulkan {
+  uint32 index = 1;
+  api.FramebufferAttachmentType type = 2;
+  //  image.Info info = 3;
+  string label = 3;
 }
 
 message GetLogStreamRequest {

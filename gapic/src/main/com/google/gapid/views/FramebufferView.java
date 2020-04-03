@@ -258,10 +258,10 @@ public class FramebufferView extends Composite
       });
 
       Rpc.listen(models.resources.loadFramebufferAttachments(),
-          new UiErrorCallback<API.FramebufferAttachments, List<API.FramebufferAttachmentVulkan>, Loadable.Message>(this, LOG) {
+          new UiErrorCallback<Service.FramebufferAttachments, List<Service.FramebufferAttachmentVulkan>, Loadable.Message>(this, LOG) {
         @Override
-        protected ResultOrError<List<API.FramebufferAttachmentVulkan>, Loadable.Message> onRpcThread(
-            Rpc.Result<API.FramebufferAttachments> result) {
+        protected ResultOrError<List<Service.FramebufferAttachmentVulkan>, Loadable.Message> onRpcThread(
+            Rpc.Result<Service.FramebufferAttachments> result) {
           try {
             return success(result.get().getAttachmentsList());
           }  catch (DataUnavailableException e) {
@@ -277,16 +277,16 @@ public class FramebufferView extends Composite
         }
 
         @Override
-        protected void onUiThreadSuccess(List<API.FramebufferAttachmentVulkan> n) {
+        protected void onUiThreadSuccess(List<Service.FramebufferAttachmentVulkan> n) {
           LOG.log(SEVERE, "" + n.size());
-          for (API.FramebufferAttachmentVulkan fbv : n) {
+          for (Service.FramebufferAttachmentVulkan fbv : n) {
             LOG.log(SEVERE, fbv.getLabel());
           }
         }
 
         @Override
         protected void onUiThreadError(Loadable.Message message) {
-          LOG.log(SEVERE, "IT REACHES HERE!");
+          LOG.log(SEVERE, "IT REACHES HERE! " + message.text);
           imagePanel.showMessage(message);
         }
       

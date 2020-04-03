@@ -79,13 +79,17 @@ func (s *State) SetupInitialState(ctx context.Context, state *api.GlobalState) {
 	}
 }
 
-// func (API) GetFramebufferAttachments(
-// 	ctx context.Context,
-// 	after []uint64,
-// 	state *api.GlobalState,
-// 	thread uint64) (info *api.FramebufferAttachmentInfo, err error) {
+func (API) GetFramebufferAttachmentCount(
+	ctx context.Context,
+	state *api.GlobalState) (uint32, error) {
 
-// }
+	count, err := GetState(state).getFramebufferAttachmentCount()
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
 
 func (API) GetFramebufferAttachmentInfo(
 	ctx context.Context,
@@ -115,6 +119,37 @@ func (API) GetFramebufferAttachmentInfo(
 		}
 		return api.FramebufferAttachmentInfo{w, h, i, format, r, t}, err
 	}
+}
+
+func (API) GetFramebufferAttachmentInfoVulkan(
+	ctx context.Context,
+	after []uint64,
+	state *api.GlobalState,
+	thread uint64,
+	attachment uint32) (info api.FramebufferAttachmentInfo, err error) {
+
+	w, h, form, i, r, t, err := GetState(state).getFramebufferAttachmentInfoVulkan(attachment)
+	if err != nil {
+		return api.FramebufferAttachmentInfo{}, err
+	}
+
+	switch t {
+	case api.FramebufferAttachmentType_DepthAttachment:
+		format, err := getDepthImageFormatFromVulkanFormat(form)
+		if err != nil {
+			return api.FramebufferAttachmentInfo{}, fmt.Errorf("Unknown format for Depth attachment: %v", form)
+		}
+		return api.FramebufferAttachmentInfo{w, h, i, format, r, t}, err
+	case api.FramebufferAttachmentType_ColorAttachment:
+		format, err := getImageFormatFromVulkanFormat(form)
+		if err != nil {
+			return api.FramebufferAttachmentInfo{}, fmt.Errorf("Unknown format for Color attachment: %v", form)
+		}
+		return api.FramebufferAttachmentInfo{w, h, i, format, r, t}, err
+	default:
+		return api.FramebufferAttachmentInfo{}, fmt.Errorf("Unsupported Attachment Type")
+	}
+	return api.FramebufferAttachmentInfo{}, fmt.Errorf("Unsupported Stencil")
 }
 
 // Mesh implements the api.MeshProvider interface

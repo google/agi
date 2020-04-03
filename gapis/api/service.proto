@@ -94,17 +94,6 @@ enum FramebufferAttachmentType {
   ColorAttachment = 1;
 }
 
-message FramebufferAttachments {
-  repeated FramebufferAttachmentVulkan attachments = 1;
-}
-
-message FramebufferAttachmentVulkan {
-  uint32 index = 1;
-  FramebufferAttachmentType type = 2;
-  //  image.Info info = 3;
-  string label = 3;
-}
-
 enum ShaderType {
   Vertex = 0;
   Geometry = 1;

@@ -52,11 +52,14 @@ type API interface {
 		thread uint64,
 		attachment FramebufferAttachment) (info FramebufferAttachmentInfo, err error)
 
-	// GetFramebufferAttachments(
-	// 	ctx context.Context,
-	// 	after []uint64,
-	// 	state *GlobalState,
-	// 	thread uint64) (info *FramebufferAttachmentInfo, err error)
+	GetFramebufferAttachmentInfoVulkan(
+		ctx context.Context,
+		after []uint64,
+		state *GlobalState,
+		thread uint64,
+		attachment uint32) (info FramebufferAttachmentInfo, err error)
+
+	GetFramebufferAttachmentCount(ctx context.Context, state *GlobalState) (uint32, error)
 
 	// CreateCmd constructs and returns a new command with the specified name.
 	CreateCmd(a arena.Arena, name string) Cmd

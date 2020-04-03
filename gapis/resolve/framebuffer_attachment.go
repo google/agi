@@ -39,27 +39,29 @@ func FramebufferAttachments(ctx context.Context, p *path.FramebufferAttachments,
 }
 
 func (r *FramebufferAttachmentsResolvable) Resolve(ctx context.Context) (interface{}, error) {
-	changes, err := FramebufferChanges(ctx, r.Path.After.Capture, r.Config)
+	changes, err := FramebufferChangesVulkan(ctx, r.Path.After.Capture, r.Config)
 	if err != nil {
-		return []*api.FramebufferAttachmentVulkan{}, err
+		return []*service.FramebufferAttachmentVulkan{}, err
 	}
 
-	out := []*api.FramebufferAttachmentVulkan{}
+	out := []*service.FramebufferAttachmentVulkan{}
 	for _, att := range changes.attachments {
 		info, err := att.after(ctx, api.SubCmdIdx(r.Path.After.Indices))
 		if err != nil {
-			return []*api.FramebufferAttachmentVulkan{}, err
+			return []*service.FramebufferAttachmentVulkan{}, err
 		}
 
 		if info.Err == nil {
-			out = append(out, &api.FramebufferAttachmentVulkan{
+			out = append(out, &service.FramebufferAttachmentVulkan{
 				Index: info.Index,
 				Type:  info.Type,
 				Label: fmt.Sprintf("%s_%d", typeToString(info.Type), info.Index),
 			})
+		} else {
+			log.E(ctx, "There was an error with %d %s", info.Index, info.Err)
 		}
 	}
-	return &api.FramebufferAttachments{Attachments: out}, nil
+	return &service.FramebufferAttachments{Attachments: out}, nil
 }
 
 func typeToString(t api.FramebufferAttachmentType) string {
@@ -242,9 +244,9 @@ func (c framebufferAttachmentChanges) last() FramebufferAttachmentInfo {
 
 var allFramebufferAttachments = []api.FramebufferAttachment{
 	api.FramebufferAttachment_Depth,
-	api.FramebufferAttachment_Stencil,
 	api.FramebufferAttachment_Color0,
 	api.FramebufferAttachment_Color1,
 	api.FramebufferAttachment_Color2,
 	api.FramebufferAttachment_Color3,
+	api.FramebufferAttachment_Stencil,
 }

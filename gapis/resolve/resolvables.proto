@@ -55,6 +55,11 @@ message FramebufferChangesResolvable {
   path.ResolveConfig config = 2;
 }
 
+message FramebufferChangesVulkanResolvable {
+  path.Capture capture = 1;
+  path.ResolveConfig config = 2;
+}
+
 message FramebufferAttachmentBytesResolvable {
   path.ReplaySettings replaySettings = 1;
   path.Command after = 2;
