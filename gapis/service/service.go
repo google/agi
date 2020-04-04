@@ -297,10 +297,14 @@ func NewValue(v interface{}) *Value {
 		return &Value{Val: &Value_MultiResourceData{v}}
 	case *FramebufferAttachments:
 		return &Value{Val: &Value_FramebufferAttachments{v}}
+	case *FramebufferAttachmentVulkan:
+		return &Value{Val: &Value_FramebufferAttachment{v}}
 	case *DeviceTraceConfiguration:
 		return &Value{Val: &Value_TraceConfig{v}}
 	case *types.Type:
 		return &Value{Val: &Value_Type{v}}
+	case *path.ImageInfo:
+		return &Value{Val: &Value_ImageInfoPath{v}}
 
 	default:
 		if v := box.NewValue(v); v != nil {

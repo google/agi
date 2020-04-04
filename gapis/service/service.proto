@@ -90,6 +90,7 @@ message Value {
     api.Metrics metrics = 33;
     api.MultiResourceData multi_resource_data = 34;
     FramebufferAttachments framebuffer_attachments = 35;
+    FramebufferAttachmentVulkan framebuffer_attachment = 36;
 
     image.Info image_info = 40;
 
@@ -98,6 +99,8 @@ message Value {
     types.Type type = 60;
 
     memory_box.Value memory_box = 70;
+
+    path.ImageInfo image_info_path = 80;
   }
 }
 
@@ -431,8 +434,8 @@ message FramebufferAttachments {
 message FramebufferAttachmentVulkan {
   uint32 index = 1;
   api.FramebufferAttachmentType type = 2;
-  //  image.Info info = 3;
-  string label = 3;
+  path.ImageInfo image_info = 3;
+  string label = 4;
 }
 
 message GetLogStreamRequest {

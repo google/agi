@@ -75,6 +75,90 @@ func typeToString(t api.FramebufferAttachmentType) string {
 	}
 }
 
+func FramebufferAttachmentVulkan(ctx context.Context, p *path.FramebufferAttachment, r *path.ResolveConfig) (interface{}, error) {
+	if p.ReplaySettings.Device == nil {
+		devices, err := devices.ForReplay(ctx, p.After.Capture)
+		if err != nil {
+			return nil, err
+		}
+		if len(devices) == 0 {
+			return nil, fmt.Errorf("No compatible devices found")
+		}
+		p.ReplaySettings.Device = devices[0]
+	}
+
+	// Check the command is valid. If we don't do it here, we'll likely get an
+	// error deep in the bowels of the framebuffer data resolve.
+	if _, err := Cmd(ctx, p.After, r); err != nil {
+		return nil, err
+	}
+
+	id, err := database.Store(ctx, &FramebufferAttachmentVulkanResolvable{
+		ReplaySettings: p.ReplaySettings,
+		After:          p.After,
+		Attachment:     p.Index,
+		Settings:       p.RenderSettings,
+		Hints:          p.Hints,
+		Config:         r,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	return &service.FramebufferAttachmentVulkan{
+		Index:     p.Index,
+		Type:      api.FramebufferAttachmentType_ColorAttachment,
+		ImageInfo: path.NewImageInfo(id),
+		Label:     fmt.Sprintf("Attachment %d", p.Index),
+	}, nil
+}
+
+// Resolve implements the database.Resolver interface.
+func (r *FramebufferAttachmentVulkanResolvable) Resolve(ctx context.Context) (interface{}, error) {
+	changes, err := FramebufferChangesVulkan(ctx, r.After.Capture, r.Config)
+	if err != nil {
+		return FramebufferAttachmentInfo{}, err
+	}
+
+	fbInfo, err := changes.GetVulkan(ctx, r.After, r.Attachment)
+	if err != nil {
+		return nil, err
+	}
+
+	width, height := uniformScale(fbInfo.Width, fbInfo.Height, r.Settings.MaxWidth, r.Settings.MaxHeight)
+	if !fbInfo.CanResize {
+		width, height = fbInfo.Width, fbInfo.Height
+	}
+
+	format := fbInfo.Format
+	if r.Settings.DrawMode == path.DrawMode_OVERDRAW {
+		format = image.NewUncompressed("Count_U8", fmts.Count_U8)
+	}
+
+	id, err := database.Store(ctx, &FramebufferAttachmentVulkanBytesResolvable{
+		ReplaySettings:   r.ReplaySettings,
+		After:            r.After,
+		Width:            width,
+		Height:           height,
+		Attachment:       fbInfo.Type,
+		FramebufferIndex: fbInfo.Index,
+		DrawMode:         r.Settings.DrawMode,
+		Hints:            r.Hints,
+		ImageFormat:      format,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &image.Info{
+		Width:  width,
+		Height: height,
+		Depth:  1,
+		Format: format,
+		Bytes:  image.NewID(id),
+	}, nil
+}
+
 // FramebufferAttachment resolves the specified framebuffer attachment at the
 // specified point in a capture.
 func FramebufferAttachment(

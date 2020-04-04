@@ -17,6 +17,8 @@ package com.google.gapid.models;
 
 import static com.google.gapid.image.FetchedImage.loadThumbnail;
 
+import static java.util.logging.Level.SEVERE;
+
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gapid.image.FetchedImage;
 import com.google.gapid.models.CommandStream.CommandIndex;
@@ -68,6 +70,26 @@ public class ImagesModel {
     return FetchedImage.load(client, getReplayDevice(), client.getFramebufferAttachment(
         getReplayDevice(), command.getCommand(), attachment, renderSettings,
         FB_HINTS, shouldDisableReplayOptimization()));
+  }
+
+  public ListenableFuture<FetchedImage> getFramebuffer(CommandIndex command,
+      int attachment, Path.RenderSettings renderSettings) {
+    Path.Any fbPath = Path.Any.newBuilder()
+            .setFramebufferAttachment(Path.FramebufferAttachment.newBuilder()
+              .setAfter(command.getCommand())
+              .setIndex(attachment)
+              .setReplaySettings(Path.ReplaySettings.newBuilder()
+                  .setDevice(getReplayDevice())
+                  .setDisableReplayOptimization(shouldDisableReplayOptimization()))
+              .setRenderSettings(renderSettings)
+              .setHints(FB_HINTS))
+          .build();
+    
+    return MoreFutures.transformAsync(client.get(fbPath, getReplayDevice()), 
+        value -> { 
+          LOG.log(SEVERE, Paths.toString(value.getFramebufferAttachment().getImageInfo()));
+          return FetchedImage.load(client, getReplayDevice(), value.getFramebufferAttachment().getImageInfo());
+        });
   }
 
   public ListenableFuture<FetchedImage> getResource(Path.ResourceData path) {

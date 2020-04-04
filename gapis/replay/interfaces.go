@@ -78,6 +78,19 @@ type QueryFramebufferAttachment interface {
 		disableReplayOptimization bool,
 		displayToSurface bool,
 		hints *path.UsageHints) (*image.Data, error)
+
+	QueryFramebufferAttachmentVulkan(
+		ctx context.Context,
+		intent Intent,
+		mgr Manager,
+		after []uint64,
+		width, height uint32,
+		attachment api.FramebufferAttachmentType,
+		framebufferIndex uint32,
+		drawMode path.DrawMode,
+		disableReplayOptimization bool,
+		displayToSurface bool,
+		hints *path.UsageHints) (*image.Data, error)
 }
 
 // Profiler is the interface implemented by replays that can be performed

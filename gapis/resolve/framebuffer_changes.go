@@ -68,6 +68,20 @@ func (c AttachmentFramebufferChanges) Get(ctx context.Context, after *path.Comma
 	return info, nil
 }
 
+// Get returns the framebuffer dimensions and format after a given command in
+// the given capture, command and attachment.
+func (c AttachmentFramebufferChanges) GetVulkan(ctx context.Context, after *path.Command, att uint32) (FramebufferAttachmentInfo, error) {
+	info, err := c.attachments[att].after(ctx, api.SubCmdIdx(after.Indices))
+	if err != nil {
+		return FramebufferAttachmentInfo{}, err
+	}
+	if info.Err != nil {
+		log.W(ctx, "Framebuffer error after %v: %v", after, info.Err)
+		return FramebufferAttachmentInfo{}, &service.ErrDataUnavailable{Reason: messages.ErrFramebufferUnavailable()}
+	}
+	return info, nil
+}
+
 const errNoAPI = fault.Const("Command has no API")
 
 // Resolve implements the database.Resolver interface.

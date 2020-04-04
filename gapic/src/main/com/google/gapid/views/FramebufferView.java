@@ -92,8 +92,9 @@ public class FramebufferView extends Composite
   private final SingleInFlight rpcController = new SingleInFlight();
   protected final ImagePanel imagePanel;
   private Path.RenderSettings renderSettings = RENDER_SHADED;
-  private API.FramebufferAttachment target = API.FramebufferAttachment.Color0;
+  private int target = 0;
   private ToolItem targetItem;
+  private int count;
 
   public FramebufferView(Composite parent, Models models, Widgets widgets) {
     super(parent, SWT.NONE);
@@ -130,23 +131,23 @@ public class FramebufferView extends Composite
       exclusiveSelection(
           createToggleToolItem(b, theme.colorBuffer0(), e -> {
             models.analytics.postInteraction(View.Framebuffer, ClientAction.Color0);
-            updateRenderTarget(API.FramebufferAttachment.Color0, theme.colorBuffer0());
+            updateRenderTarget(0, theme.colorBuffer0());
           }, "Show 1st color buffer"),
           createToggleToolItem(b, theme.colorBuffer1(), e -> {
             models.analytics.postInteraction(View.Framebuffer, ClientAction.Color1);
-            updateRenderTarget(API.FramebufferAttachment.Color1, theme.colorBuffer1());
+            updateRenderTarget(1, theme.colorBuffer1());
           }, "Show 2nd color buffer"),
           createToggleToolItem(b, theme.colorBuffer2(), e -> {
             models.analytics.postInteraction(View.Framebuffer, ClientAction.Color2);
-            updateRenderTarget(API.FramebufferAttachment.Color2, theme.colorBuffer2());
+            updateRenderTarget(2, theme.colorBuffer2());
           }, "Show 3rd color buffer"),
           createToggleToolItem(b, theme.colorBuffer3(), e -> {
             models.analytics.postInteraction(View.Framebuffer, ClientAction.Color3);
-            updateRenderTarget(API.FramebufferAttachment.Color3, theme.colorBuffer3());
+            updateRenderTarget(3, theme.colorBuffer3());
           }, "Show 4th color buffer"),
           createToggleToolItem(b, theme.depthBuffer(), e -> {
             models.analytics.postInteraction(View.Framebuffer, ClientAction.Depth);
-            updateRenderTarget(API.FramebufferAttachment.Depth, theme.depthBuffer());
+            updateRenderTarget(4, theme.depthBuffer());
           }, "Show depth buffer"));
     }, "Choose framebuffer attachment to display");
     createSeparator(bar);
@@ -185,6 +186,7 @@ public class FramebufferView extends Composite
     if (!models.capture.isLoaded()) {
       onCaptureLoadingStart(false);
     } else {
+      loadAttachments();
       updateBuffer();
     }
   }
@@ -205,23 +207,74 @@ public class FramebufferView extends Composite
 
   @Override
   public void onCommandsLoaded() {
+    loadAttachments();
     updateBuffer();
   }
 
   @Override
   public void onCommandsSelected(CommandIndex range) {
+    loadAttachments();
     updateBuffer();
   }
 
   @Override
   public void onReplayDeviceChanged(Device.Instance dev) {
+    loadAttachments();
     updateBuffer();
   }
 
-  private void updateRenderTarget(API.FramebufferAttachment attachment, Image icon) {
-    target = attachment;
-    targetItem.setImage(icon);
-    updateBuffer();
+  private void updateRenderTarget(int attachment, Image icon) {
+    if (target < count) {
+      target = attachment;
+      targetItem.setImage(icon);
+      updateBuffer();
+    } else {
+      imagePanel.showMessage(Info, Messages.SELECT_COMMAND);
+    }
+  }
+  
+  private void loadAttachments() {
+    CommandIndex command = models.commands.getSelectedCommands();
+    if (command == null) {
+      imagePanel.showMessage(Info, Messages.SELECT_COMMAND);
+    } else if (!models.devices.hasReplayDevice()) {
+      imagePanel.showMessage(Error, Messages.NO_REPLAY_DEVICE);
+    } else {
+      Rpc.listen(models.resources.loadFramebufferAttachments(),
+          new UiErrorCallback<Service.FramebufferAttachments, List<Service.FramebufferAttachmentVulkan>, Loadable.Message>(this, LOG) {
+        @Override
+        protected ResultOrError<List<Service.FramebufferAttachmentVulkan>, Loadable.Message> onRpcThread(
+            Rpc.Result<Service.FramebufferAttachments> result) {
+          try {
+            return success(result.get().getAttachmentsList());
+          }  catch (DataUnavailableException e) {
+            return error(Loadable.Message.error(e));
+          } catch (RpcException e) {
+            models.analytics.reportException(e);
+            return error(Loadable.Message.error(e));
+          } catch (ExecutionException e) {
+            models.analytics.reportException(e);
+            throttleLogRpcError(LOG, "Failed to load framebuffer attachments", e);
+            return error(Loadable.Message.error(e.getCause().getMessage()));
+          }
+        }
+
+        @Override
+        protected void onUiThreadSuccess(List<Service.FramebufferAttachmentVulkan> n) {
+          LOG.log(SEVERE, "" + n.size());
+          for (Service.FramebufferAttachmentVulkan fbv : n) {
+            LOG.log(SEVERE, fbv.getLabel());
+          }
+          count = n.size();
+        }
+
+        @Override
+        protected void onUiThreadError(Loadable.Message message) {
+          LOG.log(SEVERE, "IT REACHES HERE! " + message.text);
+          imagePanel.showMessage(message);
+        }
+      });
+    }
   }
 
   private void updateBuffer() {
@@ -255,41 +308,6 @@ public class FramebufferView extends Composite
         protected void onUiThreadError(Loadable.Message message) {
           imagePanel.showMessage(message);
         }
-      });
-
-      Rpc.listen(models.resources.loadFramebufferAttachments(),
-          new UiErrorCallback<Service.FramebufferAttachments, List<Service.FramebufferAttachmentVulkan>, Loadable.Message>(this, LOG) {
-        @Override
-        protected ResultOrError<List<Service.FramebufferAttachmentVulkan>, Loadable.Message> onRpcThread(
-            Rpc.Result<Service.FramebufferAttachments> result) {
-          try {
-            return success(result.get().getAttachmentsList());
-          }  catch (DataUnavailableException e) {
-            return error(Loadable.Message.error(e));
-          } catch (RpcException e) {
-            models.analytics.reportException(e);
-            return error(Loadable.Message.error(e));
-          } catch (ExecutionException e) {
-            models.analytics.reportException(e);
-            throttleLogRpcError(LOG, "Failed to load framebuffer attachments", e);
-            return error(Loadable.Message.error(e.getCause().getMessage()));
-          }
-        }
-
-        @Override
-        protected void onUiThreadSuccess(List<Service.FramebufferAttachmentVulkan> n) {
-          LOG.log(SEVERE, "" + n.size());
-          for (Service.FramebufferAttachmentVulkan fbv : n) {
-            LOG.log(SEVERE, fbv.getLabel());
-          }
-        }
-
-        @Override
-        protected void onUiThreadError(Loadable.Message message) {
-          LOG.log(SEVERE, "IT REACHES HERE! " + message.text);
-          imagePanel.showMessage(message);
-        }
-      
       });
     }
   }
