@@ -22,7 +22,6 @@ import (
 	"github.com/google/gapid/core/app/status"
 	"github.com/google/gapid/core/data/dictionary"
 	"github.com/google/gapid/core/image"
-	"github.com/google/gapid/core/log"
 	"github.com/google/gapid/core/math/sint"
 	"github.com/google/gapid/core/os/device"
 	"github.com/google/gapid/core/os/device/bind"
@@ -323,9 +322,7 @@ func ResolveInternal(ctx context.Context, p path.Node, r *path.ResolveConfig) (i
 	case *path.FramebufferAttachments:
 		return FramebufferAttachments(ctx, p, r)
 	case *path.FramebufferAttachment:
-		out, err := FramebufferAttachmentVulkan(ctx, p, r)
-		log.E(ctx, "Path again: %x", out.(*service.FramebufferAttachmentVulkan).ImageInfo.ID)
-		return out, err
+		return FramebufferAttachmentVulkan(ctx, p, r)
 	case *path.Field:
 		return Field(ctx, p, r)
 	case *path.GlobalState:

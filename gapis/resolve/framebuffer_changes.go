@@ -83,6 +83,7 @@ func (c AttachmentFramebufferChanges) GetVulkan(ctx context.Context, after *path
 }
 
 const errNoAPI = fault.Const("Command has no API")
+const errDetached = fault.Const("Attachment detached from Framebuffer")
 
 // Resolve implements the database.Resolver interface.
 func (r *FramebufferChangesResolvable) Resolve(ctx context.Context) (interface{}, error) {
@@ -160,7 +161,20 @@ func (r *FramebufferChangesVulkanResolvable) Resolve(ctx context.Context) (inter
 				out.attachments = append(out.attachments, framebufferAttachmentChanges{changes: make([]FramebufferAttachmentInfo, 0)})
 			}
 			if last := out.attachments[i].last(); !last.equal(info) {
-				log.E(ctx, "Index: %d", i)
+				log.E(ctx, "Count: %d, Index: %d", count, i)
+				attachment := out.attachments[i]
+				attachment.changes = append(attachment.changes, info)
+				out.attachments[i] = attachment
+			}
+		}
+
+		// Current command may be in a renderpass with fewer attachments.
+		// Go ahead and fill up the spaces with info.Err for future filtering
+		for i := count; i < uint32(len(out.attachments)); i++ {
+			info := FramebufferAttachmentInfo{After: idx}
+			info.Err = errDetached
+			if last := out.attachments[i].last(); !last.equal(info) {
+				log.E(ctx, "Count: %d, Index: %d", count, i)
 				attachment := out.attachments[i]
 				attachment.changes = append(attachment.changes, info)
 				out.attachments[i] = attachment

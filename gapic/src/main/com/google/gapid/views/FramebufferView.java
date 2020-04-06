@@ -15,6 +15,8 @@
  */
 package com.google.gapid.views;
 
+import static com.google.gapid.util.GeoUtils.right;
+import static com.google.gapid.util.GeoUtils.top;
 import static com.google.gapid.util.Loadable.MessageType.Error;
 import static com.google.gapid.util.Loadable.MessageType.Info;
 import static com.google.gapid.util.Logging.throttleLogRpcError;
@@ -22,10 +24,15 @@ import static com.google.gapid.widgets.Widgets.createBaloonToolItem;
 import static com.google.gapid.widgets.Widgets.createComposite;
 import static com.google.gapid.widgets.Widgets.createSeparator;
 import static com.google.gapid.widgets.Widgets.createToggleToolItem;
+import static com.google.gapid.widgets.Widgets.createToolItem;
 import static com.google.gapid.widgets.Widgets.exclusiveSelection;
+import static com.google.gapid.widgets.Widgets.disposeAllChildren;
 
+import static java.util.Collections.emptyList;
 import static java.util.logging.Level.SEVERE;
 
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gapid.image.FetchedImage;
 import com.google.gapid.image.MultiLayerAndLevelImage;
 import com.google.gapid.models.Analytics.View;
@@ -46,21 +53,28 @@ import com.google.gapid.rpc.UiErrorCallback;
 import com.google.gapid.server.Client.DataUnavailableException;
 import com.google.gapid.util.Loadable;
 import com.google.gapid.util.Messages;
+import com.google.gapid.util.MoreFutures;
+import com.google.gapid.widgets.Balloon;
 import com.google.gapid.widgets.ImagePanel;
 import com.google.gapid.widgets.Theme;
 import com.google.gapid.widgets.Widgets;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.Rectangle;
+import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Event;
+import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.ToolBar;
 import org.eclipse.swt.widgets.ToolItem;
 
 import java.util.List;
+import java.util.ArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Logger;
 
@@ -89,20 +103,26 @@ public class FramebufferView extends Composite
       .build();
 
   private final Models models;
+  private final Widgets widgets;
   private final SingleInFlight rpcController = new SingleInFlight();
   protected final ImagePanel imagePanel;
   private Path.RenderSettings renderSettings = RENDER_SHADED;
   private int target = 0;
+  private API.FramebufferAttachmentType targetType = API.FramebufferAttachmentType.ColorAttachment;
   private ToolItem targetItem;
-  private int count;
+  private AttachmentListener attachmentListener;
+  private ToolBar toolBar;
 
   public FramebufferView(Composite parent, Models models, Widgets widgets) {
     super(parent, SWT.NONE);
     this.models = models;
+    this.widgets = widgets;
 
     setLayout(new GridLayout(2, false));
 
-    ToolBar toolBar = createToolBar(widgets.theme);
+    attachmentListener = new AttachmentListener(widgets.theme);
+
+    toolBar = createToolBar(widgets.theme);
     imagePanel = new ImagePanel(this, View.Framebuffer, models.analytics, widgets, true);
 
     toolBar.setLayoutData(new GridData(SWT.LEFT, SWT.FILL, false, true));
@@ -124,32 +144,7 @@ public class FramebufferView extends Composite
 
   private ToolBar createToolBar(Theme theme) {
     ToolBar bar = new ToolBar(this, SWT.VERTICAL | SWT.FLAT);
-    targetItem = createBaloonToolItem(bar, theme.colorBuffer0(), shell -> {
-      models.analytics.postInteraction(View.Framebuffer, ClientAction.ShowTargets);
-      Composite c = createComposite(shell, new FillLayout(SWT.VERTICAL), SWT.BORDER);
-      ToolBar b = new ToolBar(c, SWT.HORIZONTAL | SWT.FLAT);
-      exclusiveSelection(
-          createToggleToolItem(b, theme.colorBuffer0(), e -> {
-            models.analytics.postInteraction(View.Framebuffer, ClientAction.Color0);
-            updateRenderTarget(0, theme.colorBuffer0());
-          }, "Show 1st color buffer"),
-          createToggleToolItem(b, theme.colorBuffer1(), e -> {
-            models.analytics.postInteraction(View.Framebuffer, ClientAction.Color1);
-            updateRenderTarget(1, theme.colorBuffer1());
-          }, "Show 2nd color buffer"),
-          createToggleToolItem(b, theme.colorBuffer2(), e -> {
-            models.analytics.postInteraction(View.Framebuffer, ClientAction.Color2);
-            updateRenderTarget(2, theme.colorBuffer2());
-          }, "Show 3rd color buffer"),
-          createToggleToolItem(b, theme.colorBuffer3(), e -> {
-            models.analytics.postInteraction(View.Framebuffer, ClientAction.Color3);
-            updateRenderTarget(3, theme.colorBuffer3());
-          }, "Show 4th color buffer"),
-          createToggleToolItem(b, theme.depthBuffer(), e -> {
-            models.analytics.postInteraction(View.Framebuffer, ClientAction.Depth);
-            updateRenderTarget(4, theme.depthBuffer());
-          }, "Show depth buffer"));
-    }, "Choose framebuffer attachment to display");
+    targetItem = createToolItem(bar, theme.lit(), attachmentListener, "Choose framebuffer attachment to display");
     createSeparator(bar);
     exclusiveSelection(
         createToggleToolItem(bar, theme.wireframeNone(), e -> {
@@ -186,8 +181,7 @@ public class FramebufferView extends Composite
     if (!models.capture.isLoaded()) {
       onCaptureLoadingStart(false);
     } else {
-      loadAttachments();
-      updateBuffer();
+      loadBuffer();
     }
   }
 
@@ -195,6 +189,8 @@ public class FramebufferView extends Composite
   public void onCaptureLoadingStart(boolean maintainState) {
     imagePanel.setImage(null);
     imagePanel.showMessage(Info, Messages.LOADING_CAPTURE);
+    target = 0;
+    attachmentListener.reset(emptyList());
   }
 
   @Override
@@ -203,50 +199,59 @@ public class FramebufferView extends Composite
       imagePanel.setImage(null);
       imagePanel.showMessage(Error, Messages.CAPTURE_LOAD_FAILURE);
     }
+    target = 0;
+    attachmentListener.reset(emptyList());
   }
 
   @Override
   public void onCommandsLoaded() {
-    loadAttachments();
-    updateBuffer();
+    loadBuffer();
   }
 
   @Override
   public void onCommandsSelected(CommandIndex range) {
-    loadAttachments();
-    updateBuffer();
+    loadBuffer();
   }
 
   @Override
   public void onReplayDeviceChanged(Device.Instance dev) {
-    loadAttachments();
-    updateBuffer();
+    loadBuffer();
   }
 
   private void updateRenderTarget(int attachment, Image icon) {
-    if (target < count) {
-      target = attachment;
-      targetItem.setImage(icon);
-      updateBuffer();
-    } else {
-      imagePanel.showMessage(Info, Messages.SELECT_COMMAND);
-    }
+    target = attachment;
+    targetItem.setImage(icon);
+    updateBuffer();
   }
-  
-  private void loadAttachments() {
+
+  private ListenableFuture<FetchedImage> loadAndUpdate() {
     CommandIndex command = models.commands.getSelectedCommands();
     if (command == null) {
-      imagePanel.showMessage(Info, Messages.SELECT_COMMAND);
-    } else if (!models.devices.hasReplayDevice()) {
+      return Futures.immediateFailedFuture(new RuntimeException("No command selected"));
+    }
+
+    return MoreFutures.transformAsync(models.resources.loadFramebufferAttachments(), fbaList -> {
+      attachmentListener.reset(fbaList.getAttachmentsList());
+      if (fbaList.getAttachmentsList().size() <= target) {
+        target = 0;
+      }
+      targetType = fbaList.getAttachmentsList().get(target).getType();
+      return models.images.getFramebuffer(command, target, renderSettings);
+    });
+  }
+
+  private void loadBuffer() {
+    if (!models.devices.hasReplayDevice()) {
       imagePanel.showMessage(Error, Messages.NO_REPLAY_DEVICE);
     } else {
-      Rpc.listen(models.resources.loadFramebufferAttachments(),
-          new UiErrorCallback<Service.FramebufferAttachments, List<Service.FramebufferAttachmentVulkan>, Loadable.Message>(this, LOG) {
+      imagePanel.startLoading();
+      Rpc.listen(loadAndUpdate(),
+          new UiErrorCallback<FetchedImage, MultiLayerAndLevelImage, Loadable.Message>(this, LOG) {
         @Override
-        protected ResultOrError<List<Service.FramebufferAttachmentVulkan>, Loadable.Message> onRpcThread(
-            Rpc.Result<Service.FramebufferAttachments> result) {
+        protected ResultOrError<MultiLayerAndLevelImage, Loadable.Message> onRpcThread(
+            Rpc.Result<FetchedImage> result) {
           try {
-            return success(result.get().getAttachmentsList());
+            return success(result.get());
           }  catch (DataUnavailableException e) {
             return error(Loadable.Message.error(e));
           } catch (RpcException e) {
@@ -260,17 +265,22 @@ public class FramebufferView extends Composite
         }
 
         @Override
-        protected void onUiThreadSuccess(List<Service.FramebufferAttachmentVulkan> n) {
-          LOG.log(SEVERE, "" + n.size());
-          for (Service.FramebufferAttachmentVulkan fbv : n) {
-            LOG.log(SEVERE, fbv.getLabel());
+        protected void onUiThreadSuccess(MultiLayerAndLevelImage result) {
+          imagePanel.setImage(result);
+
+          switch (targetType) {
+            case ColorAttachment:
+              targetItem.setImage(widgets.theme.lit());
+              break;
+
+            case DepthAttachment:
+              targetItem.setImage(widgets.theme.depthBuffer());
+              break;
           }
-          count = n.size();
         }
 
         @Override
         protected void onUiThreadError(Loadable.Message message) {
-          LOG.log(SEVERE, "IT REACHES HERE! " + message.text);
           imagePanel.showMessage(message);
         }
       });
@@ -309,6 +319,49 @@ public class FramebufferView extends Composite
           imagePanel.showMessage(message);
         }
       });
+    }
+  }
+
+  private class AttachmentListener implements Listener {
+    private List<Service.FramebufferAttachmentVulkan> fbaList;
+    private Theme theme;
+
+    public AttachmentListener(Theme theme) {
+      this.theme = theme;
+      fbaList = emptyList();
+    }
+
+    public void reset(List<Service.FramebufferAttachmentVulkan> fbaList) {
+      this.fbaList = fbaList;
+    }
+
+    @Override
+    public void handleEvent(Event e) {
+      Rectangle b = ((ToolItem)e.widget).getBounds();
+      Balloon.createAndShow(toolBar, shell -> {
+        models.analytics.postInteraction(View.Framebuffer, ClientAction.ShowTargets);
+        Composite c = createComposite(shell, new FillLayout(SWT.VERTICAL), SWT.BORDER);
+        ToolBar tb = new ToolBar(c, SWT.HORIZONTAL | SWT.FLAT);
+        if (!fbaList.isEmpty()) {
+          List<ToolItem> fbaItems = new ArrayList<ToolItem>();
+          for (Service.FramebufferAttachmentVulkan fba : fbaList) {
+            switch(fba.getType()) {
+              case ColorAttachment:
+                fbaItems.add(createToggleToolItem(tb, theme.lit(),
+                  x -> updateRenderTarget(fba.getIndex(), theme.lit()),
+                  "Show " + fba.getLabel()));
+                break;
+  
+              case DepthAttachment:
+                fbaItems.add(createToggleToolItem(tb, theme.depthBuffer(),
+                  x -> updateRenderTarget(fba.getIndex(), theme.depthBuffer()),
+                  "Show " + fba.getLabel()));
+                break;
+            }
+          }
+          exclusiveSelection(fbaItems);
+        }
+      }, new Point(right(b) + 2, top(b)));
     }
   }
 }
