@@ -40,7 +40,7 @@ func drawCallMesh(ctx context.Context, dc *VkQueueSubmit, p *path.Mesh, r *path.
 		return nil, err
 	}
 
-	c := getStateObject(s)
+	c := GetState(s)
 
 	lastQueue := c.LastBoundQueue()
 	if lastQueue.IsNil() {
@@ -252,7 +252,7 @@ func getVertexBuffers(ctx context.Context, s *api.GlobalState, thread uint64,
 		return nil, fmt.Errorf("Number of vertices must be greater than 0")
 	}
 
-	c := getStateObject(s)
+	c := GetState(s)
 
 	lastQueue := c.LastBoundQueue()
 	if lastQueue.IsNil() {

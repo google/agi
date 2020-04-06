@@ -24,7 +24,7 @@ import (
 	"github.com/google/gapid/core/math/interval"
 	"github.com/google/gapid/gapis/api"
 	"github.com/google/gapid/gapis/api/sync"
-	"github.com/google/gapid/gapis/api/transform"
+	"github.com/google/gapid/gapis/api/transform2"
 	"github.com/google/gapid/gapis/capture"
 	"github.com/google/gapid/gapis/messages"
 	"github.com/google/gapid/gapis/resolve"
@@ -53,10 +53,6 @@ func (c *customState) init(s *State) {
 		existingCommands := cb.CommandReferences().Len()
 		c.initialCommands[b] = make([]api.Cmd, existingCommands)
 	}
-}
-
-func getStateObject(s *api.GlobalState) *State {
-	return GetState(s)
 }
 
 // Root returns the path to the root of the state to display. It can vary based
@@ -460,7 +456,7 @@ func (API) RecoverMidExecutionCommand(ctx context.Context, c *path.Capture, dat 
 // Interface check
 var _ sync.SynchronizedAPI = &API{}
 
-func (API) GetTerminator(ctx context.Context, c *path.Capture) (transform.Terminator, error) {
+func (API) GetTerminator(ctx context.Context, c *path.Capture) (transform2.Terminator, error) {
 	return NewVulkanTerminator(ctx, c)
 }
 

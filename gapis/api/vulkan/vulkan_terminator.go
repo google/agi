@@ -20,7 +20,7 @@ import (
 	"github.com/google/gapid/core/log"
 	"github.com/google/gapid/gapis/api"
 	"github.com/google/gapid/gapis/api/sync"
-	"github.com/google/gapid/gapis/api/transform"
+	"github.com/google/gapid/gapis/api/transform2"
 	"github.com/google/gapid/gapis/resolve"
 	"github.com/google/gapid/gapis/service/path"
 )
@@ -38,33 +38,43 @@ import (
 //      all pending events have been successfully completed.
 //      TODO(awoloszyn): Handle #2
 // This takes advantage of the fact that all commands will be in order.
-type VulkanTerminator struct {
-	lastRequest     api.CmdID
-	requestSubIndex []uint64
-	stopped         bool
-	syncData        *sync.Data
+type vulkanTerminator struct {
+	lastRequest      api.CmdID
+	requestSubIndex  []uint64
+	terminated       bool
+	syncData         *sync.Data
+	allocations      *allocationTracker
+	cleanupFunctions []func()
 }
 
-var _ transform.Terminator = &VulkanTerminator{}
+var _ transform2.Terminator = &vulkanTerminator{}
 
-func NewVulkanTerminator(ctx context.Context, capture *path.Capture) (*VulkanTerminator, error) {
+func NewVulkanTerminator(ctx context.Context, capture *path.Capture) (*vulkanTerminator, error) {
 	s, err := resolve.SyncData(ctx, capture)
 	if err != nil {
 		return nil, err
 	}
-	return &VulkanTerminator{api.CmdID(0), make([]uint64, 0), false, s}, nil
+
+	return &vulkanTerminator{
+		lastRequest:      api.CmdID(0),
+		requestSubIndex:  make([]uint64, 0),
+		terminated:       false,
+		syncData:         s,
+		allocations:      nil,
+		cleanupFunctions: make([]func(), 0),
+	}, nil
 }
 
 // Add adds the command with identifier id to the set of commands that must be
 // seen before the VulkanTerminator will consume all commands (excluding the EOS
 // command).
-func (t *VulkanTerminator) Add(ctx context.Context, id api.CmdID, subcommand api.SubCmdIdx) error {
-	if len(t.requestSubIndex) != 0 {
+func (vtTransform *vulkanTerminator) Add(ctx context.Context, id api.CmdID, subcommand api.SubCmdIdx) error {
+	if len(vtTransform.requestSubIndex) != 0 {
 		return log.Errf(ctx, nil, "Cannot handle multiple requests when requesting a subcommand")
 	}
 
-	if id > t.lastRequest {
-		t.lastRequest = id
+	if id > vtTransform.lastRequest {
+		vtTransform.lastRequest = id
 	}
 
 	// If we are not trying to index a subcommand, then just continue on our way.
@@ -72,15 +82,171 @@ func (t *VulkanTerminator) Add(ctx context.Context, id api.CmdID, subcommand api
 		return nil
 	}
 
-	t.requestSubIndex = append([]uint64{uint64(id)}, subcommand...)
-	t.lastRequest = id
+	vtTransform.requestSubIndex = append([]uint64{uint64(id)}, subcommand...)
+	vtTransform.lastRequest = id
 
 	return nil
 }
 
-func walkCommands(s *State,
-	commands U32ːCommandReferenceʳDense_ᵐ,
-	callback func(CommandReferenceʳ)) {
+func (vtTransform *vulkanTerminator) RequiresAccurateState() bool {
+	return false
+}
+
+func (vtTransform *vulkanTerminator) BeginTransform(ctx context.Context, inputCommands []api.Cmd, inputState *api.GlobalState) ([]api.Cmd, error) {
+	vtTransform.allocations = NewAllocationTracker(inputState)
+	return inputCommands, nil
+}
+
+func (vtTransform *vulkanTerminator) EndTransform(ctx context.Context, inputCommands []api.Cmd, inputState *api.GlobalState) ([]api.Cmd, error) {
+	return inputCommands, nil
+}
+
+func (vtTransform *vulkanTerminator) ClearTransformResources(ctx context.Context) {
+	vtTransform.allocations.FreeAllocations()
+
+	for _, f := range vtTransform.cleanupFunctions {
+		f()
+	}
+}
+
+func (vtTransform *vulkanTerminator) TransformCommand(ctx context.Context, id api.CmdID, inputCommands []api.Cmd, inputState *api.GlobalState) ([]api.Cmd, error) {
+	if vtTransform.terminated {
+		return nil, nil
+	}
+
+	outputCmds := make([]api.Cmd, 0)
+	for _, cmd := range inputCommands {
+		if vkQueueSubmitCmd, ok := cmd.(*VkQueueSubmit); ok {
+			processedCmds := vtTransform.processVkQueueSubmit(ctx, id, vkQueueSubmitCmd, inputState)
+			outputCmds = append(outputCmds, processedCmds...)
+		} else {
+			outputCmds = append(outputCmds, cmd)
+		}
+	}
+
+	return outputCmds, nil
+}
+
+func (vtTransform *vulkanTerminator) processVkQueueSubmit(ctx context.Context, id api.CmdID, cmd *VkQueueSubmit, inputState *api.GlobalState) []api.Cmd {
+	doCut := false
+	cutIndex := api.SubCmdIdx(nil)
+	// If we have been requested to cut at a particular subindex,
+	// then do that instead of cutting at the derived cutIndex.
+	// It is guaranteed to be safe as long as the requestedSubIndex is
+	// less than the calculated one (i.e. we are cutting more)
+	if len(vtTransform.requestSubIndex) > 1 && vtTransform.requestSubIndex[0] == uint64(id) && vtTransform.syncData.SubcommandLookup.Value(vtTransform.requestSubIndex) != nil {
+		if len(cutIndex) == 0 || !cutIndex.LessThan(vtTransform.requestSubIndex[1:]) {
+			cutIndex = vtTransform.requestSubIndex[1:]
+			doCut = true
+		}
+	}
+
+	if id == vtTransform.lastRequest {
+		vtTransform.terminated = true
+	}
+
+	if !doCut {
+		return []api.Cmd{cmd}
+	}
+
+	return vtTransform.cutCommandBuffer(ctx, id, cmd, cutIndex, inputState)
+}
+
+// cutCommandBuffer rebuilds the given VkQueueSubmit command.
+// It will re-write the submission so that it ends at
+// idx. It writes any new commands to transform.Writer.
+// It will make sure that if the replay were to stop at the given
+// index it would remain valid. This means closing any open
+// RenderPasses.
+func (vtTransform *vulkanTerminator) cutCommandBuffer(ctx context.Context, id api.CmdID, cmd *VkQueueSubmit, idx api.SubCmdIdx, inputState *api.GlobalState) []api.Cmd {
+	cmd.Extras().Observations().ApplyReads(inputState.Memory.ApplicationPool())
+
+	layout := inputState.MemoryLayout
+	submitInfo := cmd.PSubmits().Slice(0, uint64(cmd.SubmitCount()), layout)
+	skipAll := len(idx) == 0
+
+	cb := CommandBuilder{Thread: cmd.Thread(), Arena: inputState.Arena}
+
+	// Notes:
+	// - We should walk/finish all unfinished render passes
+	// idx[0] is the submission index
+	// idx[1] is the primary command-buffer index in the submission
+	// idx[2] is the command index in the primary command-buffer
+	// idx[3] is the secondary command buffer index inside a vkCmdExecuteCommands
+	// idx[4] is the secondary command inside the secondary command-buffer
+	submitCopy := cb.VkQueueSubmit(cmd.Queue(), cmd.SubmitCount(), cmd.PSubmits(), cmd.Fence(), cmd.Result())
+	submitCopy.Extras().MustClone(cmd.Extras().All()...)
+
+	lastSubmit := uint64(0)
+	lastCommandBuffer := uint64(0)
+	if !skipAll {
+		lastSubmit = idx[0]
+		if len(idx) > 1 {
+			lastCommandBuffer = idx[1]
+		}
+	}
+	submitCopy.SetSubmitCount(uint32(lastSubmit + 1))
+	newSubmits := submitInfo.Slice(0, lastSubmit+1).MustRead(ctx, cmd, inputState, nil)
+	newSubmits[lastSubmit].SetCommandBufferCount(uint32(lastCommandBuffer + 1))
+
+	newCommandBuffers := newSubmits[lastSubmit].PCommandBuffers().Slice(0, lastCommandBuffer+1, layout).MustRead(ctx, cmd, inputState, nil)
+
+	stateObject := GetState(inputState)
+
+	var lrp RenderPassObjectʳ
+	lsp := uint32(0)
+	if lastDrawInfo, ok := stateObject.LastDrawInfos().Lookup(cmd.Queue()); ok {
+		if lastDrawInfo.InRenderPass() {
+			lrp = lastDrawInfo.RenderPass()
+			lsp = lastDrawInfo.LastSubpass()
+		} else {
+			lrp = NilRenderPassObjectʳ
+			lsp = 0
+		}
+	}
+	lrp, lsp = resolveCurrentRenderPass(ctx, inputState, cmd, idx, lrp, lsp)
+
+	extraCommands := make([]interface{}, 0)
+	if !lrp.IsNil() {
+		numSubpasses := uint32(lrp.SubpassDescriptions().Len())
+		for i := 0; uint32(i) < numSubpasses-lsp-1; i++ {
+			extraCommands = append(extraCommands,
+				NewVkCmdNextSubpassArgsʳ(inputState.Arena, VkSubpassContents_VK_SUBPASS_CONTENTS_INLINE))
+		}
+		extraCommands = append(extraCommands, NewVkCmdEndRenderPassArgsʳ(inputState.Arena))
+	}
+	cmdBuffer := stateObject.CommandBuffers().Get(newCommandBuffers[lastCommandBuffer])
+	subIdx := make(api.SubCmdIdx, 0)
+
+	outputCmds := make([]api.Cmd, 0)
+
+	if len(idx) > 1 {
+		if !skipAll {
+			subIdx = idx[2:]
+		}
+		var newCmdBuffer VkCommandBuffer
+		var newCommands []api.Cmd
+
+		newCmdBuffer, newCommands, vtTransform.cleanupFunctions = rebuildCommandBuffer(ctx, cb, cmdBuffer, inputState, subIdx, extraCommands)
+		newCommandBuffers[lastCommandBuffer] = newCmdBuffer
+
+		bufferMemory := vtTransform.allocations.AllocDataOrPanic(ctx, newCommandBuffers)
+		newSubmits[lastSubmit].SetPCommandBuffers(NewVkCommandBufferᶜᵖ(bufferMemory.Ptr()))
+
+		newSubmitData := vtTransform.allocations.AllocDataOrPanic(ctx, newSubmits)
+		submitCopy.SetPSubmits(NewVkSubmitInfoᶜᵖ(newSubmitData.Ptr()))
+		submitCopy.AddRead(bufferMemory.Data()).AddRead(newSubmitData.Data())
+
+		outputCmds = append(outputCmds, newCommands...)
+	} else {
+		submitCopy.SetSubmitCount(uint32(lastSubmit + 1))
+	}
+
+	outputCmds = append(outputCmds, submitCopy)
+	return outputCmds
+}
+
+func walkCommands(s *State, commands U32ːCommandReferenceʳDense_ᵐ, callback func(CommandReferenceʳ)) {
 	for _, c := range commands.Keys() {
 		callback(commands.Get(c))
 		if commands.Get(c).Type() == CommandType_cmd_vkCmdExecuteCommands {
@@ -119,7 +285,7 @@ func resolveCurrentRenderPass(ctx context.Context, s *api.GlobalState, submit *V
 	c := GetState(s)
 	l := s.MemoryLayout
 
-	f := func(o CommandReferenceʳ) {
+	walkCommandsCallback := func(o CommandReferenceʳ) {
 		switch o.Type() {
 		case CommandType_cmd_vkCmdBeginRenderPass:
 			t := c.CommandBuffers().Get(o.Buffer()).BufferCommands().VkCmdBeginRenderPass().Get(o.MapIndex())
@@ -140,7 +306,7 @@ func resolveCurrentRenderPass(ctx context.Context, s *api.GlobalState, submit *V
 		buffers := info.PCommandBuffers().Slice(0, uint64(info.CommandBufferCount()), l).MustRead(ctx, a, s, nil)
 		for _, buffer := range buffers {
 			bufferObject := c.CommandBuffers().Get(buffer)
-			walkCommands(c, bufferObject.CommandReferences(), f)
+			walkCommands(c, bufferObject.CommandReferences(), walkCommandsCallback)
 		}
 	}
 	if !incrementLoopLevel(idx, &loopLevel) {
@@ -151,7 +317,7 @@ func resolveCurrentRenderPass(ctx context.Context, s *api.GlobalState, submit *V
 	for cmdbuffer := 0; cmdbuffer < int(idx[1])+getExtra(idx, loopLevel); cmdbuffer++ {
 		buffer := lastBuffers.Index(uint64(cmdbuffer)).MustRead(ctx, a, s, nil)[0]
 		bufferObject := c.CommandBuffers().Get(buffer)
-		walkCommands(c, bufferObject.CommandReferences(), f)
+		walkCommands(c, bufferObject.CommandReferences(), walkCommandsCallback)
 	}
 	if !incrementLoopLevel(idx, &loopLevel) {
 		return lrp, subpass
@@ -159,7 +325,7 @@ func resolveCurrentRenderPass(ctx context.Context, s *api.GlobalState, submit *V
 	lastBuffer := lastBuffers.Index(uint64(idx[1])).MustRead(ctx, a, s, nil)[0]
 	lastBufferObject := c.CommandBuffers().Get(lastBuffer)
 	for cmd := 0; cmd < int(idx[2])+getExtra(idx, loopLevel); cmd++ {
-		f(lastBufferObject.CommandReferences().Get(uint32(cmd)))
+		walkCommandsCallback(lastBufferObject.CommandReferences().Get(uint32(cmd)))
 	}
 	if !incrementLoopLevel(idx, &loopLevel) {
 		return lrp, subpass
@@ -171,7 +337,7 @@ func resolveCurrentRenderPass(ctx context.Context, s *api.GlobalState, submit *V
 		for subcmdidx := 0; subcmdidx < int(idx[3])+getExtra(idx, loopLevel); subcmdidx++ {
 			buffer := executeSubcommand.CommandBuffers().Get(uint32(subcmdidx))
 			bufferObject := c.CommandBuffers().Get(buffer)
-			walkCommands(c, bufferObject.CommandReferences(), f)
+			walkCommands(c, bufferObject.CommandReferences(), walkCommandsCallback)
 		}
 		if !incrementLoopLevel(idx, &loopLevel) {
 			return lrp, subpass
@@ -179,7 +345,7 @@ func resolveCurrentRenderPass(ctx context.Context, s *api.GlobalState, submit *V
 		lastsubBuffer := executeSubcommand.CommandBuffers().Get(uint32(idx[3]))
 		lastSubBufferObject := c.CommandBuffers().Get(lastsubBuffer)
 		for subcmd := 0; subcmd < int(idx[4]); subcmd++ {
-			f(lastSubBufferObject.CommandReferences().Get(uint32(subcmd)))
+			walkCommandsCallback(lastSubBufferObject.CommandReferences().Get(uint32(subcmd)))
 		}
 	}
 
@@ -283,143 +449,3 @@ func rebuildCommandBuffer(ctx context.Context,
 		cb.VkEndCommandBuffer(commandBufferID, VkResult_VK_SUCCESS))
 	return VkCommandBuffer(commandBufferID), x, cleanup
 }
-
-// cutCommandBuffer rebuilds the given VkQueueSubmit command.
-// It will re-write the submission so that it ends at
-// idx. It writes any new commands to transform.Writer.
-// It will make sure that if the replay were to stop at the given
-// index it would remain valid. This means closing any open
-// RenderPasses.
-func cutCommandBuffer(ctx context.Context, id api.CmdID,
-	a *VkQueueSubmit, idx api.SubCmdIdx, out transform.Writer) {
-	s := out.State()
-	cb := CommandBuilder{Thread: a.Thread(), Arena: s.Arena}
-	c := GetState(s)
-	l := s.MemoryLayout
-	o := a.Extras().Observations()
-	o.ApplyReads(s.Memory.ApplicationPool())
-	submitInfo := a.PSubmits().Slice(0, uint64(a.SubmitCount()), l)
-	skipAll := len(idx) == 0
-
-	// Notes:
-	// - We should walk/finish all unfinished render passes
-	// idx[0] is the submission index
-	// idx[1] is the primary command-buffer index in the submission
-	// idx[2] is the command index in the primary command-buffer
-	// idx[3] is the secondary command buffer index inside a vkCmdExecuteCommands
-	// idx[4] is the secondary command inside the secondary command-buffer
-	submitCopy := cb.VkQueueSubmit(a.Queue(), a.SubmitCount(), a.PSubmits(), a.Fence(), a.Result())
-	submitCopy.Extras().MustClone(a.Extras().All()...)
-
-	lastSubmit := uint64(0)
-	lastCommandBuffer := uint64(0)
-	if !skipAll {
-		lastSubmit = idx[0]
-		if len(idx) > 1 {
-			lastCommandBuffer = idx[1]
-		}
-	}
-	submitCopy.SetSubmitCount(uint32(lastSubmit + 1))
-	newSubmits := submitInfo.Slice(0, lastSubmit+1).MustRead(ctx, a, s, nil)
-	newSubmits[lastSubmit].SetCommandBufferCount(uint32(lastCommandBuffer + 1))
-
-	newCommandBuffers := newSubmits[lastSubmit].PCommandBuffers().Slice(0, lastCommandBuffer+1, l).MustRead(ctx, a, s, nil)
-
-	var lrp RenderPassObjectʳ
-	lsp := uint32(0)
-	if lastDrawInfo, ok := c.LastDrawInfos().Lookup(a.Queue()); ok {
-		if lastDrawInfo.InRenderPass() {
-			lrp = lastDrawInfo.RenderPass()
-			lsp = lastDrawInfo.LastSubpass()
-		} else {
-			lrp = NilRenderPassObjectʳ
-			lsp = 0
-		}
-	}
-	lrp, lsp = resolveCurrentRenderPass(ctx, s, a, idx, lrp, lsp)
-
-	extraCommands := make([]interface{}, 0)
-	if !lrp.IsNil() {
-		numSubpasses := uint32(lrp.SubpassDescriptions().Len())
-		for i := 0; uint32(i) < numSubpasses-lsp-1; i++ {
-			extraCommands = append(extraCommands,
-				NewVkCmdNextSubpassArgsʳ(s.Arena, VkSubpassContents_VK_SUBPASS_CONTENTS_INLINE))
-		}
-		extraCommands = append(extraCommands, NewVkCmdEndRenderPassArgsʳ(s.Arena))
-	}
-	var cleanup []func()
-	cmdBuffer := c.CommandBuffers().Get(newCommandBuffers[lastCommandBuffer])
-	subIdx := make(api.SubCmdIdx, 0)
-	allocResults := []api.AllocResult{}
-	if len(idx) > 1 {
-		if !skipAll {
-			subIdx = idx[2:]
-		}
-		var b VkCommandBuffer
-		var newCommands []api.Cmd
-
-		b, newCommands, cleanup =
-			rebuildCommandBuffer(ctx, cb, cmdBuffer, s, subIdx, extraCommands)
-		newCommandBuffers[lastCommandBuffer] = b
-
-		bufferMemory := s.AllocDataOrPanic(ctx, newCommandBuffers)
-		newSubmits[lastSubmit].SetPCommandBuffers(NewVkCommandBufferᶜᵖ(bufferMemory.Ptr()))
-
-		newSubmitData := s.AllocDataOrPanic(ctx, newSubmits)
-		submitCopy.SetPSubmits(NewVkSubmitInfoᶜᵖ(newSubmitData.Ptr()))
-		submitCopy.AddRead(bufferMemory.Data()).AddRead(newSubmitData.Data())
-		allocResults = append(allocResults, bufferMemory)
-		allocResults = append(allocResults, newSubmitData)
-
-		for _, c := range newCommands {
-			out.MutateAndWrite(ctx, api.CmdNoID, c)
-		}
-	} else {
-		submitCopy.SetSubmitCount(uint32(lastSubmit + 1))
-	}
-
-	out.MutateAndWrite(ctx, id, submitCopy)
-
-	for _, f := range cleanup {
-		f()
-	}
-	for _, res := range allocResults {
-		res.Free()
-	}
-}
-
-func (t *VulkanTerminator) Transform(ctx context.Context, id api.CmdID, cmd api.Cmd, out transform.Writer) error {
-	if t.stopped {
-		return nil
-	}
-
-	doCut := false
-	cutIndex := api.SubCmdIdx(nil)
-	// If we have been requested to cut at a particular subindex,
-	// then do that instead of cutting at the derived cutIndex.
-	// It is guaranteed to be safe as long as the requestedSubIndex is
-	// less than the calculated one (i.e. we are cutting more)
-	if len(t.requestSubIndex) > 1 && t.requestSubIndex[0] == uint64(id) && t.syncData.SubcommandLookup.Value(t.requestSubIndex) != nil {
-		if len(cutIndex) == 0 || !cutIndex.LessThan(t.requestSubIndex[1:]) {
-			cutIndex = t.requestSubIndex[1:]
-			doCut = true
-		}
-	}
-
-	// We have to cut somewhere
-	if doCut {
-		cutCommandBuffer(ctx, id, cmd.(*VkQueueSubmit), cutIndex, out)
-	} else {
-		out.MutateAndWrite(ctx, id, cmd)
-	}
-
-	if id == t.lastRequest {
-		t.stopped = true
-	}
-	return nil
-}
-
-func (t *VulkanTerminator) Flush(ctx context.Context, out transform.Writer) error { return nil }
-func (t *VulkanTerminator) PreLoop(ctx context.Context, output transform.Writer)  {}
-func (t *VulkanTerminator) PostLoop(ctx context.Context, output transform.Writer) {}
-func (t *VulkanTerminator) BuffersCommands() bool                                 { return false }

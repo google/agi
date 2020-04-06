@@ -21,10 +21,8 @@ import (
 	"github.com/google/gapid/core/data/binary"
 	"github.com/google/gapid/core/image"
 	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/memory/arena"
 	"github.com/google/gapid/core/stream/fmts"
 	"github.com/google/gapid/gapis/api"
-	"github.com/google/gapid/gapis/api/transform"
 	"github.com/google/gapid/gapis/capture"
 	"github.com/google/gapid/gapis/memory"
 	"github.com/google/gapid/gapis/messages"
@@ -35,23 +33,27 @@ import (
 	"github.com/google/gapid/gapis/service/path"
 )
 
-var (
-	_ = transform.Transformer(&stencilOverdraw{})
-)
-
 type stencilOverdraw struct {
-	rewrite    map[api.CmdID]replay.Result
-	lastSubIdx map[api.CmdID]api.SubCmdIdx
+	rewrite          map[api.CmdID]replay.Result
+	lastSubIdx       map[api.CmdID]api.SubCmdIdx
+	cmdBuilder       *CommandBuilder
+	allocations      *allocationTracker
+	cleanupCmds      []api.Cmd
+	cleanupFunctions []func()
 }
 
-func newStencilOverdraw() *stencilOverdraw {
+func NewStencilOverdraw() *stencilOverdraw {
 	return &stencilOverdraw{
-		rewrite:    map[api.CmdID]replay.Result{},
-		lastSubIdx: map[api.CmdID]api.SubCmdIdx{},
+		rewrite:          map[api.CmdID]replay.Result{},
+		lastSubIdx:       map[api.CmdID]api.SubCmdIdx{},
+		allocations:      nil,
+		cmdBuilder:       nil,
+		cleanupCmds:      make([]api.Cmd, 0),
+		cleanupFunctions: make([]func(), 0),
 	}
 }
 
-func (s *stencilOverdraw) add(ctx context.Context, after []uint64, capt *path.Capture, res replay.Result) {
+func (overdrawTransform *stencilOverdraw) add(ctx context.Context, after []uint64, capt *path.Capture, res replay.Result) {
 	c, err := capture.ResolveGraphicsFromPath(ctx, capt)
 	if err != nil {
 		res(nil, err)
@@ -61,8 +63,8 @@ func (s *stencilOverdraw) add(ctx context.Context, after []uint64, capt *path.Ca
 		switch (c.Commands[lastSubmit]).(type) {
 		case *VkQueueSubmit:
 			id := api.CmdID(lastSubmit)
-			s.rewrite[id] = res
-			s.lastSubIdx[id] = api.SubCmdIdx(after[1:])
+			overdrawTransform.rewrite[id] = res
+			overdrawTransform.lastSubIdx[id] = api.SubCmdIdx(after[1:])
 			log.D(ctx, "Overdraw marked for submit id %v", lastSubmit)
 			return
 		}
@@ -72,135 +74,116 @@ func (s *stencilOverdraw) add(ctx context.Context, after []uint64, capt *path.Ca
 	})
 }
 
-func (s *stencilOverdraw) Transform(ctx context.Context, id api.CmdID, cmd api.Cmd, out transform.Writer) error {
-	gs := out.State()
-	st := GetState(gs)
-	arena := gs.Arena
+func (overdrawTransform *stencilOverdraw) RequiresAccurateState() bool {
+	return false
+}
 
-	var allocated []*api.AllocResult
-	defer func() {
-		for _, d := range allocated {
-			d.Free()
+func (overdrawTransform *stencilOverdraw) BeginTransform(ctx context.Context, inputCommands []api.Cmd, inputState *api.GlobalState) ([]api.Cmd, error) {
+	overdrawTransform.allocations = NewAllocationTracker(inputState)
+	return inputCommands, nil
+}
+
+func (overdrawTransform *stencilOverdraw) EndTransform(ctx context.Context, inputCommands []api.Cmd, inputState *api.GlobalState) ([]api.Cmd, error) {
+	return inputCommands, nil
+}
+
+func (overdrawTransform *stencilOverdraw) ClearTransformResources(ctx context.Context) {
+	overdrawTransform.allocations.FreeAllocations()
+
+	for _, f := range overdrawTransform.cleanupFunctions {
+		f()
+	}
+}
+
+func (overdrawTransform *stencilOverdraw) TransformCommand(ctx context.Context, id api.CmdID, inputCommands []api.Cmd, inputState *api.GlobalState) ([]api.Cmd, error) {
+	outputCmds := make([]api.Cmd, 0, len(inputCommands))
+	for _, cmd := range inputCommands {
+		overdrawTransform.cmdBuilder = &CommandBuilder{Thread: cmd.Thread(), Arena: inputState.Arena}
+		modifiedCmds := overdrawTransform.modifyStencilOverdraw(ctx, id, cmd, inputState)
+		if modifiedCmds != nil {
+			outputCmds = append(outputCmds, modifiedCmds...)
+		} else {
+			outputCmds = append(outputCmds, cmd)
 		}
-	}()
-	mustAllocData := func(v ...interface{}) api.AllocResult {
-		res := gs.AllocDataOrPanic(ctx, v...)
-		allocated = append(allocated, &res)
-		return res
 	}
-	var cleanups []func()
-	addCleanup := func(f func()) {
-		cleanups = append(cleanups, f)
+	return outputCmds, nil
+}
+
+func (overdrawTransform *stencilOverdraw) modifyStencilOverdraw(ctx context.Context, id api.CmdID, cmd api.Cmd, inputState *api.GlobalState) []api.Cmd {
+	if createImageCmd, ok := cmd.(*VkCreateImage); ok {
+		if newCmd := overdrawTransform.rewriteImageCreate(ctx, id, createImageCmd, inputState); newCmd != nil {
+			return []api.Cmd{newCmd}
+		}
+
+		return nil
 	}
 
-	cb := CommandBuilder{Thread: cmd.Thread(), Arena: gs.Arena}
-
-	switch c := cmd.(type) {
-	case *VkCreateImage:
-		// Need to make sure depth images are created with transfer
-		// source mode, just in case they're being used in load mode
-		// and we need to copy from them.
-		return s.rewriteImageCreate(ctx, cb, gs, st, arena, id, c, mustAllocData, out)
-	}
-	res, ok := s.rewrite[id]
+	res, ok := overdrawTransform.rewrite[id]
 	if !ok {
-		return out.MutateAndWrite(ctx, id, cmd)
+		return nil
 	}
 
-	submit, ok := cmd.(*VkQueueSubmit)
+	queueSubmitCmd, ok := cmd.(*VkQueueSubmit)
 	if !ok {
 		res(nil, &service.ErrDataUnavailable{Reason: messages.ErrMessage("Overdraw change marked for non-VkQueueSubmit")})
-		return out.MutateAndWrite(ctx, id, cmd)
+		return nil
 	}
 
-	lastRenderPassArgs, lastRenderPassIdx, err :=
-		s.getLastRenderPass(ctx, gs, st, submit, s.lastSubIdx[id])
+	lastRenderPassArgs, lastRenderPassIdx, err := getLastRenderPass(ctx, inputState, queueSubmitCmd, overdrawTransform.lastSubIdx[id])
 	if err != nil {
-		res(nil, &service.ErrDataUnavailable{
-			Reason: messages.ErrMessage(fmt.Sprintf(
-				"Could not get overdraw: %v", err))})
-		return out.MutateAndWrite(ctx, id, cmd)
+		res(nil, &service.ErrDataUnavailable{Reason: messages.ErrMessage(fmt.Sprintf("Could not get overdraw: %v", err))})
+		return nil
 	}
 
 	if lastRenderPassArgs.IsNil() {
 		res(nil, &service.ErrDataUnavailable{Reason: messages.ErrMessage("No render pass in queue submit")})
-		return out.MutateAndWrite(ctx, id, cmd)
-	}
-
-	img, err := s.rewriteQueueSubmit(ctx, cb, gs, st, arena, submit,
-		lastRenderPassArgs, lastRenderPassIdx, id,
-		mustAllocData, addCleanup, out)
-	if err != nil {
-		res(nil, &service.ErrDataUnavailable{
-			Reason: messages.ErrMessage(fmt.Sprintf(
-				"Could not get overdraw: %v", err))})
-		return out.MutateAndWrite(ctx, id, cmd)
-	}
-
-	checkImage := func(img *image.Data) error {
-		// Check if any bytes are 255, which indicates potential saturation
-		for _, byt := range img.Bytes {
-			if byt == 255 {
-				log.W(ctx, "Overdraw hit limit of 255, further overdraw cannot be measured")
-				break
-			}
-		}
-		// Even though the image comes from a stencil, content-wise
-		// it's a gray image.
-		img.Format = image.NewUncompressed("Count_U8", fmts.Count_U8)
 		return nil
 	}
-	postImageData(ctx, cb, gs,
-		st.Images().Get(img.handle),
-		img.format,
-		VkImageAspectFlagBits_VK_IMAGE_ASPECT_STENCIL_BIT,
-		0,
-		0,
-		img.width,
-		img.height,
-		img.width,
-		img.height,
-		checkImage,
-		out,
-		res,
-	)
+
+	outputCmds := make([]api.Cmd, 0)
+	modifiedCmds, img, err := overdrawTransform.rewriteQueueSubmit(ctx, inputState, queueSubmitCmd, lastRenderPassArgs, lastRenderPassIdx)
+	if err != nil {
+		res(nil, &service.ErrDataUnavailable{Reason: messages.ErrMessage(fmt.Sprintf("Could not get overdraw: %v", err))})
+		return nil
+	}
+	if modifiedCmds != nil {
+		outputCmds = append(outputCmds, modifiedCmds...)
+	}
+
+	newCmds := overdrawTransform.postStencilImageData(ctx, inputState, img, res)
+	if newCmds != nil {
+		outputCmds = append(outputCmds, newCmds...)
+	}
+
+	// Melih TODO: This does not matter anymore probably.
 	// Don't defer this because we don't want these to execute if something panics
-	for i := len(cleanups) - 1; i >= 0; i-- {
-		cleanups[i]()
+	for i := len(overdrawTransform.cleanupCmds) - 1; i >= 0; i-- {
+		outputCmds = append(outputCmds, overdrawTransform.cleanupCmds[i])
 	}
 	return nil
 }
 
-func (*stencilOverdraw) rewriteImageCreate(ctx context.Context,
-	cb CommandBuilder,
-	gs *api.GlobalState,
-	st *State,
-	a arena.Arena,
-	id api.CmdID,
-	cmd *VkCreateImage,
-	alloc func(...interface{}) api.AllocResult,
-	out transform.Writer,
-) error {
+func (overdrawTransform *stencilOverdraw) rewriteImageCreate(ctx context.Context, id api.CmdID, cmd *VkCreateImage, inputState *api.GlobalState) api.Cmd {
 	allReads := []api.AllocResult{}
 	allocAndRead := func(v ...interface{}) api.AllocResult {
-		res := alloc(v)
+		res := overdrawTransform.allocations.AllocDataOrPanic(ctx, v)
 		allReads = append(allReads, res)
 		return res
 	}
-	cmd.Extras().Observations().ApplyReads(gs.Memory.ApplicationPool())
+	cmd.Extras().Observations().ApplyReads(inputState.Memory.ApplicationPool())
 
-	createInfo := cmd.PCreateInfo().MustRead(ctx, cmd, gs, nil)
+	createInfo := cmd.PCreateInfo().MustRead(ctx, cmd, inputState, nil)
 	mask := VkImageUsageFlags(VkImageUsageFlagBits_VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
 	if !isDepthFormat(createInfo.Fmt()) || (createInfo.Usage()&mask == mask) {
-		return out.MutateAndWrite(ctx, id, cmd)
+		return nil
 	}
 
-	newCreateInfo := createInfo.Clone(a, api.CloneContext{})
+	newCreateInfo := createInfo.Clone(inputState.Arena, api.CloneContext{})
 
 	if !newCreateInfo.PQueueFamilyIndices().IsNullptr() {
 		indices := newCreateInfo.PQueueFamilyIndices().Slice(0,
-			uint64(newCreateInfo.QueueFamilyIndexCount()), gs.MemoryLayout).
-			MustRead(ctx, cmd, gs, nil)
+			uint64(newCreateInfo.QueueFamilyIndexCount()), inputState.MemoryLayout).
+			MustRead(ctx, cmd, inputState, nil)
 		data := allocAndRead(indices)
 		newCreateInfo.SetPQueueFamilyIndices(NewU32ᶜᵖ(data.Ptr()))
 	}
@@ -213,58 +196,57 @@ func (*stencilOverdraw) rewriteImageCreate(ctx context.Context,
 	allocatorPtr := memory.Nullptr
 	if !cmd.PAllocator().IsNullptr() {
 		allocatorPtr = allocAndRead(
-			cmd.PAllocator().MustRead(ctx, cmd, gs, nil)).Ptr()
+			cmd.PAllocator().MustRead(ctx, cmd, inputState, nil)).Ptr()
 	}
 
-	cmd.Extras().Observations().ApplyWrites(gs.Memory.ApplicationPool())
-	idData := alloc(cmd.PImage().MustRead(ctx, cmd, gs, nil))
+	cmd.Extras().Observations().ApplyWrites(inputState.Memory.ApplicationPool())
+	idData := overdrawTransform.allocations.AllocDataOrPanic(ctx, cmd.PImage().MustRead(ctx, cmd, inputState, nil))
 
-	newCmd := cb.VkCreateImage(cmd.Device(), newCreateInfoPtr,
+	newCmd := overdrawTransform.cmdBuilder.VkCreateImage(cmd.Device(), newCreateInfoPtr,
 		allocatorPtr, idData.Ptr(),
 		VkResult_VK_SUCCESS).AddWrite(idData.Data())
 	for _, read := range allReads {
 		newCmd.AddRead(read.Data())
 	}
 
-	return out.MutateAndWrite(ctx, id, newCmd)
+	return newCmd
 }
 
-func (*stencilOverdraw) getLastRenderPass(ctx context.Context,
-	gs *api.GlobalState,
-	st *State,
+func getLastRenderPass(ctx context.Context,
+	inputState *api.GlobalState,
 	submit *VkQueueSubmit,
 	lastIdx api.SubCmdIdx,
 ) (VkCmdBeginRenderPassArgsʳ, api.SubCmdIdx, error) {
 	lastRenderPassArgs := NilVkCmdBeginRenderPassArgsʳ
 	var lastRenderPassIdx api.SubCmdIdx
-	submit.Extras().Observations().ApplyReads(gs.Memory.ApplicationPool())
+	submit.Extras().Observations().ApplyReads(inputState.Memory.ApplicationPool())
 	submitInfos := submit.PSubmits().Slice(0, uint64(submit.SubmitCount()),
-		gs.MemoryLayout).MustRead(ctx, submit, gs, nil)
+		inputState.MemoryLayout).MustRead(ctx, submit, inputState, nil)
 	for i, si := range submitInfos {
 		if len(lastIdx) >= 1 && lastIdx[0] < uint64(i) {
 			break
 		}
 		cmdBuffers := si.PCommandBuffers().Slice(0, uint64(si.CommandBufferCount()),
-			gs.MemoryLayout).MustRead(ctx, submit, gs, nil)
+			inputState.MemoryLayout).MustRead(ctx, submit, inputState, nil)
 		for j, buf := range cmdBuffers {
 			if len(lastIdx) >= 2 && lastIdx[0] == uint64(i) && lastIdx[1] < uint64(j) {
 				break
 			}
-			cb, ok := st.CommandBuffers().Lookup(buf)
+			commandBuffers, ok := GetState(inputState).CommandBuffers().Lookup(buf)
 			if !ok {
 				return lastRenderPassArgs, lastRenderPassIdx,
 					fmt.Errorf("Invalid command buffer %v", buf)
 			}
 			// vkCmdBeginRenderPass can only be in a primary command buffer,
 			// so we don't need to check secondary command buffers
-			for k := 0; k < cb.CommandReferences().Len(); k++ {
+			for k := 0; k < commandBuffers.CommandReferences().Len(); k++ {
 				if len(lastIdx) >= 3 && lastIdx[0] == uint64(i) &&
 					lastIdx[1] == uint64(j) && lastIdx[2] < uint64(k) {
 					break
 				}
-				cr := cb.CommandReferences().Get(uint32(k))
+				cr := commandBuffers.CommandReferences().Get(uint32(k))
 				if cr.Type() == CommandType_cmd_vkCmdBeginRenderPass {
-					lastRenderPassArgs = cb.BufferCommands().
+					lastRenderPassArgs = commandBuffers.BufferCommands().
 						VkCmdBeginRenderPass().
 						Get(cr.MapIndex())
 					lastRenderPassIdx = api.SubCmdIdx{
@@ -292,35 +274,25 @@ type renderInfo struct {
 	view        VkImageView
 }
 
-func (s *stencilOverdraw) createNewRenderPassFramebuffer(ctx context.Context,
-	cb CommandBuilder,
-	gs *api.GlobalState,
-	st *State,
-	a arena.Arena,
+func (overdrawTransform *stencilOverdraw) createNewRenderPassFramebuffer(ctx context.Context,
+	inputState *api.GlobalState,
 	oldRenderPass VkRenderPass,
-	oldFramebuffer VkFramebuffer,
-	alloc func(v ...interface{}) api.AllocResult,
-	addCleanup func(func()),
-	out transform.Writer,
-) (renderInfo, error) {
+	oldFramebuffer VkFramebuffer) ([]api.Cmd, renderInfo, error) {
+
+	st := GetState(inputState)
 	oldRpInfo, ok := st.RenderPasses().Lookup(oldRenderPass)
 	if !ok {
-		return renderInfo{},
-			fmt.Errorf("Invalid renderpass %v",
-				oldRenderPass)
+		return nil, renderInfo{}, fmt.Errorf("Invalid renderpass %v", oldRenderPass)
 	}
 
 	oldFbInfo, ok := st.Framebuffers().Lookup(oldFramebuffer)
 	if !ok {
-		return renderInfo{},
-			fmt.Errorf("Invalid framebuffer %v",
-				oldFramebuffer)
+		return nil, renderInfo{}, fmt.Errorf("Invalid framebuffer %v", oldFramebuffer)
 	}
 
-	attachDesc, depthIdx, err :=
-		s.getStencilAttachmentDescription(ctx, st, a, oldRpInfo)
+	attachDesc, depthIdx, err := overdrawTransform.getStencilAttachmentDescription(ctx, inputState, oldRpInfo)
 	if err != nil {
-		return renderInfo{}, err
+		return nil, renderInfo{}, err
 	}
 
 	width, height := oldFbInfo.Width(), oldFbInfo.Height()
@@ -332,30 +304,41 @@ func (s *stencilOverdraw) createNewRenderPassFramebuffer(ctx context.Context,
 		height = depthImage.Info().Extent().Height()
 	}
 	device := oldFbInfo.Device()
-	image, err := s.createImage(ctx, cb, st, a, device, attachDesc.Fmt(),
-		width, height, alloc, addCleanup, out)
+
+	outputCmds := make([]api.Cmd, 0)
+	createImageCmds, image, err := overdrawTransform.createImage(ctx, inputState, device, attachDesc.Fmt(), width, height)
 	if err != nil {
-		return renderInfo{}, err
+		return nil, renderInfo{}, err
 	}
 
-	imageView := s.createImageView(ctx, cb, st, a, device,
-		image.handle, alloc, addCleanup, out)
+	if createImageCmds != nil {
+		outputCmds = append(outputCmds, createImageCmds...)
+	}
 
-	renderPass := s.createRenderPass(ctx, cb, st, a, device, oldRpInfo,
-		attachDesc, alloc, addCleanup, out)
-	framebuffer := s.createFramebuffer(ctx, cb, st, a, device, oldFbInfo,
-		renderPass, imageView, alloc, addCleanup, out)
+	imageViewCmd, imageView := overdrawTransform.createImageView(ctx, inputState, device, image.handle)
+	if imageViewCmd != nil {
+		outputCmds = append(outputCmds, imageViewCmd)
+	}
 
-	return renderInfo{renderPass, depthIdx, framebuffer, image, imageView}, nil
+	renderPassCmd, renderPass := overdrawTransform.createRenderPass(ctx, inputState, device, oldRpInfo, attachDesc)
+	if renderPassCmd != nil {
+		outputCmds = append(outputCmds, renderPassCmd)
+	}
+
+	frameBufferCmd, framebuffer := overdrawTransform.createFramebuffer(ctx, inputState, device, oldFbInfo, renderPass, imageView)
+	if frameBufferCmd != nil {
+		outputCmds = append(outputCmds, frameBufferCmd)
+	}
+
+	return outputCmds, renderInfo{renderPass, depthIdx, framebuffer, image, imageView}, nil
 }
 
-func (s *stencilOverdraw) getStencilAttachmentDescription(ctx context.Context,
-	st *State,
-	a arena.Arena,
+func (overdrawTransform *stencilOverdraw) getStencilAttachmentDescription(ctx context.Context,
+	inputState *api.GlobalState,
 	rpInfo RenderPassObjectʳ,
 ) (VkAttachmentDescription, uint32, error) {
 
-	depthDesc, idx, err := s.getDepthAttachment(a, rpInfo)
+	depthDesc, idx, err := overdrawTransform.getDepthAttachment(rpInfo)
 	if err != nil {
 		return NilVkAttachmentDescription, idx, err
 	}
@@ -364,20 +347,19 @@ func (s *stencilOverdraw) getStencilAttachmentDescription(ctx context.Context,
 	var stencilDesc VkAttachmentDescription
 	var prefFmt VkFormat
 	if idx != ^uint32(0) {
-		stencilDesc = depthDesc.Clone(a, api.CloneContext{})
-
-		prefFmt, err = s.depthToStencilFormat(depthDesc.Fmt())
+		stencilDesc = depthDesc.Clone(inputState.Arena, api.CloneContext{})
+		prefFmt, err = depthToStencilFormat(depthDesc.Fmt())
 		if err != nil {
 			return NilVkAttachmentDescription, idx, err
 		}
 	} else {
-		stencilDesc = MakeVkAttachmentDescription(a)
+		stencilDesc = MakeVkAttachmentDescription(inputState.Arena)
 		prefFmt = 0xFFFFFFFF // defer to preference order
 		stencilDesc.SetSamples(VkSampleCountFlagBits_VK_SAMPLE_COUNT_1_BIT)
 		stencilDesc.SetLoadOp(VkAttachmentLoadOp_VK_ATTACHMENT_LOAD_OP_DONT_CARE)
 		stencilDesc.SetStoreOp(VkAttachmentStoreOp_VK_ATTACHMENT_STORE_OP_DONT_CARE)
 	}
-	format, err := s.getBestStencilFormat(ctx, st, rpInfo.Device(), prefFmt)
+	format, err := overdrawTransform.getBestStencilFormat(ctx, GetState(inputState), rpInfo.Device(), prefFmt)
 	if err != nil {
 		return NilVkAttachmentDescription, idx, err
 	}
@@ -390,9 +372,7 @@ func (s *stencilOverdraw) getStencilAttachmentDescription(ctx context.Context,
 }
 
 // TODO: see if we can use the existing depth attachment in place
-func (s *stencilOverdraw) getDepthAttachment(a arena.Arena,
-	rpInfo RenderPassObjectʳ,
-) (VkAttachmentDescription, uint32, error) {
+func (s *stencilOverdraw) getDepthAttachment(rpInfo RenderPassObjectʳ) (VkAttachmentDescription, uint32, error) {
 	if rpInfo.SubpassDescriptions().Len() == 0 {
 		return NilVkAttachmentDescription, 0,
 			fmt.Errorf("RenderPass %v has no subpasses",
@@ -490,96 +470,35 @@ func (s *stencilOverdraw) getBestStencilFormat(ctx context.Context,
 	return 0, fmt.Errorf("No depth/stencil formats supported")
 }
 
-func (s *stencilOverdraw) depthToStencilFormat(depthFormat VkFormat) (VkFormat, error) {
-	switch depthFormat {
-	case VkFormat_VK_FORMAT_D16_UNORM:
-		return VkFormat_VK_FORMAT_D16_UNORM_S8_UINT, nil
-	case VkFormat_VK_FORMAT_X8_D24_UNORM_PACK32:
-		return VkFormat_VK_FORMAT_D24_UNORM_S8_UINT, nil
-	case VkFormat_VK_FORMAT_D32_SFLOAT:
-		return VkFormat_VK_FORMAT_D32_SFLOAT_S8_UINT, nil
-
-	case VkFormat_VK_FORMAT_D16_UNORM_S8_UINT,
-		VkFormat_VK_FORMAT_D24_UNORM_S8_UINT,
-		VkFormat_VK_FORMAT_D32_SFLOAT_S8_UINT:
-		return depthFormat, nil
-	default:
-		return 0, fmt.Errorf("Unrecognized depth format %v",
-			depthFormat)
-	}
-}
-
-func (s *stencilOverdraw) depthStencilToDepthFormat(depthStencilFormat VkFormat) (VkFormat, error) {
-	switch depthStencilFormat {
-	case VkFormat_VK_FORMAT_D16_UNORM,
-		VkFormat_VK_FORMAT_D16_UNORM_S8_UINT:
-		return VkFormat_VK_FORMAT_D16_UNORM, nil
-	case VkFormat_VK_FORMAT_X8_D24_UNORM_PACK32,
-		VkFormat_VK_FORMAT_D24_UNORM_S8_UINT:
-		return VkFormat_VK_FORMAT_X8_D24_UNORM_PACK32, nil
-	case VkFormat_VK_FORMAT_D32_SFLOAT,
-		VkFormat_VK_FORMAT_D32_SFLOAT_S8_UINT:
-		return VkFormat_VK_FORMAT_D32_SFLOAT, nil
-	default:
-		return 0, fmt.Errorf("Unrecognized depth/stencil format %v",
-			depthStencilFormat)
-	}
-}
-
-func (s *stencilOverdraw) depthToStageFormat(depthFormat VkFormat) (VkFormat, error) {
-	switch depthFormat {
-	case VkFormat_VK_FORMAT_D16_UNORM:
-		return VkFormat_VK_FORMAT_R16_UINT, nil
-	case VkFormat_VK_FORMAT_X8_D24_UNORM_PACK32,
-		VkFormat_VK_FORMAT_D32_SFLOAT:
-		return VkFormat_VK_FORMAT_R32_UINT, nil
-	default:
-		return 0, fmt.Errorf("Unrecognized depth format %v",
-			depthFormat)
-	}
-}
-
-func isDepthFormat(depthFormat VkFormat) bool {
-	return depthBits(depthFormat) != 0
-}
-
-func depthBits(depthFormat VkFormat) int {
-	switch depthFormat {
-	case VkFormat_VK_FORMAT_D16_UNORM,
-		VkFormat_VK_FORMAT_D16_UNORM_S8_UINT:
-		return 16
-	case VkFormat_VK_FORMAT_X8_D24_UNORM_PACK32,
-		VkFormat_VK_FORMAT_D24_UNORM_S8_UINT:
-		return 24
-	case VkFormat_VK_FORMAT_D32_SFLOAT,
-		VkFormat_VK_FORMAT_D32_SFLOAT_S8_UINT:
-		return 32
-	default:
-		return 0
-	}
-}
-
-func (*stencilOverdraw) createImage(ctx context.Context,
-	cb CommandBuilder,
-	st *State,
-	a arena.Arena,
+func (overdrawTransform *stencilOverdraw) createImage(ctx context.Context,
+	inputState *api.GlobalState,
 	device VkDevice,
 	format VkFormat,
 	width uint32,
-	height uint32,
-	alloc func(v ...interface{}) api.AllocResult,
-	addCleanup func(func()),
-	out transform.Writer,
-) (stencilImage, error) {
-	imageCreateInfo := NewVkImageCreateInfo(a,
+	height uint32) ([]api.Cmd, stencilImage, error) {
+
+	st := GetState(inputState)
+
+	// The physical device memory properties are used to find the correct
+	// memory type index and allocate proper memory for our stencil image.
+	deviceInfo, ok := st.Devices().Lookup(device)
+	if !ok {
+		return nil, stencilImage{}, fmt.Errorf("Invalid device %v", device)
+	}
+	physicalDeviceInfo, ok := st.PhysicalDevices().Lookup(deviceInfo.PhysicalDevice())
+	if !ok {
+		return nil, stencilImage{}, fmt.Errorf("Invalid physical device %v", deviceInfo.PhysicalDevice())
+	}
+
+	imageCreateInfo := NewVkImageCreateInfo(inputState.Arena,
 		VkStructureType_VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // sType
-		0,                                  // pNext
-		0,                                  // flags
-		VkImageType_VK_IMAGE_TYPE_2D,       // imageType
-		format,                             // format
-		NewVkExtent3D(a, width, height, 1), // extent
-		1,                                  // mipLevels
-		1,                                  // arrayLevels
+		0,                            // pNext
+		0,                            // flags
+		VkImageType_VK_IMAGE_TYPE_2D, // imageType
+		format,                       // format
+		NewVkExtent3D(inputState.Arena, width, height, 1), // extent
+		1, // mipLevels
+		1, // arrayLevels
 		VkSampleCountFlagBits_VK_SAMPLE_COUNT_1_BIT, // samples
 		VkImageTiling_VK_IMAGE_TILING_OPTIMAL,       // tiling
 		VkImageUsageFlags( // usage
@@ -592,41 +511,32 @@ func (*stencilOverdraw) createImage(ctx context.Context,
 		0,                                       // pQueueFamilyIndices
 		VkImageLayout_VK_IMAGE_LAYOUT_UNDEFINED, // initialLayout
 	)
-	imageCreateInfoData := alloc(imageCreateInfo)
 
+	imageCreateInfoData := overdrawTransform.allocations.AllocDataOrPanic(ctx, imageCreateInfo)
 	image := VkImage(newUnusedID(false, func(id uint64) bool {
 		return st.Images().Contains(VkImage(id))
 	}))
-	imageData := alloc(image)
-	writeEach(ctx, out,
-		cb.VkCreateImage(device,
+	imageData := overdrawTransform.allocations.AllocDataOrPanic(ctx, image)
+
+	outputCmds := make([]api.Cmd, 0)
+
+	outputCmds = append(outputCmds,
+		overdrawTransform.cmdBuilder.VkCreateImage(device,
 			imageCreateInfoData.Ptr(),
 			memory.Nullptr,
 			imageData.Ptr(),
 			VkResult_VK_SUCCESS,
 		).AddRead(imageCreateInfoData.Data()).AddWrite(imageData.Data()))
 
-	// The physical device memory properties are used to find the correct
-	// memory type index and allocate proper memory for our stencil image.
-	deviceInfo, ok := st.Devices().Lookup(device)
-	if !ok {
-		return stencilImage{}, fmt.Errorf("Invalid device %v",
-			device)
-	}
-	physicalDeviceInfo, ok := st.PhysicalDevices().Lookup(
-		deviceInfo.PhysicalDevice())
-	if !ok {
-		return stencilImage{}, fmt.Errorf("Invalid physical device %v",
-			deviceInfo.PhysicalDevice())
-	}
-	physicalDeviceMemoryPropertiesData := alloc(physicalDeviceInfo.MemoryProperties())
-
 	imageMemory := VkDeviceMemory(newUnusedID(false, func(id uint64) bool {
 		return st.DeviceMemories().Contains(VkDeviceMemory(id))
 	}))
-	imageMemoryData := alloc(imageMemory)
-	writeEach(ctx, out,
-		cb.ReplayAllocateImageMemory(
+	imageMemoryData := overdrawTransform.allocations.AllocDataOrPanic(ctx, imageMemory)
+
+	physicalDeviceMemoryPropertiesData := overdrawTransform.allocations.AllocDataOrPanic(ctx, physicalDeviceInfo.MemoryProperties())
+
+	outputCmds = append(outputCmds,
+		overdrawTransform.cmdBuilder.ReplayAllocateImageMemory(
 			device,
 			physicalDeviceMemoryPropertiesData.Ptr(),
 			image,
@@ -637,51 +547,37 @@ func (*stencilOverdraw) createImage(ctx context.Context,
 		).AddWrite(
 			imageMemoryData.Data(),
 		),
-		cb.VkBindImageMemory(
+		overdrawTransform.cmdBuilder.VkBindImageMemory(
 			device, image, imageMemory, VkDeviceSize(0),
 			VkResult_VK_SUCCESS))
 
-	addCleanup(func() {
-		writeEach(ctx, out,
-			cb.VkDestroyImage(
-				device,
-				image,
-				memory.Nullptr),
-			cb.VkFreeMemory(
-				device,
-				imageMemory,
-				memory.Nullptr),
-		)
-	})
+	overdrawTransform.cleanupCmds = append(overdrawTransform.cleanupCmds,
+		overdrawTransform.cmdBuilder.VkDestroyImage(device, image, memory.Nullptr),
+		overdrawTransform.cmdBuilder.VkFreeMemory(device, imageMemory, memory.Nullptr))
 
-	return stencilImage{image, format, width, height}, nil
+	return outputCmds, stencilImage{image, format, width, height}, nil
 }
 
-func (*stencilOverdraw) createImageView(ctx context.Context,
-	cb CommandBuilder,
-	st *State,
-	a arena.Arena,
+func (overdrawTransform *stencilOverdraw) createImageView(ctx context.Context,
+	inputState *api.GlobalState,
 	device VkDevice,
-	image VkImage,
-	alloc func(v ...interface{}) api.AllocResult,
-	addCleanup func(func()),
-	out transform.Writer,
-) VkImageView {
-	imageObject := st.Images().Get(image)
-	createInfo := NewVkImageViewCreateInfo(a,
+	image VkImage) (api.Cmd, VkImageView) {
+
+	imageObject := GetState(inputState).Images().Get(image)
+	createInfo := NewVkImageViewCreateInfo(inputState.Arena,
 		VkStructureType_VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // sType
 		0,                                     // pNext
 		0,                                     // flags
 		image,                                 // image
 		VkImageViewType_VK_IMAGE_VIEW_TYPE_2D, // viewType
 		imageObject.Info().Fmt(),              // format
-		NewVkComponentMapping(a,
+		NewVkComponentMapping(inputState.Arena,
 			VkComponentSwizzle_VK_COMPONENT_SWIZZLE_IDENTITY,
 			VkComponentSwizzle_VK_COMPONENT_SWIZZLE_IDENTITY,
 			VkComponentSwizzle_VK_COMPONENT_SWIZZLE_IDENTITY,
 			VkComponentSwizzle_VK_COMPONENT_SWIZZLE_IDENTITY,
 		), // components
-		NewVkImageSubresourceRange(a,
+		NewVkImageSubresourceRange(inputState.Arena,
 			imageObject.ImageAspect(), // aspectMask
 			0,                         // baseMipLevel
 			1,                         // levelCount
@@ -689,63 +585,50 @@ func (*stencilOverdraw) createImageView(ctx context.Context,
 			1,                         // layerCount
 		), // subresourceRange
 	)
-	createInfoData := alloc(createInfo)
+	createInfoData := overdrawTransform.allocations.AllocDataOrPanic(ctx, createInfo)
 
 	imageView := VkImageView(newUnusedID(false, func(id uint64) bool {
-		return st.ImageViews().Contains(VkImageView(id))
+		return GetState(inputState).ImageViews().Contains(VkImageView(id))
 	}))
-	imageViewData := alloc(imageView)
+	imageViewData := overdrawTransform.allocations.AllocDataOrPanic(ctx, imageView)
 
-	writeEach(ctx, out,
-		cb.VkCreateImageView(
-			device,
-			createInfoData.Ptr(),
-			memory.Nullptr,
-			imageViewData.Ptr(),
-			VkResult_VK_SUCCESS,
-		).AddRead(
-			createInfoData.Data(),
-		).AddWrite(
-			imageViewData.Data(),
-		),
+	newCmd := overdrawTransform.cmdBuilder.VkCreateImageView(
+		device,
+		createInfoData.Ptr(),
+		memory.Nullptr,
+		imageViewData.Ptr(),
+		VkResult_VK_SUCCESS,
+	).AddRead(
+		createInfoData.Data(),
+	).AddWrite(
+		imageViewData.Data(),
 	)
 
-	addCleanup(func() {
-		writeEach(ctx, out,
-			cb.VkDestroyImageView(
-				device,
-				imageView,
-				memory.Nullptr),
-		)
-	})
-	return imageView
+	overdrawTransform.cleanupCmds = append(overdrawTransform.cleanupCmds,
+		overdrawTransform.cmdBuilder.VkDestroyImageView(device, imageView, memory.Nullptr))
+	return newCmd, imageView
 }
 
-func (*stencilOverdraw) createRenderPass(ctx context.Context,
-	cb CommandBuilder,
-	st *State,
-	a arena.Arena,
+func (overdrawTransform *stencilOverdraw) createRenderPass(ctx context.Context,
+	inputState *api.GlobalState,
 	device VkDevice,
 	rpInfo RenderPassObjectʳ,
-	stencilAttachment VkAttachmentDescription,
-	alloc func(v ...interface{}) api.AllocResult,
-	addCleanup func(func()),
-	out transform.Writer,
-) VkRenderPass {
+	stencilAttachment VkAttachmentDescription) (api.Cmd, VkRenderPass) {
+
 	allReads := []api.AllocResult{}
 	allocAndRead := func(v ...interface{}) api.AllocResult {
-		res := alloc(v)
+		res := overdrawTransform.allocations.AllocDataOrPanic(ctx, v)
 		allReads = append(allReads, res)
 		return res
 	}
 
 	attachments := rpInfo.AttachmentDescriptions().All()
-	newAttachments := rpInfo.AttachmentDescriptions().Clone(a, api.CloneContext{})
+	newAttachments := rpInfo.AttachmentDescriptions().Clone(inputState.Arena, api.CloneContext{})
 	newAttachments.Add(uint32(newAttachments.Len()), stencilAttachment)
 	newAttachmentsData, newAttachmentsLen := unpackMapWithAllocator(allocAndRead,
 		newAttachments)
 
-	stencilAttachmentReference := NewVkAttachmentReference(a,
+	stencilAttachmentReference := NewVkAttachmentReference(inputState.Arena,
 		uint32(len(attachments)),
 		stencilAttachment.InitialLayout(),
 	)
@@ -754,7 +637,7 @@ func (*stencilOverdraw) createRenderPass(ctx context.Context,
 	subpasses := make([]VkSubpassDescription,
 		rpInfo.SubpassDescriptions().Len())
 	for idx, subpass := range rpInfo.SubpassDescriptions().All() {
-		subpasses[idx] = subpassToSubpassDescription(a, subpass,
+		subpasses[idx] = subpassToSubpassDescription(inputState, subpass,
 			stencilAttachmentReferencePtr, allocAndRead)
 	}
 	subpassesData := allocAndRead(subpasses)
@@ -762,7 +645,7 @@ func (*stencilOverdraw) createRenderPass(ctx context.Context,
 	subpassDependenciesData, subpassDependenciesLen := unpackMapWithAllocator(allocAndRead,
 		rpInfo.SubpassDependencies())
 
-	renderPassCreateInfo := NewVkRenderPassCreateInfo(a,
+	renderPassCreateInfo := NewVkRenderPassCreateInfo(inputState.Arena,
 		VkStructureType_VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // sType
 		0,                 // pNext
 		0,                 // flags
@@ -776,38 +659,30 @@ func (*stencilOverdraw) createRenderPass(ctx context.Context,
 	renderPassCreateInfoData := allocAndRead(renderPassCreateInfo)
 
 	newRenderPass := VkRenderPass(newUnusedID(false, func(id uint64) bool {
-		return st.RenderPasses().Contains(VkRenderPass(id))
+		return GetState(inputState).RenderPasses().Contains(VkRenderPass(id))
 	}))
-	newRenderPassData := alloc(newRenderPass)
+	newRenderPassData := overdrawTransform.allocations.AllocDataOrPanic(ctx, newRenderPass)
 
-	createRenderPass := cb.VkCreateRenderPass(
+	newCmd := overdrawTransform.cmdBuilder.VkCreateRenderPass(
 		device,
 		renderPassCreateInfoData.Ptr(),
 		memory.Nullptr,
 		newRenderPassData.Ptr(),
 		VkResult_VK_SUCCESS,
-	).AddWrite(
-		newRenderPassData.Data(),
-	)
+	).AddWrite(newRenderPassData.Data())
+
 	for _, read := range allReads {
-		createRenderPass.AddRead(read.Data())
+		newCmd.AddRead(read.Data())
 	}
 
-	writeEach(ctx, out, createRenderPass)
+	overdrawTransform.cleanupCmds = append(overdrawTransform.cleanupCmds,
+		overdrawTransform.cmdBuilder.VkDestroyRenderPass(device, newRenderPass, memory.Nullptr))
 
-	addCleanup(func() {
-		writeEach(ctx, out,
-			cb.VkDestroyRenderPass(
-				device,
-				newRenderPass,
-				memory.Nullptr,
-			))
-	})
-
-	return newRenderPass
+	return newCmd, newRenderPass
 }
 
-func subpassToSubpassDescription(a arena.Arena,
+func subpassToSubpassDescription(
+	inputState *api.GlobalState,
 	subpass SubpassDescription,
 	attachRefPtr memory.Pointer,
 	allocAndRead func(v ...interface{}) api.AllocResult,
@@ -833,7 +708,7 @@ func subpassToSubpassDescription(a arena.Arena,
 	preserveAttachmentsPtr, preserveAttachmentsCount :=
 		unpackMapMaybeEmpty(subpass.PreserveAttachments())
 
-	return NewVkSubpassDescription(a,
+	return NewVkSubpassDescription(inputState.Arena,
 		subpass.Flags(),                                   // flags
 		subpass.PipelineBindPoint(),                       // pipelineBindPoint
 		inputAttachmentsCount,                             // inputAttachmentCount
@@ -847,27 +722,22 @@ func subpassToSubpassDescription(a arena.Arena,
 	)
 }
 
-func (*stencilOverdraw) createFramebuffer(ctx context.Context,
-	cb CommandBuilder,
-	st *State,
-	a arena.Arena,
+func (overdrawTransform *stencilOverdraw) createFramebuffer(ctx context.Context,
+	inputState *api.GlobalState,
 	device VkDevice,
 	fbInfo FramebufferObjectʳ,
 	renderPass VkRenderPass,
-	stencilImageView VkImageView,
-	alloc func(v ...interface{}) api.AllocResult,
-	addCleanup func(func()),
-	out transform.Writer,
-) VkFramebuffer {
+	stencilImageView VkImageView) (api.Cmd, VkFramebuffer) {
+
 	attachments := fbInfo.ImageAttachments().All()
 	newAttachments := make([]VkImageView, len(attachments)+1)
 	for idx, imageView := range attachments {
 		newAttachments[idx] = imageView.VulkanHandle()
 	}
 	newAttachments[len(attachments)] = stencilImageView
-	newAttachmentsData := alloc(newAttachments)
+	newAttachmentsData := overdrawTransform.allocations.AllocDataOrPanic(ctx, newAttachments)
 
-	createInfo := NewVkFramebufferCreateInfo(a,
+	createInfo := NewVkFramebufferCreateInfo(inputState.Arena,
 		VkStructureType_VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // sType
 		0,                           // pNext
 		0,                           // flags
@@ -878,75 +748,67 @@ func (*stencilOverdraw) createFramebuffer(ctx context.Context,
 		fbInfo.Height(), // height
 		fbInfo.Layers(), // layers
 	)
-	createInfoData := alloc(createInfo)
+	createInfoData := overdrawTransform.allocations.AllocDataOrPanic(ctx, createInfo)
 
 	newFramebuffer := VkFramebuffer(newUnusedID(false, func(id uint64) bool {
-		return st.Framebuffers().Contains(VkFramebuffer(id))
+		return GetState(inputState).Framebuffers().Contains(VkFramebuffer(id))
 	}))
-	newFramebufferData := alloc(newFramebuffer)
+	newFramebufferData := overdrawTransform.allocations.AllocDataOrPanic(ctx, newFramebuffer)
 
-	writeEach(ctx, out,
-		cb.VkCreateFramebuffer(
-			device,
-			createInfoData.Ptr(),
-			memory.Nullptr,
-			newFramebufferData.Ptr(),
-			VkResult_VK_SUCCESS,
-		).AddRead(
-			createInfoData.Data(),
-		).AddRead(
-			newAttachmentsData.Data(),
-		).AddWrite(
-			newFramebufferData.Data(),
-		),
+	// CMD or thread
+
+	newCmd := overdrawTransform.cmdBuilder.VkCreateFramebuffer(
+		device,
+		createInfoData.Ptr(),
+		memory.Nullptr,
+		newFramebufferData.Ptr(),
+		VkResult_VK_SUCCESS,
+	).AddRead(
+		createInfoData.Data(),
+	).AddRead(
+		newAttachmentsData.Data(),
+	).AddWrite(
+		newFramebufferData.Data(),
 	)
 
-	addCleanup(func() {
-		writeEach(ctx, out,
-			cb.VkDestroyFramebuffer(
-				device,
-				newFramebuffer,
-				memory.Nullptr,
-			))
-	})
+	overdrawTransform.cleanupCmds = append(overdrawTransform.cleanupCmds,
+		overdrawTransform.cmdBuilder.VkDestroyFramebuffer(device, newFramebuffer, memory.Nullptr))
 
-	return newFramebuffer
+	return newCmd, newFramebuffer
 }
 
-func (s *stencilOverdraw) createGraphicsPipeline(ctx context.Context,
-	cb CommandBuilder,
-	gs *api.GlobalState,
-	st *State,
-	a arena.Arena,
+func (overdrawTransform *stencilOverdraw) createGraphicsPipeline(ctx context.Context,
+	inputState *api.GlobalState,
 	device VkDevice,
 	pipeline VkPipeline,
-	renderPass VkRenderPass,
-	alloc func(v ...interface{}) api.AllocResult,
-	addCleanup func(func()),
-	out transform.Writer,
-) (VkPipeline, error) {
+	renderPass VkRenderPass) ([]api.Cmd, VkPipeline, error) {
+
 	reads := []api.AllocResult{}
 	allocAndRead := func(v ...interface{}) api.AllocResult {
-		res := alloc(v)
+		res := overdrawTransform.allocations.AllocDataOrPanic(ctx, v)
 		reads = append(reads, res)
 		return res
 	}
 
-	createInfo, err := s.createGraphicsPipelineCreateInfo(ctx,
-		cb, gs, st, a, pipeline, renderPass, alloc, allocAndRead,
-		addCleanup, out)
-	if err != nil {
-		return 0, err
-	}
+	outputCmds := make([]api.Cmd, 0)
 
+	createInfoCmds, createInfo, err := overdrawTransform.createGraphicsPipelineCreateInfo(
+		ctx, inputState, pipeline, renderPass, allocAndRead)
+	if err != nil {
+		return nil, VkPipeline(0), err
+	}
 	createInfoData := allocAndRead(createInfo)
 
+	if createInfoCmds != nil {
+		outputCmds = append(outputCmds, createInfoCmds...)
+	}
+
 	newPipeline := VkPipeline(newUnusedID(false, func(id uint64) bool {
-		return st.GraphicsPipelines().Contains(VkPipeline(id))
+		return GetState(inputState).GraphicsPipelines().Contains(VkPipeline(id))
 	}))
 	newPipelineData := allocAndRead(newPipeline)
 
-	cmd := cb.VkCreateGraphicsPipelines(
+	newCmd := overdrawTransform.cmdBuilder.VkCreateGraphicsPipelines(
 		device,                // device
 		0,                     // pipelineCache: VK_NULL_HANDLE
 		1,                     // createInfoCount
@@ -961,33 +823,23 @@ func (s *stencilOverdraw) createGraphicsPipeline(ctx context.Context,
 	)
 
 	for _, read := range reads {
-		cmd.AddRead(read.Data())
+		newCmd.AddRead(read.Data())
 	}
 
-	writeEach(ctx, out, cmd)
+	outputCmds = append(outputCmds, newCmd)
 
-	addCleanup(func() {
-		writeEach(ctx, out,
-			cb.VkDestroyPipeline(
-				device, newPipeline, memory.Nullptr,
-			))
-	})
+	overdrawTransform.cleanupCmds = append(overdrawTransform.cleanupCmds,
+		overdrawTransform.cmdBuilder.VkDestroyPipeline(device, newPipeline, memory.Nullptr))
 
-	return newPipeline, nil
+	return outputCmds, newPipeline, nil
 }
 
-func (s *stencilOverdraw) createGraphicsPipelineCreateInfo(ctx context.Context,
-	cb CommandBuilder,
-	gs *api.GlobalState,
-	st *State,
-	a arena.Arena,
+func (overdrawTransform *stencilOverdraw) createGraphicsPipelineCreateInfo(ctx context.Context,
+	inputState *api.GlobalState,
 	pipeline VkPipeline,
 	renderPass VkRenderPass,
-	alloc func(v ...interface{}) api.AllocResult,
-	allocAndRead func(v ...interface{}) api.AllocResult,
-	addCleanup func(func()),
-	out transform.Writer,
-) (VkGraphicsPipelineCreateInfo, error) {
+	allocAndRead func(v ...interface{}) api.AllocResult) ([]api.Cmd, VkGraphicsPipelineCreateInfo, error) {
+
 	unpackMapMaybeEmpty := func(m interface{}) (memory.Pointer, uint32) {
 		type HasLen interface {
 			Len() int
@@ -1001,11 +853,12 @@ func (s *stencilOverdraw) createGraphicsPipelineCreateInfo(ctx context.Context,
 	}
 
 	// TODO: Recreating a lot of work from state_rebuilder, look into merging with that
-	pInfo, ok := st.GraphicsPipelines().Lookup(pipeline)
+	pInfo, ok := GetState(inputState).GraphicsPipelines().Lookup(pipeline)
 	if !ok {
-		return NilVkGraphicsPipelineCreateInfo,
-			fmt.Errorf("Invalid graphics pipeline %v", pipeline)
+		return nil, NilVkGraphicsPipelineCreateInfo, fmt.Errorf("Invalid graphics pipeline %v", pipeline)
 	}
+
+	outputCmds := make([]api.Cmd, 0)
 
 	shaderStagesPtr := memory.Nullptr
 	shaderStagesCount := uint32(0)
@@ -1014,22 +867,21 @@ func (s *stencilOverdraw) createGraphicsPipelineCreateInfo(ctx context.Context,
 		data := make([]VkPipelineShaderStageCreateInfo, len(stages))
 		for idx, stage := range stages {
 			module := stage.Module().VulkanHandle()
-			if !st.ShaderModules().Contains(module) {
-				m := s.createShaderModule(ctx, cb,
-					gs, st, a, stage.Module(), alloc, addCleanup, out)
+			if !GetState(inputState).ShaderModules().Contains(module) {
+				shaderModuleCmds, m := overdrawTransform.createShaderModule(ctx, inputState, stage.Module())
+				if shaderModuleCmds != nil {
+					outputCmds = append(outputCmds, shaderModuleCmds)
+				}
 				module = m
 			}
-			data[idx] = NewVkPipelineShaderStageCreateInfo(a,
+			data[idx] = NewVkPipelineShaderStageCreateInfo(inputState.Arena,
 				VkStructureType_VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // sType
 				0,             // pNext
 				0,             // flags
 				stage.Stage(), // stage
 				module,        // module
-				NewCharᶜᵖ(allocAndRead(stage.EntryPoint()).Ptr()), // pName
-				s.createSpecializationInfo(ctx, gs, a,
-					stage.Specialization(),
-					allocAndRead,
-				), // pSpecializationInfo
+				NewCharᶜᵖ(allocAndRead(stage.EntryPoint()).Ptr()),                               // pName
+				createSpecializationInfo(ctx, inputState, stage.Specialization(), allocAndRead), // pSpecializationInfo
 			)
 		}
 		allocation := allocAndRead(data)
@@ -1044,7 +896,7 @@ func (s *stencilOverdraw) createGraphicsPipelineCreateInfo(ctx context.Context,
 		attributePtr, attributeCount := unpackMapMaybeEmpty(
 			pInfo.VertexInputState().AttributeDescriptions())
 		vertexInputPtr = allocAndRead(
-			NewVkPipelineVertexInputStateCreateInfo(a,
+			NewVkPipelineVertexInputStateCreateInfo(inputState.Arena,
 				VkStructureType_VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // sType
 				0,            // pNext
 				0,            // flags
@@ -1059,7 +911,7 @@ func (s *stencilOverdraw) createGraphicsPipelineCreateInfo(ctx context.Context,
 	{
 		info := pInfo.InputAssemblyState()
 		inputAssemblyPtr = allocAndRead(
-			NewVkPipelineInputAssemblyStateCreateInfo(a,
+			NewVkPipelineInputAssemblyStateCreateInfo(inputState.Arena,
 				VkStructureType_VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, // sType
 				0,                             // pNext
 				0,                             // flags
@@ -1072,7 +924,7 @@ func (s *stencilOverdraw) createGraphicsPipelineCreateInfo(ctx context.Context,
 	if !pInfo.TessellationState().IsNil() {
 		info := pInfo.TessellationState()
 		tessellationPtr = allocAndRead(
-			NewVkPipelineTessellationStateCreateInfo(a,
+			NewVkPipelineTessellationStateCreateInfo(inputState.Arena,
 				VkStructureType_VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO, // sType
 				0,                         // pNext
 				0,                         // flags
@@ -1086,7 +938,7 @@ func (s *stencilOverdraw) createGraphicsPipelineCreateInfo(ctx context.Context,
 		viewPtr, _ := unpackMapMaybeEmpty(info.Viewports())
 		scissorPtr, _ := unpackMapMaybeEmpty(info.Scissors())
 		viewportPtr = allocAndRead(
-			NewVkPipelineViewportStateCreateInfo(a,
+			NewVkPipelineViewportStateCreateInfo(inputState.Arena,
 				VkStructureType_VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO, // sType
 				0,                         // pNext
 				0,                         // flags
@@ -1101,7 +953,7 @@ func (s *stencilOverdraw) createGraphicsPipelineCreateInfo(ctx context.Context,
 	{
 		info := pInfo.RasterizationState()
 		rasterizationPtr = allocAndRead(
-			NewVkPipelineRasterizationStateCreateInfo(a,
+			NewVkPipelineRasterizationStateCreateInfo(inputState.Arena,
 				VkStructureType_VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, // sType
 				0, // pNext
 				0, // flags
@@ -1123,7 +975,7 @@ func (s *stencilOverdraw) createGraphicsPipelineCreateInfo(ctx context.Context,
 		info := pInfo.MultisampleState()
 		sampleMaskPtr, _ := unpackMapMaybeEmpty(info.SampleMask())
 		multisamplePtr = allocAndRead(
-			NewVkPipelineMultisampleStateCreateInfo(a,
+			NewVkPipelineMultisampleStateCreateInfo(inputState.Arena,
 				VkStructureType_VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // sType
 				0, // pNext
 				0, // flags
@@ -1139,7 +991,7 @@ func (s *stencilOverdraw) createGraphicsPipelineCreateInfo(ctx context.Context,
 	var depthStencilPtr memory.Pointer
 	{
 		// FIXME: work with existing depth buffer
-		stencilOp := NewVkStencilOpState(a,
+		stencilOp := NewVkStencilOpState(inputState.Arena,
 			0, // failOp
 			VkStencilOp_VK_STENCIL_OP_INCREMENT_AND_CLAMP, // passOp
 			0,                                // depthFailOp
@@ -1148,7 +1000,7 @@ func (s *stencilOverdraw) createGraphicsPipelineCreateInfo(ctx context.Context,
 			255,                              // writeMask
 			0,                                // reference
 		)
-		state := MakeVkPipelineDepthStencilStateCreateInfo(a)
+		state := MakeVkPipelineDepthStencilStateCreateInfo(inputState.Arena)
 		state.SetSType(
 			VkStructureType_VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO)
 		state.SetStencilTestEnable(1)
@@ -1157,8 +1009,7 @@ func (s *stencilOverdraw) createGraphicsPipelineCreateInfo(ctx context.Context,
 		if !pInfo.DepthState().IsNil() {
 			info := pInfo.DepthState()
 			if info.StencilTestEnable() != 0 {
-				return NilVkGraphicsPipelineCreateInfo,
-					fmt.Errorf("The stencil buffer is already in use")
+				return nil, NilVkGraphicsPipelineCreateInfo, fmt.Errorf("The stencil buffer is already in use")
 			}
 
 			state.SetDepthTestEnable(info.DepthTestEnable())
@@ -1176,7 +1027,7 @@ func (s *stencilOverdraw) createGraphicsPipelineCreateInfo(ctx context.Context,
 		info := pInfo.ColorBlendState()
 		attachmentPtr, attachmentCount := unpackMapMaybeEmpty(info.Attachments())
 		colorBlendPtr = allocAndRead(
-			NewVkPipelineColorBlendStateCreateInfo(a,
+			NewVkPipelineColorBlendStateCreateInfo(inputState.Arena,
 				VkStructureType_VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // sType
 				0, // pNext
 				0, // flags
@@ -1194,7 +1045,7 @@ func (s *stencilOverdraw) createGraphicsPipelineCreateInfo(ctx context.Context,
 		info := pInfo.DynamicState()
 		statesPtr, statesCount := unpackMapMaybeEmpty(info.DynamicStates())
 		dynamicPtr = allocAndRead(
-			NewVkPipelineDynamicStateCreateInfo(a,
+			NewVkPipelineDynamicStateCreateInfo(inputState.Arena,
 				VkStructureType_VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO, // sType
 				0,                              // pNext
 				0,                              // flags
@@ -1213,7 +1064,7 @@ func (s *stencilOverdraw) createGraphicsPipelineCreateInfo(ctx context.Context,
 		basePipelineHandle = pipeline
 	}
 
-	return NewVkGraphicsPipelineCreateInfo(a,
+	return outputCmds, NewVkGraphicsPipelineCreateInfo(inputState.Arena,
 		VkStructureType_VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO, // sType
 		0,                 // pNext
 		0,                 // flags
@@ -1236,32 +1087,27 @@ func (s *stencilOverdraw) createGraphicsPipelineCreateInfo(ctx context.Context,
 	), nil
 }
 
-func (*stencilOverdraw) createShaderModule(ctx context.Context,
-	cb CommandBuilder,
-	gs *api.GlobalState,
-	st *State,
-	a arena.Arena,
-	info ShaderModuleObjectʳ,
-	alloc func(v ...interface{}) api.AllocResult,
-	addCleanup func(func()),
-	out transform.Writer,
-) VkShaderModule {
+func (overdrawTransform *stencilOverdraw) createShaderModule(ctx context.Context,
+	inputState *api.GlobalState,
+	info ShaderModuleObjectʳ) (api.Cmd, VkShaderModule) {
+
 	module := VkShaderModule(newUnusedID(false, func(id uint64) bool {
-		return st.ShaderModules().Contains(VkShaderModule(id))
+		return GetState(inputState).ShaderModules().Contains(VkShaderModule(id))
 	}))
-	moduleData := alloc(module)
+	moduleData := overdrawTransform.allocations.AllocDataOrPanic(ctx, module)
 
-	words := info.Words().MustRead(ctx, nil, gs, nil)
-	wordsData := alloc(words)
-	createInfoData := alloc(NewVkShaderModuleCreateInfo(a,
-		VkStructureType_VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO, // sType
-		0, // pNext
-		0, // flags
-		memory.Size(len(words)*4),
-		NewU32ᶜᵖ(wordsData.Ptr()),
-	))
+	words := info.Words().MustRead(ctx, nil, inputState, nil)
+	wordsData := overdrawTransform.allocations.AllocDataOrPanic(ctx, words)
+	createInfoData := overdrawTransform.allocations.AllocDataOrPanic(ctx,
+		NewVkShaderModuleCreateInfo(inputState.Arena,
+			VkStructureType_VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO, // sType
+			0, // pNext
+			0, // flags
+			memory.Size(len(words)*4),
+			NewU32ᶜᵖ(wordsData.Ptr()),
+		))
 
-	writeEach(ctx, out, cb.VkCreateShaderModule(
+	newCmd := overdrawTransform.cmdBuilder.VkCreateShaderModule(
 		info.Device(),
 		createInfoData.Ptr(),
 		memory.Nullptr,
@@ -1273,52 +1119,25 @@ func (*stencilOverdraw) createShaderModule(ctx context.Context,
 		wordsData.Data(),
 	).AddWrite(
 		moduleData.Data(),
-	))
+	)
 
-	addCleanup(func() {
-		writeEach(ctx, out, cb.VkDestroyShaderModule(
+	overdrawTransform.cleanupCmds = append(overdrawTransform.cleanupCmds,
+		overdrawTransform.cmdBuilder.VkDestroyShaderModule(
 			info.Device(),
 			module,
 			memory.Nullptr,
 		))
-	})
 
-	return module
+	return newCmd, module
 }
 
-func (*stencilOverdraw) createSpecializationInfo(ctx context.Context,
-	gs *api.GlobalState,
-	a arena.Arena,
-	info SpecializationInfoʳ,
-	allocAndRead func(v ...interface{}) api.AllocResult,
-) VkSpecializationInfoᶜᵖ {
-	if info.IsNil() {
-		return 0
-	}
-	mapEntries, mapEntryCount := unpackMapWithAllocator(allocAndRead, info.Specializations().All())
-	data := info.Data().MustRead(ctx, nil, gs, nil)
-	return NewVkSpecializationInfoᶜᵖ(allocAndRead(
-		NewVkSpecializationInfo(a,
-			mapEntryCount, // mapEntryCount
-			NewVkSpecializationMapEntryᶜᵖ(mapEntries.Ptr()), // pMapEntries
-			memory.Size(len(data)),                          // dataSize,
-			NewVoidᶜᵖ(allocAndRead(data).Ptr()),             // pData
-		)).Ptr())
-}
-
-func (*stencilOverdraw) createDepthCopyBuffer(ctx context.Context,
-	cb CommandBuilder,
-	gs *api.GlobalState,
-	st *State,
-	a arena.Arena,
+func (overdrawTransform *stencilOverdraw) createDepthCopyBuffer(ctx context.Context,
+	inputState *api.GlobalState,
 	device VkDevice,
 	format VkFormat,
 	width uint32,
-	height uint32,
-	alloc func(v ...interface{}) api.AllocResult,
-	addCleanup func(func()),
-	out transform.Writer,
-) VkBuffer {
+	height uint32) ([]api.Cmd, VkBuffer) {
+
 	elsize := VkDeviceSize(4)
 	if format == VkFormat_VK_FORMAT_D16_UNORM ||
 		format == VkFormat_VK_FORMAT_D16_UNORM_S8_UINT {
@@ -1329,11 +1148,11 @@ func (*stencilOverdraw) createDepthCopyBuffer(ctx context.Context,
 	bufferSize := elsize * VkDeviceSize(width*height)
 
 	buffer := VkBuffer(newUnusedID(false, func(id uint64) bool {
-		return st.Buffers().Contains(VkBuffer(id))
+		return GetState(inputState).Buffers().Contains(VkBuffer(id))
 	}))
-	bufferData := alloc(buffer)
+	bufferData := overdrawTransform.allocations.AllocDataOrPanic(ctx, buffer)
 
-	bufferInfo := NewVkBufferCreateInfo(a,
+	bufferInfo := NewVkBufferCreateInfo(inputState.Arena,
 		VkStructureType_VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // sType
 		0,          // pNext
 		0,          // flags
@@ -1345,12 +1164,12 @@ func (*stencilOverdraw) createDepthCopyBuffer(ctx context.Context,
 		0,                                       // queueFamilyIndexCount
 		0,                                       // pQueueFamilyIndices
 	)
-	bufferInfoData := alloc(bufferInfo)
+	bufferInfoData := overdrawTransform.allocations.AllocDataOrPanic(ctx, bufferInfo)
 
 	bufferMemoryTypeIndex := uint32(0)
-	physicalDevice := st.PhysicalDevices().Get(
-		st.Devices().Get(device).PhysicalDevice(),
-	)
+	physicalDevice := GetState(inputState).PhysicalDevices().Get(
+		GetState(inputState).Devices().Get(device).PhysicalDevice())
+
 	for i := uint32(0); i < physicalDevice.MemoryProperties().MemoryTypeCount(); i++ {
 		t := physicalDevice.MemoryProperties().MemoryTypes().Get(int(i))
 		if 0 != (t.PropertyFlags() & VkMemoryPropertyFlags(
@@ -1361,19 +1180,20 @@ func (*stencilOverdraw) createDepthCopyBuffer(ctx context.Context,
 	}
 
 	deviceMemory := VkDeviceMemory(newUnusedID(false, func(id uint64) bool {
-		return st.DeviceMemories().Contains(VkDeviceMemory(id))
+		return GetState(inputState).DeviceMemories().Contains(VkDeviceMemory(id))
 	}))
-	deviceMemoryData := alloc(deviceMemory)
-	memoryAllocateInfo := NewVkMemoryAllocateInfo(a,
+	deviceMemoryData := overdrawTransform.allocations.AllocDataOrPanic(ctx, deviceMemory)
+	memoryAllocateInfo := NewVkMemoryAllocateInfo(inputState.Arena,
 		VkStructureType_VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, // sType
 		0,                     // pNext
 		bufferSize*2,          // allocationSize
 		bufferMemoryTypeIndex, // memoryTypeIndex
 	)
-	memoryAllocateInfoData := alloc(memoryAllocateInfo)
+	memoryAllocateInfoData := overdrawTransform.allocations.AllocDataOrPanic(ctx, memoryAllocateInfo)
 
-	writeEach(ctx, out,
-		cb.VkCreateBuffer(
+	outputCmds := make([]api.Cmd, 0)
+	outputCmds = append(outputCmds,
+		overdrawTransform.cmdBuilder.VkCreateBuffer(
 			device,
 			bufferInfoData.Ptr(),
 			memory.Nullptr,
@@ -1384,7 +1204,7 @@ func (*stencilOverdraw) createDepthCopyBuffer(ctx context.Context,
 		).AddWrite(
 			bufferData.Data(),
 		),
-		cb.VkAllocateMemory(
+		overdrawTransform.cmdBuilder.VkAllocateMemory(
 			device,
 			memoryAllocateInfoData.Ptr(),
 			memory.Nullptr,
@@ -1395,7 +1215,7 @@ func (*stencilOverdraw) createDepthCopyBuffer(ctx context.Context,
 		).AddWrite(
 			deviceMemoryData.Data(),
 		),
-		cb.VkBindBufferMemory(
+		overdrawTransform.cmdBuilder.VkBindBufferMemory(
 			device,
 			buffer,
 			deviceMemory,
@@ -1404,22 +1224,20 @@ func (*stencilOverdraw) createDepthCopyBuffer(ctx context.Context,
 		),
 	)
 
-	addCleanup(func() {
-		writeEach(ctx, out,
-			cb.VkDestroyBuffer(
-				device,
-				buffer,
-				memory.Nullptr,
-			),
-			cb.VkFreeMemory(
-				device,
-				deviceMemory,
-				memory.Nullptr,
-			),
-		)
-	})
+	overdrawTransform.cleanupCmds = append(overdrawTransform.cleanupCmds,
+		overdrawTransform.cmdBuilder.VkDestroyBuffer(
+			device,
+			buffer,
+			memory.Nullptr,
+		),
+		overdrawTransform.cmdBuilder.VkFreeMemory(
+			device,
+			deviceMemory,
+			memory.Nullptr,
+		),
+	)
 
-	return buffer
+	return outputCmds, buffer
 }
 
 type imageDesc struct {
@@ -1434,26 +1252,24 @@ type imageDesc struct {
 // Facilitate copying the depth aspect of an image from one image to another,
 // either for going from the original depth buffer to our depth buffer,
 // or copying back the new depth buffer to the original depth buffer.
-func (s *stencilOverdraw) copyImageAspect(ctx context.Context,
-	cb CommandBuilder,
-	gs *api.GlobalState,
-	st *State,
-	a arena.Arena,
+func (overdrawTransform *stencilOverdraw) copyImageAspect(ctx context.Context,
+	inputState *api.GlobalState,
 	device VkDevice,
 	cmdBuffer VkCommandBuffer,
 	srcImgDesc imageDesc,
 	dstImgDesc imageDesc,
-	extent VkExtent3D,
-	alloc func(v ...interface{}) api.AllocResult,
-	addCleanup func(func()),
-	out transform.Writer,
-) {
+	extent VkExtent3D) []api.Cmd {
+
 	srcImg := srcImgDesc.image
 	dstImg := dstImgDesc.image
-	copyBuffer := s.createDepthCopyBuffer(ctx, cb, gs, st, a, device,
-		srcImg.Info().Fmt(),
-		extent.Width(), extent.Height(),
-		alloc, addCleanup, out)
+
+	outputCmds := make([]api.Cmd, 0)
+	copyCmds, copyBuffer := overdrawTransform.createDepthCopyBuffer(ctx, inputState, device,
+		srcImg.Info().Fmt(), extent.Width(), extent.Height())
+
+	if copyCmds != nil {
+		outputCmds = append(outputCmds, copyCmds...)
+	}
 
 	allCommandsStage := VkPipelineStageFlags(
 		VkPipelineStageFlagBits_VK_PIPELINE_STAGE_ALL_COMMANDS_BIT)
@@ -1464,7 +1280,7 @@ func (s *stencilOverdraw) copyImageAspect(ctx context.Context,
 	imgBarriers0 := make([]VkImageMemoryBarrier, 2)
 	imgBarriers1 := make([]VkImageMemoryBarrier, 2)
 	// Transition the src image in and out of the required layouts
-	imgBarriers0[0] = NewVkImageMemoryBarrier(a,
+	imgBarriers0[0] = NewVkImageMemoryBarrier(inputState.Arena,
 		VkStructureType_VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // sType
 		0,               // pNext
 		allMemoryAccess, // srcAccessMask
@@ -1481,7 +1297,7 @@ func (s *stencilOverdraw) copyImageAspect(ctx context.Context,
 		srcFinalLayout == VkImageLayout_VK_IMAGE_LAYOUT_PREINITIALIZED {
 		srcFinalLayout = VkImageLayout_VK_IMAGE_LAYOUT_GENERAL
 	}
-	imgBarriers1[0] = NewVkImageMemoryBarrier(a,
+	imgBarriers1[0] = NewVkImageMemoryBarrier(inputState.Arena,
 		VkStructureType_VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // sType
 		0, // pNext
 		VkAccessFlags(VkAccessFlagBits_VK_ACCESS_TRANSFER_READ_BIT), // srcAccessMask
@@ -1495,7 +1311,7 @@ func (s *stencilOverdraw) copyImageAspect(ctx context.Context,
 	)
 
 	// Transition the new image in and out of its required layouts
-	imgBarriers0[1] = NewVkImageMemoryBarrier(a,
+	imgBarriers0[1] = NewVkImageMemoryBarrier(inputState.Arena,
 		VkStructureType_VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // sType
 		0,               // pNext
 		allMemoryAccess, // srcAccessMask
@@ -1513,7 +1329,7 @@ func (s *stencilOverdraw) copyImageAspect(ctx context.Context,
 		dstFinalLayout == VkImageLayout_VK_IMAGE_LAYOUT_PREINITIALIZED {
 		dstFinalLayout = VkImageLayout_VK_IMAGE_LAYOUT_GENERAL
 	}
-	imgBarriers1[1] = NewVkImageMemoryBarrier(a,
+	imgBarriers1[1] = NewVkImageMemoryBarrier(inputState.Arena,
 		VkStructureType_VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // sType
 		0, // pNext
 		VkAccessFlags(VkAccessFlagBits_VK_ACCESS_TRANSFER_WRITE_BIT), // srcAccessMask
@@ -1526,7 +1342,7 @@ func (s *stencilOverdraw) copyImageAspect(ctx context.Context,
 		dstImgDesc.subresource, // subresourceRange
 	)
 
-	bufBarrier := NewVkBufferMemoryBarrier(a,
+	bufBarrier := NewVkBufferMemoryBarrier(inputState.Arena,
 		VkStructureType_VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // sType
 		0, // pNext
 		VkAccessFlags(VkAccessFlagBits_VK_ACCESS_TRANSFER_WRITE_BIT), // srcAccessMask
@@ -1538,42 +1354,42 @@ func (s *stencilOverdraw) copyImageAspect(ctx context.Context,
 		^VkDeviceSize(0), // size: VK_WHOLE_SIZE
 	)
 
-	ibCopy := NewVkBufferImageCopy(a,
+	ibCopy := NewVkBufferImageCopy(inputState.Arena,
 		0, // bufferOffset
 		0, // bufferRowLength
 		0, // bufferImageHeight
-		NewVkImageSubresourceLayers(a,
+		NewVkImageSubresourceLayers(inputState.Arena,
 			VkImageAspectFlags(srcImgDesc.aspect),   // aspectMask
 			srcImgDesc.subresource.BaseMipLevel(),   // mipLevel
 			srcImgDesc.subresource.BaseArrayLayer(), // baseArrayLayer
 			1,                                       // layerCount
 		), // srcSubresource
-		NewVkOffset3D(a, 0, 0, 0),                            // offset
-		NewVkExtent3D(a, extent.Width(), extent.Height(), 1), // extent
+		NewVkOffset3D(inputState.Arena, 0, 0, 0),                            // offset
+		NewVkExtent3D(inputState.Arena, extent.Width(), extent.Height(), 1), // extent
 	)
 
-	biCopy := NewVkBufferImageCopy(a,
+	biCopy := NewVkBufferImageCopy(inputState.Arena,
 		0, // bufferOffset
 		0, // bufferRowLength
 		0, // bufferImageHeight
-		NewVkImageSubresourceLayers(a,
+		NewVkImageSubresourceLayers(inputState.Arena,
 			VkImageAspectFlags(dstImgDesc.aspect),   // aspectMask
 			dstImgDesc.subresource.BaseMipLevel(),   // mipLevel
 			dstImgDesc.subresource.BaseArrayLayer(), // baseArrayLayer
 			1,                                       // layerCount
 		), // srcSubresource
-		NewVkOffset3D(a, 0, 0, 0),                            // offset
-		NewVkExtent3D(a, extent.Width(), extent.Height(), 1), // extent
+		NewVkOffset3D(inputState.Arena, 0, 0, 0),                            // offset
+		NewVkExtent3D(inputState.Arena, extent.Width(), extent.Height(), 1), // extent
 	)
 
-	imgBarriers0Data := alloc(imgBarriers0)
-	ibCopyData := alloc(ibCopy)
-	bufBarrierData := alloc(bufBarrier)
-	biCopyData := alloc(biCopy)
-	imgBarriers1Data := alloc(imgBarriers1)
+	imgBarriers0Data := overdrawTransform.allocations.AllocDataOrPanic(ctx, imgBarriers0)
+	ibCopyData := overdrawTransform.allocations.AllocDataOrPanic(ctx, ibCopy)
+	bufBarrierData := overdrawTransform.allocations.AllocDataOrPanic(ctx, bufBarrier)
+	biCopyData := overdrawTransform.allocations.AllocDataOrPanic(ctx, biCopy)
+	imgBarriers1Data := overdrawTransform.allocations.AllocDataOrPanic(ctx, imgBarriers1)
 
-	writeEach(ctx, out,
-		cb.VkCmdPipelineBarrier(cmdBuffer,
+	outputCmds = append(outputCmds,
+		overdrawTransform.cmdBuilder.VkCmdPipelineBarrier(cmdBuffer,
 			allCommandsStage, // srcStageMask
 			VkPipelineStageFlags(VkPipelineStageFlagBits_VK_PIPELINE_STAGE_TRANSFER_BIT), // dstStageMask
 			0,                      // dependencyFlags
@@ -1584,14 +1400,14 @@ func (s *stencilOverdraw) copyImageAspect(ctx context.Context,
 			2,                      // imageMemoryBarrierCount
 			imgBarriers0Data.Ptr(), // pImageMemoryBarriers
 		).AddRead(imgBarriers0Data.Data()),
-		cb.VkCmdCopyImageToBuffer(cmdBuffer,
+		overdrawTransform.cmdBuilder.VkCmdCopyImageToBuffer(cmdBuffer,
 			srcImg.VulkanHandle(),                              // srcImage
 			VkImageLayout_VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, // srcImageLayout
 			copyBuffer,       // dstBuffer
 			1,                // regionCount
 			ibCopyData.Ptr(), // pRegions
 		).AddRead(ibCopyData.Data()),
-		cb.VkCmdPipelineBarrier(cmdBuffer,
+		overdrawTransform.cmdBuilder.VkCmdPipelineBarrier(cmdBuffer,
 			VkPipelineStageFlags(VkPipelineStageFlagBits_VK_PIPELINE_STAGE_TRANSFER_BIT), // srcStageMask
 			VkPipelineStageFlags(VkPipelineStageFlagBits_VK_PIPELINE_STAGE_TRANSFER_BIT), // dstStageMask
 			0,                    // dependencyFlags
@@ -1602,14 +1418,14 @@ func (s *stencilOverdraw) copyImageAspect(ctx context.Context,
 			0,                    // imageMemoryBarrierCount
 			memory.Nullptr,       // pImageMemoryBarriers
 		).AddRead(bufBarrierData.Data()),
-		cb.VkCmdCopyBufferToImage(cmdBuffer,
+		overdrawTransform.cmdBuilder.VkCmdCopyBufferToImage(cmdBuffer,
 			copyBuffer,            // srcBuffer
 			dstImg.VulkanHandle(), // dstImage
 			VkImageLayout_VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, // dstImageLayout
 			1,                // regionCount
 			biCopyData.Ptr(), // pRegions
 		).AddRead(biCopyData.Data()),
-		cb.VkCmdPipelineBarrier(cmdBuffer,
+		overdrawTransform.cmdBuilder.VkCmdPipelineBarrier(cmdBuffer,
 			VkPipelineStageFlags(VkPipelineStageFlagBits_VK_PIPELINE_STAGE_TRANSFER_BIT), // srcStageMask
 			allCommandsStage,       // dstStageMask
 			0,                      // dependencyFlags
@@ -1621,34 +1437,55 @@ func (s *stencilOverdraw) copyImageAspect(ctx context.Context,
 			imgBarriers1Data.Ptr(), // pImageMemoryBarriers
 		).AddRead(imgBarriers1Data.Data()),
 	)
+
+	return outputCmds
 }
 
-func (s *stencilOverdraw) renderAspect(ctx context.Context,
-	cb CommandBuilder,
-	gs *api.GlobalState,
-	st *State,
-	a arena.Arena,
+type overdrawTransformWriter struct {
+	state            *api.GlobalState
+	statebuilderCmds []api.Cmd
+}
+
+func newOverdrawTransformWriter(state *api.GlobalState) *overdrawTransformWriter {
+	return &overdrawTransformWriter{
+		state:            state,
+		statebuilderCmds: make([]api.Cmd, 0),
+	}
+}
+
+func (writer *overdrawTransformWriter) State() *api.GlobalState {
+	return writer.state
+}
+
+func (writer *overdrawTransformWriter) MutateAndWrite(ctx context.Context, id api.CmdID, cmd api.Cmd) error {
+	writer.statebuilderCmds = append(writer.statebuilderCmds, cmd)
+	return nil
+}
+
+func (overdrawTransform *stencilOverdraw) renderAspect(
+	ctx context.Context,
+	inputState *api.GlobalState,
 	device VkDevice,
 	queue VkQueue,
 	cmdBuffer VkCommandBuffer,
 	srcImg imageDesc,
 	dstImg imageDesc,
-	inputFormat VkFormat,
-	addCleanup func(func()),
-	out transform.Writer,
-) error {
-	sb := st.newStateBuilder(ctx, newTransformerOutput(out))
+	inputFormat VkFormat) ([]api.Cmd, error) {
+
+	// Melih TODO: Should this clone a state?
+	tempTransformWriter := newOverdrawTransformWriter(inputState)
+	sb := GetState(inputState).newStateBuilder(ctx, newTransformerOutput(tempTransformWriter))
 	queueHandler, err := newQueueCommandHandler(sb, queue, cmdBuffer)
 	if err != nil {
-		return log.Errf(sb.ctx, err, "failed at creating queue command handler")
+		return nil, log.Errf(sb.ctx, err, "failed at creating queue command handler")
 	}
 	dstLayer := dstImg.subresource.BaseArrayLayer()
 	if srcImg.subresource.BaseArrayLayer() != dstLayer {
-		return fmt.Errorf("input attachment and render target layer do not match")
+		return nil, fmt.Errorf("input attachment and render target layer do not match")
 	}
 	dstLevel := dstImg.subresource.BaseMipLevel()
 	if srcImg.subresource.BaseMipLevel() != dstLevel {
-		return fmt.Errorf("input attachment and render target mip level do not match")
+		return nil, fmt.Errorf("input attachment and render target mip level do not match")
 	}
 	sizes := sb.levelSize(dstImg.image.Info().Extent(),
 		dstImg.image.Info().Fmt(), dstLevel, dstImg.aspect)
@@ -1672,10 +1509,10 @@ func (s *stencilOverdraw) renderAspect(ctx context.Context,
 	renderKitBuilder := ip.GetRenderKitBuilder(device)
 	kits, err := renderKitBuilder.BuildRenderKits(sb, recipe)
 	if err != nil {
-		return log.Errf(sb.ctx, err, "failed at building render kits")
+		return nil, log.Errf(sb.ctx, err, "failed at building render kits")
 	}
 	if len(kits) != 1 {
-		return fmt.Errorf("unexpected length of render kits, actual: %v, expected: 1", len(kits))
+		return nil, fmt.Errorf("unexpected length of render kits, actual: %v, expected: 1", len(kits))
 	}
 	renderingLayout := ipRenderColorOutputLayout
 	if (dstImg.image.Info().Usage() & VkImageUsageFlags(VkImageUsageFlagBits_VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)) != 0 {
@@ -1717,114 +1554,118 @@ func (s *stencilOverdraw) renderAspect(ctx context.Context,
 
 	err = ipRecordImageMemoryBarriers(sb, queueHandler, inputPreBarrier, outputPreBarrier)
 	if err != nil {
-		return log.Errf(sb.ctx, err, "failed at recording pre rendering image layout transition")
+		return nil, log.Errf(sb.ctx, err, "failed at recording pre rendering image layout transition")
 	}
 	renderCmds := kits[0].BuildRenderCommands(sb)
 	err = renderCmds.Commit(sb, queueHandler)
 	if err != nil {
-		return log.Errf(sb.ctx, err, "failed at commiting rendering commands")
+		return nil, log.Errf(sb.ctx, err, "failed at commiting rendering commands")
 	}
 	err = ipRecordImageMemoryBarriers(sb, queueHandler, inputPostBarrier, outputPostBarrier)
 	if err != nil {
-		return log.Errf(sb.ctx, err, "failed at recording post rendering image layout transition")
+		return nil, log.Errf(sb.ctx, err, "failed at recording post rendering image layout transition")
 	}
 
 	// Make sure it doesn't use temporary memory as that would cause a flush of the scratch resources
 	// queueScratch.memorySize = scratchTask.totalAllocationSize
 
-	addCleanup(func() {
+	cleanupFunc := func() {
 		queueHandler.Submit(sb)
 		queueHandler.WaitUntilFinish(sb)
-	})
+	}
 
-	return nil
+	overdrawTransform.cleanupFunctions = append(overdrawTransform.cleanupFunctions, cleanupFunc)
+	return tempTransformWriter.statebuilderCmds, nil
 }
 
-func (s *stencilOverdraw) transferDepthValues(ctx context.Context,
-	cb CommandBuilder,
-	gs *api.GlobalState,
-	st *State,
-	a arena.Arena,
+func (overdrawTransform *stencilOverdraw) transferDepthValues(ctx context.Context,
+	inputState *api.GlobalState,
 	device VkDevice,
 	queue VkQueue,
 	cmdBuffer VkCommandBuffer,
 	width uint32,
 	height uint32,
 	srcImgDesc imageDesc,
-	dstImgDesc imageDesc,
-	alloc func(v ...interface{}) api.AllocResult,
-	addCleanup func(func()),
-	out transform.Writer,
-) error {
+	dstImgDesc imageDesc) ([]api.Cmd, error) {
+
 	srcFmt := srcImgDesc.image.Info().Fmt()
 	dstFmt := dstImgDesc.image.Info().Fmt()
 	if depthBits(srcFmt) == depthBits(dstFmt) {
-		s.copyImageAspect(ctx, cb, gs, st, a, device, cmdBuffer,
-			srcImgDesc,
-			dstImgDesc,
-			NewVkExtent3D(a, width, height, 1),
-			alloc, addCleanup, out)
-		return nil
-	} else {
-		// This would have errored previously if it was going to error now
-		depthFmt, _ := s.depthStencilToDepthFormat(srcFmt)
-		stageFmt, _ := s.depthToStageFormat(depthFmt)
-		stageImgInfo, err := s.createImage(ctx, cb, st, a, device,
-			stageFmt, width, height, alloc, addCleanup,
-			out)
-		if err != nil {
-			return err
-		}
-		stageImg := st.Images().Get(stageImgInfo.handle)
-		stageImgDesc := imageDesc{
-			stageImg,
-			NewVkImageSubresourceRange(a,
-				VkImageAspectFlags(VkImageAspectFlagBits_VK_IMAGE_ASPECT_COLOR_BIT),
-				0,
-				1,
-				0,
-				1,
-			),
-			VkImageLayout_VK_IMAGE_LAYOUT_UNDEFINED, // this will be transitioned to general
-			VkImageAspectFlagBits_VK_IMAGE_ASPECT_COLOR_BIT,
-		}
-		s.copyImageAspect(ctx, cb, gs, st, a, device, cmdBuffer,
-			srcImgDesc,
-			stageImgDesc,
-			NewVkExtent3D(a, width, height, 1),
-			alloc, addCleanup, out)
-		stageImgDesc.layout = VkImageLayout_VK_IMAGE_LAYOUT_GENERAL
-		return s.renderAspect(ctx, cb, gs, st, a, device, queue,
-			cmdBuffer, stageImgDesc, dstImgDesc, srcFmt, addCleanup, out)
+		newCmds := overdrawTransform.copyImageAspect(ctx, inputState, device, cmdBuffer,
+			srcImgDesc, dstImgDesc, NewVkExtent3D(inputState.Arena, width, height, 1))
+
+		return newCmds, nil
 	}
+
+	outputCmds := make([]api.Cmd, 0)
+
+	// This would have errored previously if it was going to error now
+	depthFmt, _ := depthStencilToDepthFormat(srcFmt)
+	stageFmt, _ := depthToStageFormat(depthFmt)
+	imageCmds, stageImgInfo, err := overdrawTransform.createImage(ctx, inputState, device, stageFmt, width, height)
+	if err != nil {
+		return nil, err
+	}
+
+	if imageCmds != nil {
+		outputCmds = append(outputCmds, imageCmds...)
+	}
+
+	stageImg := GetState(inputState).Images().Get(stageImgInfo.handle)
+	stageImgDesc := imageDesc{
+		stageImg,
+		NewVkImageSubresourceRange(inputState.Arena,
+			VkImageAspectFlags(VkImageAspectFlagBits_VK_IMAGE_ASPECT_COLOR_BIT),
+			0,
+			1,
+			0,
+			1,
+		),
+		VkImageLayout_VK_IMAGE_LAYOUT_UNDEFINED, // this will be transitioned to general
+		VkImageAspectFlagBits_VK_IMAGE_ASPECT_COLOR_BIT,
+	}
+	copyCmds := overdrawTransform.copyImageAspect(ctx,
+		inputState, device, cmdBuffer, srcImgDesc, stageImgDesc,
+		NewVkExtent3D(inputState.Arena, width, height, 1))
+
+	if copyCmds != nil {
+		outputCmds = append(outputCmds, copyCmds...)
+	}
+
+	stageImgDesc.layout = VkImageLayout_VK_IMAGE_LAYOUT_GENERAL
+
+	renderCmds, err := overdrawTransform.renderAspect(ctx, inputState, device, queue,
+		cmdBuffer, stageImgDesc, dstImgDesc, srcFmt)
+	if err != nil {
+		return nil, err
+	}
+
+	if renderCmds != nil {
+		outputCmds = append(outputCmds, renderCmds...)
+	}
+
+	return outputCmds, nil
 }
 
 // If the depth attachment is in "load" mode we need to copy the depth values
 // over to the depth aspect of our new depth/stencil buffer.
-func (s *stencilOverdraw) loadExistingDepthValues(ctx context.Context,
-	cb CommandBuilder,
-	gs *api.GlobalState,
-	st *State,
-	a arena.Arena,
+func (overdrawTransform *stencilOverdraw) loadExistingDepthValues(ctx context.Context,
+	inputState *api.GlobalState,
 	device VkDevice,
 	queue VkQueue,
 	cmdBuffer VkCommandBuffer,
-	renderInfo renderInfo,
-	alloc func(v ...interface{}) api.AllocResult,
-	addCleanup func(func()),
-	out transform.Writer,
-) error {
+	renderInfo renderInfo) ([]api.Cmd, error) {
 	if renderInfo.depthIdx == ^uint32(0) {
-		return nil
+		return nil, nil
 	}
-	rpInfo := st.RenderPasses().Get(renderInfo.renderPass)
+	rpInfo := GetState(inputState).RenderPasses().Get(renderInfo.renderPass)
 	daInfo := rpInfo.AttachmentDescriptions().Get(renderInfo.depthIdx)
 
 	if daInfo.LoadOp() != VkAttachmentLoadOp_VK_ATTACHMENT_LOAD_OP_LOAD {
-		return nil
+		return nil, nil
 	}
 
-	fbInfo := st.Framebuffers().Get(renderInfo.framebuffer)
+	fbInfo := GetState(inputState).Framebuffers().Get(renderInfo.framebuffer)
 
 	oldImageView := fbInfo.ImageAttachments().Get(renderInfo.depthIdx)
 	newImageView := fbInfo.ImageAttachments().Get(uint32(fbInfo.ImageAttachments().Len() - 1))
@@ -1842,39 +1683,30 @@ func (s *stencilOverdraw) loadExistingDepthValues(ctx context.Context,
 		VkImageAspectFlagBits_VK_IMAGE_ASPECT_DEPTH_BIT,
 	}
 
-	return s.transferDepthValues(ctx, cb, gs, st, a,
-		device, queue, cmdBuffer,
-		fbInfo.Width(), fbInfo.Height(),
-		oldImageDesc, newImageDesc,
-		alloc, addCleanup, out)
+	return overdrawTransform.transferDepthValues(ctx, inputState, device, queue,
+		cmdBuffer, fbInfo.Width(), fbInfo.Height(), oldImageDesc, newImageDesc)
 }
 
 // If the depth attachment is in "store" mode we need to copy the depth values
 // over from the depth aspect of our new depth/stencil buffer.
-func (s *stencilOverdraw) storeNewDepthValues(ctx context.Context,
-	cb CommandBuilder,
-	gs *api.GlobalState,
-	st *State,
-	a arena.Arena,
+func (overdrawTransform *stencilOverdraw) storeNewDepthValues(ctx context.Context,
+	inputState *api.GlobalState,
 	device VkDevice,
 	queue VkQueue,
 	cmdBuffer VkCommandBuffer,
-	renderInfo renderInfo,
-	alloc func(v ...interface{}) api.AllocResult,
-	addCleanup func(func()),
-	out transform.Writer,
-) error {
+	renderInfo renderInfo) ([]api.Cmd, error) {
+
 	if renderInfo.depthIdx == ^uint32(0) {
-		return nil
+		return nil, nil
 	}
-	rpInfo := st.RenderPasses().Get(renderInfo.renderPass)
+	rpInfo := GetState(inputState).RenderPasses().Get(renderInfo.renderPass)
 	daInfo := rpInfo.AttachmentDescriptions().Get(renderInfo.depthIdx)
 
 	if daInfo.StoreOp() != VkAttachmentStoreOp_VK_ATTACHMENT_STORE_OP_STORE {
-		return nil
+		return nil, nil
 	}
 
-	fbInfo := st.Framebuffers().Get(renderInfo.framebuffer)
+	fbInfo := GetState(inputState).Framebuffers().Get(renderInfo.framebuffer)
 
 	oldImageView := fbInfo.ImageAttachments().Get(uint32(fbInfo.ImageAttachments().Len() - 1))
 	newImageView := fbInfo.ImageAttachments().Get(renderInfo.depthIdx)
@@ -1891,25 +1723,17 @@ func (s *stencilOverdraw) storeNewDepthValues(ctx context.Context,
 		daInfo.FinalLayout(),
 		VkImageAspectFlagBits_VK_IMAGE_ASPECT_DEPTH_BIT,
 	}
-	return s.transferDepthValues(ctx, cb, gs, st, a,
-		device, queue, cmdBuffer,
-		fbInfo.Width(), fbInfo.Height(),
-		oldImageDesc, newImageDesc,
-		alloc, addCleanup, out)
+	return overdrawTransform.transferDepthValues(ctx, inputState, device, queue,
+		cmdBuffer, fbInfo.Width(), fbInfo.Height(), oldImageDesc, newImageDesc)
 }
 
-func (s *stencilOverdraw) transitionStencilImage(ctx context.Context,
-	cb CommandBuilder,
-	gs *api.GlobalState,
-	st *State,
-	a arena.Arena,
+func (overdrawTransform *stencilOverdraw) transitionStencilImage(ctx context.Context,
+	inputState *api.GlobalState,
 	cmdBuffer VkCommandBuffer,
-	renderInfo renderInfo,
-	alloc func(v ...interface{}) api.AllocResult,
-	out transform.Writer,
-) {
-	imageView := st.ImageViews().Get(renderInfo.view)
-	imgBarrier := NewVkImageMemoryBarrier(a,
+	renderInfo renderInfo) api.Cmd {
+
+	imageView := GetState(inputState).ImageViews().Get(renderInfo.view)
+	imgBarrier := NewVkImageMemoryBarrier(inputState.Arena,
 		VkStructureType_VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // sType
 		0, // pNext
 		0, // srcAccessMask
@@ -1923,51 +1747,45 @@ func (s *stencilOverdraw) transitionStencilImage(ctx context.Context,
 		imageView.Image().VulkanHandle(), // image
 		imageView.SubresourceRange(),     // subresourceRange
 	)
-	imgBarrierData := alloc(imgBarrier)
 
-	writeEach(ctx, out,
-		cb.VkCmdPipelineBarrier(cmdBuffer,
-			VkPipelineStageFlags(
-				VkPipelineStageFlagBits_VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT), // srcStageMask
-			VkPipelineStageFlags(VkPipelineStageFlagBits_VK_PIPELINE_STAGE_TRANSFER_BIT|
-				VkPipelineStageFlagBits_VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT|
-				VkPipelineStageFlagBits_VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT), // dstStageMask
-			0,                    // dependencyFlags
-			0,                    // memoryBarrierCount
-			memory.Nullptr,       // pMemoryBarriers
-			0,                    // bufferMemoryBarrierCount
-			memory.Nullptr,       // pBufferMemoryBarriers
-			1,                    // imageMemoryBarrierCount
-			imgBarrierData.Ptr(), // pImageMemoryBarriers
-		).AddRead(imgBarrierData.Data()),
-	)
+	imgBarrierData := overdrawTransform.allocations.AllocDataOrPanic(ctx, imgBarrier)
+
+	return overdrawTransform.cmdBuilder.VkCmdPipelineBarrier(cmdBuffer,
+		VkPipelineStageFlags(
+			VkPipelineStageFlagBits_VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT), // srcStageMask
+		VkPipelineStageFlags(VkPipelineStageFlagBits_VK_PIPELINE_STAGE_TRANSFER_BIT|
+			VkPipelineStageFlagBits_VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT|
+			VkPipelineStageFlagBits_VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT), // dstStageMask
+		0,                    // dependencyFlags
+		0,                    // memoryBarrierCount
+		memory.Nullptr,       // pMemoryBarriers
+		0,                    // bufferMemoryBarrierCount
+		memory.Nullptr,       // pBufferMemoryBarriers
+		1,                    // imageMemoryBarrierCount
+		imgBarrierData.Ptr(), // pImageMemoryBarriers
+	).AddRead(imgBarrierData.Data())
 }
 
-func (s *stencilOverdraw) createCommandBuffer(ctx context.Context,
-	cb CommandBuilder,
-	gs *api.GlobalState,
-	st *State,
-	a arena.Arena,
+func (overdrawTransform *stencilOverdraw) createCommandBuffer(ctx context.Context,
+	inputState *api.GlobalState,
 	queue VkQueue,
 	cmdBuffer VkCommandBuffer,
 	renderInfo renderInfo,
-	rpStartIdx uint64,
-	alloc func(v ...interface{}) api.AllocResult,
-	addCleanup func(func()),
-	out transform.Writer,
-) (VkCommandBuffer, error) {
-	bInfo, ok := st.CommandBuffers().Lookup(cmdBuffer)
+	rpStartIdx uint64) ([]api.Cmd, VkCommandBuffer, error) {
+	bInfo, ok := GetState(inputState).CommandBuffers().Lookup(cmdBuffer)
 	if !ok {
-		return 0, fmt.Errorf("Invalid command buffer %v", cmdBuffer)
+		return nil, VkCommandBuffer(0), fmt.Errorf("Invalid command buffer %v", cmdBuffer)
 	}
 	device := bInfo.Device()
 
-	newCmdBuffer, cmds, cleanup := allocateNewCmdBufFromExistingOneAndBegin(
-		ctx, cb, cmdBuffer, gs)
-	writeEach(ctx, out, cmds...)
-	for _, f := range cleanup {
-		f()
+	outputCmds := make([]api.Cmd, 0)
+	newCmdBuffer, cmdBufferCmds, cleanup := allocateNewCmdBufFromExistingOneAndBegin(ctx,
+		*overdrawTransform.cmdBuilder, cmdBuffer, inputState)
+
+	if cmdBufferCmds != nil {
+		outputCmds = append(outputCmds, cmdBufferCmds...)
 	}
+	overdrawTransform.cleanupFunctions = append(overdrawTransform.cleanupFunctions, cleanup...)
 
 	pipelines := map[VkPipeline]VkPipeline{}
 	secCmdBuffers := map[VkCommandBuffer]VkCommandBuffer{}
@@ -1975,28 +1793,34 @@ func (s *stencilOverdraw) createCommandBuffer(ctx context.Context,
 	rpEnded := false
 	for i := 0; i < bInfo.CommandReferences().Len(); i++ {
 		cr := bInfo.CommandReferences().Get(uint32(i))
-		args := GetCommandArgs(ctx, cr, st)
+		args := GetCommandArgs(ctx, cr, GetState(inputState))
 		if uint64(i) >= rpStartIdx && !rpEnded {
 			switch ar := args.(type) {
 			case VkCmdBeginRenderPassArgsʳ:
 				// Transition the stencil image to the right layout
-				s.transitionStencilImage(ctx, cb, gs, st, a,
-					newCmdBuffer, renderInfo, alloc, out)
+				newCmd := overdrawTransform.transitionStencilImage(ctx, inputState, newCmdBuffer, renderInfo)
+				if newCmd != nil {
+					outputCmds = append(outputCmds, newCmd)
+				}
 				// Add commands to handle copying the old depth
 				// values if necessary
-				if err := s.loadExistingDepthValues(ctx, cb,
-					gs, st, a, device, queue, newCmdBuffer,
-					renderInfo, alloc, addCleanup, out); err != nil {
-					return 0, err
+				loadCmds, err := overdrawTransform.loadExistingDepthValues(
+					ctx, inputState, device, queue, newCmdBuffer, renderInfo)
+				if err != nil {
+					return nil, VkCommandBuffer(0), err
 				}
 
-				newArgs := ar.Clone(a, api.CloneContext{})
+				if loadCmds != nil {
+					outputCmds = append(outputCmds, loadCmds...)
+				}
+
+				newArgs := ar.Clone(inputState.Arena, api.CloneContext{})
 				newArgs.SetRenderPass(renderInfo.renderPass)
 				newArgs.SetFramebuffer(renderInfo.framebuffer)
 
-				rpInfo := st.RenderPasses().Get(renderInfo.renderPass)
+				rpInfo := GetState(inputState).RenderPasses().Get(renderInfo.renderPass)
 				attachmentIdx := uint32(rpInfo.AttachmentDescriptions().Len()) - 1
-				newClear := NewU32ː4ᵃ(a)
+				newClear := NewU32ː4ᵃ(inputState.Arena)
 
 				if renderInfo.depthIdx != ^uint32(0) &&
 					rpInfo.AttachmentDescriptions().Get(renderInfo.depthIdx).LoadOp() ==
@@ -2014,32 +1838,31 @@ func (s *stencilOverdraw) createCommandBuffer(ctx context.Context,
 					}
 				}
 				// 0 initialize the stencil buffer
-				newArgs.ClearValues().Add(attachmentIdx,
-					// Use VkClearColorValue instead of
-					// VkClearDepthValue because it doesn't
-					// seem like the union is set up in the
-					// API DSL
-					NewVkClearValue(a, NewVkClearColorValue(a,
-						newClear)))
+				// Use VkClearColorValue instead of
+				// VkClearDepthValue because it doesn't
+				// seem like the union is set up in the
+				// API DSL
+				newArgs.ClearValues().Add(attachmentIdx, NewVkClearValue(inputState.Arena,
+					NewVkClearColorValue(inputState.Arena, newClear)))
 				args = newArgs
 			case VkCmdEndRenderPassArgsʳ:
 				rpEnded = true
 			case VkCmdBindPipelineArgsʳ:
 				newArgs := ar
-				if ar.PipelineBindPoint() ==
-					VkPipelineBindPoint_VK_PIPELINE_BIND_POINT_GRAPHICS {
-					newArgs = ar.Clone(a, api.CloneContext{})
-
+				if ar.PipelineBindPoint() == VkPipelineBindPoint_VK_PIPELINE_BIND_POINT_GRAPHICS {
+					newArgs = ar.Clone(inputState.Arena, api.CloneContext{})
 					pipe := ar.Pipeline()
 					newPipe, ok := pipelines[pipe]
 					if !ok {
-						var err error
-						newPipe, err = s.createGraphicsPipeline(ctx, cb, gs, st,
-							a, device, pipe, renderInfo.renderPass, alloc,
-							addCleanup, out)
+						createPipelineCmds, createdPipe, err := overdrawTransform.createGraphicsPipeline(
+							ctx, inputState, device, pipe, renderInfo.renderPass)
 						if err != nil {
-							return 0, err
+							return nil, VkCommandBuffer(0), err
 						}
+						if createPipelineCmds != nil {
+							outputCmds = append(outputCmds, createPipelineCmds...)
+						}
+						newPipe = createdPipe
 						pipelines[pipe] = newPipe
 					}
 					newArgs.SetPipeline(newPipe)
@@ -2051,14 +1874,15 @@ func (s *stencilOverdraw) createCommandBuffer(ctx context.Context,
 					cmdbuf := ar.CommandBuffers().Get(i)
 					newCmdbuf, ok := secCmdBuffers[cmdbuf]
 					if !ok {
-						var err error
-						newCmdbuf, err = s.createCommandBuffer(ctx, cb,
-							gs, st, a, queue, cmdbuf,
-							renderInfo, 0, alloc,
-							addCleanup, out)
+						createCmdBufferCmds, createdCmdbuf, err := overdrawTransform.createCommandBuffer(
+							ctx, inputState, queue, cmdbuf, renderInfo, 0)
 						if err != nil {
-							return 0, err
+							return nil, VkCommandBuffer(0), err
 						}
+						if createCmdBufferCmds != nil {
+							outputCmds = append(outputCmds, createCmdBufferCmds...)
+						}
+						newCmdBuffer = createdCmdbuf
 						secCmdBuffers[cmdbuf] = newCmdbuf
 					}
 					newArgs.CommandBuffers().Add(i, newCmdbuf)
@@ -2066,62 +1890,63 @@ func (s *stencilOverdraw) createCommandBuffer(ctx context.Context,
 				args = newArgs
 			}
 		}
-		cleanup, cmd, _ := AddCommand(ctx, cb, newCmdBuffer, gs,
-			gs, args)
+		cleanup, cmd, _ := AddCommand(ctx, *overdrawTransform.cmdBuilder, newCmdBuffer, inputState, inputState, args)
+		if cmd != nil {
+			outputCmds = append(outputCmds, cmd)
+		}
 
-		writeEach(ctx, out, cmd)
-		cleanup()
+		overdrawTransform.cleanupFunctions = append(overdrawTransform.cleanupFunctions, cleanup)
 
 		if _, ok := args.(VkCmdEndRenderPassArgsʳ); ok {
 			// Add commands to handle storing the new depth values if necessary
-			if err := s.storeNewDepthValues(ctx, cb, gs, st, a, device,
-				queue, newCmdBuffer, renderInfo, alloc, addCleanup, out); err != nil {
-				return 0, err
+			storeCmds, err := overdrawTransform.storeNewDepthValues(ctx,
+				inputState, device, queue, newCmdBuffer, renderInfo)
+			if err != nil {
+				return nil, VkCommandBuffer(0), err
+			}
+			if storeCmds != nil {
+				outputCmds = append(outputCmds, storeCmds...)
 			}
 		}
 	}
-	writeEach(ctx, out,
-		cb.VkEndCommandBuffer(newCmdBuffer, VkResult_VK_SUCCESS))
+	outputCmds = append(outputCmds, overdrawTransform.cmdBuilder.VkEndCommandBuffer(
+		newCmdBuffer, VkResult_VK_SUCCESS))
 
-	return newCmdBuffer, nil
+	return outputCmds, newCmdBuffer, nil
 }
 
-func (s *stencilOverdraw) rewriteQueueSubmit(ctx context.Context,
-	cb CommandBuilder,
-	gs *api.GlobalState,
-	st *State,
-	a arena.Arena,
-	submit *VkQueueSubmit,
+func (overdrawTransform *stencilOverdraw) rewriteQueueSubmit(ctx context.Context,
+	inputState *api.GlobalState,
+	queueSubmitCmd *VkQueueSubmit,
 	rpBeginArgs VkCmdBeginRenderPassArgsʳ,
-	rpBeginIdx api.SubCmdIdx,
-	cmdId api.CmdID,
-	alloc func(v ...interface{}) api.AllocResult,
-	addCleanup func(func()),
-	out transform.Writer,
-) (stencilImage, error) {
+	rpBeginIdx api.SubCmdIdx) ([]api.Cmd, stencilImage, error) {
+
 	// Need to deep clone all of the submit info so we can mark it as
 	// reads.  TODO: We could possibly optimize this by copying the
 	// pointers and using the fact that we know what size it should be to
 	// create the observations.
 	reads := []api.AllocResult{}
 	allocAndRead := func(v ...interface{}) api.AllocResult {
-		res := alloc(v)
+		res := overdrawTransform.allocations.AllocDataOrPanic(ctx, v)
 		reads = append(reads, res)
 		return res
 	}
 
-	renderInfo, err := s.createNewRenderPassFramebuffer(ctx, cb, gs, st,
-		a, rpBeginArgs.RenderPass(), rpBeginArgs.Framebuffer(),
-		alloc, addCleanup, out)
+	outputCmds := make([]api.Cmd, 0)
+	newCmds, renderInfo, err := overdrawTransform.createNewRenderPassFramebuffer(
+		ctx, inputState, rpBeginArgs.RenderPass(), rpBeginArgs.Framebuffer())
 	if err != nil {
-		return stencilImage{}, err
+		return nil, stencilImage{}, err
+	}
+	if newCmds != nil {
+		outputCmds = append(outputCmds, newCmds...)
 	}
 
-	l := gs.MemoryLayout
-	submit.Extras().Observations().ApplyReads(gs.Memory.ApplicationPool())
-	submitCount := submit.SubmitCount()
-	submitInfos := submit.PSubmits().Slice(0, uint64(submitCount), l).MustRead(
-		ctx, submit, gs, nil)
+	layout := inputState.MemoryLayout
+	queueSubmitCmd.Extras().Observations().ApplyReads(inputState.Memory.ApplicationPool())
+	submitCount := queueSubmitCmd.SubmitCount()
+	submitInfos := queueSubmitCmd.PSubmits().Slice(0, uint64(submitCount), layout).MustRead(
+		ctx, queueSubmitCmd, inputState, nil)
 
 	newSubmitInfos := make([]VkSubmitInfo, submitCount)
 	for i := uint32(0); i < submitCount; i++ {
@@ -2131,42 +1956,41 @@ func (s *stencilOverdraw) rewriteQueueSubmit(ctx context.Context,
 		waitDstStagePtr := memory.Nullptr
 		if count := uint64(si.WaitSemaphoreCount()); count > 0 {
 			waitSemPtr = allocAndRead(si.PWaitSemaphores().
-				Slice(0, count, l).
-				MustRead(ctx, submit, gs, nil)).Ptr()
+				Slice(0, count, layout).
+				MustRead(ctx, queueSubmitCmd, inputState, nil)).Ptr()
 			waitDstStagePtr = allocAndRead(si.PWaitDstStageMask().
-				Slice(0, count, l).
-				MustRead(ctx, submit, gs, nil)).Ptr()
+				Slice(0, count, layout).
+				MustRead(ctx, queueSubmitCmd, inputState, nil)).Ptr()
 		}
 
 		signalSemPtr := memory.Nullptr
 		if count := uint64(si.SignalSemaphoreCount()); count > 0 {
 			signalSemPtr = allocAndRead(si.PSignalSemaphores().
-				Slice(0, count, l).
-				MustRead(ctx, submit, gs, nil)).Ptr()
+				Slice(0, count, layout).
+				MustRead(ctx, queueSubmitCmd, inputState, nil)).Ptr()
 		}
 
 		cmdBufferPtr := memory.Nullptr
 		if count := uint64(si.CommandBufferCount()); count > 0 {
 			cmdBuffers := si.PCommandBuffers().
-				Slice(0, count, l).
-				MustRead(ctx, submit, gs, nil)
+				Slice(0, count, layout).
+				MustRead(ctx, queueSubmitCmd, inputState, nil)
 			if uint64(i) == rpBeginIdx[0] {
-				newCommandBuffer, err :=
-					s.createCommandBuffer(ctx, cb, gs, st, a,
-						submit.Queue(),
-						cmdBuffers[rpBeginIdx[1]],
-						renderInfo,
-						rpBeginIdx[2],
-						alloc, addCleanup, out)
+				createCmdBuffCmds, newCommandBuffer, err := overdrawTransform.createCommandBuffer(ctx, inputState,
+					queueSubmitCmd.Queue(), cmdBuffers[rpBeginIdx[1]], renderInfo, rpBeginIdx[2])
 				if err != nil {
-					return stencilImage{}, err
+					return nil, stencilImage{}, err
 				}
+				if createCmdBuffCmds != nil {
+					outputCmds = append(outputCmds, createCmdBuffCmds...)
+				}
+
 				cmdBuffers[rpBeginIdx[1]] = newCommandBuffer
 			}
 			cmdBufferPtr = allocAndRead(cmdBuffers).Ptr()
 		}
 
-		newSubmitInfos[i] = NewVkSubmitInfo(a,
+		newSubmitInfos[i] = NewVkSubmitInfo(inputState.Arena,
 			VkStructureType_VK_STRUCTURE_TYPE_SUBMIT_INFO,
 			0,                            // pNext
 			si.WaitSemaphoreCount(),      // waitSemaphoreCount
@@ -2180,70 +2004,58 @@ func (s *stencilOverdraw) rewriteQueueSubmit(ctx context.Context,
 	}
 	submitInfoPtr := allocAndRead(newSubmitInfos).Ptr()
 
-	cmd := cb.VkQueueSubmit(
-		submit.Queue(),
-		submit.SubmitCount(),
+	cmd := overdrawTransform.cmdBuilder.VkQueueSubmit(
+		queueSubmitCmd.Queue(),
+		queueSubmitCmd.SubmitCount(),
 		submitInfoPtr,
-		submit.Fence(),
+		queueSubmitCmd.Fence(),
 		VkResult_VK_SUCCESS,
 	)
 	for _, read := range reads {
 		cmd.AddRead(read.Data())
 	}
 
-	out.MutateAndWrite(ctx, cmdId, cmd)
-	return renderInfo.image, nil
+	outputCmds = append(outputCmds, cmd)
+
+	return outputCmds, renderInfo.image, nil
 }
 
-func (*stencilOverdraw) Flush(ctx context.Context, out transform.Writer) error { return nil }
-
-func (*stencilOverdraw) PreLoop(ctx context.Context, output transform.Writer)  {}
-func (*stencilOverdraw) PostLoop(ctx context.Context, output transform.Writer) {}
-func (*stencilOverdraw) BuffersCommands() bool                                 { return false }
-
-func postImageData(ctx context.Context,
-	cb CommandBuilder,
-	s *api.GlobalState,
-	imageObject ImageObjectʳ,
-	vkFormat VkFormat,
-	aspect VkImageAspectFlagBits,
-	layer,
-	level,
-	imgWidth,
-	imgHeight,
-	requestWidth,
-	requestHeight uint32,
-	checkImage func(*image.Data) error,
-	out transform.Writer,
-	res replay.Result) {
-
-	a := s.Arena // TODO: Use a temporary arena?
+func (overdrawTransform *stencilOverdraw) postStencilImageData(ctx context.Context, inputState *api.GlobalState, img stencilImage, res replay.Result) []api.Cmd {
+	imageObject := GetState(inputState).Images().Get(img.handle)
+	vkFormat := img.format
+	layer := uint32(0)
+	level := uint32(0)
+	imgWidth := img.width
+	imgHeight := img.height
+	requestWidth := img.width
+	requestHeight := img.height
+	aspectFlagBit := VkImageAspectFlagBits_VK_IMAGE_ASPECT_STENCIL_BIT
 
 	// This is the format used for building the final image resource and
 	// calculating the data size for the final resource. Note that the staging
 	// image is not created with this format.
 	var formatOfImgRes *image.Format
 	var err error
-	if aspect == VkImageAspectFlagBits_VK_IMAGE_ASPECT_COLOR_BIT {
+	if aspectFlagBit == VkImageAspectFlagBits_VK_IMAGE_ASPECT_COLOR_BIT {
 		formatOfImgRes, err = getImageFormatFromVulkanFormat(vkFormat)
-	} else if aspect == VkImageAspectFlagBits_VK_IMAGE_ASPECT_DEPTH_BIT {
+	} else if aspectFlagBit == VkImageAspectFlagBits_VK_IMAGE_ASPECT_DEPTH_BIT {
 		// When depth image is requested, the format, which is used for
 		// resolving/bliting/copying attachment image data to the mapped buffer
 		// might be different with the format used in image resource. This is
 		// because we need to strip the stencil data if the source attachment image
 		// contains both depth and stencil data.
 		formatOfImgRes, err = getDepthImageFormatFromVulkanFormat(vkFormat)
-	} else if aspect == VkImageAspectFlagBits_VK_IMAGE_ASPECT_STENCIL_BIT {
+	} else if aspectFlagBit == VkImageAspectFlagBits_VK_IMAGE_ASPECT_STENCIL_BIT {
 		// Similarly to above, we may need to strip the depth data if the
 		// source attachment image contains both depth and stencil data.
 		formatOfImgRes, err = getStencilImageFormatFromVulkanFormat(vkFormat)
 	} else {
 		res(nil, &service.ErrDataUnavailable{Reason: messages.ErrFramebufferUnavailable()})
-		return
+		return nil
 	}
 	if err != nil {
 		res(nil, &service.ErrDataUnavailable{Reason: messages.ErrFramebufferUnavailable()})
-		return
+		return nil
 	}
 
 	resolveSrcDepth := int32(0)
@@ -2272,27 +2084,27 @@ func postImageData(ctx context.Context,
 		copySrcLayer = 0
 	}
 
-	origLayout := imageObject.Aspects().Get(aspect).Layers().Get(layer).Levels().Get(level).Layout()
+	origLayout := imageObject.Aspects().Get(aspectFlagBit).Layers().Get(layer).Levels().Get(level).Layout()
 
-	queue := imageObject.Aspects().Get(aspect).Layers().Get(layer).Levels().Get(level).LastBoundQueue()
+	queue := imageObject.Aspects().Get(aspectFlagBit).Layers().Get(layer).Levels().Get(level).LastBoundQueue()
 	if queue.IsNil() {
 		queue = imageObject.LastBoundQueue()
 		if queue.IsNil() {
 			res(nil, &service.ErrDataUnavailable{Reason: messages.ErrMessage("The target image object has not been bound with a vkQueue")})
-			return
+			return nil
 		}
 	}
 
 	vkQueue := queue.VulkanHandle()
 	vkDevice := queue.Device()
-	device := GetState(s).Devices().Get(vkDevice)
+	device := GetState(inputState).Devices().Get(vkDevice)
 	vkPhysicalDevice := device.PhysicalDevice()
-	physicalDevice := GetState(s).PhysicalDevices().Get(vkPhysicalDevice)
+	physicalDevice := GetState(inputState).PhysicalDevices().Get(vkPhysicalDevice)
 
 	if properties, ok := physicalDevice.QueueFamilyProperties().Lookup(queue.Family()); ok {
 		if properties.QueueFlags()&VkQueueFlags(VkQueueFlagBits_VK_QUEUE_GRAPHICS_BIT) == 0 {
 			if imageObject.Info().Samples() == VkSampleCountFlagBits_VK_SAMPLE_COUNT_1_BIT &&
-				aspect == VkImageAspectFlagBits_VK_IMAGE_ASPECT_COLOR_BIT {
+				aspectFlagBit == VkImageAspectFlagBits_VK_IMAGE_ASPECT_COLOR_BIT {
 				// If this is on the compute queue, we cannot do a blit operation,
 				// We can however do it on the CPU afterwards, or let the
 				// client deal with it
@@ -2300,42 +2112,29 @@ func postImageData(ctx context.Context,
 				requestHeight = imgHeight
 			} else {
 				res(nil, &service.ErrDataUnavailable{Reason: messages.ErrMessage("Unhandled: Reading a multisampled or depth image on the compute queue")})
-				return
+				return nil
 			}
 		}
 	} else {
 		res(nil, &service.ErrDataUnavailable{Reason: messages.ErrMessage("Not found the properties information of the bound vkQueue")})
-		return
+		return nil
 	}
 
-	// Wraps the data allocation so the data get freed at the end.
-	var allocated []*api.AllocResult
-	defer func() {
-		for _, d := range allocated {
-			d.Free()
-		}
-	}()
-	MustAllocData := func(ctx context.Context, s *api.GlobalState, v ...interface{}) api.AllocResult {
-		res := s.AllocDataOrPanic(ctx, v...)
-		allocated = append(allocated, &res)
-		return res
-	}
+	fenceID := VkFence(newUnusedID(false, func(x uint64) bool { return GetState(inputState).Fences().Contains(VkFence(x)) }))
 
-	fenceID := VkFence(newUnusedID(false, func(x uint64) bool { return GetState(s).Fences().Contains(VkFence(x)) }))
-
-	fenceCreateInfo := NewVkFenceCreateInfo(a,
+	fenceCreateInfo := NewVkFenceCreateInfo(inputState.Arena,
 		VkStructureType_VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, // sType
 		NewVoidᶜᵖ(memory.Nullptr),                           // pNext
 		VkFenceCreateFlags(0),                               // flags
 	)
 
-	fenceCreateData := MustAllocData(ctx, s, fenceCreateInfo)
-	fenceData := MustAllocData(ctx, s, fenceID)
+	fenceCreateData := overdrawTransform.allocations.AllocDataOrPanic(ctx, fenceCreateInfo)
+	fenceData := overdrawTransform.allocations.AllocDataOrPanic(ctx, fenceID)
 
 	// The physical device memory properties are used for
 	// replayAllocateImageMemory to find the correct memory type index and
 	// allocate proper memory for our staging and resolving image.
-	physicalDeviceMemoryPropertiesData := MustAllocData(ctx, s, physicalDevice.MemoryProperties())
+	physicalDeviceMemoryPropertiesData := overdrawTransform.allocations.AllocDataOrPanic(ctx, physicalDevice.MemoryProperties())
 	bufferMemoryTypeIndex := uint32(0)
 	for i := uint32(0); i < physicalDevice.MemoryProperties().MemoryTypeCount(); i++ {
 		t := physicalDevice.MemoryProperties().MemoryTypes().Get(int(i))
@@ -2351,23 +2150,26 @@ func postImageData(ctx context.Context,
 	// For the depth aspect of VK_FORMAT_X8_D24_UNORM_PACK32 and
 	// VK_FORMAT_D24_UNORM_S8_UINT format, each depth element requires 4 bytes in
 	// the buffer when used in buffer image copy.
-	if aspect == VkImageAspectFlagBits_VK_IMAGE_ASPECT_DEPTH_BIT && (vkFormat == VkFormat_VK_FORMAT_X8_D24_UNORM_PACK32 || vkFormat == VkFormat_VK_FORMAT_D24_UNORM_S8_UINT) {
+	if aspectFlagBit == VkImageAspectFlagBits_VK_IMAGE_ASPECT_DEPTH_BIT && (vkFormat == VkFormat_VK_FORMAT_X8_D24_UNORM_PACK32 || vkFormat == VkFormat_VK_FORMAT_D24_UNORM_S8_UINT) {
 		r32Fmt, _ := getImageFormatFromVulkanFormat(VkFormat_VK_FORMAT_R32_UINT)
 		bufferSize = uint64(r32Fmt.Size(int(requestWidth), int(requestHeight), 1))
 	}
 
 	// Data and info for destination buffer creation
-	bufferID := VkBuffer(newUnusedID(false, func(x uint64) bool { ok := GetState(s).Buffers().Contains(VkBuffer(x)); return ok }))
-	bufferMemoryID := VkDeviceMemory(newUnusedID(false, func(x uint64) bool { ok := GetState(s).DeviceMemories().Contains(VkDeviceMemory(x)); return ok }))
-	bufferMemoryAllocInfo := NewVkMemoryAllocateInfo(a,
+	bufferID := VkBuffer(newUnusedID(false, func(x uint64) bool { ok := GetState(inputState).Buffers().Contains(VkBuffer(x)); return ok }))
+	bufferMemoryID := VkDeviceMemory(newUnusedID(false, func(x uint64) bool {
+		ok := GetState(inputState).DeviceMemories().Contains(VkDeviceMemory(x))
+		return ok
+	}))
+	bufferMemoryAllocInfo := NewVkMemoryAllocateInfo(inputState.Arena,
 		VkStructureType_VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, // sType
 		0,                          // pNext
 		VkDeviceSize(bufferSize*2), // allocationSize
 		bufferMemoryTypeIndex,      // memoryTypeIndex
 	)
-	bufferMemoryAllocateInfoData := MustAllocData(ctx, s, bufferMemoryAllocInfo)
-	bufferMemoryData := MustAllocData(ctx, s, bufferMemoryID)
-	bufferCreateInfo := NewVkBufferCreateInfo(a,
+	bufferMemoryAllocateInfoData := overdrawTransform.allocations.AllocDataOrPanic(ctx, bufferMemoryAllocInfo)
+	bufferMemoryData := overdrawTransform.allocations.AllocDataOrPanic(ctx, bufferMemoryID)
+	bufferCreateInfo := NewVkBufferCreateInfo(inputState.Arena,
 		VkStructureType_VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,                       // sType
 		NewVoidᶜᵖ(memory.Nullptr),                                                  // pNext
 		VkBufferCreateFlags(0),                                                     // flags
@@ -2377,18 +2179,18 @@ func postImageData(ctx context.Context,
 		0,                                                                          // queueFamilyIndexCount
 		NewU32ᶜᵖ(memory.Nullptr),                                                   // pQueueFamilyIndices
 	)
-	bufferCreateInfoData := MustAllocData(ctx, s, bufferCreateInfo)
-	bufferData := MustAllocData(ctx, s, bufferID)
+	bufferCreateInfoData := overdrawTransform.allocations.AllocDataOrPanic(ctx, bufferCreateInfo)
+	bufferData := overdrawTransform.allocations.AllocDataOrPanic(ctx, bufferID)
 
 	// Data and info for staging image creation
-	stagingImageID := VkImage(newUnusedID(false, func(x uint64) bool { ok := GetState(s).Images().Contains(VkImage(x)); return ok }))
-	stagingImageCreateInfo := NewVkImageCreateInfo(a,
+	stagingImageID := VkImage(newUnusedID(false, func(x uint64) bool { ok := GetState(inputState).Images().Contains(VkImage(x)); return ok }))
+	stagingImageCreateInfo := NewVkImageCreateInfo(inputState.Arena,
 		VkStructureType_VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // sType
 		0,                            // pNext
 		0,                            // flags
 		VkImageType_VK_IMAGE_TYPE_2D, // imageType
 		vkFormat,                     // format
-		NewVkExtent3D(a, // extent
+		NewVkExtent3D(inputState.Arena, // extent
 			requestWidth,
 			requestHeight,
 			1,
@@ -2404,24 +2206,24 @@ func postImageData(ctx context.Context,
 		0,                                       // pQueueFamilyIndices
 		VkImageLayout_VK_IMAGE_LAYOUT_UNDEFINED, // initialLayout
 	)
-	stagingImageCreateInfoData := MustAllocData(ctx, s, stagingImageCreateInfo)
-	stagingImageData := MustAllocData(ctx, s, stagingImageID)
+	stagingImageCreateInfoData := overdrawTransform.allocations.AllocDataOrPanic(ctx, stagingImageCreateInfo)
+	stagingImageData := overdrawTransform.allocations.AllocDataOrPanic(ctx, stagingImageID)
 	stagingImageMemoryID := VkDeviceMemory(newUnusedID(false, func(x uint64) bool {
-		ok := GetState(s).DeviceMemories().Contains(VkDeviceMemory(x))
+		ok := GetState(inputState).DeviceMemories().Contains(VkDeviceMemory(x))
 		ok = ok || VkDeviceMemory(x) == bufferMemoryID
 		return ok
 	}))
-	stagingImageMemoryData := MustAllocData(ctx, s, stagingImageMemoryID)
+	stagingImageMemoryData := overdrawTransform.allocations.AllocDataOrPanic(ctx, stagingImageMemoryID)
 
 	// Data and info for resolve image creation. Resolve image is used when the attachment image is multi-sampled
-	resolveImageID := VkImage(newUnusedID(false, func(x uint64) bool { ok := GetState(s).Images().Contains(VkImage(x)); return ok }))
-	resolveImageCreateInfo := NewVkImageCreateInfo(a,
+	resolveImageID := VkImage(newUnusedID(false, func(x uint64) bool { ok := GetState(inputState).Images().Contains(VkImage(x)); return ok }))
+	resolveImageCreateInfo := NewVkImageCreateInfo(inputState.Arena,
 		VkStructureType_VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // sType
 		0,                            // pNext
 		0,                            // flags
 		VkImageType_VK_IMAGE_TYPE_2D, // imageType
 		vkFormat,                     // format
-		NewVkExtent3D(a, // extent
+		NewVkExtent3D(inputState.Arena, // extent
 			imgWidth,  // same width as the attachment image, not the request
 			imgHeight, // same height as the attachment image, not the request
 			1),
@@ -2436,62 +2238,65 @@ func postImageData(ctx context.Context,
 		0,                                       // pQueueFamilyIndices
 		VkImageLayout_VK_IMAGE_LAYOUT_UNDEFINED, // initialLayout
 	)
-	resolveImageCreateInfoData := MustAllocData(ctx, s, resolveImageCreateInfo)
-	resolveImageData := MustAllocData(ctx, s, resolveImageID)
+	resolveImageCreateInfoData := overdrawTransform.allocations.AllocDataOrPanic(ctx, resolveImageCreateInfo)
+	resolveImageData := overdrawTransform.allocations.AllocDataOrPanic(ctx, resolveImageID)
 	resolveImageMemoryID := VkDeviceMemory(newUnusedID(false, func(x uint64) bool {
-		ok := GetState(s).DeviceMemories().Contains(VkDeviceMemory(x))
+		ok := GetState(inputState).DeviceMemories().Contains(VkDeviceMemory(x))
 		ok = ok || VkDeviceMemory(x) == bufferMemoryID || VkDeviceMemory(x) == stagingImageMemoryID
 		return ok
 	}))
-	resolveImageMemoryData := MustAllocData(ctx, s, resolveImageMemoryID)
+	resolveImageMemoryData := overdrawTransform.allocations.AllocDataOrPanic(ctx, resolveImageMemoryID)
 
 	// Command pool and command buffer
-	commandPoolID := VkCommandPool(newUnusedID(false, func(x uint64) bool { ok := GetState(s).CommandPools().Contains(VkCommandPool(x)); return ok }))
-	commandPoolCreateInfo := NewVkCommandPoolCreateInfo(a,
+	commandPoolID := VkCommandPool(newUnusedID(false, func(x uint64) bool { ok := GetState(inputState).CommandPools().Contains(VkCommandPool(x)); return ok }))
+	commandPoolCreateInfo := NewVkCommandPoolCreateInfo(inputState.Arena,
 		VkStructureType_VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,                                 // sType
 		NewVoidᶜᵖ(memory.Nullptr),                                                                  // pNext
 		VkCommandPoolCreateFlags(VkCommandPoolCreateFlagBits_VK_COMMAND_POOL_CREATE_TRANSIENT_BIT), // flags
 		queue.Family(), // queueFamilyIndex
 	)
-	commandPoolCreateInfoData := MustAllocData(ctx, s, commandPoolCreateInfo)
-	commandPoolData := MustAllocData(ctx, s, commandPoolID)
-	commandBufferAllocateInfo := NewVkCommandBufferAllocateInfo(a,
+	commandPoolCreateInfoData := overdrawTransform.allocations.AllocDataOrPanic(ctx, commandPoolCreateInfo)
+	commandPoolData := overdrawTransform.allocations.AllocDataOrPanic(ctx, commandPoolID)
+	commandBufferAllocateInfo := NewVkCommandBufferAllocateInfo(inputState.Arena,
 		VkStructureType_VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // sType
 		NewVoidᶜᵖ(memory.Nullptr),                                      // pNext
 		commandPoolID,                                                  // commandPool
 		VkCommandBufferLevel_VK_COMMAND_BUFFER_LEVEL_PRIMARY,           // level
 		1, // commandBufferCount
 	)
-	commandBufferAllocateInfoData := MustAllocData(ctx, s, commandBufferAllocateInfo)
-	commandBufferID := VkCommandBuffer(newUnusedID(true, func(x uint64) bool { ok := GetState(s).CommandBuffers().Contains(VkCommandBuffer(x)); return ok }))
-	commandBufferData := MustAllocData(ctx, s, commandBufferID)
+	commandBufferAllocateInfoData := overdrawTransform.allocations.AllocDataOrPanic(ctx, commandBufferAllocateInfo)
+	commandBufferID := VkCommandBuffer(newUnusedID(true, func(x uint64) bool {
+		ok := GetState(inputState).CommandBuffers().Contains(VkCommandBuffer(x))
+		return ok
+	}))
+	commandBufferData := overdrawTransform.allocations.AllocDataOrPanic(ctx, commandBufferID)
 
 	// Data and info for Vulkan commands in command buffers
-	beginCommandBufferInfo := NewVkCommandBufferBeginInfo(a,
+	beginCommandBufferInfo := NewVkCommandBufferBeginInfo(inputState.Arena,
 		VkStructureType_VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // sType
 		0, // pNext
 		VkCommandBufferUsageFlags(VkCommandBufferUsageFlagBits_VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT), // flags
 		0, // pInheritanceInfo
 	)
-	beginCommandBufferInfoData := MustAllocData(ctx, s, beginCommandBufferInfo)
+	beginCommandBufferInfoData := overdrawTransform.allocations.AllocDataOrPanic(ctx, beginCommandBufferInfo)
 
-	bufferImageCopy := NewVkBufferImageCopy(a,
+	bufferImageCopy := NewVkBufferImageCopy(inputState.Arena,
 		0, // bufferOffset
 		0, // bufferRowLength
 		0, // bufferImageHeight
-		NewVkImageSubresourceLayers(a, // imageSubresource
-			VkImageAspectFlags(aspect), // aspectMask
-			level,                      // mipLevel
-			copySrcLayer,               // baseArrayLayer
-			1,                          // layerCount
+		NewVkImageSubresourceLayers(inputState.Arena, // imageSubresource
+			VkImageAspectFlags(aspectFlagBit), // aspectMask
+			level,                             // mipLevel
+			copySrcLayer,                      // baseArrayLayer
+			1,                                 // layerCount
 		),
-		NewVkOffset3D(a, int32(0), int32(0), copySrcDepth), // imageOffset
-		NewVkExtent3D(a, requestWidth, requestHeight, 1),   // imageExtent
+		NewVkOffset3D(inputState.Arena, int32(0), int32(0), copySrcDepth), // imageOffset
+		NewVkExtent3D(inputState.Arena, requestWidth, requestHeight, 1),   // imageExtent
 	)
-	bufferImageCopyData := MustAllocData(ctx, s, bufferImageCopy)
+	bufferImageCopyData := overdrawTransform.allocations.AllocDataOrPanic(ctx, bufferImageCopy)
 
-	commandBuffers := MustAllocData(ctx, s, commandBufferID)
-	submitInfo := NewVkSubmitInfo(a,
+	commandBuffers := overdrawTransform.allocations.AllocDataOrPanic(ctx, commandBufferID)
+	submitInfo := NewVkSubmitInfo(inputState.Arena,
 		VkStructureType_VK_STRUCTURE_TYPE_SUBMIT_INFO, // sType
 		0, // pNext
 		0, // waitSemaphoreCount
@@ -2502,31 +2307,31 @@ func postImageData(ctx context.Context,
 		0, // signalSemaphoreCount
 		0, // pSignalSemaphores
 	)
-	submitInfoData := MustAllocData(ctx, s, submitInfo)
+	submitInfoData := overdrawTransform.allocations.AllocDataOrPanic(ctx, submitInfo)
 
-	mappedMemoryRange := NewVkMappedMemoryRange(a,
+	mappedMemoryRange := NewVkMappedMemoryRange(inputState.Arena,
 		VkStructureType_VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE, // sType
 		0,                                // pNext
 		bufferMemoryID,                   // memory
 		VkDeviceSize(0),                  // offset
 		VkDeviceSize(0xFFFFFFFFFFFFFFFF), // size
 	)
-	mappedMemoryRangeData := MustAllocData(ctx, s, mappedMemoryRange)
-	at, err := s.Alloc(ctx, bufferSize)
+	mappedMemoryRangeData := overdrawTransform.allocations.AllocDataOrPanic(ctx, mappedMemoryRange)
+
+	at, err := overdrawTransform.allocations.Alloc(ctx, bufferSize)
 	if err != nil {
 		res(nil, &service.ErrDataUnavailable{Reason: messages.ErrMessage("Device Memory -> Host mapping failed")})
 	}
-	allocated = append(allocated, &at)
-	mappedPointer := MustAllocData(ctx, s, at.Address())
+	mappedPointer := overdrawTransform.allocations.AllocDataOrPanic(ctx, at.Address())
 
-	barrierAspectMask := VkImageAspectFlags(aspect)
+	barrierAspectMask := VkImageAspectFlags(aspectFlagBit)
 	depthStencilMask := VkImageAspectFlagBits_VK_IMAGE_ASPECT_DEPTH_BIT |
 		VkImageAspectFlagBits_VK_IMAGE_ASPECT_STENCIL_BIT
 	if VkImageAspectFlagBits(imageObject.ImageAspect())&depthStencilMask == depthStencilMask {
 		barrierAspectMask |= VkImageAspectFlags(depthStencilMask)
 	}
 	// Barrier data for layout transitions of staging image
-	stagingImageToDstBarrier := NewVkImageMemoryBarrier(a,
+	stagingImageToDstBarrier := NewVkImageMemoryBarrier(inputState.Arena,
 		VkStructureType_VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // sType
 		0, // pNext
 		VkAccessFlags(VkAccessFlagBits_VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT|
@@ -2539,7 +2344,7 @@ func postImageData(ctx context.Context,
 		0xFFFFFFFF,     // srcQueueFamilyIndex
 		0xFFFFFFFF,     // dstQueueFamilyIndex
 		stagingImageID, // image
-		NewVkImageSubresourceRange(a, // subresourceRange
+		NewVkImageSubresourceRange(inputState.Arena, // subresourceRange
 			barrierAspectMask, // aspectMask
 			0,                 // baseMipLevel
 			1,                 // levelCount
@@ -2547,9 +2352,9 @@ func postImageData(ctx context.Context,
 			1,                 // layerCount
 		),
 	)
-	stagingImageToDstBarrierData := MustAllocData(ctx, s, stagingImageToDstBarrier)
+	stagingImageToDstBarrierData := overdrawTransform.allocations.AllocDataOrPanic(ctx, stagingImageToDstBarrier)
 
-	stagingImageToSrcBarrier := NewVkImageMemoryBarrier(a,
+	stagingImageToSrcBarrier := NewVkImageMemoryBarrier(inputState.Arena,
 		VkStructureType_VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // sType
 		0, // pNext
 		VkAccessFlags(VkAccessFlagBits_VK_ACCESS_TRANSFER_WRITE_BIT), // srcAccessMask
@@ -2559,7 +2364,7 @@ func postImageData(ctx context.Context,
 		0xFFFFFFFF,     // srcQueueFamilyIndex
 		0xFFFFFFFF,     // dstQueueFamilyIndex
 		stagingImageID, // image
-		NewVkImageSubresourceRange(a, // subresourceRange
+		NewVkImageSubresourceRange(inputState.Arena, // subresourceRange
 			barrierAspectMask, // aspectMask
 			0,                 // baseMipLevel
 			1,                 // levelCount
@@ -2567,11 +2372,11 @@ func postImageData(ctx context.Context,
 			1,                 // layerCount
 		),
 	)
-	stagingImageToSrcBarrierData := MustAllocData(ctx, s, stagingImageToSrcBarrier)
+	stagingImageToSrcBarrierData := overdrawTransform.allocations.AllocDataOrPanic(ctx, stagingImageToSrcBarrier)
 
 	// Barrier data for layout transitions of resolve image. This only used when the attachment image is
 	// multi-sampled.
-	resolveImageToDstBarrier := NewVkImageMemoryBarrier(a,
+	resolveImageToDstBarrier := NewVkImageMemoryBarrier(inputState.Arena,
 		VkStructureType_VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // sType
 		0, // pNext
 		VkAccessFlags(VkAccessFlagBits_VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT|
@@ -2584,7 +2389,7 @@ func postImageData(ctx context.Context,
 		0xFFFFFFFF,     // srcQueueFamilyIndex
 		0xFFFFFFFF,     // dstQueueFamilyIndex
 		resolveImageID, // image
-		NewVkImageSubresourceRange(a, // subresourceRange
+		NewVkImageSubresourceRange(inputState.Arena, // subresourceRange
 			barrierAspectMask, // aspectMask
 			0,                 // baseMipLevel
 			1,                 // levelCount
@@ -2592,9 +2397,9 @@ func postImageData(ctx context.Context,
 			1,                 // layerCount
 		),
 	)
-	resolveImageToDstBarrierData := MustAllocData(ctx, s, resolveImageToDstBarrier)
+	resolveImageToDstBarrierData := overdrawTransform.allocations.AllocDataOrPanic(ctx, resolveImageToDstBarrier)
 
-	resolveImageToSrcBarrier := NewVkImageMemoryBarrier(a,
+	resolveImageToSrcBarrier := NewVkImageMemoryBarrier(inputState.Arena,
 		VkStructureType_VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // sType
 		0, // pNext
 		VkAccessFlags(VkAccessFlagBits_VK_ACCESS_TRANSFER_WRITE_BIT), // srcAccessMask
@@ -2604,7 +2409,7 @@ func postImageData(ctx context.Context,
 		0xFFFFFFFF,     // srcQueueFamilyIndex
 		0xFFFFFFFF,     // dstQueueFamilyIndex
 		resolveImageID, // image
-		NewVkImageSubresourceRange(a, // subresourceRange
+		NewVkImageSubresourceRange(inputState.Arena, // subresourceRange
 			barrierAspectMask, // aspectMask
 			0,                 // baseMipLevel
 			1,                 // levelCount
@@ -2612,10 +2417,10 @@ func postImageData(ctx context.Context,
 			1,                 // layerCount
 		),
 	)
-	resolveImageToSrcBarrierData := MustAllocData(ctx, s, resolveImageToSrcBarrier)
+	resolveImageToSrcBarrierData := overdrawTransform.allocations.AllocDataOrPanic(ctx, resolveImageToSrcBarrier)
 
 	// Barrier data for layout transitions of attachment image
-	attachmentImageToSrcBarrier := NewVkImageMemoryBarrier(a,
+	attachmentImageToSrcBarrier := NewVkImageMemoryBarrier(inputState.Arena,
 		VkStructureType_VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // sType
 		0, // pNext
 		VkAccessFlags( // srcAccessMask
@@ -2631,7 +2436,7 @@ func postImageData(ctx context.Context,
 		0xFFFFFFFF,                 // srcQueueFamilyIndex
 		0xFFFFFFFF,                 // dstQueueFamilyIndex
 		imageObject.VulkanHandle(), // image
-		NewVkImageSubresourceRange(a, // subresourceRange
+		NewVkImageSubresourceRange(inputState.Arena, // subresourceRange
 			barrierAspectMask, // aspectMask
 			0,                 // baseMipLevel
 			1,                 // levelCount
@@ -2639,9 +2444,9 @@ func postImageData(ctx context.Context,
 			1,                 // layerCount
 		),
 	)
-	attachmentImageToSrcBarrierData := MustAllocData(ctx, s, attachmentImageToSrcBarrier)
+	attachmentImageToSrcBarrierData := overdrawTransform.allocations.AllocDataOrPanic(ctx, attachmentImageToSrcBarrier)
 
-	attachmentImageResetLayoutBarrier := NewVkImageMemoryBarrier(a,
+	attachmentImageResetLayoutBarrier := NewVkImageMemoryBarrier(inputState.Arena,
 		VkStructureType_VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // sType
 		0, // pNext
 		VkAccessFlags(VkAccessFlagBits_VK_ACCESS_TRANSFER_READ_BIT), // srcAccessMask
@@ -2656,7 +2461,7 @@ func postImageData(ctx context.Context,
 		0xFFFFFFFF,                 // srcQueueFamilyIndex
 		0xFFFFFFFF,                 // dstQueueFamilyIndex
 		imageObject.VulkanHandle(), // image
-		NewVkImageSubresourceRange(a, // subresourceRange
+		NewVkImageSubresourceRange(inputState.Arena, // subresourceRange
 			barrierAspectMask, // aspectMask
 			0,                 // baseMipLevel
 			1,                 // levelCount
@@ -2664,57 +2469,57 @@ func postImageData(ctx context.Context,
 			1,                 // layerCount
 		),
 	)
-	attachmentImageResetLayoutBarrierData := MustAllocData(ctx, s, attachmentImageResetLayoutBarrier)
+	attachmentImageResetLayoutBarrierData := overdrawTransform.allocations.AllocDataOrPanic(ctx, attachmentImageResetLayoutBarrier)
 
 	// Observation data for vkCmdBlitImage
-	imageBlit := NewVkImageBlit(a,
-		NewVkImageSubresourceLayers(a, // srcSubresource
-			VkImageAspectFlags(aspect), // aspectMask
-			0,                          // mipLevel
-			blitSrcLayer,               // baseArrayLayer
-			1,                          // layerCount
+	imageBlit := NewVkImageBlit(inputState.Arena,
+		NewVkImageSubresourceLayers(inputState.Arena, // srcSubresource
+			VkImageAspectFlags(aspectFlagBit), // aspectMask
+			0,                                 // mipLevel
+			blitSrcLayer,                      // baseArrayLayer
+			1,                                 // layerCount
 		),
-		NewVkOffset3Dː2ᵃ(a, // srcOffsets
-			NewVkOffset3D(a, int32(0), int32(0), blitSrcDepth),
-			NewVkOffset3D(a, int32(imgWidth), int32(imgHeight), blitSrcDepth+int32(1)),
+		NewVkOffset3Dː2ᵃ(inputState.Arena, // srcOffsets
+			NewVkOffset3D(inputState.Arena, int32(0), int32(0), blitSrcDepth),
+			NewVkOffset3D(inputState.Arena, int32(imgWidth), int32(imgHeight), blitSrcDepth+int32(1)),
 		),
-		NewVkImageSubresourceLayers(a, // dstSubresource
-			VkImageAspectFlags(aspect), // aspectMask
-			0,                          // mipLevel
-			0,                          // baseArrayLayer
-			1,                          // layerCount
+		NewVkImageSubresourceLayers(inputState.Arena, // dstSubresource
+			VkImageAspectFlags(aspectFlagBit), // aspectMask
+			0,                                 // mipLevel
+			0,                                 // baseArrayLayer
+			1,                                 // layerCount
 		),
-		NewVkOffset3Dː2ᵃ(a, // dstOffsets
-			MakeVkOffset3D(a),
-			NewVkOffset3D(a, int32(requestWidth), int32(requestHeight), 1),
+		NewVkOffset3Dː2ᵃ(inputState.Arena, // dstOffsets
+			MakeVkOffset3D(inputState.Arena),
+			NewVkOffset3D(inputState.Arena, int32(requestWidth), int32(requestHeight), 1),
 		),
 	)
-	imageBlitData := MustAllocData(ctx, s, imageBlit)
+	imageBlitData := overdrawTransform.allocations.AllocDataOrPanic(ctx, imageBlit)
 
 	// Observation data for vkCmdResolveImage
-	imageResolve := NewVkImageResolve(a,
-		NewVkImageSubresourceLayers(a, // srcSubresource
-			VkImageAspectFlags(aspect), // aspectMask
-			0,                          // mipLevel
-			resolveSrcLayer,            // baseArrayLayer
-			1,                          // layerCount
+	imageResolve := NewVkImageResolve(inputState.Arena,
+		NewVkImageSubresourceLayers(inputState.Arena, // srcSubresource
+			VkImageAspectFlags(aspectFlagBit), // aspectMask
+			0,                                 // mipLevel
+			resolveSrcLayer,                   // baseArrayLayer
+			1,                                 // layerCount
 		),
-		NewVkOffset3D(a, int32(0), int32(0), resolveSrcDepth), // srcOffset
-		NewVkImageSubresourceLayers(a, // dstSubresource
-			VkImageAspectFlags(aspect), // aspectMask
-			0,                          // mipLevel
-			0,                          // baseArrayLayer
-			1,                          // layerCount
+		NewVkOffset3D(inputState.Arena, int32(0), int32(0), resolveSrcDepth), // srcOffset
+		NewVkImageSubresourceLayers(inputState.Arena, // dstSubresource
+			VkImageAspectFlags(aspectFlagBit), // aspectMask
+			0,                                 // mipLevel
+			0,                                 // baseArrayLayer
+			1,                                 // layerCount
 		),
-		MakeVkOffset3D(a), // dstOffset
-		NewVkExtent3D(a, uint32(imgWidth), uint32(imgHeight), 1), // extent
+		MakeVkOffset3D(inputState.Arena),                                        // dstOffset
+		NewVkExtent3D(inputState.Arena, uint32(imgWidth), uint32(imgHeight), 1), // extent
 	)
-	imageResolveData := MustAllocData(ctx, s, imageResolve)
+	imageResolveData := overdrawTransform.allocations.AllocDataOrPanic(ctx, imageResolve)
 
-	// Write commands to writer
-	// Create staging image, allocate and bind memory
-	writeEach(ctx, out,
-		cb.VkCreateImage(
+	outputCmds := make([]api.Cmd, 0)
+
+	outputCmds = append(outputCmds,
+		overdrawTransform.cmdBuilder.VkCreateImage(
 			vkDevice,
 			stagingImageCreateInfoData.Ptr(),
 			memory.Nullptr,
@@ -2725,7 +2530,7 @@ func postImageData(ctx context.Context,
 		).AddWrite(
 			stagingImageData.Data(),
 		),
-		cb.ReplayAllocateImageMemory(
+		overdrawTransform.cmdBuilder.ReplayAllocateImageMemory(
 			vkDevice,
 			physicalDeviceMemoryPropertiesData.Ptr(),
 			stagingImageID,
@@ -2736,7 +2541,7 @@ func postImageData(ctx context.Context,
 		).AddWrite(
 			stagingImageMemoryData.Data(),
 		),
-		cb.VkBindImageMemory(
+		overdrawTransform.cmdBuilder.VkBindImageMemory(
 			vkDevice,
 			stagingImageID,
 			stagingImageMemoryID,
@@ -2744,9 +2549,9 @@ func postImageData(ctx context.Context,
 			VkResult_VK_SUCCESS,
 		),
 	)
-	// Create buffer, allocate and bind memory
-	writeEach(ctx, out,
-		cb.VkCreateBuffer(
+
+	outputCmds = append(outputCmds,
+		overdrawTransform.cmdBuilder.VkCreateBuffer(
 			vkDevice,
 			bufferCreateInfoData.Ptr(),
 			memory.Nullptr,
@@ -2757,7 +2562,7 @@ func postImageData(ctx context.Context,
 		).AddWrite(
 			bufferData.Data(),
 		),
-		cb.VkAllocateMemory(
+		overdrawTransform.cmdBuilder.VkAllocateMemory(
 			vkDevice,
 			bufferMemoryAllocateInfoData.Ptr(),
 			memory.Nullptr,
@@ -2768,7 +2573,7 @@ func postImageData(ctx context.Context,
 		).AddWrite(
 			bufferMemoryData.Data(),
 		),
-		cb.VkBindBufferMemory(
+		overdrawTransform.cmdBuilder.VkBindBufferMemory(
 			vkDevice,
 			bufferID,
 			bufferMemoryID,
@@ -2778,10 +2583,9 @@ func postImageData(ctx context.Context,
 	)
 
 	// If the attachment image is multi-sampled, an resolve image is required
-	// Create resolve image, allocate and bind memory
 	if imageObject.Info().Samples() != VkSampleCountFlagBits_VK_SAMPLE_COUNT_1_BIT {
-		writeEach(ctx, out,
-			cb.VkCreateImage(
+		outputCmds = append(outputCmds,
+			overdrawTransform.cmdBuilder.VkCreateImage(
 				vkDevice,
 				resolveImageCreateInfoData.Ptr(),
 				memory.Nullptr,
@@ -2792,7 +2596,7 @@ func postImageData(ctx context.Context,
 			).AddWrite(
 				resolveImageData.Data(),
 			),
-			cb.ReplayAllocateImageMemory(
+			overdrawTransform.cmdBuilder.ReplayAllocateImageMemory(
 				vkDevice,
 				physicalDeviceMemoryPropertiesData.Ptr(),
 				resolveImageID,
@@ -2803,7 +2607,7 @@ func postImageData(ctx context.Context,
 			).AddWrite(
 				resolveImageMemoryData.Data(),
 			),
-			cb.VkBindImageMemory(
+			overdrawTransform.cmdBuilder.VkBindImageMemory(
 				vkDevice,
 				resolveImageID,
 				resolveImageMemoryID,
@@ -2813,9 +2617,8 @@ func postImageData(ctx context.Context,
 		)
 	}
 
-	// Create command pool, allocate command buffer
-	writeEach(ctx, out,
-		cb.VkCreateCommandPool(
+	outputCmds = append(outputCmds,
+		overdrawTransform.cmdBuilder.VkCreateCommandPool(
 			vkDevice,
 			commandPoolCreateInfoData.Ptr(),
 			memory.Nullptr,
@@ -2826,7 +2629,7 @@ func postImageData(ctx context.Context,
 		).AddWrite(
 			commandPoolData.Data(),
 		),
-		cb.VkAllocateCommandBuffers(
+		overdrawTransform.cmdBuilder.VkAllocateCommandBuffers(
 			vkDevice,
 			commandBufferAllocateInfoData.Ptr(),
 			commandBufferData.Ptr(),
@@ -2838,9 +2641,8 @@ func postImageData(ctx context.Context,
 		),
 	)
 
-	// Create a fence
-	writeEach(ctx, out,
-		cb.VkCreateFence(
+	outputCmds = append(outputCmds,
+		overdrawTransform.cmdBuilder.VkCreateFence(
 			vkDevice,
 			fenceCreateData.Ptr(),
 			memory.Nullptr,
@@ -2853,16 +2655,15 @@ func postImageData(ctx context.Context,
 		),
 	)
 
-	// Begin command buffer, change attachment image and staging image layout
-	writeEach(ctx, out,
-		cb.VkBeginCommandBuffer(
+	outputCmds = append(outputCmds,
+		overdrawTransform.cmdBuilder.VkBeginCommandBuffer(
 			commandBufferID,
 			beginCommandBufferInfoData.Ptr(),
 			VkResult_VK_SUCCESS,
 		).AddRead(
 			beginCommandBufferInfoData.Data(),
 		),
-		cb.VkCmdPipelineBarrier(
+		overdrawTransform.cmdBuilder.VkCmdPipelineBarrier(
 			commandBufferID,
 			VkPipelineStageFlags(VkPipelineStageFlagBits_VK_PIPELINE_STAGE_ALL_COMMANDS_BIT),
 			VkPipelineStageFlags(VkPipelineStageFlagBits_VK_PIPELINE_STAGE_ALL_COMMANDS_BIT),
@@ -2876,7 +2677,7 @@ func postImageData(ctx context.Context,
 		).AddRead(
 			attachmentImageToSrcBarrierData.Data(),
 		),
-		cb.VkCmdPipelineBarrier(
+		overdrawTransform.cmdBuilder.VkCmdPipelineBarrier(
 			commandBufferID,
 			VkPipelineStageFlags(VkPipelineStageFlagBits_VK_PIPELINE_STAGE_ALL_COMMANDS_BIT),
 			VkPipelineStageFlags(VkPipelineStageFlagBits_VK_PIPELINE_STAGE_ALL_COMMANDS_BIT),
@@ -2893,11 +2694,10 @@ func postImageData(ctx context.Context,
 	)
 
 	// If the attachment image is multi-sampled, resolve the attchment image to resolve image before
-	// blit the image. Change the resolve image layout, call vkCmdResolveImage, change the resolve
-	// image layout again.fmt
+	// blit the image.
 	if imageObject.Info().Samples() != VkSampleCountFlagBits_VK_SAMPLE_COUNT_1_BIT {
-		writeEach(ctx, out,
-			cb.VkCmdPipelineBarrier(
+		outputCmds = append(outputCmds,
+			overdrawTransform.cmdBuilder.VkCmdPipelineBarrier(
 				commandBufferID,
 				VkPipelineStageFlags(VkPipelineStageFlagBits_VK_PIPELINE_STAGE_ALL_COMMANDS_BIT),
 				VkPipelineStageFlags(VkPipelineStageFlagBits_VK_PIPELINE_STAGE_ALL_COMMANDS_BIT),
@@ -2911,7 +2711,7 @@ func postImageData(ctx context.Context,
 			).AddRead(
 				resolveImageToDstBarrierData.Data(),
 			),
-			cb.VkCmdResolveImage(
+			overdrawTransform.cmdBuilder.VkCmdResolveImage(
 				commandBufferID,
 				imageObject.VulkanHandle(),
 				VkImageLayout_VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
@@ -2920,7 +2720,7 @@ func postImageData(ctx context.Context,
 				1,
 				imageResolveData.Ptr(),
 			).AddRead(imageResolveData.Data()),
-			cb.VkCmdPipelineBarrier(
+			overdrawTransform.cmdBuilder.VkCmdPipelineBarrier(
 				commandBufferID,
 				VkPipelineStageFlags(VkPipelineStageFlagBits_VK_PIPELINE_STAGE_ALL_COMMANDS_BIT),
 				VkPipelineStageFlags(VkPipelineStageFlagBits_VK_PIPELINE_STAGE_ALL_COMMANDS_BIT),
@@ -2945,7 +2745,7 @@ func postImageData(ctx context.Context,
 	}
 	// If the src image is a depth/stencil image, the filter must be NEAREST
 	filter := VkFilter_VK_FILTER_LINEAR
-	if aspect != VkImageAspectFlagBits_VK_IMAGE_ASPECT_COLOR_BIT {
+	if aspectFlagBit != VkImageAspectFlagBits_VK_IMAGE_ASPECT_COLOR_BIT {
 		filter = VkFilter_VK_FILTER_NEAREST
 	}
 
@@ -2953,8 +2753,8 @@ func postImageData(ctx context.Context,
 
 	if doBlit {
 		copySrc = stagingImageID
-		writeEach(ctx, out,
-			cb.VkCmdBlitImage(
+		outputCmds = append(outputCmds,
+			overdrawTransform.cmdBuilder.VkCmdBlitImage(
 				commandBufferID,
 				blitSrcImage,
 				VkImageLayout_VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
@@ -2964,8 +2764,7 @@ func postImageData(ctx context.Context,
 				imageBlitData.Ptr(),
 				filter,
 			).AddRead(imageBlitData.Data()),
-			// Set the blit image to transfer src
-			cb.VkCmdPipelineBarrier(
+			overdrawTransform.cmdBuilder.VkCmdPipelineBarrier(
 				commandBufferID,
 				VkPipelineStageFlags(VkPipelineStageFlagBits_VK_PIPELINE_STAGE_ALL_COMMANDS_BIT),
 				VkPipelineStageFlags(VkPipelineStageFlagBits_VK_PIPELINE_STAGE_ALL_COMMANDS_BIT),
@@ -2982,8 +2781,8 @@ func postImageData(ctx context.Context,
 		)
 	}
 
-	writeEach(ctx, out,
-		cb.VkCmdCopyImageToBuffer(
+	outputCmds = append(outputCmds,
+		overdrawTransform.cmdBuilder.VkCmdCopyImageToBuffer(
 			commandBufferID,
 			copySrc,
 			VkImageLayout_VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
@@ -2995,9 +2794,8 @@ func postImageData(ctx context.Context,
 		),
 	)
 
-	writeEach(ctx, out,
-		// Reset the image, and end the command buffer.
-		cb.VkCmdPipelineBarrier(
+	outputCmds = append(outputCmds,
+		overdrawTransform.cmdBuilder.VkCmdPipelineBarrier(
 			commandBufferID,
 			VkPipelineStageFlags(VkPipelineStageFlagBits_VK_PIPELINE_STAGE_ALL_COMMANDS_BIT),
 			VkPipelineStageFlags(VkPipelineStageFlagBits_VK_PIPELINE_STAGE_ALL_COMMANDS_BIT),
@@ -3011,16 +2809,15 @@ func postImageData(ctx context.Context,
 		).AddRead(
 			attachmentImageResetLayoutBarrierData.Data(),
 		),
-		cb.VkEndCommandBuffer(
+		overdrawTransform.cmdBuilder.VkEndCommandBuffer(
 			commandBufferID,
 			VkResult_VK_SUCCESS,
 		),
 	)
 
-	// Submit all the commands above, wait until finish.
-	writeEach(ctx, out,
-		cb.VkDeviceWaitIdle(vkDevice, VkResult_VK_SUCCESS),
-		cb.VkQueueSubmit(
+	outputCmds = append(outputCmds,
+		overdrawTransform.cmdBuilder.VkDeviceWaitIdle(vkDevice, VkResult_VK_SUCCESS),
+		overdrawTransform.cmdBuilder.VkQueueSubmit(
 			vkQueue,
 			1,
 			submitInfoData.Ptr(),
@@ -3031,7 +2828,7 @@ func postImageData(ctx context.Context,
 		).AddRead(
 			commandBuffers.Data(),
 		),
-		cb.VkWaitForFences(
+		overdrawTransform.cmdBuilder.VkWaitForFences(
 			vkDevice,
 			1,
 			fenceData.Ptr(),
@@ -3041,12 +2838,11 @@ func postImageData(ctx context.Context,
 		).AddRead(
 			fenceData.Data(),
 		),
-		cb.VkDeviceWaitIdle(vkDevice, VkResult_VK_SUCCESS),
+		overdrawTransform.cmdBuilder.VkDeviceWaitIdle(vkDevice, VkResult_VK_SUCCESS),
 	)
 
-	// Dump the buffer data to host
-	writeEach(ctx, out,
-		cb.VkMapMemory(
+	outputCmds = append(outputCmds,
+		overdrawTransform.cmdBuilder.VkMapMemory(
 			vkDevice,
 			bufferMemoryID,
 			VkDeviceSize(0),
@@ -3055,7 +2851,7 @@ func postImageData(ctx context.Context,
 			mappedPointer.Ptr(),
 			VkResult_VK_SUCCESS,
 		).AddWrite(mappedPointer.Data()),
-		cb.VkInvalidateMappedMemoryRanges(
+		overdrawTransform.cmdBuilder.VkInvalidateMappedMemoryRanges(
 			vkDevice,
 			1,
 			mappedMemoryRangeData.Ptr(),
@@ -3063,9 +2859,8 @@ func postImageData(ctx context.Context,
 		).AddRead(mappedMemoryRangeData.Data()),
 	)
 
-	// Add post command
-	writeEach(ctx, out,
-		cb.Custom(func(ctx context.Context, s *api.GlobalState, b *builder.Builder) error {
+	outputCmds = append(outputCmds,
+		overdrawTransform.cmdBuilder.Custom(func(ctx context.Context, s *api.GlobalState, b *builder.Builder) error {
 			b.Post(value.ObservedPointer(at.Address()), uint64(bufferSize), func(r binary.Reader, err error) {
 				var bytes []byte
 				if err == nil {
@@ -3076,7 +2871,7 @@ func postImageData(ctx context.Context,
 					// For the depth aspect of VK_FORMAT_X8_D24_UNORM_PACK32 and
 					// VK_FORMAT_D24_UNORM_S8_UINT format, we need to strip the
 					// undefined value in the MSB byte.
-					if aspect == VkImageAspectFlagBits_VK_IMAGE_ASPECT_DEPTH_BIT && (vkFormat == VkFormat_VK_FORMAT_X8_D24_UNORM_PACK32 || vkFormat == VkFormat_VK_FORMAT_D24_UNORM_S8_UINT) {
+					if aspectFlagBit == VkImageAspectFlagBits_VK_IMAGE_ASPECT_DEPTH_BIT && (vkFormat == VkFormat_VK_FORMAT_X8_D24_UNORM_PACK32 || vkFormat == VkFormat_VK_FORMAT_D24_UNORM_S8_UINT) {
 						inBufSize := 4
 						inImgSize := 3
 						count := len(bytes) / inBufSize
@@ -3113,8 +2908,8 @@ func postImageData(ctx context.Context,
 					Format: formatOfImgRes,
 				}
 
-				if err == nil && checkImage != nil {
-					err = checkImage(img)
+				if err == nil {
+					err = checkImage(ctx, img)
 				}
 
 				res(img, err)
@@ -3122,18 +2917,121 @@ func postImageData(ctx context.Context,
 			return nil
 		}),
 	)
-	// Free the device resources used for reading framebuffer
-	writeEach(ctx, out,
-		cb.VkUnmapMemory(vkDevice, bufferMemoryID),
-		cb.VkDestroyBuffer(vkDevice, bufferID, memory.Nullptr),
-		cb.VkDestroyCommandPool(vkDevice, commandPoolID, memory.Nullptr),
-		cb.VkDestroyImage(vkDevice, stagingImageID, memory.Nullptr),
-		cb.VkFreeMemory(vkDevice, stagingImageMemoryID, memory.Nullptr),
-		cb.VkFreeMemory(vkDevice, bufferMemoryID, memory.Nullptr))
+
+	outputCmds = append(outputCmds,
+		overdrawTransform.cmdBuilder.VkUnmapMemory(vkDevice, bufferMemoryID),
+		overdrawTransform.cmdBuilder.VkDestroyBuffer(vkDevice, bufferID, memory.Nullptr),
+		overdrawTransform.cmdBuilder.VkDestroyCommandPool(vkDevice, commandPoolID, memory.Nullptr),
+		overdrawTransform.cmdBuilder.VkDestroyImage(vkDevice, stagingImageID, memory.Nullptr),
+		overdrawTransform.cmdBuilder.VkFreeMemory(vkDevice, stagingImageMemoryID, memory.Nullptr),
+		overdrawTransform.cmdBuilder.VkFreeMemory(vkDevice, bufferMemoryID, memory.Nullptr))
 	if imageObject.Info().Samples() != VkSampleCountFlagBits_VK_SAMPLE_COUNT_1_BIT {
-		writeEach(ctx, out,
-			cb.VkDestroyImage(vkDevice, resolveImageID, memory.Nullptr),
-			cb.VkFreeMemory(vkDevice, resolveImageMemoryID, memory.Nullptr))
+		outputCmds = append(outputCmds,
+			overdrawTransform.cmdBuilder.VkDestroyImage(vkDevice, resolveImageID, memory.Nullptr),
+			overdrawTransform.cmdBuilder.VkFreeMemory(vkDevice, resolveImageMemoryID, memory.Nullptr))
 	}
-	writeEach(ctx, out, cb.VkDestroyFence(vkDevice, fenceID, memory.Nullptr))
+	outputCmds = append(outputCmds, overdrawTransform.cmdBuilder.VkDestroyFence(vkDevice, fenceID, memory.Nullptr))
+	return outputCmds
+}
+
+func depthToStencilFormat(depthFormat VkFormat) (VkFormat, error) {
+	switch depthFormat {
+	case VkFormat_VK_FORMAT_D16_UNORM:
+		return VkFormat_VK_FORMAT_D16_UNORM_S8_UINT, nil
+	case VkFormat_VK_FORMAT_X8_D24_UNORM_PACK32:
+		return VkFormat_VK_FORMAT_D24_UNORM_S8_UINT, nil
+	case VkFormat_VK_FORMAT_D32_SFLOAT:
+		return VkFormat_VK_FORMAT_D32_SFLOAT_S8_UINT, nil
+
+	case VkFormat_VK_FORMAT_D16_UNORM_S8_UINT,
+		VkFormat_VK_FORMAT_D24_UNORM_S8_UINT,
+		VkFormat_VK_FORMAT_D32_SFLOAT_S8_UINT:
+		return depthFormat, nil
+	default:
+		return 0, fmt.Errorf("Unrecognized depth format %v",
+			depthFormat)
+	}
+}
+
+func createSpecializationInfo(ctx context.Context,
+	inputState *api.GlobalState,
+	info SpecializationInfoʳ,
+	allocAndRead func(v ...interface{}) api.AllocResult,
+) VkSpecializationInfoᶜᵖ {
+	if info.IsNil() {
+		return 0
+	}
+	mapEntries, mapEntryCount := unpackMapWithAllocator(allocAndRead, info.Specializations().All())
+	data := info.Data().MustRead(ctx, nil, inputState, nil)
+	return NewVkSpecializationInfoᶜᵖ(allocAndRead(
+		NewVkSpecializationInfo(inputState.Arena,
+			mapEntryCount, // mapEntryCount
+			NewVkSpecializationMapEntryᶜᵖ(mapEntries.Ptr()), // pMapEntries
+			memory.Size(len(data)),                          // dataSize,
+			NewVoidᶜᵖ(allocAndRead(data).Ptr()),             // pData
+		)).Ptr())
+}
+
+func depthStencilToDepthFormat(depthStencilFormat VkFormat) (VkFormat, error) {
+	switch depthStencilFormat {
+	case VkFormat_VK_FORMAT_D16_UNORM,
+		VkFormat_VK_FORMAT_D16_UNORM_S8_UINT:
+		return VkFormat_VK_FORMAT_D16_UNORM, nil
+	case VkFormat_VK_FORMAT_X8_D24_UNORM_PACK32,
+		VkFormat_VK_FORMAT_D24_UNORM_S8_UINT:
+		return VkFormat_VK_FORMAT_X8_D24_UNORM_PACK32, nil
+	case VkFormat_VK_FORMAT_D32_SFLOAT,
+		VkFormat_VK_FORMAT_D32_SFLOAT_S8_UINT:
+		return VkFormat_VK_FORMAT_D32_SFLOAT, nil
+	default:
+		return 0, fmt.Errorf("Unrecognized depth/stencil format %v",
+			depthStencilFormat)
+	}
+}
+
+func depthToStageFormat(depthFormat VkFormat) (VkFormat, error) {
+	switch depthFormat {
+	case VkFormat_VK_FORMAT_D16_UNORM:
+		return VkFormat_VK_FORMAT_R16_UINT, nil
+	case VkFormat_VK_FORMAT_X8_D24_UNORM_PACK32,
+		VkFormat_VK_FORMAT_D32_SFLOAT:
+		return VkFormat_VK_FORMAT_R32_UINT, nil
+	default:
+		return 0, fmt.Errorf("Unrecognized depth format %v",
+			depthFormat)
+	}
+}
+
+func isDepthFormat(depthFormat VkFormat) bool {
+	return depthBits(depthFormat) != 0
+}
+
+func depthBits(depthFormat VkFormat) int {
+	switch depthFormat {
+	case VkFormat_VK_FORMAT_D16_UNORM,
+		VkFormat_VK_FORMAT_D16_UNORM_S8_UINT:
+		return 16
+	case VkFormat_VK_FORMAT_X8_D24_UNORM_PACK32,
+		VkFormat_VK_FORMAT_D24_UNORM_S8_UINT:
+		return 24
+	case VkFormat_VK_FORMAT_D32_SFLOAT,
+		VkFormat_VK_FORMAT_D32_SFLOAT_S8_UINT:
+		return 32
+	default:
+		return 0
+	}
+}
+
+func checkImage(ctx context.Context, img *image.Data) error {
+	// Check if any bytes are 255, which indicates potential saturation
+	for _, byt := range img.Bytes {
+		if byt == 255 {
+			log.W(ctx, "Overdraw hit limit of 255, further overdraw cannot be measured")
+			break
+		}
+	}
+	// Even though the image comes from a stencil, content-wise
+	// it's a gray image.
+	img.Format = image.NewUncompressed("Count_U8", fmts.Count_U8)
+	return nil
 }

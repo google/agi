@@ -24,88 +24,122 @@ import (
 	"github.com/google/gapid/core/log"
 	"github.com/google/gapid/gapir"
 	"github.com/google/gapid/gapis/api"
-	"github.com/google/gapid/gapis/api/transform"
 	"github.com/google/gapid/gapis/replay"
+	"github.com/google/gapid/gapis/replay/builder"
 	"github.com/google/gapid/gapis/service"
 	"github.com/google/gapid/gapis/trace"
 )
 
-type WaitForPerfetto struct {
-	wff   replay.WaitForFence
-	cmdId api.CmdID
+type FenceCallback = func(ctx context.Context, request *gapir.FenceReadyRequest)
+
+type waitForPerfetto struct {
+	traceOptions  *service.TraceOptions
+	signalHandler *replay.SignalHandler
+	buffer        *bytes.Buffer
 }
 
-func addVkDeviceWaitIdle(ctx context.Context, out transform.Writer) {
-	s := out.State()
-	so := getStateObject(s)
-	id := api.CmdNoID
-	cb := CommandBuilder{Thread: 0, Arena: s.Arena}
-
-	// Wait for all queues in all devices to finish their jobs first.
-	for handle := range so.Devices().All() {
-		out.MutateAndWrite(ctx, id, cb.VkDeviceWaitIdle(handle, VkResult_VK_SUCCESS))
+func NewWaitForPerfetto(traceOptions *service.TraceOptions, signalHandler *replay.SignalHandler, buffer *bytes.Buffer) *waitForPerfetto {
+	return &waitForPerfetto{
+		traceOptions:  traceOptions,
+		signalHandler: signalHandler,
+		buffer:        buffer,
 	}
 }
 
-func (t *WaitForPerfetto) waitTest(ctx context.Context, id api.CmdID, cmd api.Cmd) bool {
-	// Set the command id we care about once we're in the "real" commands
-	if id.IsReal() && t.cmdId == api.CmdNoID {
-		t.cmdId = id
-	}
-
-	if id.IsReal() && id == t.cmdId {
-		return true
-	}
+func (perfettoTransform *waitForPerfetto) RequiresAccurateState() bool {
 	return false
 }
 
-func (t *WaitForPerfetto) Transform(ctx context.Context, id api.CmdID, cmd api.Cmd, out transform.Writer) error {
-	if t.waitTest(ctx, id, cmd) {
-		addVkDeviceWaitIdle(ctx, out)
-	}
-	return t.wff.Transform(ctx, id, cmd, out)
+func (perfettoTransform *waitForPerfetto) BeginTransform(ctx context.Context, inputCommands []api.Cmd, inputState *api.GlobalState) ([]api.Cmd, error) {
+	return inputCommands, nil
 }
 
-func (t *WaitForPerfetto) Flush(ctx context.Context, out transform.Writer) error {
-	addVkDeviceWaitIdle(ctx, out)
-	return t.wff.Flush(ctx, out)
+func (perfettoTransform *waitForPerfetto) ClearTransformResources(ctx context.Context) {
+	// Do nothing
 }
 
-func (t *WaitForPerfetto) PreLoop(ctx context.Context, out transform.Writer)  {}
-func (t *WaitForPerfetto) PostLoop(ctx context.Context, out transform.Writer) {}
-func (t *WaitForPerfetto) BuffersCommands() bool                              { return false }
+func (perfettoTransform *waitForPerfetto) EndTransform(ctx context.Context, inputCommands []api.Cmd, inputState *api.GlobalState) ([]api.Cmd, error) {
+	inputCommands = append(inputCommands, createVkDeviceWaitIdleCommandsForDevices(ctx, inputState)...)
 
-func NewWaitForPerfetto(traceOptions *service.TraceOptions, h *replay.SignalHandler, buffer *bytes.Buffer) *WaitForPerfetto {
-	tcb := func(ctx context.Context, p *gapir.FenceReadyRequest) {
-		errChannel := make(chan error)
-		go func() {
-			err := trace.TraceBuffered(ctx, traceOptions.Device, h.StartSignal, h.StopSignal, h.ReadyFunc, traceOptions, buffer)
-			if err != nil {
-				errChannel <- err
-			}
-			if !h.DoneSignal.Fired() {
-				h.DoneFunc(ctx)
-			}
-		}()
+	// Melih TODO: We have to explain this magic id
+	waitForFenceCmd := createWaitForFence(ctx, api.CmdID(0x3ffffff), func(ctx context.Context, request *gapir.FenceReadyRequest) {
+		perfettoTransform.endOfTransformCallback(ctx, request)
+	})
+	inputCommands = append(inputCommands, waitForFenceCmd)
+	return inputCommands, nil
+}
 
-		select {
-		case err := <-errChannel:
-			log.W(ctx, "Profiling error: %v", err)
-			return
-		case <-task.ShouldStop(ctx):
-			return
-		case <-h.ReadySignal:
-			return
-		}
+func (perfettoTransform *waitForPerfetto) TransformCommand(ctx context.Context, id api.CmdID, inputCommands []api.Cmd, inputState *api.GlobalState) ([]api.Cmd, error) {
+	if id != 0 {
+		return inputCommands, nil
 	}
 
-	fcb := func(ctx context.Context, p *gapir.FenceReadyRequest) {
-		if !h.StopSignal.Fired() {
-			h.StopFunc(ctx)
-		}
-	}
-	wfp := WaitForPerfetto{cmdId: api.CmdNoID}
-	wfp.wff = replay.WaitForFence{tcb, fcb, wfp.waitTest}
+	inputCommands = append(inputCommands, createVkDeviceWaitIdleCommandsForDevices(ctx, inputState)...)
+	waitForFenceCmd := createWaitForFence(ctx, id, func(ctx context.Context, request *gapir.FenceReadyRequest) {
+		perfettoTransform.transformCallback(ctx, request)
+	})
+	inputCommands = append(inputCommands, waitForFenceCmd)
+	return inputCommands, nil
+}
 
-	return &wfp
+func (perfettoTransform *waitForPerfetto) transformCallback(ctx context.Context, request *gapir.FenceReadyRequest) {
+	errChannel := make(chan error)
+	signalHandler := perfettoTransform.signalHandler
+
+	go func() {
+		err := trace.TraceBuffered(ctx,
+			perfettoTransform.traceOptions.Device,
+			signalHandler.StartSignal,
+			signalHandler.StopSignal,
+			signalHandler.ReadyFunc,
+			perfettoTransform.traceOptions,
+			perfettoTransform.buffer)
+		if err != nil {
+			errChannel <- err
+		}
+		if !signalHandler.DoneSignal.Fired() {
+			signalHandler.DoneFunc(ctx)
+		}
+	}()
+
+	select {
+	case err := <-errChannel:
+		log.W(ctx, "Profiling error: %v", err)
+		return
+	case <-task.ShouldStop(ctx):
+		return
+	case <-signalHandler.ReadySignal:
+		return
+	}
+}
+
+func (perfettoTransform *waitForPerfetto) endOfTransformCallback(ctx context.Context, request *gapir.FenceReadyRequest) {
+	if !perfettoTransform.signalHandler.StopSignal.Fired() {
+		perfettoTransform.signalHandler.StopFunc(ctx)
+	}
+}
+
+func createVkDeviceWaitIdleCommandsForDevices(ctx context.Context, inputState *api.GlobalState) []api.Cmd {
+	cb := CommandBuilder{Thread: 0, Arena: inputState.Arena}
+	allDevices := GetState(inputState).Devices().All()
+
+	waitCmds := make([]api.Cmd, 0, len(allDevices))
+
+	// Wait for all queues in all devices to finish their jobs first.
+	for handle := range allDevices {
+		waitCmds = append(waitCmds, cb.VkDeviceWaitIdle(handle, VkResult_VK_SUCCESS))
+	}
+
+	return waitCmds
+}
+
+func createWaitForFence(ctx context.Context, id api.CmdID, callback FenceCallback) api.Cmd {
+	return replay.Custom{T: 0, F: func(ctx context.Context, s *api.GlobalState, b *builder.Builder) error {
+		fenceID := uint32(id)
+		b.Wait(fenceID)
+		tcb := func(p *gapir.FenceReadyRequest) {
+			callback(ctx, p)
+		}
+		return b.RegisterFenceReadyRequestCallback(fenceID, tcb)
+	}}
 }

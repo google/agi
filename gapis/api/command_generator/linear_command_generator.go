@@ -1,4 +1,4 @@
-// Copyright (C) 2017 Google Inc.
+// Copyright (C) 2020 Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package transform
+package command_generator
 
 import (
 	"context"
@@ -20,12 +20,24 @@ import (
 	"github.com/google/gapid/gapis/api"
 )
 
-// Terminator is an Transformer that prevents commands passing-through it after
-// a certain point in the stream.
-type Terminator interface {
-	Transformer
+type linearCommandGenerator struct {
+	commands []api.Cmd
+	index    int
+}
 
-	// Add relaxes the termination limit to pass-through all commands before and
-	// including the command or subcommand.
-	Add(context.Context, api.CmdID, api.SubCmdIdx) error
+func NewLinearCommandGenerator(commands []api.Cmd) CommandGenerator {
+	return &linearCommandGenerator{
+		commands: commands,
+		index:    0,
+	}
+}
+
+func (generator *linearCommandGenerator) GetNextCommand(ctx context.Context) api.Cmd {
+	if generator.index >= len(generator.commands) {
+		return nil
+	}
+
+	currentCommand := generator.commands[generator.index]
+	generator.index++
+	return currentCommand
 }

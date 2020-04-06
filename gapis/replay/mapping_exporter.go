@@ -26,7 +26,6 @@ import (
 	"github.com/google/gapid/core/log"
 	"github.com/google/gapid/gapir"
 	"github.com/google/gapid/gapis/api"
-	"github.com/google/gapid/gapis/api/transform"
 	"github.com/google/gapid/gapis/memory"
 	"github.com/google/gapid/gapis/replay/builder"
 	"github.com/google/gapid/gapis/replay/value"
@@ -40,7 +39,7 @@ type mappingHandle struct {
 	name          string
 }
 
-type MappingExporter struct {
+type mappingExporter struct {
 	mappings       *map[uint64][]service.VulkanHandleMappingItem
 	thread         uint64
 	path           string
@@ -48,8 +47,8 @@ type MappingExporter struct {
 	notificationID uint64
 }
 
-func NewMappingExporter(ctx context.Context, mappings *map[uint64][]service.VulkanHandleMappingItem) *MappingExporter {
-	return &MappingExporter{
+func NewMappingExporter(ctx context.Context, mappings *map[uint64][]service.VulkanHandleMappingItem) *mappingExporter {
+	return &mappingExporter{
 		mappings:       mappings,
 		thread:         0,
 		path:           "",
@@ -58,9 +57,9 @@ func NewMappingExporter(ctx context.Context, mappings *map[uint64][]service.Vulk
 	}
 }
 
-func NewMappingExporterWithPrint(ctx context.Context, path string) *MappingExporter {
+func NewMappingExporterWithPrint(ctx context.Context, path string) *mappingExporter {
 	mapping := make(map[uint64][]service.VulkanHandleMappingItem)
-	return &MappingExporter{
+	return &mappingExporter{
 		mappings:       &mapping,
 		thread:         0,
 		path:           path,
@@ -69,56 +68,43 @@ func NewMappingExporterWithPrint(ctx context.Context, path string) *MappingExpor
 	}
 }
 
-func (m *MappingExporter) processNotification(ctx context.Context, s *api.GlobalState, n gapir.Notification) {
-	if m.notificationID != n.GetId() {
-		log.I(ctx, "Invalid notificationID %d", m.notificationID)
-		return
-	}
-
-	notificationData := n.GetData()
-	mappingData := notificationData.GetData()
-
-	byteOrder := s.MemoryLayout.GetEndian()
-	r := endian.Reader(bytes.NewReader(mappingData), byteOrder)
-
-	for _, handle := range m.traceValues {
-		var replayValue uint64
-		switch handle.size {
-		case 1:
-			replayValue = uint64(r.Uint8())
-		case 2:
-			replayValue = uint64(r.Uint16())
-		case 4:
-			replayValue = uint64(r.Uint32())
-		case 8:
-			replayValue = r.Uint64()
-		default:
-			log.F(ctx, true, "Invalid Handle size %s: %d", handle.name, handle.size)
-		}
-
-		if _, ok := (*m.mappings)[replayValue]; !ok {
-			(*m.mappings)[replayValue] = make([]service.VulkanHandleMappingItem, 0, 0)
-		}
-
-		(*m.mappings)[replayValue] = append(
-			(*m.mappings)[replayValue],
-			service.VulkanHandleMappingItem{HandleType: handle.name, TraceValue: handle.traceValue, ReplayValue: replayValue},
-		)
-	}
-
-	m.notificationID = 0
-
-	if len(m.path) > 0 {
-		printToFile(ctx, m.path, m.mappings)
-	}
+func (mappingTransform *mappingExporter) RequiresAccurateState() bool {
+	return false
 }
 
-func (m *MappingExporter) ExtractRemappings(ctx context.Context, s *api.GlobalState, b *builder.Builder) error {
+func (mappingTransform *mappingExporter) BeginTransform(ctx context.Context, inputCommands []api.Cmd, inputState *api.GlobalState) ([]api.Cmd, error) {
+	return inputCommands, nil
+}
+
+func (mappingTransform *mappingExporter) EndTransform(ctx context.Context, inputCommands []api.Cmd, inputState *api.GlobalState) ([]api.Cmd, error) {
+	newCmd := Custom{mappingTransform.thread,
+		func(ctx context.Context, s *api.GlobalState, b *builder.Builder) error {
+			return mappingTransform.extractRemappings(ctx, s, b)
+		},
+	}
+
+	return append(inputCommands, newCmd), nil
+}
+
+func (mappingTransform *mappingExporter) ClearTransformResources(ctx context.Context) {
+	// Do nothing
+}
+
+func (mappingTransform *mappingExporter) TransformCommand(ctx context.Context, id api.CmdID, inputCommands []api.Cmd, inputState *api.GlobalState) ([]api.Cmd, error) {
+	// Melih TODO: Would it be possible to make something better than this?
+	if mappingTransform.thread == 0 && len(inputCommands) > 0 {
+		mappingTransform.thread = inputCommands[0].Thread()
+	}
+
+	return inputCommands, nil
+}
+
+func (mappingTransform *mappingExporter) extractRemappings(ctx context.Context, inputState *api.GlobalState, b *builder.Builder) error {
 	bufferSize := uint64(0)
 
 	for k, v := range b.Remappings {
 		typ := reflect.TypeOf(k)
-		size := memory.SizeOf(typ, s.MemoryLayout)
+		size := memory.SizeOf(typ, inputState.MemoryLayout)
 
 		if size != 1 && size != 2 && size != 4 && size != 8 {
 			// Ignore objects that are not handles
@@ -126,22 +112,22 @@ func (m *MappingExporter) ExtractRemappings(ctx context.Context, s *api.GlobalSt
 		}
 
 		traceValue := reflect.ValueOf(k).Uint()
-		m.traceValues = append(m.traceValues, mappingHandle{traceValue: traceValue, replayAddress: v, size: size, name: typ.Name()})
+		mappingTransform.traceValues = append(mappingTransform.traceValues, mappingHandle{traceValue: traceValue, replayAddress: v, size: size, name: typ.Name()})
 		bufferSize += size
 	}
 
 	handleBuffer := b.AllocateMemory(bufferSize)
 	target := handleBuffer
 
-	for _, handle := range m.traceValues {
+	for _, handle := range mappingTransform.traceValues {
 		b.Memcpy(target, handle.replayAddress, handle.size)
 		target = target.Offset(handle.size)
 	}
 
-	m.notificationID = b.GetNotificationID()
-	b.Notification(m.notificationID, handleBuffer, bufferSize)
-	err := b.RegisterNotificationReader(m.notificationID, func(n gapir.Notification) {
-		m.processNotification(ctx, s, n)
+	mappingTransform.notificationID = b.GetNotificationID()
+	b.Notification(mappingTransform.notificationID, handleBuffer, bufferSize)
+	err := b.RegisterNotificationReader(mappingTransform.notificationID, func(n gapir.Notification) {
+		mappingTransform.processNotification(ctx, inputState, n)
 	})
 
 	if err != nil {
@@ -152,9 +138,48 @@ func (m *MappingExporter) ExtractRemappings(ctx context.Context, s *api.GlobalSt
 	return nil
 }
 
-func (m *MappingExporter) Transform(ctx context.Context, id api.CmdID, cmd api.Cmd, out transform.Writer) error {
-	m.thread = cmd.Thread()
-	return out.MutateAndWrite(ctx, id, cmd)
+func (mappingTransform *mappingExporter) processNotification(ctx context.Context, inputState *api.GlobalState, notification gapir.Notification) {
+	if mappingTransform.notificationID != notification.GetId() {
+		log.I(ctx, "Invalid notificationID %d", mappingTransform.notificationID)
+		return
+	}
+
+	notificationData := notification.GetData()
+	mappingData := notificationData.GetData()
+
+	byteOrder := inputState.MemoryLayout.GetEndian()
+	reader := endian.Reader(bytes.NewReader(mappingData), byteOrder)
+
+	for _, handle := range mappingTransform.traceValues {
+		var replayValue uint64
+		switch handle.size {
+		case 1:
+			replayValue = uint64(reader.Uint8())
+		case 2:
+			replayValue = uint64(reader.Uint16())
+		case 4:
+			replayValue = uint64(reader.Uint32())
+		case 8:
+			replayValue = reader.Uint64()
+		default:
+			log.F(ctx, true, "Invalid Handle size %s: %d", handle.name, handle.size)
+		}
+
+		if _, ok := (*mappingTransform.mappings)[replayValue]; !ok {
+			(*mappingTransform.mappings)[replayValue] = make([]service.VulkanHandleMappingItem, 0, 0)
+		}
+
+		(*mappingTransform.mappings)[replayValue] = append(
+			(*mappingTransform.mappings)[replayValue],
+			service.VulkanHandleMappingItem{HandleType: handle.name, TraceValue: handle.traceValue, ReplayValue: replayValue},
+		)
+	}
+
+	mappingTransform.notificationID = 0
+
+	if len(mappingTransform.path) > 0 {
+		printToFile(ctx, mappingTransform.path, mappingTransform.mappings)
+	}
 }
 
 func printToFile(ctx context.Context, path string, mappings *map[uint64][]service.VulkanHandleMappingItem) {
@@ -178,25 +203,4 @@ func printToFile(ctx context.Context, path string, mappings *map[uint64][]servic
 		fmt.Fprint(f, l)
 	}
 	f.Close()
-}
-
-func (m *MappingExporter) Flush(ctx context.Context, out transform.Writer) error {
-	return out.MutateAndWrite(ctx, api.CmdNoID, Custom{m.thread,
-		func(ctx context.Context, s *api.GlobalState, b *builder.Builder) error {
-			return m.ExtractRemappings(ctx, s, b)
-		},
-	})
-}
-
-func (m *MappingExporter) PreLoop(ctx context.Context, out transform.Writer) {}
-func (m *MappingExporter) PostLoop(ctx context.Context, out transform.Writer) {
-	out.MutateAndWrite(ctx, api.CmdNoID, Custom{m.thread,
-		func(ctx context.Context, s *api.GlobalState, b *builder.Builder) error {
-			return m.ExtractRemappings(ctx, s, b)
-		},
-	})
-}
-
-func (t *MappingExporter) BuffersCommands() bool {
-	return false
 }

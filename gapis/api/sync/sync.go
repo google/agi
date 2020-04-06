@@ -27,7 +27,8 @@ import (
 	"github.com/google/gapid/core/app/status"
 	"github.com/google/gapid/core/log"
 	"github.com/google/gapid/gapis/api"
-	"github.com/google/gapid/gapis/api/transform"
+	"github.com/google/gapid/gapis/api/command_generator"
+	"github.com/google/gapid/gapis/api/transform2"
 	"github.com/google/gapid/gapis/capture"
 	"github.com/google/gapid/gapis/service/path"
 )
@@ -44,9 +45,10 @@ func (e NoMECSubcommandsError) Error() string {
 // execution. This means that replays are not necessarily linear in terms
 // of commands.
 type SynchronizedAPI interface {
+	// Melih TODO: Do we still need this?
 	// GetTerminator returns a transform that will allow the given capture to be terminated
 	// after a command.
-	GetTerminator(ctx context.Context, c *path.Capture) (transform.Terminator, error)
+	GetTerminator(ctx context.Context, c *path.Capture) (transform2.Terminator, error)
 
 	// ResolveSynchronization resolve all of the synchronization information for
 	// the given API.
@@ -74,14 +76,14 @@ type SynchronizedAPI interface {
 	IsTrivialTerminator(ctx context.Context, c *path.Capture, cmd api.SubCmdIdx) (bool, error)
 }
 
-type writer struct {
+type syncWriter struct {
 	state *api.GlobalState
 	cmds  []api.Cmd
 }
 
-func (s *writer) State() *api.GlobalState { return s.state }
+func (s *syncWriter) State() *api.GlobalState { return s.state }
 
-func (s *writer) MutateAndWrite(ctx context.Context, id api.CmdID, cmd api.Cmd) error {
+func (s *syncWriter) MutateAndWrite(ctx context.Context, id api.CmdID, cmd api.Cmd) error {
 	if err := cmd.Mutate(ctx, id, s.state, nil, nil); err != nil {
 		return err
 	}
@@ -89,8 +91,8 @@ func (s *writer) MutateAndWrite(ctx context.Context, id api.CmdID, cmd api.Cmd) 
 	return nil
 }
 
-func (s *writer) NotifyPreLoop(ctx context.Context)  {}
-func (s *writer) NotifyPostLoop(ctx context.Context) {}
+func (s *syncWriter) NotifyPreLoop(ctx context.Context)  {}
+func (s *syncWriter) NotifyPostLoop(ctx context.Context) {}
 
 // MutationCmdsFor returns a list of command that represent the correct
 // mutations to have the state for all commands before and including the given
@@ -123,8 +125,13 @@ func MutationCmdsFor(ctx context.Context, c *path.Capture, data *Data, cmds []ap
 		}
 	}
 
-	terminators := make([]transform.Terminator, 0)
-	transforms := transform.Transforms{}
+	writer := &syncWriter{rc.NewState(ctx), nil}
+	commandGenerator := command_generator.NewLinearCommandGenerator(cmds)
+	controlFlow := transform2.NewControlFlow("sync", commandGenerator, writer)
+
+	// MELIH TODO: Do we still need this?
+	terminators := make([]transform2.Terminator, 0)
+
 	isTrivial := true
 	for _, api := range rc.APIs {
 		if sync, ok := api.(SynchronizedAPI); ok {
@@ -143,23 +150,23 @@ func MutationCmdsFor(ctx context.Context, c *path.Capture, data *Data, cmds []ap
 				continue
 			}
 		}
-		terminators = append(terminators, transform.NewEarlyTerminator(api.ID()))
+		terminators = append(terminators, transform2.NewEarlyTerminator())
 	}
 	for _, t := range terminators {
 		if err := t.Add(ctx, id, subindex); err != nil {
 			return nil, err
 		}
-		transforms.Add(t)
+		controlFlow.AddTransform(t)
 	}
 	if isTrivial {
 		return cmds[0 : id+1], nil
 	}
-	w := &writer{rc.NewState(ctx), nil}
-	if err := transforms.TransformAll(ctx, cmds, 0, w); err != nil {
+
+	if err := controlFlow.TransformAll(ctx); err != nil {
 		return nil, err
 	}
 
-	return w.cmds, nil
+	return writer.cmds, nil
 }
 
 // MutateWithSubcommands mutates a list of commands. And after mutating each

@@ -59,13 +59,17 @@ apic_template(
 go_library(
     name = "go_default_library",
     srcs = [
+        "allocation_tracker.go",
         "buffer_command.go",
         "command_buffer_rebuilder.go",
         "command_splitter.go",
         "custom_replay.go",
+        "destroy_resources_eos.go",
+        "display_to_surface.go",
         "doc.go",
         "drawCall.go",
         "draw_call_mesh.go",
+        "drop_invalid_destroy.go",
         "externs.go",
         "find_issues.go",
         "frame_loop.go",
@@ -77,7 +81,9 @@ go_library(
         "image_primer_resources.go",
         "image_primer_shaders.go",
         "image_primer_store.go",
+        "insertion_command.go",
         "links.go",
+        "make_attachment_readable.go",
         "mem_binding_list.go",
         "memory_breakdown.go",
         "overdraw.go",
@@ -122,8 +128,10 @@ go_library(
         "//gapil/constset:go_default_library",  # keep
         "//gapir:go_default_library",
         "//gapis/api:go_default_library",
+        "//gapis/api/command_generator:go_default_library",
         "//gapis/api/sync:go_default_library",
         "//gapis/api/transform:go_default_library",
+        "//gapis/api/transform2:go_default_library",
         "//gapis/api/vulkan/vulkan_pb:go_default_library",  # keep
         "//gapis/capture:go_default_library",
         "//gapis/config:go_default_library",

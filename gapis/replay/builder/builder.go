@@ -899,6 +899,8 @@ func (b *Builder) Build(ctx context.Context) (gapir.Payload, PostDataHandler, No
 		}
 	}
 
+	log.W(ctx, "Number of Instructions %v", len(b.instructions))
+
 	payload := gapir.Payload{
 		StackSize:          uint32(512), // TODO: Calculate stack size
 		VolatileMemorySize: uint32(vml.size),

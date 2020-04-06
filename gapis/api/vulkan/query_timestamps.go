@@ -18,13 +18,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"math"
 
 	"github.com/google/gapid/core/data/endian"
 	"github.com/google/gapid/core/log"
 	"github.com/google/gapid/gapir"
 	"github.com/google/gapid/gapis/api"
-	"github.com/google/gapid/gapis/api/transform"
-	"github.com/google/gapid/gapis/capture"
 	"github.com/google/gapid/gapis/memory"
 	"github.com/google/gapid/gapis/replay"
 	"github.com/google/gapid/gapis/replay/builder"
@@ -32,9 +31,6 @@ import (
 	"github.com/google/gapid/gapis/service"
 	"github.com/google/gapid/gapis/service/path"
 )
-
-// Default query pool size
-const queryPoolSize = 256
 
 type timestampRecord struct {
 	timestamp service.TimestampsItem
@@ -62,85 +58,190 @@ type commandPoolKey struct {
 
 type queryTimestamps struct {
 	replay.EndOfReplay
-	cmds            []api.Cmd
 	commandPools    map[commandPoolKey]VkCommandPool
 	queryPools      map[VkQueue]*queryPoolInfo
 	timestampPeriod float32
 	replayResult    []replay.Result
-	allocated       []*api.AllocResult
-	willLoop        bool
-	readyToLoop     bool
 	handler         service.TimeStampsHandler
 	results         map[uint64]queryResults
+	allocations     *allocationTracker
 }
 
-func newQueryTimestamps(ctx context.Context, c *capture.GraphicsCapture, Cmds []api.Cmd, willLoop bool, handler service.TimeStampsHandler) *queryTimestamps {
+func NewQueryTimestamps(ctx context.Context, handler service.TimeStampsHandler) *queryTimestamps {
 	transform := &queryTimestamps{
-		cmds:         Cmds,
 		commandPools: make(map[commandPoolKey]VkCommandPool),
 		queryPools:   make(map[VkQueue]*queryPoolInfo),
-		willLoop:     willLoop,
 		handler:      handler,
 		results:      make(map[uint64]queryResults),
+		allocations:  nil,
 	}
 	return transform
 }
 
-func max(x, y uint32) uint32 {
-	if x > y {
-		return x
+func (timestampTransform *queryTimestamps) RequiresAccurateState() bool {
+	return false
+}
+
+func (timestampTransform *queryTimestamps) BeginTransform(ctx context.Context, inputCommands []api.Cmd, inputState *api.GlobalState) ([]api.Cmd, error) {
+	timestampTransform.allocations = NewAllocationTracker(inputState)
+	return inputCommands, nil
+}
+
+func (timestampTransform *queryTimestamps) EndTransform(ctx context.Context, inputCommands []api.Cmd, inputState *api.GlobalState) ([]api.Cmd, error) {
+	cb := CommandBuilder{Thread: 0, Arena: inputState.Arena}
+
+	for _, queryPoolInfo := range timestampTransform.queryPools {
+		queryCommands := timestampTransform.getQueryResults(ctx, cb, inputState, queryPoolInfo)
+		inputCommands = append(inputCommands, queryCommands...)
 	}
-	return y
+
+	cleanupCmds := timestampTransform.cleanup(ctx, inputState)
+	inputCommands = append(inputCommands, cleanupCmds...)
+
+	notifyCmd := timestampTransform.CreateNotifyInstruction(ctx, func() interface{} {
+		return timestampTransform.replayResult
+	})
+	inputCommands = append(inputCommands, notifyCmd)
+
+	return inputCommands, nil
 }
 
-func (t *queryTimestamps) mustAllocData(ctx context.Context, s *api.GlobalState, v ...interface{}) api.AllocResult {
-	res := s.AllocDataOrPanic(ctx, v...)
-	t.allocated = append(t.allocated, &res)
-	return res
+func (timestampTransform *queryTimestamps) ClearTransformResources(ctx context.Context) {
+	timestampTransform.allocations.FreeAllocations()
 }
 
-func (t *queryTimestamps) createQueryPoolIfNeeded(ctx context.Context,
-	cb CommandBuilder,
-	out transform.Writer,
-	queue VkQueue,
-	device VkDevice,
-	numQuery uint32) *queryPoolInfo {
-	s := out.State()
+func (timestampTransform *queryTimestamps) TransformCommand(ctx context.Context, id api.CmdID, inputCommands []api.Cmd, inputState *api.GlobalState) ([]api.Cmd, error) {
+	outputCmds := make([]api.Cmd, 0, len(inputCommands))
 
-	qSize := uint32(0)
-	info, ok := t.queryPools[queue]
-	if ok && GetState(s).QueryPools().Contains(info.queryPool) {
-		if numQuery <= info.queryPoolSize {
-			return info
+	for i, cmd := range inputCommands {
+		vkQueueSubmitCmd, ok := cmd.(*VkQueueSubmit)
+		if !ok {
+			outputCmds = append(outputCmds, inputCommands[i])
+			continue
 		}
-		// Get the results back before destroy the old querypool
-		t.GetQueryResults(ctx, cb, out, info)
-		newCmd := cb.VkDestroyQueryPool(
-			info.device,
-			info.queryPool,
-			memory.Nullptr)
-		out.MutateAndWrite(ctx, api.CmdNoID, newCmd)
-		// Increase the size of pool to 1.5 times of previous size or set it to numQuery whichever is larger.
-		qSize = max(numQuery, info.queryPoolSize*3/2)
-	} else {
-		qSize = queryPoolSize
+
+		newCommands := timestampTransform.modifyQueueSubmit(ctx, id, vkQueueSubmitCmd, inputState)
+		outputCmds = append(outputCmds, newCommands...)
 	}
-	log.I(ctx, "Create query pool of size %d", qSize)
+
+	return outputCmds, nil
+}
+
+func (timestampTransform *queryTimestamps) modifyQueueSubmit(ctx context.Context, id api.CmdID, cmd *VkQueueSubmit, inputState *api.GlobalState) []api.Cmd {
+	ctx = log.Enter(ctx, "queryTimestamps")
+
+	// Melih TODO: This is not possible anymore
+	// if t.willLoop && !t.readyToLoop {
+	// 	return out.MutateAndWrite(ctx, id, cmd)
+	// }
+
+	cmd.Extras().Observations().ApplyReads(inputState.Memory.ApplicationPool())
+
+	timestampTransform.timestampPeriod = getTimestampLimit(cmd, inputState)
+	queryCount := getQueryCount(ctx, cmd, inputState)
+
+	outputCmds := make([]api.Cmd, 0)
+	queryPoolInfo := timestampTransform.getQueryPoolInfo(ctx, cmd, inputState)
+	if queryPoolInfo == nil {
+		const defaultQueryPoolSize = 256
+		outputCmds, queryPoolInfo = timestampTransform.createQueryPool(ctx, cmd, inputState, defaultQueryPoolSize)
+	} else if queryCount > queryPoolInfo.queryPoolSize {
+		queryPoolSize := uint32(math.Max(float64(queryCount), float64(queryPoolInfo.queryPoolSize*3/2)))
+		outputCmds, queryPoolInfo = timestampTransform.recreateQueryPool(ctx, cmd, inputState, queryPoolInfo, queryPoolSize)
+	}
+
+	commandPool := timestampTransform.getCommandPool(ctx, cmd, inputState)
+	if commandPool == nil {
+		var newCmd api.Cmd
+		newCmd, commandPool = timestampTransform.createCommandPool(ctx, cmd, inputState)
+		outputCmds = append(outputCmds, newCmd)
+	}
+
+	numSlotAvailable := queryPoolInfo.queryPoolSize - queryPoolInfo.queryCount
+	if numSlotAvailable < queryCount {
+		cb := CommandBuilder{Thread: cmd.Thread(), Arena: inputState.Arena}
+		queryCmds := timestampTransform.getQueryResults(ctx, cb, inputState, queryPoolInfo)
+		outputCmds = append(outputCmds, queryCmds...)
+	}
+
+	newCmds := timestampTransform.rewriteQueueSubmit(ctx, inputState, id, cmd, queryPoolInfo, *commandPool)
+	outputCmds = append(outputCmds, newCmds...)
+	return outputCmds
+}
+
+func getTimestampLimit(cmd *VkQueueSubmit, inputState *api.GlobalState) float32 {
+	vkQueue := cmd.Queue()
+	queue := GetState(inputState).Queues().Get(vkQueue)
+	vkDevice := queue.Device()
+	device := GetState(inputState).Devices().Get(vkDevice)
+	vkPhysicalDevice := device.PhysicalDevice()
+	physicalDevice := GetState(inputState).PhysicalDevices().Get(vkPhysicalDevice)
+	return physicalDevice.PhysicalDeviceProperties().Limits().TimestampPeriod()
+}
+
+func getQueryCount(ctx context.Context, cmd *VkQueueSubmit, inputState *api.GlobalState) uint32 {
+	submitCount := cmd.SubmitCount()
+	submitInfos := cmd.pSubmits.Slice(0, uint64(submitCount), inputState.MemoryLayout).MustRead(ctx, cmd, inputState, nil)
+	cmdBufferCount := uint32(0)
+	for i := uint32(0); i < submitCount; i++ {
+		si := submitInfos[i]
+		cmdBufferCount += si.CommandBufferCount()
+	}
+	queryCount := cmdBufferCount * 2
+	return queryCount
+}
+
+func (timestampTransform *queryTimestamps) getQueryPoolInfo(ctx context.Context, cmd *VkQueueSubmit, inputState *api.GlobalState) *queryPoolInfo {
+	vkQueue := cmd.Queue()
+
+	info, ok := timestampTransform.queryPools[vkQueue]
+	if !ok {
+		return nil
+	}
+
+	if !GetState(inputState).QueryPools().Contains(info.queryPool) {
+		return nil
+	}
+
+	return info
+}
+
+func (timestampTransform *queryTimestamps) recreateQueryPool(ctx context.Context, cmd *VkQueueSubmit, inputState *api.GlobalState, info *queryPoolInfo, poolSize uint32) ([]api.Cmd, *queryPoolInfo) {
+	cb := CommandBuilder{Thread: cmd.Thread(), Arena: inputState.Arena}
+	recreateCommands := make([]api.Cmd, 0)
+
+	// Get the results back before destroy the old querypool
+	queryCommands := timestampTransform.getQueryResults(ctx, cb, inputState, info)
+	recreateCommands = append(recreateCommands, queryCommands...)
+
+	newCmd := cb.VkDestroyQueryPool(info.device, info.queryPool, memory.Nullptr)
+	recreateCommands = append(recreateCommands, newCmd)
+
+	createCommands, newInfo := timestampTransform.createQueryPool(ctx, cmd, inputState, poolSize)
+	return append(recreateCommands, createCommands...), newInfo
+}
+
+func (timestampTransform *queryTimestamps) createQueryPool(ctx context.Context, cmd *VkQueueSubmit, inputState *api.GlobalState, poolSize uint32) ([]api.Cmd, *queryPoolInfo) {
+	log.I(ctx, "Create query pool of size %d", poolSize)
 
 	queryPool := VkQueryPool(newUnusedID(false, func(id uint64) bool {
-		return GetState(s).QueryPools().Contains(VkQueryPool(id))
+		return GetState(inputState).QueryPools().Contains(VkQueryPool(id))
 	}))
 
-	queryPoolHandleData := t.mustAllocData(ctx, s, queryPool)
-	queryPoolCreateInfo := t.mustAllocData(ctx, s, NewVkQueryPoolCreateInfo(s.Arena,
+	queryPoolHandleData := timestampTransform.allocations.AllocDataOrPanic(ctx, queryPool)
+	queryPoolCreateInfo := timestampTransform.allocations.AllocDataOrPanic(ctx, NewVkQueryPoolCreateInfo(
+		inputState.Arena,
 		VkStructureType_VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, // sType
 		0,                                   // pNext
 		0,                                   // flags
 		VkQueryType_VK_QUERY_TYPE_TIMESTAMP, // queryType
-		qSize,                               // queryCount
+		poolSize,                            // queryCount
 		0,                                   // pipelineStatistics
 	))
 
+	queue := cmd.Queue()
+	device := GetState(inputState).Queues().Get(queue).Device()
+	cb := CommandBuilder{Thread: cmd.Thread(), Arena: inputState.Arena}
 	newCmd := cb.VkCreateQueryPool(
 		device,
 		queryPoolCreateInfo.Ptr(),
@@ -149,40 +250,48 @@ func (t *queryTimestamps) createQueryPoolIfNeeded(ctx context.Context,
 		VkResult_VK_SUCCESS)
 	newCmd.AddRead(queryPoolCreateInfo.Data()).AddWrite(queryPoolHandleData.Data())
 
-	info = &queryPoolInfo{queryPool, qSize, device, queue, 0, []timestampRecord{}}
-	t.queryPools[queue] = info
-	out.MutateAndWrite(ctx, api.CmdNoID, newCmd)
-	return info
+	poolInfo := &queryPoolInfo{queryPool, poolSize, device, queue, 0, []timestampRecord{}}
+	timestampTransform.queryPools[queue] = poolInfo
+	return []api.Cmd{newCmd}, poolInfo
 }
 
-func (t *queryTimestamps) createCommandpoolIfNeeded(ctx context.Context,
-	cb CommandBuilder,
-	out transform.Writer,
-	device VkDevice,
-	queueFamilyIndex uint32) VkCommandPool {
-	key := commandPoolKey{device, queueFamilyIndex}
-	s := out.State()
+func (timestampTransform *queryTimestamps) getCommandPool(ctx context.Context, cmd *VkQueueSubmit, inputState *api.GlobalState) *VkCommandPool {
+	vkQueue := cmd.Queue()
+	queue := GetState(inputState).Queues().Get(vkQueue)
+	queueFamilyIndex := queue.Family()
+	device := queue.Device()
 
-	if cp, ok := t.commandPools[key]; ok {
-		if GetState(s).CommandPools().Contains(VkCommandPool(cp)) {
-			return cp
+	key := commandPoolKey{device, queueFamilyIndex}
+	if cp, ok := timestampTransform.commandPools[key]; ok {
+		if GetState(inputState).CommandPools().Contains(VkCommandPool(cp)) {
+			return &cp
 		}
 	}
+	return nil
+}
+
+func (timestampTransform *queryTimestamps) createCommandPool(ctx context.Context, cmd *VkQueueSubmit, inputState *api.GlobalState) (api.Cmd, *VkCommandPool) {
+	vkQueue := cmd.Queue()
+	queue := GetState(inputState).Queues().Get(vkQueue)
+	queueFamilyIndex := queue.Family()
+	device := queue.Device()
 
 	commandPoolID := VkCommandPool(newUnusedID(false,
 		func(x uint64) bool {
-			ok := GetState(s).CommandPools().Contains(VkCommandPool(x))
+			ok := GetState(inputState).CommandPools().Contains(VkCommandPool(x))
 			return ok
 		}))
-	commandPoolCreateInfo := NewVkCommandPoolCreateInfo(s.Arena,
+	commandPoolCreateInfo := NewVkCommandPoolCreateInfo(inputState.Arena,
 		VkStructureType_VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,                                 // sType
 		NewVoidᶜᵖ(memory.Nullptr),                                                                  // pNext
 		VkCommandPoolCreateFlags(VkCommandPoolCreateFlagBits_VK_COMMAND_POOL_CREATE_TRANSIENT_BIT), // flags
 		queueFamilyIndex, // queueFamilyIndex
 	)
-	commandPoolCreateInfoData := t.mustAllocData(ctx, s, commandPoolCreateInfo)
-	commandPoolData := t.mustAllocData(ctx, s, commandPoolID)
 
+	commandPoolCreateInfoData := timestampTransform.allocations.AllocDataOrPanic(ctx, commandPoolCreateInfo)
+	commandPoolData := timestampTransform.allocations.AllocDataOrPanic(ctx, commandPoolID)
+
+	cb := CommandBuilder{Thread: cmd.Thread(), Arena: inputState.Arena}
 	newCmd := cb.VkCreateCommandPool(
 		device,
 		commandPoolCreateInfoData.Ptr(),
@@ -194,97 +303,85 @@ func (t *queryTimestamps) createCommandpoolIfNeeded(ctx context.Context,
 	).AddWrite(
 		commandPoolData.Data(),
 	)
-	out.MutateAndWrite(ctx, api.CmdNoID, newCmd)
 
-	t.commandPools[key] = commandPoolID
-	return commandPoolID
+	key := commandPoolKey{device, queueFamilyIndex}
+	timestampTransform.commandPools[key] = commandPoolID
+	return newCmd, &commandPoolID
 }
 
-func (t *queryTimestamps) generateQueryCommand(ctx context.Context,
-	cb CommandBuilder,
-	out transform.Writer,
-	device VkDevice,
-	queryPool VkQueryPool,
-	commandPool VkCommandPool,
-	query uint32) VkCommandBuffer {
-	s := out.State()
-	commandBufferAllocateInfo := NewVkCommandBufferAllocateInfo(s.Arena,
-		VkStructureType_VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // sType
-		NewVoidᶜᵖ(memory.Nullptr),                                      // pNext
-		commandPool,                                                    // commandPool
-		VkCommandBufferLevel_VK_COMMAND_BUFFER_LEVEL_PRIMARY,           // level
-		1, // commandBufferCount
-	)
-	commandBufferAllocateInfoData := t.mustAllocData(ctx, s, commandBufferAllocateInfo)
-	commandBufferID := VkCommandBuffer(newUnusedID(true,
-		func(x uint64) bool {
-			ok := GetState(s).CommandBuffers().Contains(VkCommandBuffer(x))
-			return ok
-		}))
-	commandBufferData := t.mustAllocData(ctx, s, commandBufferID)
+func (timestampTransform *queryTimestamps) getQueryResults(ctx context.Context, cb CommandBuilder, inputState *api.GlobalState, info *queryPoolInfo) []api.Cmd {
+	if info == nil {
+		log.E(ctx, "queryPoolInfo is invalid")
+		return nil
+	}
 
-	beginCommandBufferInfo := NewVkCommandBufferBeginInfo(s.Arena,
-		VkStructureType_VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // sType
-		0, // pNext
-		VkCommandBufferUsageFlags(VkCommandBufferUsageFlagBits_VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT), // flags
-		0, // pInheritanceInfo
-	)
-	beginCommandBufferInfoData := t.mustAllocData(ctx, s, beginCommandBufferInfo)
+	if info.queryCount == 0 {
+		return nil
+	}
 
-	writeEach(ctx, out,
-		cb.VkAllocateCommandBuffers(
-			device,
-			commandBufferAllocateInfoData.Ptr(),
-			commandBufferData.Ptr(),
-			VkResult_VK_SUCCESS,
-		).AddRead(
-			commandBufferAllocateInfoData.Data(),
-		).AddWrite(
-			commandBufferData.Data(),
-		),
-		cb.VkBeginCommandBuffer(
-			commandBufferID,
-			beginCommandBufferInfoData.Ptr(),
-			VkResult_VK_SUCCESS,
-		).AddRead(
-			beginCommandBufferInfoData.Data(),
-		),
-		cb.VkCmdResetQueryPool(commandBufferID, queryPool, query, 1),
-		cb.VkCmdWriteTimestamp(commandBufferID,
-			VkPipelineStageFlagBits_VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-			queryPool,
-			query),
-		cb.VkEndCommandBuffer(
-			commandBufferID,
-			VkResult_VK_SUCCESS,
-		),
-	)
+	outputCmds := make([]api.Cmd, 0)
+	outputCmds = append(outputCmds, cb.VkQueueWaitIdle(info.queue, VkResult_VK_SUCCESS))
 
-	return commandBufferID
+	bufferLength := uint64(info.queryCount * 8)
+	temp := timestampTransform.allocations.AllocOrPanic(ctx, bufferLength)
+	flags := VkQueryResultFlags(VkQueryResultFlagBits_VK_QUERY_RESULT_64_BIT | VkQueryResultFlagBits_VK_QUERY_RESULT_WAIT_BIT)
+	getQueryPoolResultsCmd := cb.VkGetQueryPoolResults(
+		info.device,
+		info.queryPool,
+		0,
+		info.queryCount,
+		memory.Size(bufferLength),
+		temp.Ptr(),
+		8,
+		flags,
+		VkResult_VK_SUCCESS)
+
+	outputCmds = append(outputCmds, getQueryPoolResultsCmd)
+
+	newCmd := cb.Custom(func(ctx context.Context, s *api.GlobalState, b *builder.Builder) error {
+		b.ReserveMemory(temp.Range())
+		notificationID := b.GetNotificationID()
+		timestampTransform.results[notificationID] = info.results
+		b.Notification(notificationID, value.ObservedPointer(temp.Address()), bufferLength)
+		return b.RegisterNotificationReader(notificationID, func(n gapir.Notification) {
+			timestampTransform.processNotification(ctx, inputState, n)
+		})
+	})
+
+	outputCmds = append(outputCmds, newCmd)
+
+	info.queryCount = 0
+	info.results = []timestampRecord{}
+	return outputCmds
 }
 
-func (t *queryTimestamps) rewriteQueueSubmit(ctx context.Context,
-	cb CommandBuilder,
-	out transform.Writer,
+func (timestampTransform *queryTimestamps) rewriteQueueSubmit(ctx context.Context,
+	inputState *api.GlobalState,
 	id api.CmdID,
-	device VkDevice,
-	queryPoolInfo *queryPoolInfo,
-	commandPool VkCommandPool,
-	cmd *VkQueueSubmit) error {
+	cmd *VkQueueSubmit,
+	info *queryPoolInfo,
+	commandPool VkCommandPool) []api.Cmd {
 
-	s := out.State()
-	l := s.MemoryLayout
+	vkQueue := cmd.Queue()
+	queue := GetState(inputState).Queues().Get(vkQueue)
+	device := queue.Device()
+	layout := inputState.MemoryLayout
+
 	reads := []api.AllocResult{}
 	allocAndRead := func(v ...interface{}) api.AllocResult {
-		res := t.mustAllocData(ctx, s, v)
+		res := timestampTransform.allocations.AllocDataOrPanic(ctx, v)
 		reads = append(reads, res)
 		return res
 	}
 
-	cmd.Extras().Observations().ApplyReads(s.Memory.ApplicationPool())
+	cmd.Extras().Observations().ApplyReads(inputState.Memory.ApplicationPool())
+
 	submitCount := cmd.SubmitCount()
-	submitInfos := cmd.pSubmits.Slice(0, uint64(submitCount), s.MemoryLayout).MustRead(ctx, cmd, s, nil)
+	submitInfos := cmd.pSubmits.Slice(0, uint64(submitCount), layout).MustRead(ctx, cmd, inputState, nil)
 	newSubmitInfos := make([]VkSubmitInfo, submitCount)
+
+	cb := CommandBuilder{Thread: cmd.Thread(), Arena: inputState.Arena}
+	outputCmds := make([]api.Cmd, 0)
 
 	for i := uint32(0); i < submitCount; i++ {
 		si := submitInfos[i]
@@ -292,55 +389,54 @@ func (t *queryTimestamps) rewriteQueueSubmit(ctx context.Context,
 		waitDstStagePtr := memory.Nullptr
 		if count := uint64(si.WaitSemaphoreCount()); count > 0 {
 			waitSemPtr = allocAndRead(si.PWaitSemaphores().
-				Slice(0, count, l).
-				MustRead(ctx, cmd, s, nil)).Ptr()
+				Slice(0, count, layout).
+				MustRead(ctx, cmd, inputState, nil)).Ptr()
 			waitDstStagePtr = allocAndRead(si.PWaitDstStageMask().
-				Slice(0, count, l).
-				MustRead(ctx, cmd, s, nil)).Ptr()
+				Slice(0, count, layout).
+				MustRead(ctx, cmd, inputState, nil)).Ptr()
 		}
 
 		signalSemPtr := memory.Nullptr
 
 		if count := uint64(si.SignalSemaphoreCount()); count > 0 {
 			signalSemPtr = allocAndRead(si.PSignalSemaphores().
-				Slice(0, count, l).
-				MustRead(ctx, cmd, s, nil)).Ptr()
+				Slice(0, count, layout).
+				MustRead(ctx, cmd, inputState, nil)).Ptr()
 		}
 
-		cmdBuffers := si.PCommandBuffers().Slice(0, uint64(si.CommandBufferCount()), s.MemoryLayout).MustRead(ctx, cmd, s, nil)
+		cmdBuffers := si.PCommandBuffers().Slice(0, uint64(si.CommandBufferCount()), layout).MustRead(ctx, cmd, inputState, nil)
 		cmdCount := si.CommandBufferCount()
 		cmdBufferPtr := memory.Nullptr
 		newCmdCount := uint32(0)
 		if cmdCount != 0 {
 			newCmdCount = cmdCount*2 + 1
-			commandbuffer := t.generateQueryCommand(ctx,
+			queryCommands, commandbuffer := timestampTransform.generateQueryCommand(ctx,
 				cb,
-				out,
+				inputState,
 				device,
-				queryPoolInfo.queryPool,
-				commandPool,
-				queryPoolInfo.queryCount)
-			queryPoolInfo.queryCount++
+				info,
+				commandPool)
+			outputCmds = append(outputCmds, queryCommands...)
+			info.queryCount++
 			newCmdBuffers := make([]VkCommandBuffer, newCmdCount)
 			newCmdBuffers[0] = commandbuffer
 			for j := uint32(0); j < cmdCount; j++ {
 				buf := cmdBuffers[j]
 				newCmdBuffers[j*2+1] = buf
-
-				commandbuffer = t.generateQueryCommand(ctx,
+				queryCommands, commandbuffer = timestampTransform.generateQueryCommand(ctx,
 					cb,
-					out,
+					inputState,
 					device,
-					queryPoolInfo.queryPool,
-					commandPool,
-					queryPoolInfo.queryCount)
-				queryPoolInfo.queryCount++
+					info,
+					commandPool)
+				outputCmds = append(outputCmds, queryCommands...)
+				info.queryCount++
 				newCmdBuffers[j*2+2] = commandbuffer
 
 				begin := &path.Command{
 					Indices: []uint64{uint64(id), uint64(i), uint64(j), 0},
 				}
-				c, ok := GetState(s).CommandBuffers().Lookup(buf)
+				c, ok := GetState(inputState).CommandBuffers().Lookup(buf)
 				if !ok {
 					fmt.Errorf("Invalid command buffer %v", buf)
 				}
@@ -354,13 +450,13 @@ func (t *queryTimestamps) rewriteQueueSubmit(ctx context.Context,
 					Indices: []uint64{uint64(id), uint64(i), uint64(j), uint64(k)},
 				}
 				timestampItem := service.TimestampsItem{Begin: begin, End: end, TimeInNanoseconds: 0}
-				queryPoolInfo.results = append(queryPoolInfo.results,
+				info.results = append(info.results,
 					timestampRecord{timestamp: timestampItem, IsEoC: j == cmdCount-1})
 			}
 
 			cmdBufferPtr = allocAndRead(newCmdBuffers).Ptr()
 		}
-		newSubmitInfos[i] = NewVkSubmitInfo(s.Arena,
+		newSubmitInfos[i] = NewVkSubmitInfo(inputState.Arena,
 			VkStructureType_VK_STRUCTURE_TYPE_SUBMIT_INFO,
 			0,                            // pNext
 			si.WaitSemaphoreCount(),      // waitSemaphoreCount
@@ -383,66 +479,84 @@ func (t *queryTimestamps) rewriteQueueSubmit(ctx context.Context,
 		VkResult_VK_SUCCESS,
 	)
 
+	outputCmds = append(outputCmds, newCmd)
+
 	for _, read := range reads {
 		newCmd.AddRead(read.Data())
 	}
-	return out.MutateAndWrite(ctx, id, newCmd)
+	return outputCmds
 }
 
-func (t *queryTimestamps) GetQueryResults(ctx context.Context,
+func (timestampTransform *queryTimestamps) generateQueryCommand(ctx context.Context,
 	cb CommandBuilder,
-	out transform.Writer,
-	queryPoolInfo *queryPoolInfo) {
-	if queryPoolInfo == nil {
-		log.E(ctx, "queryPoolInfo is invalid")
-		return
-	}
-	queryCount := queryPoolInfo.queryCount
-	queue := queryPoolInfo.queue
-	if queryCount == 0 {
-		return
-	}
-	s := out.State()
-	waitCmd := cb.VkQueueWaitIdle(queue, VkResult_VK_SUCCESS)
-	out.MutateAndWrite(ctx, api.CmdNoID, waitCmd)
+	inputState *api.GlobalState,
+	device VkDevice,
+	info *queryPoolInfo,
+	commandPool VkCommandPool) ([]api.Cmd, VkCommandBuffer) {
 
-	buflen := uint64(queryCount * 8)
-	tmp := s.AllocOrPanic(ctx, buflen)
-	flags := VkQueryResultFlags(VkQueryResultFlagBits_VK_QUERY_RESULT_64_BIT | VkQueryResultFlagBits_VK_QUERY_RESULT_WAIT_BIT)
-	newCmd := cb.VkGetQueryPoolResults(
-		queryPoolInfo.device,
-		queryPoolInfo.queryPool,
-		0,
-		queryCount,
-		memory.Size(buflen),
-		tmp.Ptr(),
-		8,
-		flags,
-		VkResult_VK_SUCCESS)
+	commandBufferAllocateInfo := NewVkCommandBufferAllocateInfo(inputState.Arena,
+		VkStructureType_VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // sType
+		NewVoidᶜᵖ(memory.Nullptr),                                      // pNext
+		commandPool,                                                    // commandPool
+		VkCommandBufferLevel_VK_COMMAND_BUFFER_LEVEL_PRIMARY,           // level
+		1, // commandBufferCount
+	)
 
-	out.MutateAndWrite(ctx, api.CmdNoID, newCmd)
+	commandBufferAllocateInfoData := timestampTransform.allocations.AllocDataOrPanic(ctx, commandBufferAllocateInfo)
+	commandBufferID := VkCommandBuffer(newUnusedID(true,
+		func(x uint64) bool {
+			ok := GetState(inputState).CommandBuffers().Contains(VkCommandBuffer(x))
+			return ok
+		}))
+	commandBufferData := timestampTransform.allocations.AllocDataOrPanic(ctx, commandBufferID)
 
-	out.MutateAndWrite(ctx, api.CmdNoID, cb.Custom(func(ctx context.Context, s *api.GlobalState, b *builder.Builder) error {
-		b.ReserveMemory(tmp.Range())
-		notificationID := b.GetNotificationID()
-		t.results[notificationID] = queryPoolInfo.results
-		b.Notification(notificationID, value.ObservedPointer(tmp.Address()), buflen)
-		return b.RegisterNotificationReader(notificationID, func(n gapir.Notification) {
-			t.processNotification(ctx, s, n)
-		})
-	}))
+	beginCommandBufferInfo := NewVkCommandBufferBeginInfo(inputState.Arena,
+		VkStructureType_VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // sType
+		0, // pNext
+		VkCommandBufferUsageFlags(VkCommandBufferUsageFlagBits_VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT), // flags
+		0, // pInheritanceInfo
+	)
+	beginCommandBufferInfoData := timestampTransform.allocations.AllocDataOrPanic(ctx, beginCommandBufferInfo)
 
-	queryPoolInfo.queryCount = 0
-	queryPoolInfo.results = []timestampRecord{}
-	tmp.Free()
+	outputCmds := make([]api.Cmd, 0)
+
+	outputCmds = append(outputCmds,
+		cb.VkAllocateCommandBuffers(
+			device,
+			commandBufferAllocateInfoData.Ptr(),
+			commandBufferData.Ptr(),
+			VkResult_VK_SUCCESS,
+		).AddRead(
+			commandBufferAllocateInfoData.Data(),
+		).AddWrite(
+			commandBufferData.Data(),
+		),
+		cb.VkBeginCommandBuffer(
+			commandBufferID,
+			beginCommandBufferInfoData.Ptr(),
+			VkResult_VK_SUCCESS,
+		).AddRead(
+			beginCommandBufferInfoData.Data(),
+		),
+		cb.VkCmdResetQueryPool(commandBufferID, info.queryPool, info.queryCount, 1),
+		cb.VkCmdWriteTimestamp(commandBufferID,
+			VkPipelineStageFlagBits_VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+			info.queryPool,
+			info.queryCount),
+		cb.VkEndCommandBuffer(
+			commandBufferID,
+			VkResult_VK_SUCCESS,
+		))
+
+	return outputCmds, commandBufferID
 }
 
-func (t *queryTimestamps) processNotification(ctx context.Context, s *api.GlobalState, n gapir.Notification) {
+func (timestampTransform *queryTimestamps) processNotification(ctx context.Context, s *api.GlobalState, n gapir.Notification) {
 	notificationData := n.GetData()
 	notificationID := n.GetId()
 	timestampsData := notificationData.GetData()
 
-	res, ok := t.results[notificationID]
+	res, ok := timestampTransform.results[notificationID]
 	if !ok {
 		log.I(ctx, "Invalid notificationID %d", notificationID)
 		return
@@ -458,7 +572,7 @@ func (t *queryTimestamps) processNotification(ctx context.Context, s *api.Global
 	for i := uint32(1); i < resultCount; i++ {
 		tEnd := r.Uint64()
 		record := res[resIdx]
-		record.timestamp.TimeInNanoseconds = uint64(float32(tEnd-tStart) * t.timestampPeriod)
+		record.timestamp.TimeInNanoseconds = uint64(float32(tEnd-tStart) * timestampTransform.timestampPeriod)
 		if record.IsEoC {
 			tStart = r.Uint64()
 			i++
@@ -469,112 +583,36 @@ func (t *queryTimestamps) processNotification(ctx context.Context, s *api.Global
 		resIdx++
 	}
 
-	t.handler(&service.GetTimestampsResponse{
+	timestampTransform.handler(&service.GetTimestampsResponse{
 		Res: &service.GetTimestampsResponse_Timestamps{
 			Timestamps: &timestamps,
 		},
 	})
 }
 
-func (t *queryTimestamps) Transform(ctx context.Context, id api.CmdID, cmd api.Cmd, out transform.Writer) error {
-	ctx = log.Enter(ctx, "queryTimestamps")
-	if t.willLoop && !t.readyToLoop {
-		return out.MutateAndWrite(ctx, id, cmd)
-	}
-	s := out.State()
-	cb := CommandBuilder{Thread: cmd.Thread(), Arena: s.Arena}
+func (timestampTransform *queryTimestamps) cleanup(ctx context.Context, inputState *api.GlobalState) []api.Cmd {
+	cb := CommandBuilder{Thread: 0, Arena: inputState.Arena}
+	outputCmds := make([]api.Cmd, 0, len(timestampTransform.queryPools)+len(timestampTransform.commandPools))
 
-	defer func() {
-		for _, d := range t.allocated {
-			d.Free()
-		}
-	}()
-
-	switch cmd := cmd.(type) {
-	case *VkQueueSubmit:
-		cmd.Extras().Observations().ApplyReads(s.Memory.ApplicationPool())
-		vkQueue := cmd.Queue()
-		queue := GetState(s).Queues().Get(vkQueue)
-		queueFamilyIndex := queue.Family()
-		vkDevice := queue.Device()
-		device := GetState(s).Devices().Get(vkDevice)
-		vkPhysicalDevice := device.PhysicalDevice()
-		physicalDevice := GetState(s).PhysicalDevices().Get(vkPhysicalDevice)
-		t.timestampPeriod = physicalDevice.PhysicalDeviceProperties().Limits().TimestampPeriod()
-
-		submitCount := cmd.SubmitCount()
-		submitInfos := cmd.pSubmits.Slice(0, uint64(submitCount), s.MemoryLayout).MustRead(ctx, cmd, s, nil)
-		cmdBufferCount := uint32(0)
-		for i := uint32(0); i < submitCount; i++ {
-			si := submitInfos[i]
-			cmdBufferCount += si.CommandBufferCount()
-		}
-		queryCount := cmdBufferCount * 2
-
-		commandPool := t.createCommandpoolIfNeeded(ctx, cb, out, vkDevice, queueFamilyIndex)
-		queryPoolInfo := t.createQueryPoolIfNeeded(ctx, cb, out, vkQueue, vkDevice, queryCount)
-		numSlotAvailable := queryPoolInfo.queryPoolSize - queryPoolInfo.queryCount
-		if numSlotAvailable < queryCount {
-			t.GetQueryResults(ctx, cb, out, queryPoolInfo)
-		}
-		return t.rewriteQueueSubmit(ctx, cb, out, id, vkDevice, queryPoolInfo, commandPool, cmd)
-
-	default:
-		return out.MutateAndWrite(ctx, id, cmd)
-	}
-	return nil
-}
-
-func (t *queryTimestamps) Flush(ctx context.Context, out transform.Writer) error {
-	s := out.State()
-	cb := CommandBuilder{Thread: 0, Arena: s.Arena}
-	for _, queryPoolInfo := range t.queryPools {
-		t.GetQueryResults(ctx, cb, out, queryPoolInfo)
-	}
-	t.cleanup(ctx, out)
-	t.AddNotifyInstruction(ctx, out, func() interface{} { return t.replayResult })
-	return nil
-}
-
-func (t *queryTimestamps) PreLoop(ctx context.Context, out transform.Writer) {
-	t.readyToLoop = true
-}
-
-func (t *queryTimestamps) PostLoop(ctx context.Context, out transform.Writer) {
-	t.readyToLoop = false
-	s := out.State()
-	cb := CommandBuilder{Thread: 0, Arena: s.Arena}
-	for _, queryPoolInfo := range t.queryPools {
-		t.GetQueryResults(ctx, cb, out, queryPoolInfo)
-	}
-	t.cleanup(ctx, out)
-}
-
-func (t *queryTimestamps) cleanup(ctx context.Context, out transform.Writer) {
-	s := out.State()
-	cb := CommandBuilder{Thread: 0, Arena: s.Arena}
-
-	// Destroy query pool created in this transform.
-	for _, info := range t.queryPools {
+	for _, info := range timestampTransform.queryPools {
 		cmd := cb.VkDestroyQueryPool(
 			info.device,
 			info.queryPool,
 			memory.Nullptr,
 		)
-		out.MutateAndWrite(ctx, api.CmdNoID, cmd)
+		outputCmds = append(outputCmds, cmd)
 	}
-	t.queryPools = make(map[VkQueue]*queryPoolInfo)
 
-	// Free commandpool allocated in this transform.
-	for commandPoolkey, commandPool := range t.commandPools {
+	for commandPoolkey, commandPool := range timestampTransform.commandPools {
 		cmd := cb.VkDestroyCommandPool(
 			commandPoolkey.device,
 			commandPool,
 			memory.Nullptr,
 		)
-		out.MutateAndWrite(ctx, api.CmdNoID, cmd)
+		outputCmds = append(outputCmds, cmd)
 	}
-	t.commandPools = make(map[commandPoolKey]VkCommandPool)
-}
 
-func (t *queryTimestamps) BuffersCommands() bool { return false }
+	timestampTransform.queryPools = make(map[VkQueue]*queryPoolInfo)
+	timestampTransform.commandPools = make(map[commandPoolKey]VkCommandPool)
+	return outputCmds
+}

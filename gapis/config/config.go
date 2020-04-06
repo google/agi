@@ -32,7 +32,7 @@ const (
 	LogMappingsToFile        = false
 	LogTransformsToFile      = false
 	LogTransformsToCapture   = false
-	LogInitialCmdsIssues     = false
+	LogInitialCmdsIssues     = true
 	SeparateMutateStates     = false
 	CheckRebuiltStateMatches = false
 )

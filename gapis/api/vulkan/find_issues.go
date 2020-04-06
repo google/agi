@@ -22,9 +22,7 @@ import (
 	"github.com/google/gapid/core/log"
 	"github.com/google/gapid/gapir"
 	"github.com/google/gapid/gapis/api"
-	"github.com/google/gapid/gapis/api/transform"
 	"github.com/google/gapid/gapis/capture"
-	"github.com/google/gapid/gapis/config"
 	"github.com/google/gapid/gapis/memory"
 	"github.com/google/gapid/gapis/replay"
 	"github.com/google/gapid/gapis/replay/builder"
@@ -48,13 +46,16 @@ type findIssues struct {
 	state           *api.GlobalState
 	issues          []replay.Issue
 	reportCallbacks map[VkInstance]VkDebugReportCallbackEXT
+	allocations     *allocationTracker
 }
 
-func newFindIssues(ctx context.Context, c *capture.GraphicsCapture) *findIssues {
+func NewFindIssues(ctx context.Context, c *capture.GraphicsCapture) *findIssues {
 	t := &findIssues{
 		state:           c.NewState(ctx),
 		reportCallbacks: map[VkInstance]VkDebugReportCallbackEXT{},
+		allocations:     nil,
 	}
+
 	t.state.OnError = func(err interface{}) {
 		if issue, ok := err.(replay.Issue); ok {
 			t.issues = append(t.issues, issue)
@@ -63,179 +64,211 @@ func newFindIssues(ctx context.Context, c *capture.GraphicsCapture) *findIssues 
 	return t
 }
 
-func (t *findIssues) Transform(ctx context.Context, id api.CmdID, cmd api.Cmd, out transform.Writer) error {
+func (issueTransform *findIssues) BeginTransform(ctx context.Context, inputCommands []api.Cmd, inputState *api.GlobalState) ([]api.Cmd, error) {
+	issueTransform.allocations = NewAllocationTracker(inputState)
+	return inputCommands, nil
+}
+
+func (issueTransform *findIssues) TransformCommand(ctx context.Context, id api.CmdID, inputCommands []api.Cmd, inputState *api.GlobalState) ([]api.Cmd, error) {
 	ctx = log.Enter(ctx, "findIssues")
 
-	mutateErr := cmd.Mutate(ctx, id, t.state, nil /* no builder */, nil /* no watcher */)
-	if mutateErr != nil {
-		// Ignore since downstream transform layers can only consume valid commands
+	outputCmds := make([]api.Cmd, 0, len(inputCommands))
+
+	for _, cmd := range inputCommands {
+		mutateErr := cmd.Mutate(ctx, id, issueTransform.state, nil /* no builder */, nil /* no watcher */)
+		if mutateErr != nil {
+			// Ignore since downstream transform layers can only consume valid commands
+			return outputCmds, mutateErr
+		}
+
+		if destroyInstanceCommand, ok := cmd.(*VkDestroyInstance); ok {
+			// Before an instance is to be destroyed, check if it has debug report callback
+			// created by us, if so, destroy the callback handle.
+			newCmd := issueTransform.destroyDebugReportCallback(destroyInstanceCommand, inputState)
+			if newCmd != nil {
+				outputCmds = append(outputCmds, newCmd)
+			}
+		}
+
+		if createInstanceCmd, ok := cmd.(*VkCreateInstance); ok {
+			// Modify the vkCreateInstance to first remove any validation layers,
+			// and then insert the meta validation layer. Also enable the
+			// VK_EXT_debug_report extension.
+			newCmd := issueTransform.modifyVkCreateInstance(ctx, createInstanceCmd, inputState)
+			outputCmds = append(outputCmds, newCmd)
+		} else {
+			outputCmds = append(outputCmds, cmd)
+		}
+
+		// After an instance is created, try to create a debug report call back handle
+		// for it. The create info is not completed, the device side code should complete
+		// the create info before calling the underlying Vulkan command.
+		if createInstanceCommand, ok := cmd.(*VkCreateInstance); ok {
+			debugCmd := issueTransform.createDebugReportCallback(ctx, createInstanceCommand, inputState)
+			if debugCmd != nil {
+				outputCmds = append(outputCmds, cmd)
+			}
+		}
+	}
+
+	return outputCmds, nil
+}
+
+func (issueTransform *findIssues) ClearTransformResources(ctx context.Context) {
+	issueTransform.allocations.FreeAllocations()
+}
+
+func (issueTransform *findIssues) EndTransform(ctx context.Context, inputCommands []api.Cmd, inputState *api.GlobalState) ([]api.Cmd, error) {
+	commandBuilder := CommandBuilder{Thread: 0, Arena: inputState.Arena}
+	for instance, callback := range issueTransform.reportCallbacks {
+		newCmd := commandBuilder.ReplayDestroyVkDebugReportCallback(instance, callback)
+		if newCmd != nil {
+			inputCommands = append(inputCommands, newCmd)
+		}
+		// It is safe to delete keys in loop in Go
+		delete(issueTransform.reportCallbacks, instance)
+	}
+
+	registerNotificationReader := commandBuilder.Custom(func(ctx context.Context, s *api.GlobalState, b *builder.Builder) error {
+		return b.RegisterNotificationReader(builder.IssuesNotificationID, func(notification gapir.Notification) {
+			issueTransform.notificationReader(notification)
+		})
+	})
+
+	notifyInstruction := issueTransform.CreateNotifyInstruction(ctx, func() interface{} {
+		return issueTransform.issues
+	})
+
+	inputCommands = append(inputCommands, registerNotificationReader, notifyInstruction)
+	return inputCommands, nil
+}
+
+func (issueTransform *findIssues) notificationReader(n gapir.Notification) {
+	vkApi := API{}
+	eMsg := n.GetErrorMsg()
+	if eMsg == nil {
+		return
+	}
+	if uint8(eMsg.GetApiIndex()) != vkApi.Index() {
+		return
+	}
+
+	var issue replay.Issue
+	msg := eMsg.GetMsg()
+	label := eMsg.GetLabel()
+	issue.Command = api.CmdID(label)
+	issue.Severity = service.Severity(uint32(eMsg.GetSeverity()))
+
+	// Melih Note: There used to be a initial command check here.
+	// Instead we only run this transform for the real cmds.
+	// One option is having a tag in this transform and running different
+	// versions of this transforms for real and initial cmds.
+
+	// The debug report is issued for a trace command
+	issue.Error = fmt.Errorf("%s", msg)
+	issueTransform.issues = append(issueTransform.issues, issue)
+}
+
+func (issueTransform *findIssues) modifyVkCreateInstance(ctx context.Context, cmd *VkCreateInstance, inputState *api.GlobalState) api.Cmd {
+	cmd.Extras().Observations().ApplyReads(inputState.Memory.ApplicationPool())
+	info := cmd.PCreateInfo().MustRead(ctx, cmd, inputState, nil)
+
+	layers := []Charᶜᵖ{}
+	validationMetaLayerData := issueTransform.allocations.AllocDataOrPanic(ctx, validationMetaLayer)
+	layers = append(layers, NewCharᶜᵖ(validationMetaLayerData.Ptr()))
+	layersData := issueTransform.allocations.AllocDataOrPanic(ctx, layers)
+
+	extCount := info.EnabledExtensionCount()
+	exts := info.PpEnabledExtensionNames().Slice(0, uint64(extCount), inputState.MemoryLayout).MustRead(ctx, cmd, inputState, nil)
+	var debugReportExtNameData api.AllocResult
+	hasDebugReport := false
+	for _, e := range exts {
+		// TODO(chrisforbes): provide a better way of getting the contents of the string
+		if debugReportExtension == strings.TrimRight(string(memory.CharToBytes(e.StringSlice(ctx, inputState).MustRead(ctx, cmd, inputState, nil))), "\x00") {
+			hasDebugReport = true
+		}
+	}
+	if !hasDebugReport {
+		debugReportExtNameData = issueTransform.allocations.AllocDataOrPanic(ctx, debugReportExtension)
+		exts = append(exts, NewCharᶜᵖ(debugReportExtNameData.Ptr()))
+	}
+	extsData := issueTransform.allocations.AllocDataOrPanic(ctx, exts)
+
+	info.SetEnabledLayerCount(uint32(len(layers)))
+	info.SetPpEnabledLayerNames(NewCharᶜᵖᶜᵖ(layersData.Ptr()))
+	info.SetEnabledExtensionCount(uint32(len(exts)))
+	info.SetPpEnabledExtensionNames(NewCharᶜᵖᶜᵖ(extsData.Ptr()))
+	infoData := issueTransform.allocations.AllocDataOrPanic(ctx, info)
+
+	commandBuilder := CommandBuilder{Thread: cmd.Thread(), Arena: inputState.Arena}
+	newCmd := commandBuilder.VkCreateInstance(infoData.Ptr(), cmd.PAllocator(), cmd.PInstance(), cmd.Result())
+	newCmd.AddRead(
+		validationMetaLayerData.Data(),
+	).AddRead(
+		debugReportExtNameData.Data(),
+	).AddRead(
+		infoData.Data(),
+	).AddRead(
+		layersData.Data(),
+	).AddRead(
+		extsData.Data(),
+	)
+	// Also add back all the other read/write observations of the original vkCreateInstance
+	for _, r := range cmd.Extras().Observations().Reads {
+		newCmd.AddRead(r.Range, r.ID)
+	}
+	for _, w := range cmd.Extras().Observations().Writes {
+		newCmd.AddWrite(w.Range, w.ID)
+	}
+
+	return newCmd
+}
+
+func (issueTransform *findIssues) createDebugReportCallback(ctx context.Context, cmd *VkCreateInstance, inputState *api.GlobalState) api.Cmd {
+	instance := cmd.PInstance().MustRead(ctx, cmd, inputState, nil)
+	callbackHandle := VkDebugReportCallbackEXT(newUnusedID(true, func(x uint64) bool {
+		for _, callback := range issueTransform.reportCallbacks {
+			if uint64(callback) == x {
+				return true
+			}
+		}
+		return false
+	}))
+	issueTransform.reportCallbacks[instance] = callbackHandle
+
+	callbackHandleData := issueTransform.allocations.AllocDataOrPanic(ctx, callbackHandle)
+	callbackCreateInfo := issueTransform.allocations.AllocDataOrPanic(
+		ctx, NewVkDebugReportCallbackCreateInfoEXT(
+			inputState.Arena,
+			VkStructureType_VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT, // sType
+			0, // pNext
+			VkDebugReportFlagsEXT((VkDebugReportFlagBitsEXT_VK_DEBUG_REPORT_DEBUG_BIT_EXT<<1)-1), // flags
+			0, // pfnCallback
+			0, // pUserData
+		))
+
+	commandBuilder := CommandBuilder{Thread: cmd.Thread(), Arena: inputState.Arena}
+	return commandBuilder.ReplayCreateVkDebugReportCallback(
+		instance,
+		callbackCreateInfo.Ptr(),
+		callbackHandleData.Ptr(),
+		true,
+	).AddRead(
+		callbackCreateInfo.Data(),
+	).AddWrite(
+		callbackHandleData.Data(),
+	)
+}
+
+func (issueTransform *findIssues) destroyDebugReportCallback(cmd *VkDestroyInstance, inputState *api.GlobalState) api.Cmd {
+	instance := cmd.Instance()
+	callbackHandle, ok := issueTransform.reportCallbacks[instance]
+	if !ok {
 		return nil
 	}
 
-	s := out.State()
-	cb := CommandBuilder{Thread: cmd.Thread(), Arena: out.State().Arena}
-	l := s.MemoryLayout
-	allocated := []api.AllocResult{}
-	defer func() {
-		for _, d := range allocated {
-			d.Free()
-		}
-	}()
-	mustAlloc := func(ctx context.Context, v ...interface{}) api.AllocResult {
-		res := s.AllocDataOrPanic(ctx, v...)
-		allocated = append(allocated, res)
-		return res
-	}
-
-	// Before an instance is to be destroyed, check if it has debug report callback
-	// created by us, if so, destory the call back handle.
-	if di, ok := cmd.(*VkDestroyInstance); ok {
-		inst := di.Instance()
-		if ch, ok := t.reportCallbacks[inst]; ok {
-			out.MutateAndWrite(ctx, api.CmdNoID, cb.ReplayDestroyVkDebugReportCallback(inst, ch))
-			delete(t.reportCallbacks, inst)
-		}
-	}
-
-	switch cmd := cmd.(type) {
-	// Modify the vkCreateInstance to first remove any validation layers,
-	// and then insert the meta validation layer. Also enable the
-	// VK_EXT_debug_report extension.
-	case *VkCreateInstance:
-		cmd.Extras().Observations().ApplyReads(s.Memory.ApplicationPool())
-		info := cmd.PCreateInfo().MustRead(ctx, cmd, s, nil)
-		layers := []Charᶜᵖ{}
-
-		validationMetaLayerData := mustAlloc(ctx, validationMetaLayer)
-		layers = append(layers, NewCharᶜᵖ(validationMetaLayerData.Ptr()))
-		layersData := mustAlloc(ctx, layers)
-
-		extCount := info.EnabledExtensionCount()
-		exts := info.PpEnabledExtensionNames().Slice(0, uint64(extCount), l).MustRead(ctx, cmd, s, nil)
-		var debugReportExtNameData api.AllocResult
-		hasDebugReport := false
-		for _, e := range exts {
-			// TODO(chrisforbes): provide a better way of getting the contents of the string
-			if debugReportExtension == strings.TrimRight(string(memory.CharToBytes(e.StringSlice(ctx, s).MustRead(ctx, cmd, s, nil))), "\x00") {
-				hasDebugReport = true
-			}
-		}
-		if !hasDebugReport {
-			debugReportExtNameData = mustAlloc(ctx, debugReportExtension)
-			exts = append(exts, NewCharᶜᵖ(debugReportExtNameData.Ptr()))
-		}
-		extsData := mustAlloc(ctx, exts)
-
-		info.SetEnabledLayerCount(uint32(len(layers)))
-		info.SetPpEnabledLayerNames(NewCharᶜᵖᶜᵖ(layersData.Ptr()))
-		info.SetEnabledExtensionCount(uint32(len(exts)))
-		info.SetPpEnabledExtensionNames(NewCharᶜᵖᶜᵖ(extsData.Ptr()))
-		infoData := mustAlloc(ctx, info)
-
-		newCmd := cb.VkCreateInstance(infoData.Ptr(), cmd.PAllocator(), cmd.PInstance(), cmd.Result())
-		newCmd.AddRead(
-			validationMetaLayerData.Data(),
-		).AddRead(
-			debugReportExtNameData.Data(),
-		).AddRead(
-			infoData.Data(),
-		).AddRead(
-			layersData.Data(),
-		).AddRead(
-			extsData.Data(),
-		)
-		// Also add back all the other read/write observations of the original vkCreateInstance
-		for _, r := range cmd.Extras().Observations().Reads {
-			newCmd.AddRead(r.Range, r.ID)
-		}
-		for _, w := range cmd.Extras().Observations().Writes {
-			newCmd.AddWrite(w.Range, w.ID)
-		}
-		out.MutateAndWrite(ctx, id, newCmd)
-
-	default:
-		out.MutateAndWrite(ctx, id, cmd)
-
-	}
-
-	// After an instance is created, try to create a debug report call back handle
-	// for it. The create info is not completed, the device side code should complete
-	// the create info before calling the underlying Vulkan command.
-	if ci, ok := cmd.(*VkCreateInstance); ok {
-		inst := ci.PInstance().MustRead(ctx, cmd, s, nil)
-		callbackHandle := VkDebugReportCallbackEXT(newUnusedID(true, func(x uint64) bool {
-			for _, cb := range t.reportCallbacks {
-				if uint64(cb) == x {
-					return true
-				}
-			}
-			return false
-		}))
-		callbackHandleData := mustAlloc(ctx, callbackHandle)
-		callbackCreateInfo := mustAlloc(
-			ctx, NewVkDebugReportCallbackCreateInfoEXT(
-				s.Arena,
-				VkStructureType_VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT, // sType
-				0, // pNext
-				VkDebugReportFlagsEXT((VkDebugReportFlagBitsEXT_VK_DEBUG_REPORT_DEBUG_BIT_EXT<<1)-1), // flags
-				0, // pfnCallback
-				0, // pUserData
-			))
-		out.MutateAndWrite(ctx, api.CmdNoID, cb.ReplayCreateVkDebugReportCallback(
-			inst,
-			callbackCreateInfo.Ptr(),
-			callbackHandleData.Ptr(),
-			true,
-		).AddRead(
-			callbackCreateInfo.Data(),
-		).AddWrite(
-			callbackHandleData.Data(),
-		))
-		t.reportCallbacks[inst] = callbackHandle
-	}
-	return nil
-}
-
-func (t *findIssues) Flush(ctx context.Context, out transform.Writer) error {
-	cb := CommandBuilder{Thread: 0, Arena: out.State().Arena}
-	for inst, ch := range t.reportCallbacks {
-		if err := out.MutateAndWrite(ctx, api.CmdNoID, cb.ReplayDestroyVkDebugReportCallback(inst, ch)); err != nil {
-			return err
-		}
-		// It is safe to delete keys in loop in Go
-		delete(t.reportCallbacks, inst)
-	}
-	err := out.MutateAndWrite(ctx, api.CmdNoID, cb.Custom(func(ctx context.Context, s *api.GlobalState, b *builder.Builder) error {
-		return b.RegisterNotificationReader(builder.IssuesNotificationID, func(n gapir.Notification) {
-			vkApi := API{}
-			eMsg := n.GetErrorMsg()
-			if eMsg == nil {
-				return
-			}
-			if uint8(eMsg.GetApiIndex()) != vkApi.Index() {
-				return
-			}
-			var issue replay.Issue
-			msg := eMsg.GetMsg()
-			label := eMsg.GetLabel()
-			issue.Command = api.CmdID(label)
-			issue.Severity = service.Severity(uint32(eMsg.GetSeverity()))
-
-			if issue.Command == api.CmdNoID {
-				// TODO: Fix all the errors reported for initial commands.
-				if config.LogInitialCmdsIssues {
-					log.E(ctx, "Error in state rebuilding command : %s", msg)
-				}
-			} else {
-				// The debug report is issued for a trace command
-				issue.Error = fmt.Errorf("%s", msg)
-				t.issues = append(t.issues, issue)
-			}
-		})
-	}))
-	if err != nil {
-		return err
-	}
-	t.AddNotifyInstruction(ctx, out, func() interface{} { return t.issues })
-	return nil
+	commandBuilder := CommandBuilder{Thread: cmd.Thread(), Arena: inputState.Arena}
+	newCmd := commandBuilder.ReplayDestroyVkDebugReportCallback(instance, callbackHandle)
+	delete(issueTransform.reportCallbacks, instance)
+	return newCmd
 }

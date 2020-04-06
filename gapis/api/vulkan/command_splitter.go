@@ -18,85 +18,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/gapid/core/memory/arena"
 	"github.com/google/gapid/gapis/api"
-	"github.com/google/gapid/gapis/api/transform"
 	"github.com/google/gapid/gapis/memory"
-	"github.com/google/gapid/gapis/replay/builder"
 )
 
-// InsertionCommand is a temporary command
-// that is expected to be replaced by a down-stream transform.
-type InsertionCommand struct {
-	cmdBuffer             VkCommandBuffer
-	pendingCommandBuffers []VkCommandBuffer
-	idx                   api.SubCmdIdx
-	callee                api.Cmd
-}
-
-// Interface check
-var _ api.Cmd = &InsertionCommand{}
-
-func (*InsertionCommand) Mutate(ctx context.Context, cmd api.CmdID, g *api.GlobalState, b *builder.Builder, w api.StateWatcher) error {
-	if b != nil {
-		return fmt.Errorf("This command should have been replaced before it got to the builder")
-	}
-	return nil
-}
-
-func (s *InsertionCommand) Thread() uint64 {
-	return s.callee.Thread()
-}
-
-func (s *InsertionCommand) SetThread(c uint64) {
-	s.callee.SetThread(c)
-}
-
-// CmdName returns the name of the command.
-func (s *InsertionCommand) CmdName() string {
-	return "CommandBufferInsertion"
-}
-
-func (s *InsertionCommand) CmdParams() api.Properties {
-	return api.Properties{}
-}
-
-func (s *InsertionCommand) CmdResult() *api.Property {
-	return nil
-}
-
-func (s *InsertionCommand) CmdFlags() api.CmdFlags {
-	return 0
-}
-
-func (s *InsertionCommand) Extras() *api.CmdExtras {
-	return nil
-}
-
-func (s *InsertionCommand) Clone(a arena.Arena) api.Cmd {
-	return &InsertionCommand{
-		s.cmdBuffer,
-		append([]VkCommandBuffer{}, s.pendingCommandBuffers...),
-		s.idx,
-		s.callee.Clone(a),
-	}
-}
-
-func (s *InsertionCommand) Alive() bool {
-	return true
-}
-
-func (s *InsertionCommand) Terminated() bool {
-	return true
-}
-
-func (s *InsertionCommand) SetTerminated(bool) {
-}
-
-func (s *InsertionCommand) API() api.API {
-	return s.callee.API()
-}
-
+// Melih TODO: it seems like those are never freed
 func (s *commandSplitter) MustAllocReadDataForSubmit(ctx context.Context, g *api.GlobalState, v ...interface{}) api.AllocResult {
 	allocateResult := g.AllocDataOrPanic(ctx, v...)
 	s.readMemoriesForSubmit = append(s.readMemoriesForSubmit, &allocateResult)
@@ -119,7 +45,8 @@ func (s *commandSplitter) MustAllocWriteDataForCmd(ctx context.Context, g *api.G
 	return allocateResult
 }
 
-func (s *commandSplitter) WriteCommand(ctx context.Context, cmd api.Cmd, out transform.Writer) error {
+// Melih TODO: Check every occurance of this method
+func (s *commandSplitter) observeCommand(ctx context.Context, cmd api.Cmd) {
 	for i := range s.readMemoriesForCmd {
 		cmd.Extras().GetOrAppendObservations().AddRead(s.readMemoriesForCmd[i].Data())
 	}
@@ -128,7 +55,6 @@ func (s *commandSplitter) WriteCommand(ctx context.Context, cmd api.Cmd, out tra
 	}
 	s.readMemoriesForCmd = []*api.AllocResult{}
 	s.writeMemoriesForCmd = []*api.AllocResult{}
-	return out.MutateAndWrite(ctx, api.CmdNoID, cmd)
 }
 
 // commandSplitter is a transform that will re-write command-buffers and insert replacement
@@ -153,15 +79,57 @@ type commandSplitter struct {
 	fixedGraphicsPipelines map[VkPipeline]VkPipeline
 
 	pendingCommandBuffers []VkCommandBuffer
+	cleanupFuncs          []func()
 }
 
 func NewCommandSplitter(ctx context.Context) *commandSplitter {
-	return &commandSplitter{api.SubCmdIdx{}, make([]api.SubCmdIdx, 0),
-		make([]*api.AllocResult, 0), make([]*api.AllocResult, 0), make([]*api.AllocResult, 0),
-		0, NilVkCmdBeginRenderPassArgsʳ, make([][3]VkRenderPass, 0), 0,
-		make(map[VkRenderPass][][3]VkRenderPass),
-		make(map[VkPipeline]VkPipeline),
-		make([]VkCommandBuffer, 0)}
+	return &commandSplitter{
+		lastRequest:            api.SubCmdIdx{},
+		requestsSubIndex:       make([]api.SubCmdIdx, 0),
+		readMemoriesForSubmit:  make([]*api.AllocResult, 0),
+		readMemoriesForCmd:     make([]*api.AllocResult, 0),
+		writeMemoriesForCmd:    make([]*api.AllocResult, 0),
+		pool:                   0,
+		thisRenderPass:         NilVkCmdBeginRenderPassArgsʳ,
+		currentRenderPass:      make([][3]VkRenderPass, 0),
+		thisSubpass:            0,
+		splitRenderPasses:      make(map[VkRenderPass][][3]VkRenderPass),
+		fixedGraphicsPipelines: make(map[VkPipeline]VkPipeline),
+		pendingCommandBuffers:  make([]VkCommandBuffer, 0),
+		cleanupFuncs:           make([]func(), 0),
+	}
+}
+
+func (splitTransform *commandSplitter) RequiresAccurateState() bool {
+	return false
+}
+
+func (splitTransform *commandSplitter) BeginTransform(ctx context.Context, inputCommands []api.Cmd, inputState *api.GlobalState) ([]api.Cmd, error) {
+	return inputCommands, nil
+}
+
+func (splitTransform *commandSplitter) EndTransform(ctx context.Context, inputCommands []api.Cmd, inputState *api.GlobalState) ([]api.Cmd, error) {
+	return inputCommands, nil
+}
+
+func (splitTransform *commandSplitter) ClearTransformResources(ctx context.Context) {
+	for _, f := range splitTransform.cleanupFuncs {
+		f()
+	}
+}
+
+// Melih TODO: This is a bit tricky, we don't know what to do with the added commands.
+func (splitTransform *commandSplitter) TransformCommand(ctx context.Context, id api.CmdID, inputCommands []api.Cmd, inputState *api.GlobalState) ([]api.Cmd, error) {
+	if len(inputCommands) == 0 {
+		return inputCommands, nil
+	}
+
+	modifidCommands := splitTransform.modifyCommand(ctx, id, inputCommands[0], inputState)
+	if modifidCommands == nil {
+		return inputCommands, nil
+	}
+
+	return append(modifidCommands, inputCommands[1:]...), nil
 }
 
 // Add adds the command with identifier id to the set of commands that will be split.
@@ -174,94 +142,114 @@ func (t *commandSplitter) Split(ctx context.Context, id api.SubCmdIdx) error {
 	return nil
 }
 
-func (t *commandSplitter) getCommandPool(ctx context.Context, queueSubmit *VkQueueSubmit, out transform.Writer) (VkCommandPool, error) {
+func (t *commandSplitter) getCommandPool(ctx context.Context, queueSubmit *VkQueueSubmit, inputState *api.GlobalState) (api.Cmd, VkCommandPool) {
 	if t.pool != 0 {
-		return t.pool, nil
+		return nil, t.pool
 	}
-	s := out.State()
-	a := s.Arena
-	cb := CommandBuilder{Thread: queueSubmit.Thread(), Arena: s.Arena}
-	st := GetState(s)
-	queue := st.Queues().Get(queueSubmit.Queue())
-	t.pool = VkCommandPool(newUnusedID(false, func(x uint64) bool { ok := GetState(s).CommandPools().Contains(VkCommandPool(x)); return ok }))
 
-	poolCreateInfo := NewVkCommandPoolCreateInfo(a,
+	cb := CommandBuilder{Thread: queueSubmit.Thread(), Arena: inputState.Arena}
+	queue := GetState(inputState).Queues().Get(queueSubmit.Queue())
+
+	t.pool = VkCommandPool(newUnusedID(false, func(x uint64) bool {
+		return GetState(inputState).CommandPools().Contains(VkCommandPool(x))
+	}))
+
+	poolCreateInfo := NewVkCommandPoolCreateInfo(inputState.Arena,
 		VkStructureType_VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,                                 // sType
 		NewVoidᶜᵖ(memory.Nullptr),                                                                  // pNext
 		VkCommandPoolCreateFlags(VkCommandPoolCreateFlagBits_VK_COMMAND_POOL_CREATE_TRANSIENT_BIT), // flags
 		queue.Family(), // queueFamilyIndex
 	)
 
-	if err := t.WriteCommand(ctx, cb.VkCreateCommandPool(
+	newCmd := cb.VkCreateCommandPool(
 		queue.Device(),
-		t.MustAllocReadDataForCmd(ctx, s, poolCreateInfo).Ptr(),
+		t.MustAllocReadDataForCmd(ctx, inputState, poolCreateInfo).Ptr(),
 		memory.Nullptr,
-		t.MustAllocWriteDataForCmd(ctx, s, t.pool).Ptr(),
+		t.MustAllocWriteDataForCmd(ctx, inputState, t.pool).Ptr(),
 		VkResult_VK_SUCCESS,
-	), out); err != nil {
-		return VkCommandPool(0), err
-	}
-	return t.pool, nil
+	)
+
+	t.observeCommand(ctx, newCmd)
+	return newCmd, t.pool
 }
 
-func (t *commandSplitter) getStartedCommandBuffer(ctx context.Context, queueSubmit *VkQueueSubmit, out transform.Writer) (VkCommandBuffer, error) {
-	s := out.State()
-	a := s.Arena
-	cb := CommandBuilder{Thread: queueSubmit.Thread(), Arena: a}
-	vs := GetState(s)
-	queue := vs.Queues().Get(queueSubmit.Queue())
+func (t *commandSplitter) getStartedCommandBuffer(ctx context.Context, queueSubmit *VkQueueSubmit, inputState *api.GlobalState) ([]api.Cmd, VkCommandBuffer) {
+	cb := CommandBuilder{Thread: queueSubmit.Thread(), Arena: inputState.Arena}
+	queue := GetState(inputState).Queues().Get(queueSubmit.Queue())
 
-	commandPoolID, err := t.getCommandPool(ctx, queueSubmit, out)
-	if err != nil {
-		return VkCommandBuffer(0), err
+	outputCmds := make([]api.Cmd, 0)
+	commandPoolCmd, commandPoolID := t.getCommandPool(ctx, queueSubmit, inputState)
+	if commandPoolCmd != nil {
+		outputCmds = append(outputCmds, commandPoolCmd)
 	}
 
-	commandBufferAllocateInfo := NewVkCommandBufferAllocateInfo(a,
+	commandBufferAllocateInfo := NewVkCommandBufferAllocateInfo(inputState.Arena,
 		VkStructureType_VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // sType
 		NewVoidᶜᵖ(memory.Nullptr),                                      // pNext
 		commandPoolID,                                                  // commandPool
 		VkCommandBufferLevel_VK_COMMAND_BUFFER_LEVEL_PRIMARY,           // level
 		1, // commandBufferCount
 	)
-	commandBufferID := VkCommandBuffer(newUnusedID(true, func(x uint64) bool { ok := GetState(s).CommandBuffers().Contains(VkCommandBuffer(x)); return ok }))
+	commandBufferID := VkCommandBuffer(newUnusedID(true, func(x uint64) bool {
+		return GetState(inputState).CommandBuffers().Contains(VkCommandBuffer(x))
+	}))
 
-	if err := t.WriteCommand(ctx,
-		cb.VkAllocateCommandBuffers(
-			queue.Device(),
-			t.MustAllocReadDataForCmd(ctx, s, commandBufferAllocateInfo).Ptr(),
-			t.MustAllocWriteDataForCmd(ctx, s, commandBufferID).Ptr(),
-			VkResult_VK_SUCCESS,
-		), out); err != nil {
-		return VkCommandBuffer(0), err
-	}
+	allocateCmd := cb.VkAllocateCommandBuffers(
+		queue.Device(),
+		t.MustAllocReadDataForCmd(ctx, inputState, commandBufferAllocateInfo).Ptr(),
+		t.MustAllocWriteDataForCmd(ctx, inputState, commandBufferID).Ptr(),
+		VkResult_VK_SUCCESS,
+	)
 
-	commandBufferBegin := NewVkCommandBufferBeginInfo(a,
+	t.observeCommand(ctx, allocateCmd)
+	outputCmds = append(outputCmds, allocateCmd)
+
+	beginInfo := NewVkCommandBufferBeginInfo(inputState.Arena,
 		VkStructureType_VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // sType
 		NewVoidᶜᵖ(memory.Nullptr),                                   // pNext
 		0,                                                           // flags
 		NewVkCommandBufferInheritanceInfoᶜᵖ(memory.Nullptr), // pInheritanceInfo
 	)
-	if err := t.WriteCommand(ctx,
-		cb.VkBeginCommandBuffer(
-			commandBufferID,
-			t.MustAllocReadDataForCmd(ctx, s, commandBufferBegin).Ptr(),
-			VkResult_VK_SUCCESS,
-		), out); err != nil {
-		return VkCommandBuffer(0), err
-	}
+	beginCommandBufferCmd := cb.VkBeginCommandBuffer(
+		commandBufferID,
+		t.MustAllocReadDataForCmd(ctx, inputState, beginInfo).Ptr(),
+		VkResult_VK_SUCCESS,
+	)
 
-	return commandBufferID, nil
+	t.observeCommand(ctx, beginCommandBufferCmd)
+	outputCmds = append(outputCmds, beginCommandBufferCmd)
+
+	return outputCmds, commandBufferID
 }
 
 const VK_ATTACHMENT_UNUSED = uint32(0xFFFFFFFF)
 
-func (t *commandSplitter) splitRenderPass(ctx context.Context, rp RenderPassObjectʳ, out transform.Writer) [][3]VkRenderPass {
-	s := out.State()
-	st := GetState(s)
-	arena := s.Arena
+type commandSplitterTransformWriter struct {
+	state            *api.GlobalState
+	statebuilderCmds []api.Cmd
+}
+
+func newCommandSplitterTransformWriter(state *api.GlobalState) *commandSplitterTransformWriter {
+	return &commandSplitterTransformWriter{
+		state:            state,
+		statebuilderCmds: make([]api.Cmd, 0),
+	}
+}
+
+func (writer *commandSplitterTransformWriter) State() *api.GlobalState {
+	return writer.state
+}
+
+func (writer *commandSplitterTransformWriter) MutateAndWrite(ctx context.Context, id api.CmdID, cmd api.Cmd) error {
+	writer.statebuilderCmds = append(writer.statebuilderCmds, cmd)
+	return nil
+}
+
+func (t *commandSplitter) splitRenderPass(ctx context.Context, rp RenderPassObjectʳ, inputState *api.GlobalState) ([]api.Cmd, [][3]VkRenderPass) {
+	st := GetState(inputState)
 
 	if rp, ok := t.splitRenderPasses[rp.VulkanHandle()]; ok {
-		return rp
+		return nil, rp
 	}
 
 	handles := make([][3]VkRenderPass, 0)
@@ -269,7 +257,9 @@ func (t *commandSplitter) splitRenderPass(ctx context.Context, rp RenderPassObje
 	for i := uint32(0); i < uint32(rp.AttachmentDescriptions().Len()); i++ {
 		currentLayouts[i] = rp.AttachmentDescriptions().Get(i).InitialLayout()
 	}
-	sb := st.newStateBuilder(ctx, newTransformerOutput(out))
+
+	tempTransformWriter := newCommandSplitterTransformWriter(inputState)
+	sb := st.newStateBuilder(ctx, newTransformerOutput(tempTransformWriter))
 
 	for i := uint32(0); i < uint32(rp.SubpassDescriptions().Len()); i++ {
 		subpassHandles := [3]VkRenderPass{}
@@ -314,7 +304,7 @@ func (t *commandSplitter) splitRenderPass(ctx context.Context, rp RenderPassObje
 		}
 
 		{
-			rp1 := rp.Clone(arena, api.CloneContext{})
+			rp1 := rp.Clone(inputState.Arena, api.CloneContext{})
 			rp1.SetVulkanHandle(
 				VkRenderPass(newUnusedID(true, func(x uint64) bool {
 					return st.RenderPasses().Contains(VkRenderPass(x))
@@ -348,7 +338,7 @@ func (t *commandSplitter) splitRenderPass(ctx context.Context, rp RenderPassObje
 		}
 
 		{
-			rp2 := rp.Clone(arena, api.CloneContext{})
+			rp2 := rp.Clone(inputState.Arena, api.CloneContext{})
 			rp2.SetVulkanHandle(
 				VkRenderPass(newUnusedID(true, func(x uint64) bool {
 					return st.RenderPasses().Contains(VkRenderPass(x))
@@ -376,7 +366,7 @@ func (t *commandSplitter) splitRenderPass(ctx context.Context, rp RenderPassObje
 		}
 
 		{
-			rp3 := rp.Clone(arena, api.CloneContext{})
+			rp3 := rp.Clone(inputState.Arena, api.CloneContext{})
 			rp3.SetVulkanHandle(
 				VkRenderPass(newUnusedID(true, func(x uint64) bool {
 					return st.RenderPasses().Contains(VkRenderPass(x))
@@ -411,19 +401,19 @@ func (t *commandSplitter) splitRenderPass(ctx context.Context, rp RenderPassObje
 		handles = append(handles, subpassHandles)
 	}
 	t.splitRenderPasses[rp.VulkanHandle()] = handles
-	return handles
+	return tempTransformWriter.statebuilderCmds, handles
 }
 
-func (t *commandSplitter) rewriteGraphicsPipeline(ctx context.Context, graphicsPipeline VkPipeline, queueSubmit *VkQueueSubmit, out transform.Writer) VkPipeline {
+func (t *commandSplitter) rewriteGraphicsPipeline(ctx context.Context, graphicsPipeline VkPipeline, queueSubmit *VkQueueSubmit, inputState *api.GlobalState) ([]api.Cmd, VkPipeline) {
 	if gp, ok := t.fixedGraphicsPipelines[graphicsPipeline]; ok {
-		return gp
+		return nil, gp
 	}
-	s := out.State()
-	st := GetState(s)
-	a := s.Arena
 
-	sb := st.newStateBuilder(ctx, newTransformerOutput(out))
-	newGp := st.GraphicsPipelines().Get(graphicsPipeline).Clone(a, api.CloneContext{})
+	st := GetState(inputState)
+
+	tempTransformWriter := newCommandSplitterTransformWriter(inputState)
+	sb := st.newStateBuilder(ctx, newTransformerOutput(tempTransformWriter))
+	newGp := st.GraphicsPipelines().Get(graphicsPipeline).Clone(inputState.Arena, api.CloneContext{})
 	newGp.SetRenderPass(st.RenderPasses().Get(t.currentRenderPass[t.thisSubpass][0]))
 	newGp.SetSubpass(0)
 	newGp.SetVulkanHandle(
@@ -433,15 +423,14 @@ func (t *commandSplitter) rewriteGraphicsPipeline(ctx context.Context, graphicsP
 		})))
 	sb.createGraphicsPipeline(newGp)
 	t.fixedGraphicsPipelines[graphicsPipeline] = newGp.VulkanHandle()
-	return newGp.VulkanHandle()
+	return tempTransformWriter.statebuilderCmds, newGp.VulkanHandle()
 }
 
-func (t *commandSplitter) splitCommandBuffer(ctx context.Context, embedBuffer VkCommandBuffer, commandBuffer CommandBufferObjectʳ, queueSubmit *VkQueueSubmit, id api.SubCmdIdx, cuts []api.SubCmdIdx, out transform.Writer) VkCommandBuffer {
-	s := out.State()
-	st := GetState(s)
-	a := s.Arena
-	cb := CommandBuilder{Thread: queueSubmit.Thread(), Arena: a}
+func (t *commandSplitter) splitCommandBuffer(ctx context.Context, embedBuffer VkCommandBuffer, commandBuffer CommandBufferObjectʳ, queueSubmit *VkQueueSubmit, id api.SubCmdIdx, cuts []api.SubCmdIdx, inputState *api.GlobalState) ([]api.Cmd, VkCommandBuffer) {
+	cb := CommandBuilder{Thread: queueSubmit.Thread(), Arena: inputState.Arena}
+	st := GetState(inputState)
 
+	outputCmds := make([]api.Cmd, 0)
 	for i := 0; i < commandBuffer.CommandReferences().Len(); i++ {
 		splitAfterCommand := false
 		replaceCommand := false
@@ -464,34 +453,39 @@ func (t *commandSplitter) splitCommandBuffer(ctx context.Context, embedBuffer Vk
 		case VkCmdBeginRenderPassArgsʳ:
 			rp := ar.RenderPass()
 			rpo := st.RenderPasses().Get(rp)
-			t.currentRenderPass = t.splitRenderPass(ctx, rpo, out)
+			var splitCmds []api.Cmd
+			splitCmds = nil
+			splitCmds, t.currentRenderPass = t.splitRenderPass(ctx, rpo, inputState)
+			if splitCmds != nil {
+				outputCmds = append(outputCmds, splitCmds...)
+			}
 			t.thisSubpass = 0
-			args = NewVkCmdBeginRenderPassArgsʳ(a, VkSubpassContents_VK_SUBPASS_CONTENTS_INLINE,
+			args = NewVkCmdBeginRenderPassArgsʳ(inputState.Arena, VkSubpassContents_VK_SUBPASS_CONTENTS_INLINE,
 				t.currentRenderPass[t.thisSubpass][0], ar.Framebuffer(), ar.RenderArea(), ar.ClearValues(),
 				ar.DeviceGroupBeginInfo())
 			t.thisRenderPass = ar
 		case VkCmdNextSubpassArgsʳ:
-			args = NewVkCmdEndRenderPassArgsʳ(a)
+			args = NewVkCmdEndRenderPassArgsʳ(inputState.Arena)
 			extraArgs = append(extraArgs,
 				NewVkCmdBeginRenderPassArgsʳ(
-					a, VkSubpassContents_VK_SUBPASS_CONTENTS_INLINE,
+					inputState.Arena, VkSubpassContents_VK_SUBPASS_CONTENTS_INLINE,
 					t.currentRenderPass[t.thisSubpass][2], t.thisRenderPass.Framebuffer(), t.thisRenderPass.RenderArea(), t.thisRenderPass.ClearValues(),
 					t.thisRenderPass.DeviceGroupBeginInfo()))
-			extraArgs = append(extraArgs, NewVkCmdEndRenderPassArgsʳ(a))
+			extraArgs = append(extraArgs, NewVkCmdEndRenderPassArgsʳ(inputState.Arena))
 
 			t.thisSubpass++
 			extraArgs = append(extraArgs,
 				NewVkCmdBeginRenderPassArgsʳ(
-					a, VkSubpassContents_VK_SUBPASS_CONTENTS_INLINE,
+					inputState.Arena, VkSubpassContents_VK_SUBPASS_CONTENTS_INLINE,
 					t.currentRenderPass[t.thisSubpass][0], t.thisRenderPass.Framebuffer(), t.thisRenderPass.RenderArea(), t.thisRenderPass.ClearValues(),
 					t.thisRenderPass.DeviceGroupBeginInfo()))
 		case VkCmdEndRenderPassArgsʳ:
 			extraArgs = append(extraArgs,
 				NewVkCmdBeginRenderPassArgsʳ(
-					a, VkSubpassContents_VK_SUBPASS_CONTENTS_INLINE,
+					inputState.Arena, VkSubpassContents_VK_SUBPASS_CONTENTS_INLINE,
 					t.currentRenderPass[t.thisSubpass][2], t.thisRenderPass.Framebuffer(), t.thisRenderPass.RenderArea(), t.thisRenderPass.ClearValues(),
 					t.thisRenderPass.DeviceGroupBeginInfo()))
-			extraArgs = append(extraArgs, NewVkCmdEndRenderPassArgsʳ(a))
+			extraArgs = append(extraArgs, NewVkCmdEndRenderPassArgsʳ(inputState.Arena))
 			t.thisRenderPass = NilVkCmdBeginRenderPassArgsʳ
 			t.thisSubpass = 0
 		case VkCmdBindPipelineArgsʳ:
@@ -499,8 +493,11 @@ func (t *commandSplitter) splitCommandBuffer(ctx context.Context, embedBuffer Vk
 				// Graphics pipeline, must be split (maybe)
 				if st.RenderPasses().Get(t.thisRenderPass.RenderPass()).SubpassDescriptions().Len() > 1 {
 					// If we have more than one renderpass, then we should replace
-					newPipeline := t.rewriteGraphicsPipeline(ctx, ar.Pipeline(), queueSubmit, out)
-					np := ar.Clone(a, api.CloneContext{})
+					pipelineCmds, newPipeline := t.rewriteGraphicsPipeline(ctx, ar.Pipeline(), queueSubmit, inputState)
+					if pipelineCmds != nil {
+						outputCmds = append(outputCmds, pipelineCmds...)
+					}
+					np := ar.Clone(inputState.Arena, api.CloneContext{})
 					np.SetPipeline(newPipeline)
 					args = np
 				}
@@ -522,14 +519,20 @@ func (t *commandSplitter) splitCommandBuffer(ctx context.Context, embedBuffer Vk
 				}
 
 				cbo := st.CommandBuffers().Get(ar.CommandBuffers().Get(uint32(j)))
-				t.splitCommandBuffer(ctx, embedBuffer, cbo, queueSubmit, append(id, uint64(i), uint64(j)), newSubCuts, out)
+				newCmds, _ := t.splitCommandBuffer(ctx, embedBuffer, cbo, queueSubmit, append(id, uint64(i), uint64(j)), newSubCuts, inputState)
+				if newCmds != nil {
+					outputCmds = append(outputCmds, newCmds...)
+				}
+
 				if splitAfterExecute {
-					t.WriteCommand(ctx, &InsertionCommand{
+					insertionCmd := &InsertionCommand{
 						embedBuffer,
 						append([]VkCommandBuffer{}, t.pendingCommandBuffers...),
 						append(id, uint64(i), uint64(j)),
 						queueSubmit,
-					}, out)
+					}
+					t.observeCommand(ctx, insertionCmd)
+					outputCmds = append(outputCmds, insertionCmd)
 				}
 			}
 		}
@@ -538,7 +541,7 @@ func (t *commandSplitter) splitCommandBuffer(ctx context.Context, embedBuffer Vk
 			// If we were not in a renderpass then we do not need to drop out
 			// of it.
 			if t.thisRenderPass != NilVkCmdBeginRenderPassArgsʳ {
-				extraArgs = append(extraArgs, NewVkCmdEndRenderPassArgsʳ(a))
+				extraArgs = append(extraArgs, NewVkCmdEndRenderPassArgsʳ(inputState.Arena))
 			}
 			extraArgs = append(extraArgs, &InsertionCommand{
 				embedBuffer,
@@ -551,53 +554,56 @@ func (t *commandSplitter) splitCommandBuffer(ctx context.Context, embedBuffer Vk
 			if t.thisRenderPass != NilVkCmdBeginRenderPassArgsʳ {
 				extraArgs = append(extraArgs,
 					NewVkCmdBeginRenderPassArgsʳ(
-						a, VkSubpassContents_VK_SUBPASS_CONTENTS_INLINE,
+						inputState.Arena, VkSubpassContents_VK_SUBPASS_CONTENTS_INLINE,
 						t.currentRenderPass[t.thisSubpass][1], t.thisRenderPass.Framebuffer(), t.thisRenderPass.RenderArea(), t.thisRenderPass.ClearValues(),
 						t.thisRenderPass.DeviceGroupBeginInfo()))
 			}
 		}
 		if !replaceCommand {
-			cleanup, cmd, err := AddCommand(ctx, cb, embedBuffer, s, s, args)
+			cleanup, cmd, err := AddCommand(ctx, cb, embedBuffer, inputState, inputState, args)
 			if err != nil {
 				panic(fmt.Errorf("Invalid command-buffer detected %+v", err))
 			}
-			t.WriteCommand(ctx, cmd, out)
-			cleanup()
+			t.observeCommand(ctx, cmd)
+			outputCmds = append(outputCmds, cmd)
+			t.cleanupFuncs = append(t.cleanupFuncs, cleanup)
 		}
 		for _, ea := range extraArgs {
 			if ins, ok := ea.(api.Cmd); ok {
-				t.WriteCommand(ctx, ins, out)
+				t.observeCommand(ctx, ins)
+				outputCmds = append(outputCmds, ins)
 			} else {
-				cleanup, cmd, err := AddCommand(ctx, cb, embedBuffer, s, s, ea)
+				cleanup, cmd, err := AddCommand(ctx, cb, embedBuffer, inputState, inputState, ea)
 				if err != nil {
 					panic(fmt.Errorf("Invalid command-buffer detected %+v", err))
 				}
-				t.WriteCommand(ctx, cmd, out)
-				cleanup()
+				t.observeCommand(ctx, cmd)
+				outputCmds = append(outputCmds, cmd)
+				t.cleanupFuncs = append(t.cleanupFuncs, cleanup)
 			}
 		}
 	}
 
-	return embedBuffer
+	return outputCmds, embedBuffer
 }
 
-func (t *commandSplitter) splitSubmit(ctx context.Context, submit VkSubmitInfo, idx api.SubCmdIdx, cuts []api.SubCmdIdx, queueSubmit *VkQueueSubmit, out transform.Writer) (VkSubmitInfo, error) {
-	s := out.State()
-	l := s.MemoryLayout
-	st := GetState(s)
-	a := s.Arena
-	cb := CommandBuilder{Thread: queueSubmit.Thread(), Arena: a}
-
-	newSubmit := MakeVkSubmitInfo(a)
+func (t *commandSplitter) splitSubmit(ctx context.Context, submit VkSubmitInfo, idx api.SubCmdIdx, cuts []api.SubCmdIdx, queueSubmit *VkQueueSubmit, inputState *api.GlobalState) ([]api.Cmd, VkSubmitInfo) {
+	newSubmit := MakeVkSubmitInfo(inputState.Arena)
 	newSubmit.SetSType(submit.SType())
 	newSubmit.SetPNext(submit.PNext())
 	newSubmit.SetWaitSemaphoreCount(submit.WaitSemaphoreCount())
 	newSubmit.SetPWaitSemaphores(submit.PWaitSemaphores())
 	newSubmit.SetPWaitDstStageMask(submit.PWaitDstStageMask())
 	newSubmit.SetCommandBufferCount(submit.CommandBufferCount())
+
+	layout := inputState.MemoryLayout
 	// pCommandBuffers
-	commandBuffers := submit.PCommandBuffers().Slice(0, uint64(submit.CommandBufferCount()), l).MustRead(ctx, queueSubmit, s, nil)
+	commandBuffers := submit.PCommandBuffers().Slice(0, uint64(submit.CommandBufferCount()), layout).MustRead(ctx, queueSubmit, inputState, nil)
 	newCommandBuffers := make([]VkCommandBuffer, 0)
+
+	outputCmds := make([]api.Cmd, 0)
+	cb := CommandBuilder{Thread: queueSubmit.Thread(), Arena: inputState.Arena}
+
 	for i := range commandBuffers {
 		splitAfterCommandBuffer := false
 		newCuts := []api.SubCmdIdx{}
@@ -613,96 +619,102 @@ func (t *commandSplitter) splitSubmit(ctx context.Context, submit VkSubmitInfo, 
 		}
 		if len(newCuts) > 0 {
 			cbuff := commandBuffers[i]
-			cbo := st.CommandBuffers().Get(cbuff)
-			commandBuffer, err := t.getStartedCommandBuffer(ctx, queueSubmit, out)
-			if err != nil {
-				return VkSubmitInfo{}, err
+			cbo := GetState(inputState).CommandBuffers().Get(cbuff)
+			newCmds, commandBuffer := t.getStartedCommandBuffer(ctx, queueSubmit, inputState)
+			if newCmds != nil {
+				outputCmds = append(outputCmds, newCmds...)
 			}
-			newCommandBuffers = append(newCommandBuffers, t.splitCommandBuffer(ctx, commandBuffer, cbo, queueSubmit, append(idx, uint64(i)), newCuts, out))
-			t.WriteCommand(ctx,
-				cb.VkEndCommandBuffer(commandBuffer, VkResult_VK_SUCCESS), out)
+
+			splitCmds, splitCommandBuffers := t.splitCommandBuffer(ctx, commandBuffer, cbo, queueSubmit, append(idx, uint64(i)), newCuts, inputState)
+			if splitCmds != nil {
+				outputCmds = append(outputCmds, splitCmds...)
+			}
+			newCommandBuffers = append(newCommandBuffers, splitCommandBuffers)
+
+			endCmd := cb.VkEndCommandBuffer(commandBuffer, VkResult_VK_SUCCESS)
+			outputCmds = append(outputCmds, endCmd)
+			t.observeCommand(ctx, endCmd)
 		} else {
 			newCommandBuffers = append(newCommandBuffers, commandBuffers[i])
 		}
 		if splitAfterCommandBuffer {
-			commandBuffer, err := t.getStartedCommandBuffer(ctx, queueSubmit, out)
-			if err != nil {
-				return VkSubmitInfo{}, err
+			newCmds, commandBuffer := t.getStartedCommandBuffer(ctx, queueSubmit, inputState)
+			if newCmds != nil {
+				outputCmds = append(outputCmds, newCmds...)
 			}
-			if err := out.MutateAndWrite(ctx, api.CmdNoID, &InsertionCommand{
+
+			outputCmds = append(outputCmds, &InsertionCommand{
 				commandBuffer,
 				append([]VkCommandBuffer{}, t.pendingCommandBuffers...),
 				append(idx, uint64(i)),
 				queueSubmit,
-			}); err != nil {
-				return VkSubmitInfo{}, err
-			}
-			if err := t.WriteCommand(ctx,
-				cb.VkEndCommandBuffer(commandBuffer, VkResult_VK_SUCCESS), out); err != nil {
-				return VkSubmitInfo{}, err
-			}
+			})
+
+			endCmd := cb.VkEndCommandBuffer(commandBuffer, VkResult_VK_SUCCESS)
+			outputCmds = append(outputCmds, endCmd)
+			t.observeCommand(ctx, endCmd)
+
 			newCommandBuffers = append(newCommandBuffers, commandBuffer)
 		}
 	}
 	t.pendingCommandBuffers = append(t.pendingCommandBuffers, newCommandBuffers...)
-	newCbs := t.MustAllocReadDataForSubmit(ctx, s, newCommandBuffers)
+	newCbs := t.MustAllocReadDataForSubmit(ctx, inputState, newCommandBuffers)
 	newSubmit.SetPCommandBuffers(NewVkCommandBufferᶜᵖ(newCbs.Ptr()))
 	newSubmit.SetCommandBufferCount(uint32(len(newCommandBuffers)))
 	newSubmit.SetSignalSemaphoreCount(submit.SignalSemaphoreCount())
 	newSubmit.SetPSignalSemaphores(submit.PSignalSemaphores())
-	return newSubmit, nil
+
+	return outputCmds, newSubmit
 }
 
-func (t *commandSplitter) splitAfterSubmit(ctx context.Context, id api.SubCmdIdx, queueSubmit *VkQueueSubmit, out transform.Writer) (VkSubmitInfo, error) {
-	s := out.State()
-	a := s.Arena
-	cb := CommandBuilder{Thread: queueSubmit.Thread(), Arena: a}
+func (t *commandSplitter) splitAfterSubmit(ctx context.Context, id api.SubCmdIdx, queueSubmit *VkQueueSubmit, inputState *api.GlobalState) ([]api.Cmd, VkSubmitInfo) {
+	outputCmds := make([]api.Cmd, 0)
 
-	commandBuffer, err := t.getStartedCommandBuffer(ctx, queueSubmit, out)
-	if err != nil {
-		return VkSubmitInfo{}, err
+	cb := CommandBuilder{Thread: queueSubmit.Thread(), Arena: inputState.Arena}
+	newCmds, commandBuffer := t.getStartedCommandBuffer(ctx, queueSubmit, inputState)
+	if newCmds != nil {
+		outputCmds = append(outputCmds, newCmds...)
 	}
 	t.pendingCommandBuffers = append(t.pendingCommandBuffers, commandBuffer)
-	if err := out.MutateAndWrite(ctx, api.CmdNoID, &InsertionCommand{
+
+	outputCmds = append(outputCmds, &InsertionCommand{
 		commandBuffer,
 		append([]VkCommandBuffer{}, t.pendingCommandBuffers...),
 		id,
 		queueSubmit,
-	}); err != nil {
-		return VkSubmitInfo{}, err
-	}
-	if err := t.WriteCommand(ctx,
-		cb.VkEndCommandBuffer(commandBuffer, VkResult_VK_SUCCESS), out); err != nil {
-		return VkSubmitInfo{}, err
-	}
+	})
 
-	info := NewVkSubmitInfo(a,
+	endCmd := cb.VkEndCommandBuffer(commandBuffer, VkResult_VK_SUCCESS)
+	t.observeCommand(ctx, endCmd)
+	outputCmds = append(outputCmds, endCmd)
+
+	info := NewVkSubmitInfo(inputState.Arena,
 		VkStructureType_VK_STRUCTURE_TYPE_SUBMIT_INFO, // sType
 		NewVoidᶜᵖ(memory.Nullptr),                     // pNext
 		0,                                             // waitSemaphoreCount,
 		NewVkSemaphoreᶜᵖ(memory.Nullptr),              // pWaitSemaphores
 		NewVkPipelineStageFlagsᶜᵖ(memory.Nullptr), // pWaitDstStageMask
 		1, // commandBufferCount
-		NewVkCommandBufferᶜᵖ(t.MustAllocReadDataForSubmit(ctx, s, commandBuffer).Ptr()),
+		NewVkCommandBufferᶜᵖ(t.MustAllocReadDataForSubmit(ctx, inputState, commandBuffer).Ptr()),
 		0,                                // signalSemaphoreCount
 		NewVkSemaphoreᶜᵖ(memory.Nullptr), // pSignalSemaphores
 	)
 
-	return info, nil
+	return outputCmds, info
 }
 
-func (t *commandSplitter) rewriteQueueSubmit(ctx context.Context, id api.CmdID, cuts []api.SubCmdIdx, queueSubmit *VkQueueSubmit, out transform.Writer) (*VkQueueSubmit, error) {
-	s := out.State()
-	l := s.MemoryLayout
-	cb := CommandBuilder{Thread: queueSubmit.Thread(), Arena: s.Arena}
-	queueSubmit.Extras().Observations().ApplyReads(s.Memory.ApplicationPool())
-	var err error
-	submitInfos := queueSubmit.PSubmits().Slice(0, uint64(queueSubmit.SubmitCount()), l).MustRead(ctx, queueSubmit, s, nil)
+func (t *commandSplitter) rewriteQueueSubmit(ctx context.Context, id api.CmdID, cuts []api.SubCmdIdx, queueSubmit *VkQueueSubmit, inputState *api.GlobalState) []api.Cmd {
+	layout := inputState.MemoryLayout
+	cb := CommandBuilder{Thread: queueSubmit.Thread(), Arena: inputState.Arena}
+	queueSubmit.Extras().Observations().ApplyReads(inputState.Memory.ApplicationPool())
+
+	submitInfos := queueSubmit.PSubmits().Slice(0, uint64(queueSubmit.SubmitCount()), layout).MustRead(ctx, queueSubmit, inputState, nil)
 	newSubmitInfos := []VkSubmitInfo{}
 
 	newSubmit := cb.VkQueueSubmit(queueSubmit.Queue(), queueSubmit.SubmitCount(), queueSubmit.PSubmits(), queueSubmit.Fence(), queueSubmit.Result())
 	newSubmit.Extras().MustClone(queueSubmit.Extras().All()...)
 
+	outputCmds := make([]api.Cmd, 0)
 	for i := 0; i < len(submitInfos); i++ {
 		subIdx := api.SubCmdIdx{uint64(id), uint64(i)}
 		newCuts := []api.SubCmdIdx{}
@@ -718,34 +730,39 @@ func (t *commandSplitter) rewriteQueueSubmit(ctx context.Context, id api.CmdID, 
 		}
 		newSubmitInfo := submitInfos[i]
 		if len(newCuts) != 0 {
-			newSubmitInfo, err = t.splitSubmit(ctx, submitInfos[i], subIdx, newCuts, queueSubmit, out)
-			if err != nil {
-				return nil, err
+			var newCmds []api.Cmd
+			newCmds = nil
+			newCmds, newSubmitInfo = t.splitSubmit(ctx, submitInfos[i], subIdx, newCuts, queueSubmit, inputState)
+			if newCmds != nil {
+				outputCmds = append(outputCmds, newCmds...)
 			}
 		} else {
-			commandBuffers := submitInfos[i].PCommandBuffers().Slice(0, uint64(submitInfos[i].CommandBufferCount()), l).MustRead(ctx, queueSubmit, s, nil)
+			commandBuffers := submitInfos[i].PCommandBuffers().Slice(0, uint64(submitInfos[i].CommandBufferCount()), layout).MustRead(ctx, queueSubmit, inputState, nil)
 			t.pendingCommandBuffers = append(t.pendingCommandBuffers, commandBuffers...)
 		}
 		newSubmitInfos = append(newSubmitInfos, newSubmitInfo)
 		if addAfterSubmit {
-			s, err := t.splitAfterSubmit(ctx, subIdx, queueSubmit, out)
-			if err != nil {
-				return nil, err
+			newCmds, s := t.splitAfterSubmit(ctx, subIdx, queueSubmit, inputState)
+			if newCmds != nil {
+				outputCmds = append(outputCmds, newCmds...)
 			}
 			newSubmitInfos = append(newSubmitInfos, s)
 		}
 	}
 	newSubmit.SetSubmitCount(uint32(len(newSubmitInfos)))
-	newSubmit.SetPSubmits(NewVkSubmitInfoᶜᵖ(t.MustAllocReadDataForSubmit(ctx, s, newSubmitInfos).Ptr()))
+	newSubmit.SetPSubmits(NewVkSubmitInfoᶜᵖ(t.MustAllocReadDataForSubmit(ctx, inputState, newSubmitInfos).Ptr()))
 
 	for x := range t.readMemoriesForSubmit {
 		newSubmit.AddRead(t.readMemoriesForSubmit[x].Data())
 	}
 	t.readMemoriesForSubmit = []*api.AllocResult{}
-	return newSubmit, nil
+	outputCmds = append(outputCmds, newSubmit)
+	return outputCmds
 }
 
-func (t *commandSplitter) Transform(ctx context.Context, id api.CmdID, cmd api.Cmd, out transform.Writer) error {
+// Melih TODO: Can this be only have to run for the authentic commands?
+// We don't have a consistent way to detect it
+func (t *commandSplitter) modifyCommand(ctx context.Context, id api.CmdID, cmd api.Cmd, inputState *api.GlobalState) []api.Cmd {
 	inRange := false
 	var topCut api.SubCmdIdx
 	cuts := []api.SubCmdIdx{}
@@ -762,37 +779,30 @@ func (t *commandSplitter) Transform(ctx context.Context, id api.CmdID, cmd api.C
 	}
 
 	if !inRange {
-		return out.MutateAndWrite(ctx, id, cmd)
+		return []api.Cmd{cmd}
 	}
 
 	if len(cuts) == 0 {
+		outputCmds := make([]api.Cmd, 0)
 		if cmd.CmdFlags().IsEndOfFrame() {
-			if err := out.MutateAndWrite(ctx, id, &InsertionCommand{
+			outputCmds = append(outputCmds, &InsertionCommand{
 				VkCommandBuffer(0),
 				append([]VkCommandBuffer{}, t.pendingCommandBuffers...),
 				topCut,
 				cmd,
-			}); err != nil {
-				return err
-			}
-			if err := out.MutateAndWrite(ctx, id, cmd); err != nil {
-				return err
-			}
+			})
+			outputCmds = append(outputCmds, cmd)
 		} else {
-			if err := out.MutateAndWrite(ctx, id, cmd); err != nil {
-				return err
-			}
-			if err := out.MutateAndWrite(ctx, id, &InsertionCommand{
+			outputCmds = append(outputCmds, cmd)
+			outputCmds = append(outputCmds, &InsertionCommand{
 				VkCommandBuffer(0),
 				append([]VkCommandBuffer{}, t.pendingCommandBuffers...),
 				topCut,
 				cmd,
-			}); err != nil {
-				return err
-			}
+			})
 		}
 
-		return nil
+		return outputCmds
 	}
 
 	// Actually do the cutting here:
@@ -800,31 +810,18 @@ func (t *commandSplitter) Transform(ctx context.Context, id api.CmdID, cmd api.C
 	// If this is not a queue submit it has no business having
 	// subcommands.
 	if !ok {
-		return out.MutateAndWrite(ctx, id, cmd)
+		return []api.Cmd{cmd}
 	}
-	thisCmd, err := t.rewriteQueueSubmit(ctx, id, cuts, queueSubmit, out)
-	if err != nil {
-		return err
-	}
-	if err := out.MutateAndWrite(ctx, id, thisCmd); err != nil {
-		return err
-	}
+	rewriteCommands := t.rewriteQueueSubmit(ctx, id, cuts, queueSubmit, inputState)
 	if len(topCut) == 0 {
-		return nil
+		return rewriteCommands
 	}
-	if err := out.MutateAndWrite(ctx, id, &InsertionCommand{
+	insertionCmd := &InsertionCommand{
 		VkCommandBuffer(0),
 		append([]VkCommandBuffer{}, t.pendingCommandBuffers...),
 		topCut,
 		cmd,
-	}); err != nil {
-		return err
 	}
 	t.pendingCommandBuffers = []VkCommandBuffer{}
-	return nil
+	return append(rewriteCommands, insertionCmd)
 }
-
-func (t *commandSplitter) Flush(ctx context.Context, out transform.Writer) error { return nil }
-func (t *commandSplitter) PreLoop(ctx context.Context, output transform.Writer)  {}
-func (t *commandSplitter) PostLoop(ctx context.Context, output transform.Writer) {}
-func (t *commandSplitter) BuffersCommands() bool                                 { return false }
