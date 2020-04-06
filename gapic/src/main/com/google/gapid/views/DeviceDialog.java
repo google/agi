@@ -137,6 +137,7 @@ public class DeviceDialog {
       super(shell, widgets.theme);
       this.models = models;
       this.widgets = widgets;
+      validationPassed = false;
     }
 
     @Override
@@ -221,7 +222,7 @@ public class DeviceDialog {
     @Override
     protected void createButtonsForButtonBar(Composite parent) {
       openTrace = createButton(parent, IDialogConstants.OK_ID, IDialogConstants.OK_LABEL, true);
-      openTrace.setEnabled(false);
+      openTrace.setEnabled(validationPassed);
     }
 
     @Override
