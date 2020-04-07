@@ -76,7 +76,9 @@ public class Devices {
     capture.addListener(new Capture.Listener() {
       @Override
       public void onCaptureLoadingStart(boolean maintainState) {
-        resetReplayDevice();
+        if (!maintainState) {
+          resetReplayDevice();
+        }
       }
 
       @Override
@@ -127,7 +129,6 @@ public class Devices {
 
   protected void updateReplayDevices(List<Device.Instance> devs) {
     replayDevices = devs;
-    selectedReplayDevice = null;
     listeners.fire().onReplayDevicesLoaded();
   }
 

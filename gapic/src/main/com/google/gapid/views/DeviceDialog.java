@@ -66,7 +66,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 public class DeviceDialog {
-  protected static final Logger LOG = Logger.getLogger(TracerDialog.class.getName());
+  protected static final Logger LOG = Logger.getLogger(DeviceDialog.class.getName());
 
   private static Object mutex = new Object();
   private static boolean dialogExists = false;
@@ -129,7 +129,6 @@ public class DeviceDialog {
     private LoadingIndicator.Widget validationStatusLoader;
     private Link validationStatusText;
     private boolean validationPassed;
-    private Button openTrace;
 
     private final SingleInFlight rpcController = new SingleInFlight();
 
@@ -149,14 +148,6 @@ public class DeviceDialog {
     protected Control createDialogArea(Composite parent) {
       Composite composite = (Composite) super.createDialogArea(parent);
 
-      if (!models.capture.isGraphics()) {
-        createLabel(composite,
-            "Error: no graphics capture loaded?"
-                + " This dialog should not be reachable without a graphics capture loaded.")
-                    .setForeground(theme.missingInput());
-        return composite;
-      }
-
       // Recap capture info
       createLabel(composite, "Capture name: " + models.capture.getName());
       createLabel(composite,
@@ -164,7 +155,7 @@ public class DeviceDialog {
 
       // Warning when no compatible device found
       noCompatibleDeviceFound = createLabel(composite, Messages.SELECT_DEVICE_NO_COMPATIBLE_FOUND);
-      noCompatibleDeviceFound.setForeground(theme.missingInput());
+      noCompatibleDeviceFound.setForeground(theme.deviceNotFound());
 
       // Mirror the device combo from TracerDialog
       Group mainGroup =
@@ -221,7 +212,7 @@ public class DeviceDialog {
 
     @Override
     protected void createButtonsForButtonBar(Composite parent) {
-      openTrace = createButton(parent, IDialogConstants.OK_ID, IDialogConstants.OK_LABEL, true);
+      Button openTrace = createButton(parent, IDialogConstants.OK_ID, IDialogConstants.OK_LABEL, true);
       openTrace.setEnabled(validationPassed);
     }
 
@@ -312,6 +303,7 @@ public class DeviceDialog {
         validationStatusLoader.stopLoading();
         validationPassed = result.passed;
       }
+      Button openTrace = getButton(IDialogConstants.OK_ID);
       if (openTrace != null) {
         openTrace.setEnabled(validationPassed);
       }
