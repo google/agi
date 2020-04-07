@@ -19,20 +19,20 @@
 
 set -x
 
-SWARMING_TEST_DIR=$1
+export SWARMING_TEST_DIR=$1
 if [ -z "${SWARMING_TEST_DIR}" -o ! -d "${SWARMING_TEST_DIR}" ] ; then
   echo "Error: missing or invalid test directory argument."
   exit 1
 fi
 
-SWARMING_TIMEOUT=$2
+export SWARMING_TIMEOUT=$2
 if [ -z "${SWARMING_TIMEOUT}" ] ; then
   echo "Error: missing timeout argument."
   exit 1
 fi
 
-SWARMING_OUTDIR=$3
-if [ -z "${SWARMING_OUTDIR}" -o ! -d "${SWARMING_OUTDIR}" ] ; then
+export SWARMING_OUT_DIR=$3
+if [ -z "${SWARMING_OUT_DIR}" -o ! -d "${SWARMING_OUT_DIR}" ] ; then
   echo "Error: missing or invalid outdir argument."
   exit 1
 fi
@@ -57,7 +57,7 @@ else
 fi
 
 ## Set up environment
-export AGI=`pwd`/agi
+export SWARMING_AGI=`pwd`/agi
 source ${SWARMING_TEST_DIR}/env.sh
 
 # Number of seconds to dump logcat and turn the screen off.
@@ -70,9 +70,9 @@ SWARMING_TIMEOUT_GUARD="$(( ${SWARMING_TIMEOUT} - ${SWARMING_TIMEOUT_SAFETY} ))"
 
 ## Lauch task test
 adb logcat -c
-timeout -k 1 $SWARMING_TIMEOUT_GUARD ./bot-task.sh ${SWARMING_TEST_DIR} ${SWARMING_OUTDIR}
+timeout -k 1 $SWARMING_TIMEOUT_GUARD ./bot-task.sh
 EXIT_CODE=$?
-adb logcat -d > ${SWARMING_OUTDIR}/logcat.txt
+adb logcat -d > ${SWARMING_OUT_DIR}/logcat.txt
 
 echo "Exit code: ${EXIT_CODE}"
 

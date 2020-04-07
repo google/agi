@@ -99,9 +99,13 @@ tar xzvf luci-py.tar.gz --directory luci-py
 export LUCI_CLIENT_ROOT="$PWD/luci-py/client"
 
 # Prepare Swarming files
+# SWARMING_X20_TEST_DIR enables different Kokoro jobs to use different sets of tests
+if [ -z "${SWARMING_X20_TEST_DIR}" ] ; then
+  SWARMING_X20_TEST_DIR="tests"
+fi
 SWARMING_DIR=${SRC}/test/swarming
 cp -r bazel-bin/pkg ${SWARMING_DIR}/agi
-cp -r ${KOKORO_GFILE_DIR}/tests ${SWARMING_DIR}/tests
+cp -r ${KOKORO_GFILE_DIR}/${SWARMING_X20_TEST_DIR} ${SWARMING_DIR}/tests
 
 # Swarming environment
 export SWARMING_AUTH_FLAG="--auth-service-account-json=${KOKORO_KEYSTORE_DIR}/74894_kokoro_swarming_access_key"
