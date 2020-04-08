@@ -67,22 +67,10 @@ public class ImagesModel {
 
   public ListenableFuture<FetchedImage> getFramebuffer(CommandIndex command,
       int attachment, Path.RenderSettings renderSettings) {
-    Path.Any fbPath = Path.Any.newBuilder()
-            .setFramebufferAttachment(Path.FramebufferAttachment.newBuilder()
-              .setAfter(command.getCommand())
-              .setIndex(attachment)
-              .setReplaySettings(Path.ReplaySettings.newBuilder()
-                  .setDevice(getReplayDevice())
-                  .setDisableReplayOptimization(shouldDisableReplayOptimization()))
-              .setRenderSettings(renderSettings)
-              .setHints(FB_HINTS))
-          .build();
+    Path.Any fbPath = Paths.framebufferAttachmentAfter(command, attachment, renderSettings, FB_HINTS);
     
     return MoreFutures.transformAsync(client.get(fbPath, getReplayDevice()), 
-        value -> { 
-          LOG.log(SEVERE, Paths.toString(value.getFramebufferAttachment().getImageInfo()));
-          return FetchedImage.load(client, getReplayDevice(), value.getFramebufferAttachment().getImageInfo());
-        });
+        value ->  FetchedImage.load(client, getReplayDevice(), value.getFramebufferAttachment().getImageInfo()));
   }
 
   public ListenableFuture<FetchedImage> getResource(Path.ResourceData path) {

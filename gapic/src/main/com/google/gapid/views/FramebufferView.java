@@ -54,6 +54,7 @@ import com.google.gapid.server.Client.DataUnavailableException;
 import com.google.gapid.util.Loadable;
 import com.google.gapid.util.Messages;
 import com.google.gapid.util.MoreFutures;
+import com.google.gapid.util.Paths;
 import com.google.gapid.widgets.Balloon;
 import com.google.gapid.widgets.ImagePanel;
 import com.google.gapid.widgets.Theme;
@@ -84,29 +85,17 @@ import java.util.logging.Logger;
 public class FramebufferView extends Composite
     implements Tab, Capture.Listener, Devices.Listener, CommandStream.Listener {
   private static final Logger LOG = Logger.getLogger(FramebufferView.class.getName());
-  private static final int MAX_SIZE = 0xffff;
-  private static final Path.RenderSettings RENDER_SHADED = Path.RenderSettings.newBuilder()
-      .setMaxHeight(MAX_SIZE).setMaxWidth(MAX_SIZE)
-      .setDrawMode(Path.DrawMode.NORMAL)
-      .build();
-  private static final Path.RenderSettings RENDER_OVERLAY = Path.RenderSettings.newBuilder()
-      .setMaxHeight(MAX_SIZE).setMaxWidth(MAX_SIZE)
-      .setDrawMode(Path.DrawMode.WIREFRAME_OVERLAY)
-      .build();
-  private static final Path.RenderSettings RENDER_WIREFRAME = Path.RenderSettings.newBuilder()
-      .setMaxHeight(MAX_SIZE).setMaxWidth(MAX_SIZE)
-      .setDrawMode(Path.DrawMode.WIREFRAME_ALL)
-      .build();
-  private static final Path.RenderSettings RENDER_OVERDRAW = Path.RenderSettings.newBuilder()
-      .setMaxHeight(MAX_SIZE).setMaxWidth(MAX_SIZE)
-      .setDrawMode(Path.DrawMode.OVERDRAW)
-      .build();
+  private final int MAX_SIZE = 0xffff;
+  private final Path.RenderSettings RENDER_SHADED;
+  private final Path.RenderSettings RENDER_OVERLAY;
+  private final Path.RenderSettings RENDER_WIREFRAME;
+  private final Path.RenderSettings RENDER_OVERDRAW;
 
   private final Models models;
   private final Widgets widgets;
   private final SingleInFlight rpcController = new SingleInFlight();
   protected final ImagePanel imagePanel;
-  private Path.RenderSettings renderSettings = RENDER_SHADED;
+  private Path.RenderSettings renderSettings;
   private int target = 0;
   private API.FramebufferAttachmentType targetType = API.FramebufferAttachmentType.ColorAttachment;
   private ToolItem targetItem;
@@ -131,6 +120,20 @@ public class FramebufferView extends Composite
     imagePanel.createToolbar(toolBar, widgets.theme);
     // Work around for https://bugs.eclipse.org/bugs/show_bug.cgi?id=517480
     Widgets.createSeparator(toolBar);
+
+    RENDER_SHADED = Paths.renderSettings(MAX_SIZE, MAX_SIZE, Path.DrawMode.NORMAL, 
+      models.settings.preferences().getDisableReplayOptimization());
+
+    RENDER_OVERLAY = Paths.renderSettings(MAX_SIZE, MAX_SIZE, Path.DrawMode.WIREFRAME_OVERLAY, 
+      models.settings.preferences().getDisableReplayOptimization());
+    
+    RENDER_WIREFRAME = Paths.renderSettings(MAX_SIZE, MAX_SIZE, Path.DrawMode.WIREFRAME_ALL, 
+      models.settings.preferences().getDisableReplayOptimization());
+    
+    RENDER_OVERDRAW = Paths.renderSettings(MAX_SIZE, MAX_SIZE, Path.DrawMode.OVERDRAW, 
+      models.settings.preferences().getDisableReplayOptimization());
+
+    renderSettings = RENDER_SHADED;
 
     models.capture.addListener(this);
     models.devices.addListener(this);
@@ -324,7 +327,7 @@ public class FramebufferView extends Composite
 
   private class AttachmentListener implements Listener {
     private List<Service.FramebufferAttachment> fbaList;
-    private Theme theme;
+    private final Theme theme;
 
     public AttachmentListener(Theme theme) {
       this.theme = theme;

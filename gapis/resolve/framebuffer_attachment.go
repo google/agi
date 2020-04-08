@@ -76,7 +76,7 @@ func typeToString(t api.FramebufferAttachmentType) string {
 // FramebufferAttachment resolves the specified framebuffer attachment at the
 // specified point in a capture.
 func FramebufferAttachment(ctx context.Context, p *path.FramebufferAttachment, r *path.ResolveConfig) (interface{}, error) {
-	if p.ReplaySettings.Device == nil {
+	if r.ReplayDevice == nil {
 		devices, err := devices.ForReplay(ctx, p.After.Capture)
 		if err != nil {
 			return nil, err
@@ -84,7 +84,7 @@ func FramebufferAttachment(ctx context.Context, p *path.FramebufferAttachment, r
 		if len(devices) == 0 {
 			return nil, fmt.Errorf("No compatible devices found")
 		}
-		p.ReplaySettings.Device = devices[0]
+		r.ReplayDevice = devices[0]
 	}
 
 	// Check the command is valid. If we don't do it here, we'll likely get an
@@ -94,12 +94,11 @@ func FramebufferAttachment(ctx context.Context, p *path.FramebufferAttachment, r
 	}
 
 	id, err := database.Store(ctx, &FramebufferAttachmentResolvable{
-		ReplaySettings: p.ReplaySettings,
-		After:          p.After,
-		Attachment:     p.Index,
-		Settings:       p.RenderSettings,
-		Hints:          p.Hints,
-		Config:         r,
+		After:      p.After,
+		Attachment: p.Index,
+		Settings:   p.RenderSettings,
+		Hints:      p.Hints,
+		Config:     r,
 	})
 
 	if err != nil {
@@ -136,15 +135,15 @@ func (r *FramebufferAttachmentResolvable) Resolve(ctx context.Context) (interfac
 	}
 
 	id, err := database.Store(ctx, &FramebufferAttachmentBytesResolvable{
-		ReplaySettings:   r.ReplaySettings,
 		After:            r.After,
 		Width:            width,
 		Height:           height,
 		Attachment:       fbInfo.Type,
 		FramebufferIndex: fbInfo.Index,
-		DrawMode:         r.Settings.DrawMode,
+		Settings:         r.Settings,
 		Hints:            r.Hints,
 		ImageFormat:      format,
+		Config:           r.Config,
 	})
 	if err != nil {
 		return nil, err

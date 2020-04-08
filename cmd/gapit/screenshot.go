@@ -133,7 +133,12 @@ func (verb *screenshotVerb) writeSingleFrame(frame image.Image, fn string) error
 
 func (verb *screenshotVerb) getSingleFrame(ctx context.Context, cmd *path.Command, device *path.Device, client service.Service) (*image.NRGBA, error) {
 	ctx = log.V{"cmd": cmd.Indices}.Bind(ctx)
-	settings := &path.RenderSettings{MaxWidth: uint32(0xFFFFFFFF), MaxHeight: uint32(0xFFFFFFFF)}
+	settings := &path.RenderSettings{
+		MaxWidth:                  uint32(0xFFFFFFFF),
+		MaxHeight:                 uint32(0xFFFFFFFF),
+		DisableReplayOptimization: verb.NoOpt,
+		DisplayToSurface:          verb.DisplayToSurface,
+	}
 	if verb.Overdraw {
 		settings.DrawMode = path.DrawMode_OVERDRAW
 	}
@@ -143,13 +148,8 @@ func (verb *screenshotVerb) getSingleFrame(ctx context.Context, cmd *path.Comman
 		return nil, log.Errf(ctx, err, "Get color attachment failed")
 	}
 	fbPath := &path.FramebufferAttachment{
-		After: cmd,
-		Index: attachment,
-		ReplaySettings: &path.ReplaySettings{
-			Device:                    device,
-			DisableReplayOptimization: verb.NoOpt,
-			DisplayToSurface:          verb.DisplayToSurface,
-		},
+		After:          cmd,
+		Index:          attachment,
 		RenderSettings: settings,
 		Hints:          nil,
 	}
@@ -273,9 +273,10 @@ func rescaleBytes(ctx context.Context, data []byte, max int) {
 }
 
 func (verb *screenshotVerb) getAttachment(ctx context.Context) (uint32, error) {
+	// TODO: Add-back ability to type "depth" to get the depth attachment
 	i, err := strconv.ParseUint(verb.Attachment, 10, 32)
 	if err != nil {
-		return 0, log.Errf(ctx, nil, "Invalid color attachment %v", verb.Attachment)
+		return 0, log.Errf(ctx, nil, "Invalid attachment %v", verb.Attachment)
 	}
 	return uint32(i), nil
 }

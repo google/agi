@@ -128,13 +128,9 @@ func (verb *exportReplayVerb) Run(ctx context.Context, flags flag.FlagSet) error
 
 		for _, e := range eofEvents {
 			fbreqs = append(fbreqs, &gapidPath.FramebufferAttachment{
-				ReplaySettings: &gapidPath.ReplaySettings{
-					Device:                    device,
-					DisableReplayOptimization: true,
-				},
 				After:          e.Command,
 				Index:          0,
-				RenderSettings: &gapidPath.RenderSettings{},
+				RenderSettings: &gapidPath.RenderSettings{DisableReplayOptimization: true},
 				Hints:          nil,
 			})
 		}

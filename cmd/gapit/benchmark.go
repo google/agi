@@ -238,7 +238,12 @@ func (verb *benchmarkVerb) Run(ctx context.Context, flags flag.FlagSet) error {
 
 		gotThumbnails := sync.WaitGroup{}
 		//Get thumbnails
-		settings := &path.RenderSettings{MaxWidth: uint32(256), MaxHeight: uint32(256)}
+		settings := &path.RenderSettings{
+			MaxWidth:                  uint32(256),
+			MaxHeight:                 uint32(256),
+			DisableReplayOptimization: verb.NoOpt,
+			DisplayToSurface:          false,
+		}
 		numThumbnails := 10
 		if len(events) < 10 {
 			numThumbnails = len(events)
@@ -249,13 +254,8 @@ func (verb *benchmarkVerb) Run(ctx context.Context, flags flag.FlagSet) error {
 			hints := &path.UsageHints{Preview: true}
 			go func(i int) {
 				fbPath := &path.FramebufferAttachment{
-					After: events[i].Command,
-					Index: 0,
-					ReplaySettings: &path.ReplaySettings{
-						Device:                    device,
-						DisableReplayOptimization: verb.NoOpt,
-						DisplayToSurface:          false,
-					},
+					After:          events[i].Command,
+					Index:          0,
 					RenderSettings: settings,
 					Hints:          hints,
 				}
@@ -311,7 +311,12 @@ func (verb *benchmarkVerb) Run(ctx context.Context, flags flag.FlagSet) error {
 		}
 		gotThumbnails := sync.WaitGroup{}
 		gotNodes := sync.WaitGroup{}
-		settings := &path.RenderSettings{MaxWidth: uint32(64), MaxHeight: uint32(64)}
+		settings := &path.RenderSettings{
+			MaxWidth:                  uint32(64),
+			MaxHeight:                 uint32(64),
+			DisableReplayOptimization: verb.NoOpt,
+			DisplayToSurface:          false,
+		}
 		hints := &path.UsageHints{Background: true}
 		tnCtx := status.Start(oldCtx, "Resolving Command Thumbnails")
 		for i := 0; i < numChildren; i++ {
@@ -326,13 +331,8 @@ func (verb *benchmarkVerb) Run(ctx context.Context, flags flag.FlagSet) error {
 				child := boxedChild.(*service.CommandTreeNode)
 				gotNodes.Done()
 				fbPath := &path.FramebufferAttachment{
-					After: child.Representation,
-					Index: 0,
-					ReplaySettings: &path.ReplaySettings{
-						Device:                    device,
-						DisableReplayOptimization: verb.NoOpt,
-						DisplayToSurface:          false,
-					},
+					After:          child.Representation,
+					Index:          0,
 					RenderSettings: settings,
 					Hints:          hints,
 				}
@@ -395,15 +395,15 @@ func (verb *benchmarkVerb) Run(ctx context.Context, flags flag.FlagSet) error {
 		defer status.Finish(ctx)
 		defer interactionWG.Done()
 		hints := &path.UsageHints{Primary: true}
-		settings := &path.RenderSettings{MaxWidth: uint32(0xFFFFFFFF), MaxHeight: uint32(0xFFFFFFFF)}
+		settings := &path.RenderSettings{
+			MaxWidth:                  uint32(0xFFFFFFFF),
+			MaxHeight:                 uint32(0xFFFFFFFF),
+			DisableReplayOptimization: verb.NoOpt,
+			DisplayToSurface:          false,
+		}
 		fbPath := &path.FramebufferAttachment{
-			After: commandToClick,
-			Index: 0,
-			ReplaySettings: &path.ReplaySettings{
-				Device:                    device,
-				DisableReplayOptimization: verb.NoOpt,
-				DisplayToSurface:          false,
-			},
+			After:          commandToClick,
+			Index:          0,
 			RenderSettings: settings,
 			Hints:          hints,
 		}

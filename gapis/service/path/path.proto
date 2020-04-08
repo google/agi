@@ -267,20 +267,15 @@ message RenderSettings {
   uint32 max_height = 2;
   // The draw mode to use when rendering.
   DrawMode draw_mode = 3;
-}
-
-message ReplaySettings {
-  Device device = 1;
-  bool disable_replay_optimization = 2;
-  bool display_to_surface = 3;
+  bool disable_replay_optimization = 4;
+  bool display_to_surface = 5;
 }
 
 message FramebufferAttachment {
   Command after = 1;
   uint32 index = 2;
-  ReplaySettings replay_settings = 3;
-  RenderSettings render_settings = 4;
-  UsageHints hints = 5;
+  RenderSettings render_settings = 3;
+  UsageHints hints = 4;
 }
 
 message FramebufferAttachments {

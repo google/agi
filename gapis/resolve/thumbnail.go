@@ -71,14 +71,11 @@ func CommandThumbnail(
 	fbaPath := &path.FramebufferAttachment{
 		After: p,
 		Index: fbaInfo.GetIndex(),
-		ReplaySettings: &path.ReplaySettings{
-			DisableReplayOptimization: noOpt,
-			Device:                    r.GetReplayDevice(),
-		},
 		RenderSettings: &path.RenderSettings{
-			MaxWidth:  w,
-			MaxHeight: h,
-			DrawMode:  path.DrawMode_NORMAL,
+			MaxWidth:                  w,
+			MaxHeight:                 h,
+			DrawMode:                  path.DrawMode_NORMAL,
+			DisableReplayOptimization: noOpt,
 		},
 		Hints: &path.UsageHints{
 			Preview: true,
