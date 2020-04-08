@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"github.com/google/gapid/core/image"
+	"github.com/google/gapid/core/log"
 	"github.com/google/gapid/gapis/api"
 	"github.com/google/gapid/gapis/database"
 	"github.com/google/gapid/gapis/messages"
@@ -49,32 +50,51 @@ func CommandThumbnail(
 	p *path.Command,
 	r *path.ResolveConfig) (*image.Info, error) {
 
-	imageInfoPath, err := FramebufferAttachment(ctx,
-		&path.ReplaySettings{
+	fbaList, err := FramebufferAttachments(ctx, &path.FramebufferAttachments{After: p}, r)
+	if err != nil {
+		log.E(ctx, "ERROR HERE 1")
+		return nil, err
+	}
+
+	var fbaInfo *service.FramebufferAttachment = nil
+	for _, fba := range fbaList.(*service.FramebufferAttachments).GetAttachments() {
+		if fba.GetType() == api.FramebufferAttachmentType_ColorAttachment {
+			fbaInfo = fba
+			break
+		}
+	}
+
+	if fbaInfo == nil {
+		return nil, fmt.Errorf("No viable attachment exists for thumnails")
+	}
+
+	fbaPath := &path.FramebufferAttachment{
+		After: p,
+		Index: fbaInfo.GetIndex(),
+		ReplaySettings: &path.ReplaySettings{
 			DisableReplayOptimization: noOpt,
 			Device:                    r.GetReplayDevice(),
 		},
-		p,
-		api.FramebufferAttachment_Color0,
-		&path.RenderSettings{
+		RenderSettings: &path.RenderSettings{
 			MaxWidth:  w,
 			MaxHeight: h,
 			DrawMode:  path.DrawMode_NORMAL,
 		},
-		&path.UsageHints{
+		Hints: &path.UsageHints{
 			Preview: true,
 		},
-		r,
-	)
+	}
+
+	imageInfoPath, err := FramebufferAttachment(ctx, fbaPath, r)
 	if err != nil {
 		return nil, err
 	}
 
 	var boxedImageInfo interface{}
 	if f != nil {
-		boxedImageInfo, err = Get(ctx, imageInfoPath.As(f).Path(), r)
+		boxedImageInfo, err = Get(ctx, imageInfoPath.(*service.FramebufferAttachment).GetImageInfo().As(f).Path(), r)
 	} else {
-		boxedImageInfo, err = Get(ctx, imageInfoPath.Path(), r)
+		boxedImageInfo, err = Get(ctx, imageInfoPath.(*service.FramebufferAttachment).GetImageInfo().Path(), r)
 	}
 	if err != nil {
 		return nil, err

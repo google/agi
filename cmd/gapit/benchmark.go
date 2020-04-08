@@ -248,15 +248,20 @@ func (verb *benchmarkVerb) Run(ctx context.Context, flags flag.FlagSet) error {
 			gotThumbnails.Add(1)
 			hints := &path.UsageHints{Preview: true}
 			go func(i int) {
-				iip, err := client.GetFramebufferAttachment(ctx,
-					&path.ReplaySettings{
+				fbPath := &path.FramebufferAttachment{
+					After: events[i].Command,
+					Index: 0,
+					ReplaySettings: &path.ReplaySettings{
 						Device:                    device,
 						DisableReplayOptimization: verb.NoOpt,
 						DisplayToSurface:          false,
 					},
-					events[i].Command, api.FramebufferAttachment_Color0, settings, hints)
+					RenderSettings: settings,
+					Hints:          hints,
+				}
+				iip, err := client.Get(ctx, fbPath.Path(), resolveConfig)
 
-				iio, err := client.Get(ctx, iip.Path(), resolveConfig)
+				iio, err := client.Get(ctx, iip.(*service.FramebufferAttachment).GetImageInfo().Path(), resolveConfig)
 				if err != nil {
 					panic(log.Errf(ctx, err, "Get frame image.Info failed"))
 				}
@@ -320,15 +325,20 @@ func (verb *benchmarkVerb) Run(ctx context.Context, flags flag.FlagSet) error {
 				}
 				child := boxedChild.(*service.CommandTreeNode)
 				gotNodes.Done()
-				iip, err := client.GetFramebufferAttachment(tnCtx,
-					&path.ReplaySettings{
+				fbPath := &path.FramebufferAttachment{
+					After: child.Representation,
+					Index: 0,
+					ReplaySettings: &path.ReplaySettings{
 						Device:                    device,
 						DisableReplayOptimization: verb.NoOpt,
 						DisplayToSurface:          false,
 					},
-					child.Representation, api.FramebufferAttachment_Color0, settings, hints)
+					RenderSettings: settings,
+					Hints:          hints,
+				}
+				iip, err := client.Get(tnCtx, fbPath.Path(), resolveConfig)
 
-				iio, err := client.Get(tnCtx, iip.Path(), resolveConfig)
+				iio, err := client.Get(tnCtx, iip.(*service.FramebufferAttachment).GetImageInfo().Path(), resolveConfig)
 				if err != nil {
 					return
 				}
@@ -386,15 +396,20 @@ func (verb *benchmarkVerb) Run(ctx context.Context, flags flag.FlagSet) error {
 		defer interactionWG.Done()
 		hints := &path.UsageHints{Primary: true}
 		settings := &path.RenderSettings{MaxWidth: uint32(0xFFFFFFFF), MaxHeight: uint32(0xFFFFFFFF)}
-		iip, err := client.GetFramebufferAttachment(ctx,
-			&path.ReplaySettings{
+		fbPath := &path.FramebufferAttachment{
+			After: commandToClick,
+			Index: 0,
+			ReplaySettings: &path.ReplaySettings{
 				Device:                    device,
 				DisableReplayOptimization: verb.NoOpt,
 				DisplayToSurface:          false,
 			},
-			commandToClick, api.FramebufferAttachment_Color0, settings, hints)
+			RenderSettings: settings,
+			Hints:          hints,
+		}
+		iip, err := client.Get(ctx, fbPath.Path(), resolveConfig)
 
-		iio, err := client.Get(ctx, iip.Path(), resolveConfig)
+		iio, err := client.Get(ctx, iip.(*service.FramebufferAttachment).GetImageInfo().Path(), resolveConfig)
 		if err != nil {
 			return
 		}

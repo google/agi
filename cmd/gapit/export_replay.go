@@ -34,7 +34,6 @@ import (
 	"github.com/google/gapid/core/log"
 	"github.com/google/gapid/core/os/file"
 	"github.com/google/gapid/core/os/shell"
-	"github.com/google/gapid/gapis/api"
 	"github.com/google/gapid/gapis/service"
 	gapidPath "github.com/google/gapid/gapis/service/path"
 )
@@ -101,7 +100,7 @@ func (verb *exportReplayVerb) Run(ctx context.Context, flags flag.FlagSet) error
 		}
 	}
 
-	var fbreqs []*service.GetFramebufferAttachmentRequest
+	var fbreqs []*gapidPath.FramebufferAttachment
 	var tsreq *service.GetTimestampsRequest
 	onscreen := false
 	switch verb.Mode {
@@ -128,15 +127,15 @@ func (verb *exportReplayVerb) Run(ctx context.Context, flags flag.FlagSet) error
 		}
 
 		for _, e := range eofEvents {
-			fbreqs = append(fbreqs, &service.GetFramebufferAttachmentRequest{
+			fbreqs = append(fbreqs, &gapidPath.FramebufferAttachment{
 				ReplaySettings: &gapidPath.ReplaySettings{
 					Device:                    device,
 					DisableReplayOptimization: true,
 				},
-				After:      e.Command,
-				Attachment: api.FramebufferAttachment_Color0,
-				Settings:   &gapidPath.RenderSettings{},
-				Hints:      nil,
+				After:          e.Command,
+				Index:          0,
+				RenderSettings: &gapidPath.RenderSettings{},
+				Hints:          nil,
 			})
 		}
 	case ExportTimestamps:
@@ -145,10 +144,10 @@ func (verb *exportReplayVerb) Run(ctx context.Context, flags flag.FlagSet) error
 	}
 
 	opts := &service.ExportReplayOptions{
-		GetFramebufferAttachmentRequests: fbreqs,
-		GetTimestampsRequest:             tsreq,
-		DisplayToSurface:                 onscreen,
-		LoopCount:                        int32(verb.LoopCount),
+		FramebufferAttachments: fbreqs,
+		GetTimestampsRequest:   tsreq,
+		DisplayToSurface:       onscreen,
+		LoopCount:              int32(verb.LoopCount),
 	}
 
 	if err := client.ExportReplay(ctx, capturePath, device, verb.Out, opts); err != nil {

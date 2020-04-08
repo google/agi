@@ -38,16 +38,6 @@ func FramebufferChanges(ctx context.Context, c *path.Capture, r *path.ResolveCon
 	return obj.(*AttachmentFramebufferChanges), nil
 }
 
-// FramebufferChanges returns the list of attachment changes over the span of
-// the entire capture.
-func FramebufferChangesVulkan(ctx context.Context, c *path.Capture, r *path.ResolveConfig) (*AttachmentFramebufferChanges, error) {
-	obj, err := database.Build(ctx, &FramebufferChangesVulkanResolvable{Capture: c, Config: r})
-	if err != nil {
-		return nil, err
-	}
-	return obj.(*AttachmentFramebufferChanges), nil
-}
-
 // AttachmentFramebufferChanges describes the list of attachment changes over
 // the span of the entire capture.
 type AttachmentFramebufferChanges struct {
@@ -56,21 +46,7 @@ type AttachmentFramebufferChanges struct {
 
 // Get returns the framebuffer dimensions and format after a given command in
 // the given capture, command and attachment.
-func (c AttachmentFramebufferChanges) Get(ctx context.Context, after *path.Command, att api.FramebufferAttachment) (FramebufferAttachmentInfo, error) {
-	info, err := c.attachments[att].after(ctx, api.SubCmdIdx(after.Indices))
-	if err != nil {
-		return FramebufferAttachmentInfo{}, err
-	}
-	if info.Err != nil {
-		log.W(ctx, "Framebuffer error after %v: %v", after, info.Err)
-		return FramebufferAttachmentInfo{}, &service.ErrDataUnavailable{Reason: messages.ErrFramebufferUnavailable()}
-	}
-	return info, nil
-}
-
-// Get returns the framebuffer dimensions and format after a given command in
-// the given capture, command and attachment.
-func (c AttachmentFramebufferChanges) GetVulkan(ctx context.Context, after *path.Command, att uint32) (FramebufferAttachmentInfo, error) {
+func (c AttachmentFramebufferChanges) Get(ctx context.Context, after *path.Command, att uint32) (FramebufferAttachmentInfo, error) {
 	info, err := c.attachments[att].after(ctx, api.SubCmdIdx(after.Indices))
 	if err != nil {
 		return FramebufferAttachmentInfo{}, err
@@ -96,46 +72,6 @@ func (r *FramebufferChangesResolvable) Resolve(ctx context.Context) (interface{}
 
 	out := &AttachmentFramebufferChanges{
 		// TODO: Remove hardcoded upper limit
-		attachments: make([]framebufferAttachmentChanges, api.FramebufferAttachment_Color3+1),
-	}
-
-	postCmdAndSubCmd := func(s *api.GlobalState, subcommandIndex api.SubCmdIdx, cmd api.Cmd) {
-		api := cmd.API()
-		idx := append([]uint64(nil), subcommandIndex...)
-		for _, att := range allFramebufferAttachments {
-			info := FramebufferAttachmentInfo{After: idx}
-			if api != nil {
-				if inf, err := api.GetFramebufferAttachmentInfo(ctx, idx, s, cmd.Thread(), att); err == nil && inf.Format != nil {
-					info.Width, info.Height, info.Index, info.Format, info.CanResize, info.Type = inf.Width, inf.Height, inf.Index, inf.Format, inf.CanResize, inf.Type
-				} else {
-					info.Err = err
-				}
-			} else {
-				info.Err = errNoAPI
-			}
-			if last := out.attachments[att].last(); !last.equal(info) {
-				attachment := out.attachments[att]
-				attachment.changes = append(attachment.changes, info)
-				out.attachments[att] = attachment
-			}
-		}
-	}
-
-	sync.MutateWithSubcommands(ctx, r.Capture, c.Commands, postCmdAndSubCmd, nil, postCmdAndSubCmd)
-	return out, nil
-}
-
-// Resolve implements the database.Resolver interface.
-func (r *FramebufferChangesVulkanResolvable) Resolve(ctx context.Context) (interface{}, error) {
-	ctx = SetupContext(ctx, r.Capture, r.Config)
-
-	c, err := capture.ResolveGraphics(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	out := &AttachmentFramebufferChanges{
-		// TODO: Remove hardcoded upper limit
 		attachments: make([]framebufferAttachmentChanges, 0),
 	}
 
@@ -148,7 +84,7 @@ func (r *FramebufferChangesVulkanResolvable) Resolve(ctx context.Context) (inter
 			//log.E(ctx, "Attachment index: %d %d", i, att)
 			info := FramebufferAttachmentInfo{After: idx}
 			if api != nil {
-				if inf, err := api.GetFramebufferAttachmentInfoVulkan(ctx, idx, s, cmd.Thread(), i); err == nil && inf.Format != nil {
+				if inf, err := api.GetFramebufferAttachmentInfo(ctx, idx, s, cmd.Thread(), i); err == nil && inf.Format != nil {
 					info.Width, info.Height, info.Index, info.Format, info.CanResize, info.Type = inf.Width, inf.Height, inf.Index, inf.Format, inf.CanResize, inf.Type
 				} else {
 					info.Err = err
@@ -157,11 +93,9 @@ func (r *FramebufferChangesVulkanResolvable) Resolve(ctx context.Context) (inter
 				info.Err = errNoAPI
 			}
 			if uint32(len(out.attachments)) == i {
-				log.E(ctx, "Added after seeing %d. Length: %d", i, len(out.attachments))
 				out.attachments = append(out.attachments, framebufferAttachmentChanges{changes: make([]FramebufferAttachmentInfo, 0)})
 			}
 			if last := out.attachments[i].last(); !last.equal(info) {
-				log.E(ctx, "Count: %d, Index: %d", count, i)
 				attachment := out.attachments[i]
 				attachment.changes = append(attachment.changes, info)
 				out.attachments[i] = attachment
@@ -174,7 +108,6 @@ func (r *FramebufferChangesVulkanResolvable) Resolve(ctx context.Context) (inter
 			info := FramebufferAttachmentInfo{After: idx}
 			info.Err = errDetached
 			if last := out.attachments[i].last(); !last.equal(info) {
-				log.E(ctx, "Count: %d, Index: %d", count, i)
 				attachment := out.attachments[i]
 				attachment.changes = append(attachment.changes, info)
 				out.attachments[i] = attachment
@@ -183,6 +116,5 @@ func (r *FramebufferChangesVulkanResolvable) Resolve(ctx context.Context) (inter
 	}
 
 	sync.MutateWithSubcommands(ctx, r.Capture, c.Commands, postCmdAndSubCmd, nil, postCmdAndSubCmd)
-	log.E(ctx, "Final Length: %d", len(out.attachments))
 	return out, nil
 }

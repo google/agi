@@ -66,13 +66,6 @@ public class ImagesModel {
   }
 
   public ListenableFuture<FetchedImage> getFramebuffer(CommandIndex command,
-      API.FramebufferAttachment attachment, Path.RenderSettings renderSettings) {
-    return FetchedImage.load(client, getReplayDevice(), client.getFramebufferAttachment(
-        getReplayDevice(), command.getCommand(), attachment, renderSettings,
-        FB_HINTS, shouldDisableReplayOptimization()));
-  }
-
-  public ListenableFuture<FetchedImage> getFramebuffer(CommandIndex command,
       int attachment, Path.RenderSettings renderSettings) {
     Path.Any fbPath = Path.Any.newBuilder()
             .setFramebufferAttachment(Path.FramebufferAttachment.newBuilder()

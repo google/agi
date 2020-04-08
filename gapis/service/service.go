@@ -105,19 +105,6 @@ type Service interface {
 	// the local Android devices will be returned first.
 	GetDevicesForReplay(ctx context.Context, p *path.Capture) ([]*path.Device, error)
 
-	// GetFramebufferAttachment returns the ImageInfo identifier describing the
-	// given framebuffer attachment and device, immediately following the
-	// command after.
-	// The provided RenderSettings structure can be used to adjust maximum desired
-	// dimensions of the image, as well as applying debug visualizations.
-	GetFramebufferAttachment(
-		ctx context.Context,
-		replaySettings *path.ReplaySettings,
-		after *path.Command,
-		attachment api.FramebufferAttachment,
-		settings *path.RenderSettings,
-		hints *path.UsageHints) (*path.ImageInfo, error)
-
 	// Get resolves and returns the object, value or memory at the path p.
 	Get(ctx context.Context, p *path.Any, c *path.ResolveConfig) (interface{}, error)
 
@@ -297,14 +284,12 @@ func NewValue(v interface{}) *Value {
 		return &Value{Val: &Value_MultiResourceData{v}}
 	case *FramebufferAttachments:
 		return &Value{Val: &Value_FramebufferAttachments{v}}
-	case *FramebufferAttachmentVulkan:
+	case *FramebufferAttachment:
 		return &Value{Val: &Value_FramebufferAttachment{v}}
 	case *DeviceTraceConfiguration:
 		return &Value{Val: &Value_TraceConfig{v}}
 	case *types.Type:
 		return &Value{Val: &Value_Type{v}}
-	case *path.ImageInfo:
-		return &Value{Val: &Value_ImageInfoPath{v}}
 
 	default:
 		if v := box.NewValue(v); v != nil {

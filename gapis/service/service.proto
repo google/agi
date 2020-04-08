@@ -90,7 +90,7 @@ message Value {
     api.Metrics metrics = 33;
     api.MultiResourceData multi_resource_data = 34;
     FramebufferAttachments framebuffer_attachments = 35;
-    FramebufferAttachmentVulkan framebuffer_attachment = 36;
+    FramebufferAttachment framebuffer_attachment = 36;
 
     image.Info image_info = 40;
 
@@ -99,8 +99,6 @@ message Value {
     types.Type type = 60;
 
     memory_box.Value memory_box = 70;
-
-    path.ImageInfo image_info_path = 80;
   }
 }
 
@@ -348,8 +346,7 @@ message SaveCaptureResponse {
 
 message ExportReplayOptions {
   path.Report report = 1;
-  repeated GetFramebufferAttachmentRequest get_framebuffer_attachment_requests =
-      2;
+  repeated path.FramebufferAttachment framebuffer_attachments = 2;
   GetTimestampsRequest get_timestamps_request = 3;
   bool display_to_surface = 4;
   int32 LoopCount = 5;
@@ -412,26 +409,11 @@ message GetDevicesForReplayResponse {
   }
 }
 
-message GetFramebufferAttachmentRequest {
-  path.ReplaySettings replay_settings = 1;
-  path.Command after = 2;
-  api.FramebufferAttachment attachment = 3;
-  path.RenderSettings settings = 4;
-  path.UsageHints hints = 5;
-}
-
-message GetFramebufferAttachmentResponse {
-  oneof res {
-    path.ImageInfo image = 1;
-    Error error = 2;
-  }
-}
-
 message FramebufferAttachments {
-  repeated FramebufferAttachmentVulkan attachments = 1;
+  repeated FramebufferAttachment attachments = 1;
 }
 
-message FramebufferAttachmentVulkan {
+message FramebufferAttachment {
   uint32 index = 1;
   api.FramebufferAttachmentType type = 2;
   path.ImageInfo image_info = 3;
@@ -671,15 +653,6 @@ service Gapid {
   // the local Android devices will be returned first.
   rpc GetDevicesForReplay(GetDevicesForReplayRequest)
       returns (GetDevicesForReplayResponse) {
-  }
-
-  // GetFramebufferAttachment returns the ImageInfo identifier describing the
-  // given framebuffer attachment and device, immediately following the command
-  // after.
-  // The provided RenderSettings structure can be used to adjust maximum desired
-  // dimensions of the image, as well as applying debug visualizations.
-  rpc GetFramebufferAttachment(GetFramebufferAttachmentRequest)
-      returns (GetFramebufferAttachmentResponse) {
   }
 
   // GetLogStream calls the handler with each log record raised until the

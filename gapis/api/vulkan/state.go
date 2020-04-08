@@ -20,151 +20,6 @@ import (
 	"github.com/google/gapid/gapis/api"
 )
 
-func (st *State) getSubmitAttachmentInfo(attachment api.FramebufferAttachment) (w, h uint32,
-	f VkFormat, attachmentIndex uint32,
-	canResize bool,
-	attachmentType api.FramebufferAttachmentType,
-	err error) {
-
-	returnError := func(format_str string, e ...interface{}) (w, h uint32,
-		f VkFormat, attachmentIndex uint32,
-		canResize bool,
-		attachmentType api.FramebufferAttachmentType,
-		err error) {
-
-		return 0, 0, VkFormat_VK_FORMAT_UNDEFINED, 0, true, api.FramebufferAttachmentType_ColorAttachment, fmt.Errorf(format_str, e...)
-	}
-
-	lastQueue := st.LastBoundQueue()
-	if lastQueue.IsNil() {
-		return returnError("No previous queue submission")
-	}
-
-	lastDrawInfo, ok := st.LastDrawInfos().Lookup(lastQueue.VulkanHandle())
-	if !ok {
-		return returnError("There have been no previous draws")
-	}
-
-	if lastDrawInfo.Framebuffer().IsNil() || !st.Framebuffers().Contains(lastDrawInfo.Framebuffer().VulkanHandle()) {
-		return returnError("%s is not bound", attachment)
-	}
-
-	if lastDrawInfo.Framebuffer().RenderPass().IsNil() {
-		return returnError("%s is not bound to any renderpass", attachment)
-	}
-
-	lastSubpass := lastDrawInfo.LastSubpass()
-
-	subpassDesc := lastDrawInfo.Framebuffer().RenderPass().SubpassDescriptions().Get(lastSubpass)
-	switch attachment {
-	case api.FramebufferAttachment_Color0,
-		api.FramebufferAttachment_Color1,
-		api.FramebufferAttachment_Color2,
-		api.FramebufferAttachment_Color3:
-		attachmentIndex := uint32(attachment - api.FramebufferAttachment_Color0)
-		if attRef, ok := subpassDesc.ColorAttachments().Lookup(attachmentIndex); ok {
-			if ca, ok := lastDrawInfo.Framebuffer().ImageAttachments().Lookup(attRef.Attachment()); ok {
-				// This can occur if we destroy the image-view, we remove it from the framebuffer,
-				// but may not unbind the framebuffer.
-				if !ca.Image().IsNil() {
-					return ca.Image().Info().Extent().Width(),
-						ca.Image().Info().Extent().Height(),
-						ca.Image().Info().Fmt(),
-						attRef.Attachment(), true,
-						api.FramebufferAttachmentType_ColorAttachment, nil
-				}
-			}
-		}
-	case api.FramebufferAttachment_Depth:
-		if !subpassDesc.DepthStencilAttachment().IsNil() && !lastDrawInfo.Framebuffer().IsNil() {
-			attRef := subpassDesc.DepthStencilAttachment()
-			if attachment, ok := lastDrawInfo.Framebuffer().ImageAttachments().Lookup(attRef.Attachment()); ok {
-				depthImg := attachment.Image()
-				// This can occur if we destroy the image-view, we remove it from the framebuffer,
-				// but may not unbind the framebuffer.
-				if !depthImg.IsNil() {
-					return depthImg.Info().Extent().Width(),
-						depthImg.Info().Extent().Height(),
-						depthImg.Info().Fmt(),
-						attRef.Attachment(), true,
-						api.FramebufferAttachmentType_DepthAttachment, nil
-				}
-			}
-		}
-	case api.FramebufferAttachment_Stencil:
-		fallthrough
-	default:
-		return returnError("Framebuffer attachment %v currently unsupported", attachment)
-	}
-
-	return returnError("%s is not bound", attachment)
-}
-
-func (st *State) getPresentAttachmentInfo(attachment api.FramebufferAttachment) (w, h uint32,
-	f VkFormat,
-	attachmentIndex uint32,
-	canResize bool,
-	attachmentType api.FramebufferAttachmentType,
-	err error) {
-
-	returnError := func(format_str string, e ...interface{}) (w, h uint32,
-		f VkFormat,
-		attachmentIndex uint32,
-		canResize bool,
-		attachmentType api.FramebufferAttachmentType,
-		err error) {
-
-		return 0, 0, VkFormat_VK_FORMAT_UNDEFINED, 0, false, api.FramebufferAttachmentType_ColorAttachment, fmt.Errorf(format_str, e...)
-	}
-
-	switch attachment {
-	case api.FramebufferAttachment_Color0,
-		api.FramebufferAttachment_Color1,
-		api.FramebufferAttachment_Color2,
-		api.FramebufferAttachment_Color3:
-		imageIdx := uint32(attachment - api.FramebufferAttachment_Color0)
-		if st.LastPresentInfo().PresentImageCount() <= imageIdx {
-			return returnError("Swapchain does not contain image %v", attachment)
-		}
-		colorImg := st.LastPresentInfo().PresentImages().Get(imageIdx)
-		if !colorImg.IsNil() {
-			queue := st.Queues().Get(st.LastPresentInfo().Queue())
-			vkDevice := queue.Device()
-			device := st.Devices().Get(vkDevice)
-			vkPhysicalDevice := device.PhysicalDevice()
-			physicalDevice := st.PhysicalDevices().Get(vkPhysicalDevice)
-			if properties, ok := physicalDevice.QueueFamilyProperties().Lookup(queue.Family()); ok {
-				if properties.QueueFlags()&VkQueueFlags(VkQueueFlagBits_VK_QUEUE_GRAPHICS_BIT) != 0 {
-					return colorImg.Info().Extent().Width(),
-						colorImg.Info().Extent().Height(),
-						colorImg.Info().Fmt(), imageIdx, true,
-						api.FramebufferAttachmentType_ColorAttachment, nil
-				}
-				return colorImg.Info().Extent().Width(),
-					colorImg.Info().Extent().Height(),
-					colorImg.Info().Fmt(), imageIdx, false,
-					api.FramebufferAttachmentType_ColorAttachment, nil
-			}
-
-			return returnError("Last present queue does not exist", attachment)
-		}
-	case api.FramebufferAttachment_Depth:
-		fallthrough
-	case api.FramebufferAttachment_Stencil:
-		fallthrough
-	default:
-		return returnError("Swapchain attachment %v does not exist", attachment)
-	}
-	return returnError("Swapchain attachment %v does not exist", attachment)
-}
-
-func (st *State) getFramebufferAttachmentInfo(attachment api.FramebufferAttachment) (uint32, uint32, VkFormat, uint32, bool, api.FramebufferAttachmentType, error) {
-	if st.LastSubmission() == LastSubmissionType_SUBMIT {
-		return st.getSubmitAttachmentInfo(attachment)
-	}
-	return st.getPresentAttachmentInfo(attachment)
-}
-
 func (st *State) getFramebufferAttachmentCount() (uint32, error) {
 	if st.LastSubmission() == LastSubmissionType_SUBMIT {
 		lastQueue := st.LastBoundQueue()
@@ -191,7 +46,7 @@ func (st *State) getFramebufferAttachmentCount() (uint32, error) {
 	return st.LastPresentInfo().PresentImageCount(), nil
 }
 
-func (st *State) getSubmitAttachmentInfoVulkan(attachment uint32) (w, h uint32,
+func (st *State) getSubmitAttachmentInfo(attachment uint32) (w, h uint32,
 	f VkFormat, attachmentIndex uint32,
 	canResize bool,
 	attachmentType api.FramebufferAttachmentType,
@@ -272,7 +127,7 @@ func (st *State) getSubmitAttachmentInfoVulkan(attachment uint32) (w, h uint32,
 	return returnError("Attachment %d is not bound", attachment)
 }
 
-func (st *State) getPresentAttachmentInfoVulkan(attachment uint32) (w, h uint32,
+func (st *State) getPresentAttachmentInfo(attachment uint32) (w, h uint32,
 	f VkFormat,
 	attachmentIndex uint32,
 	canResize bool,
@@ -318,9 +173,9 @@ func (st *State) getPresentAttachmentInfoVulkan(attachment uint32) (w, h uint32,
 	return returnError("Swapchain attachment %d does not exist", attachment)
 }
 
-func (st *State) getFramebufferAttachmentInfoVulkan(attachment uint32) (uint32, uint32, VkFormat, uint32, bool, api.FramebufferAttachmentType, error) {
+func (st *State) getFramebufferAttachmentInfo(attachment uint32) (uint32, uint32, VkFormat, uint32, bool, api.FramebufferAttachmentType, error) {
 	if st.LastSubmission() == LastSubmissionType_SUBMIT {
-		return st.getSubmitAttachmentInfoVulkan(attachment)
+		return st.getSubmitAttachmentInfo(attachment)
 	}
-	return st.getPresentAttachmentInfoVulkan(attachment)
+	return st.getPresentAttachmentInfo(attachment)
 }

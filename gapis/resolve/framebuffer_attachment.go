@@ -39,26 +39,24 @@ func FramebufferAttachments(ctx context.Context, p *path.FramebufferAttachments,
 }
 
 func (r *FramebufferAttachmentsResolvable) Resolve(ctx context.Context) (interface{}, error) {
-	changes, err := FramebufferChangesVulkan(ctx, r.Path.After.Capture, r.Config)
+	changes, err := FramebufferChanges(ctx, r.Path.After.Capture, r.Config)
 	if err != nil {
-		return []*service.FramebufferAttachmentVulkan{}, err
+		return []*service.FramebufferAttachment{}, err
 	}
 
-	out := []*service.FramebufferAttachmentVulkan{}
+	out := []*service.FramebufferAttachment{}
 	for _, att := range changes.attachments {
 		info, err := att.after(ctx, api.SubCmdIdx(r.Path.After.Indices))
 		if err != nil {
-			return []*service.FramebufferAttachmentVulkan{}, err
+			return []*service.FramebufferAttachment{}, err
 		}
 
 		if info.Err == nil {
-			out = append(out, &service.FramebufferAttachmentVulkan{
+			out = append(out, &service.FramebufferAttachment{
 				Index: info.Index,
 				Type:  info.Type,
 				Label: fmt.Sprintf("%s_%d", typeToString(info.Type), info.Index),
 			})
-		} else {
-			log.E(ctx, "There was an error with %d %s", info.Index, info.Err)
 		}
 	}
 	return &service.FramebufferAttachments{Attachments: out}, nil
@@ -75,7 +73,9 @@ func typeToString(t api.FramebufferAttachmentType) string {
 	}
 }
 
-func FramebufferAttachmentVulkan(ctx context.Context, p *path.FramebufferAttachment, r *path.ResolveConfig) (interface{}, error) {
+// FramebufferAttachment resolves the specified framebuffer attachment at the
+// specified point in a capture.
+func FramebufferAttachment(ctx context.Context, p *path.FramebufferAttachment, r *path.ResolveConfig) (interface{}, error) {
 	if p.ReplaySettings.Device == nil {
 		devices, err := devices.ForReplay(ctx, p.After.Capture)
 		if err != nil {
@@ -93,7 +93,7 @@ func FramebufferAttachmentVulkan(ctx context.Context, p *path.FramebufferAttachm
 		return nil, err
 	}
 
-	id, err := database.Store(ctx, &FramebufferAttachmentVulkanResolvable{
+	id, err := database.Store(ctx, &FramebufferAttachmentResolvable{
 		ReplaySettings: p.ReplaySettings,
 		After:          p.After,
 		Attachment:     p.Index,
@@ -105,102 +105,12 @@ func FramebufferAttachmentVulkan(ctx context.Context, p *path.FramebufferAttachm
 	if err != nil {
 		return nil, err
 	}
-	return &service.FramebufferAttachmentVulkan{
+	return &service.FramebufferAttachment{
 		Index:     p.Index,
 		Type:      api.FramebufferAttachmentType_ColorAttachment,
 		ImageInfo: path.NewImageInfo(id),
 		Label:     fmt.Sprintf("Attachment %d", p.Index),
 	}, nil
-}
-
-// Resolve implements the database.Resolver interface.
-func (r *FramebufferAttachmentVulkanResolvable) Resolve(ctx context.Context) (interface{}, error) {
-	changes, err := FramebufferChangesVulkan(ctx, r.After.Capture, r.Config)
-	if err != nil {
-		return FramebufferAttachmentInfo{}, err
-	}
-
-	fbInfo, err := changes.GetVulkan(ctx, r.After, r.Attachment)
-	if err != nil {
-		return nil, err
-	}
-
-	width, height := uniformScale(fbInfo.Width, fbInfo.Height, r.Settings.MaxWidth, r.Settings.MaxHeight)
-	if !fbInfo.CanResize {
-		width, height = fbInfo.Width, fbInfo.Height
-	}
-
-	format := fbInfo.Format
-	if r.Settings.DrawMode == path.DrawMode_OVERDRAW {
-		format = image.NewUncompressed("Count_U8", fmts.Count_U8)
-	}
-
-	id, err := database.Store(ctx, &FramebufferAttachmentVulkanBytesResolvable{
-		ReplaySettings:   r.ReplaySettings,
-		After:            r.After,
-		Width:            width,
-		Height:           height,
-		Attachment:       fbInfo.Type,
-		FramebufferIndex: fbInfo.Index,
-		DrawMode:         r.Settings.DrawMode,
-		Hints:            r.Hints,
-		ImageFormat:      format,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &image.Info{
-		Width:  width,
-		Height: height,
-		Depth:  1,
-		Format: format,
-		Bytes:  image.NewID(id),
-	}, nil
-}
-
-// FramebufferAttachment resolves the specified framebuffer attachment at the
-// specified point in a capture.
-func FramebufferAttachment(
-	ctx context.Context,
-	replaySettings *path.ReplaySettings,
-	after *path.Command,
-	attachment api.FramebufferAttachment,
-	settings *path.RenderSettings,
-	hints *path.UsageHints,
-	config *path.ResolveConfig,
-) (*path.ImageInfo, error) {
-
-	if replaySettings.Device == nil {
-		devices, err := devices.ForReplay(ctx, after.Capture)
-		if err != nil {
-			return nil, err
-		}
-		if len(devices) == 0 {
-			return nil, fmt.Errorf("No compatible replay devices found")
-		}
-		replaySettings.Device = devices[0]
-	}
-
-	// Check the command is valid. If we don't do it here, we'll likely get an
-	// error deep in the bowels of the framebuffer data resolve.
-	if _, err := Cmd(ctx, after, config); err != nil {
-		return nil, err
-	}
-
-	id, err := database.Store(ctx, &FramebufferAttachmentResolvable{
-		ReplaySettings: replaySettings,
-		After:          after,
-		Attachment:     attachment,
-		Settings:       settings,
-		Hints:          hints,
-		Config:         config,
-	})
-
-	if err != nil {
-		return nil, err
-	}
-	return path.NewImageInfo(id), nil
 }
 
 // Resolve implements the database.Resolver interface.
@@ -230,7 +140,7 @@ func (r *FramebufferAttachmentResolvable) Resolve(ctx context.Context) (interfac
 		After:            r.After,
 		Width:            width,
 		Height:           height,
-		Attachment:       r.Attachment,
+		Attachment:       fbInfo.Type,
 		FramebufferIndex: fbInfo.Index,
 		DrawMode:         r.Settings.DrawMode,
 		Hints:            r.Hints,
@@ -324,13 +234,4 @@ func (c framebufferAttachmentChanges) last() FramebufferAttachmentInfo {
 		return c.changes[count-1]
 	}
 	return FramebufferAttachmentInfo{}
-}
-
-var allFramebufferAttachments = []api.FramebufferAttachment{
-	api.FramebufferAttachment_Depth,
-	api.FramebufferAttachment_Color0,
-	api.FramebufferAttachment_Color1,
-	api.FramebufferAttachment_Color2,
-	api.FramebufferAttachment_Color3,
-	api.FramebufferAttachment_Stencil,
 }

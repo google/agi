@@ -163,24 +163,6 @@ func TestGetDevicesForReplay(t *testing.T) {
 	assert.For(ctx, "got").ThatSlice(got).IsNotEmpty()
 }
 
-func TestGetFramebufferAttachment(t *testing.T) {
-	ctx, server, shutdown := setup(t)
-	defer shutdown()
-	capture, err := server.ImportCapture(ctx, "test-capture", testCaptureData)
-	assert.For(ctx, "err").ThatError(err).Succeeded()
-	assert.For(ctx, "capture").That(capture).IsNotNil()
-	devices, err := server.GetDevices(ctx)
-	assert.For(ctx, "err").ThatError(err).Succeeded()
-	assert.For(ctx, "devices").ThatSlice(devices).IsNotEmpty()
-	after := capture.Command(swapCmdIndex)
-	attachment := api.FramebufferAttachment_Color0
-	settings := &service.RenderSettings{}
-	renderSettings := &path.ReplaySettings{Device: devices[0]}
-	got, err := server.GetFramebufferAttachment(ctx, renderSettings, after, attachment, settings, nil)
-	assert.For(ctx, "err").ThatError(err).Succeeded()
-	assert.For(ctx, "got").That(got).IsNotNil()
-}
-
 func TestGet(t *testing.T) {
 	ctx, server, shutdown := setup(t)
 	defer shutdown()

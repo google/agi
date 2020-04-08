@@ -50,13 +50,6 @@ type API interface {
 		after []uint64,
 		state *GlobalState,
 		thread uint64,
-		attachment FramebufferAttachment) (info FramebufferAttachmentInfo, err error)
-
-	GetFramebufferAttachmentInfoVulkan(
-		ctx context.Context,
-		after []uint64,
-		state *GlobalState,
-		thread uint64,
 		attachment uint32) (info FramebufferAttachmentInfo, err error)
 
 	GetFramebufferAttachmentCount(ctx context.Context, state *GlobalState) (uint32, error)

@@ -323,7 +323,7 @@ public class FramebufferView extends Composite
   }
 
   private class AttachmentListener implements Listener {
-    private List<Service.FramebufferAttachmentVulkan> fbaList;
+    private List<Service.FramebufferAttachment> fbaList;
     private Theme theme;
 
     public AttachmentListener(Theme theme) {
@@ -331,7 +331,7 @@ public class FramebufferView extends Composite
       fbaList = emptyList();
     }
 
-    public void reset(List<Service.FramebufferAttachmentVulkan> fbaList) {
+    public void reset(List<Service.FramebufferAttachment> fbaList) {
       this.fbaList = fbaList;
     }
 
@@ -344,7 +344,7 @@ public class FramebufferView extends Composite
         ToolBar tb = new ToolBar(c, SWT.HORIZONTAL | SWT.FLAT);
         if (!fbaList.isEmpty()) {
           List<ToolItem> fbaItems = new ArrayList<ToolItem>();
-          for (Service.FramebufferAttachmentVulkan fba : fbaList) {
+          for (Service.FramebufferAttachment fba : fbaList) {
             switch(fba.getType()) {
               case ColorAttachment:
                 fbaItems.add(createToggleToolItem(tb, theme.lit(),

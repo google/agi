@@ -124,16 +124,6 @@ type imgRes struct {
 type framebufferRequest struct {
 	after            []uint64
 	width, height    uint32
-	attachment       api.FramebufferAttachment
-	framebufferIndex uint32
-	out              chan imgRes
-	wireframeOverlay bool
-	displayToSurface bool
-}
-
-type framebufferVulkanRequest struct {
-	after            []uint64
-	width, height    uint32
 	attachment       api.FramebufferAttachmentType
 	framebufferIndex uint32
 	out              chan imgRes
@@ -1041,61 +1031,6 @@ func (a API) Replay(
 			}
 
 			switch req.attachment {
-			case api.FramebufferAttachment_Depth:
-				readFramebuffer.Depth(ctx, subIdx, req.framebufferIndex, rr.Result)
-			case api.FramebufferAttachment_Stencil:
-				return fmt.Errorf("Stencil attachments are not currently supported")
-			default:
-				readFramebuffer.Color(ctx, subIdx, req.width, req.height, req.framebufferIndex, rr.Result)
-			}
-
-			if req.displayToSurface {
-				doDisplayToSurface = true
-			}
-		case framebufferVulkanRequest:
-			cfg := cfg.(drawConfig)
-			if cfg.disableReplayOptimization {
-				optimize = false
-			}
-
-			cmdID := req.after[0]
-
-			if optimize {
-				// Should have been built in expandCommands()
-				if dceBuilder != nil {
-					dceBuilder.Request(ctx, api.SubCmdIdx{cmdID})
-				} else {
-					optimize = false
-				}
-			}
-
-			if cfg.drawMode == path.DrawMode_OVERDRAW {
-				// TODO(subcommands): Add subcommand support here
-				if err := earlyTerminator.Add(ctx, api.CmdID(cmdID), req.after[1:]); err != nil {
-					return err
-				}
-
-				if overdraw == nil {
-					overdraw = newStencilOverdraw()
-				}
-				overdraw.add(ctx, req.after, intent.Capture, rr.Result)
-				break
-			}
-			if err := earlyTerminator.Add(ctx, api.CmdID(cmdID), api.SubCmdIdx{}); err != nil {
-				return err
-			}
-			subIdx := append(api.SubCmdIdx{}, req.after...)
-			splitter.Split(ctx, subIdx)
-			switch cfg.drawMode {
-			case path.DrawMode_WIREFRAME_ALL:
-				wire = true
-			case path.DrawMode_WIREFRAME_OVERLAY:
-				return fmt.Errorf("Overlay wireframe view is not currently supported")
-			// Overdraw is handled above, since it breaks out of the normal read flow.
-			default:
-			}
-
-			switch req.attachment {
 			case api.FramebufferAttachmentType_DepthAttachment:
 				readFramebuffer.Depth(ctx, subIdx, req.framebufferIndex, rr.Result)
 			case api.FramebufferAttachmentType_ColorAttachment:
@@ -1214,50 +1149,6 @@ func (a API) QueryFramebufferAttachment(
 	mgr replay.Manager,
 	after []uint64,
 	width, height uint32,
-	attachment api.FramebufferAttachment,
-	framebufferIndex uint32,
-	drawMode path.DrawMode,
-	disableReplayOptimization bool,
-	displayToSurface bool,
-	hints *path.UsageHints) (*image.Data, error) {
-
-	beginIndex := api.CmdID(0)
-	endIndex := api.CmdID(0)
-	subcommand := ""
-	// We cant break up overdraw right now, but we can break up
-	// everything else.
-	if drawMode == path.DrawMode_OVERDRAW {
-		if len(after) > 1 { // If we are replaying subcommands, then we can't batch at all
-			beginIndex = api.CmdID(after[0])
-			endIndex = api.CmdID(after[0])
-			for i, j := range after[1:] {
-				if i != 0 {
-					subcommand += ":"
-				}
-				subcommand += fmt.Sprintf("%d", j)
-			}
-		}
-	}
-
-	c := drawConfig{beginIndex, endIndex, subcommand, drawMode, disableReplayOptimization}
-	out := make(chan imgRes, 1)
-	r := framebufferRequest{after: after, width: width, height: height, framebufferIndex: framebufferIndex, attachment: attachment, out: out, displayToSurface: displayToSurface}
-	res, err := mgr.Replay(ctx, intent, c, r, a, hints, false)
-	if err != nil {
-		return nil, err
-	}
-	if _, ok := mgr.(replay.Exporter); ok {
-		return nil, nil
-	}
-	return res.(*image.Data), nil
-}
-
-func (a API) QueryFramebufferAttachmentVulkan(
-	ctx context.Context,
-	intent replay.Intent,
-	mgr replay.Manager,
-	after []uint64,
-	width, height uint32,
 	attachment api.FramebufferAttachmentType,
 	framebufferIndex uint32,
 	drawMode path.DrawMode,
@@ -1285,7 +1176,7 @@ func (a API) QueryFramebufferAttachmentVulkan(
 
 	c := drawConfig{beginIndex, endIndex, subcommand, drawMode, disableReplayOptimization}
 	out := make(chan imgRes, 1)
-	r := framebufferVulkanRequest{after: after, width: width, height: height, framebufferIndex: framebufferIndex, attachment: attachment, out: out, displayToSurface: displayToSurface}
+	r := framebufferRequest{after: after, width: width, height: height, framebufferIndex: framebufferIndex, attachment: attachment, out: out, displayToSurface: displayToSurface}
 	res, err := mgr.Replay(ctx, intent, c, r, a, hints, false)
 	if err != nil {
 		return nil, err
