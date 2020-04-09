@@ -20,6 +20,13 @@ For the duration of the developer preview, instructions on how to set up the bet
   ```
 [debuggable attribute]: https://developer.android.com/guide/topics/manifest/application-element#debug
 
+* To utilize the beta GPU drivers, the following piece of metadata must be included in the `<application>` tag of the APK manifest:
+  ```xml
+  <meta-data 
+            android:name="com.android.graphics.developerdriver.enable" 
+            android:value="true" />
+  ```
+
 ## Capturing a systems profile of a Vulkan application
 
 1. Connect one of the [supported devices](requirements#supported-android-devices) to your host computer with a USB cable. Your device must have [`adb` debugging enabled](https://developer.android.com/studio/command-line/adb#Enabling)
