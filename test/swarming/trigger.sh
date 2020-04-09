@@ -66,9 +66,7 @@ SWARMING_EXPIRATION=600
 for envvar in SWARMING_DEVICES SWARMING_PRIORITY SWARMING_TIMEOUT SWARMING_EXPIRATION ; do
   value=`grep ${envvar} ${SWARMING_TEST_DIR}/env.sh | sed -e 's/^.*=//'`
   if [ ! -z "${value}" ] ; then
-    # need 'export', because doing just '${envvar}=${value}' results in bash
-    # looking for a command called 'foo=bar'
-    export ${envvar}=${value}
+    declare ${envvar}=${value}
   fi
 done
 
