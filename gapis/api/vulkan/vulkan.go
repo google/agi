@@ -316,7 +316,7 @@ func (API) ResolveSynchronization(ctx context.Context, d *sync.Data, c *path.Cap
 			if isStateSettingCmd && canStartDrawGrouping {
 				markerStack = append(markerStack,
 					&markerInfo{
-						name:   "Draw Group", // Shouldn't really get this name. Normally the draw command group's name will be decided later at stack pop time.
+						name:   "State Setting Group",
 						ty:     DrawGroupMarker,
 						start:  uint64(i),
 						end:    uint64(i),
@@ -324,6 +324,7 @@ func (API) ResolveSynchronization(ctx context.Context, d *sync.Data, c *path.Cap
 					})
 				canStartDrawGrouping = false
 			} else if isDrawCmd {
+				// When a group is complete with state setting cmds following a draw command, override the group name.
 				groupName := cmdName
 				if strings.HasPrefix(groupName, "cmd_vkCmd") { // Remove "cmd_vkCmd".
 					groupName = groupName[9:len(groupName)]
@@ -333,8 +334,7 @@ func (API) ResolveSynchronization(ctx context.Context, d *sync.Data, c *path.Cap
 			} else if !isStateSettingCmd && !isDrawCmd && !canStartDrawGrouping {
 				// Handle an edge case where a group of state setting commands are
 				// followed by something other than a drawing command.
-				groupName := "State Setting Group"
-				popMarkerWithNewGroupName(DrawGroupMarker, uint64(i), groupName)
+				popMarker(DrawGroupMarker, uint64(i), nCommands)
 				canStartDrawGrouping = true
 			}
 		}
