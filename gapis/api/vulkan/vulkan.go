@@ -309,13 +309,10 @@ func (API) ResolveSynchronization(ctx context.Context, d *sync.Data, c *path.Cap
 			}
 
 			// Handle draw commands grouping.
-			cmdName := ""
-			if generatingId != nil {
-				cmdName = generatingId.CmdName()
-			}
-			isDrawCmd := strings.HasPrefix(cmdName, "vkCmdDraw") || strings.HasPrefix(cmdName, "vkCmdDispatch")
-			isStateSettingCmd := (strings.HasPrefix(cmdName, "vkCmdSet") || strings.HasPrefix(cmdName, "vkCmdBind")) &&
-				!strings.HasPrefix(cmdName, "vkCmdSetEvent")
+			cmdName := cb.CommandReferences().Get(uint32(i)).Type().String()
+			isDrawCmd := strings.HasPrefix(cmdName, "cmd_vkCmdDraw") || strings.HasPrefix(cmdName, "cmd_vkCmdDispatch")
+			isStateSettingCmd := (strings.HasPrefix(cmdName, "cmd_vkCmdSet") || strings.HasPrefix(cmdName, "cmd_vkCmdBind")) &&
+				!strings.HasPrefix(cmdName, "cmd_vkCmdSetEvent")
 			if isStateSettingCmd && canStartDrawGrouping {
 				markerStack = append(markerStack,
 					&markerInfo{
@@ -328,8 +325,8 @@ func (API) ResolveSynchronization(ctx context.Context, d *sync.Data, c *path.Cap
 				canStartDrawGrouping = false
 			} else if isDrawCmd {
 				groupName := cmdName
-				if strings.HasPrefix(groupName, "vkCmd") { // Remove "vkCmd".
-					groupName = groupName[5:len(groupName)]
+				if strings.HasPrefix(groupName, "cmd_vkCmd") { // Remove "cmd_vkCmd".
+					groupName = groupName[9:len(groupName)]
 				}
 				popMarkerWithNewGroupName(DrawGroupMarker, uint64(i), groupName)
 				canStartDrawGrouping = true
