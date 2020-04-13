@@ -59,7 +59,7 @@ public class FrameEventsSelectionView extends Composite {
     createLabel(main, "Duration:");
     createLabel(main, timeToString(slice.dur));
 
-    if (slice.dur > 0) {
+    if (slice.frameStats != null) {
       // If the selected event is a displayed frame slice, show the frame stats
       Composite stats = withLayoutData(createComposite(this, new GridLayout(2, false)),
           withIndents(new GridData(SWT.LEFT, SWT.TOP, false, false), PANEL_INDENT, 0));
@@ -69,6 +69,9 @@ public class FrameEventsSelectionView extends Composite {
       slice.frameStats.forEach((k, v) -> {
         withLayoutData(createBoldLabel(stats, k.toString()),
             withSpans(new GridData(), 2, 1));
+
+        createLabel(stats, "Frame number: ");
+        createLabel(stats, Long.toString(v.frameNumber));
 
         createLabel(stats, "Queue to Acquire: ");
         createLabel(stats, timeToString(v.queueToAcquireTime));

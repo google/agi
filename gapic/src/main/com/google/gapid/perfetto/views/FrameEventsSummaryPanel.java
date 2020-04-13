@@ -31,7 +31,7 @@ import com.google.gapid.perfetto.canvas.Size;
 import com.google.gapid.perfetto.models.ArgSet;
 import com.google.gapid.perfetto.models.FrameEventsTrack;
 import com.google.gapid.perfetto.models.FrameEventsTrack.FrameSelection;
-import com.google.gapid.perfetto.models.GpuInfo;
+import com.google.gapid.perfetto.models.FrameInfo;
 import com.google.gapid.perfetto.models.Selection;
 import com.google.gapid.perfetto.models.Selection.CombiningBuilder;
 import com.google.gapid.util.Arrays;
@@ -54,7 +54,7 @@ public class FrameEventsSummaryPanel extends TrackPanel<FrameEventsSummaryPanel>
   private static final double CURSOR_SIZE = 5;
   private static final int BOUNDING_BOX_LINE_WIDTH = 3;
 
-  private final GpuInfo.Buffer buffer;
+  private final FrameInfo.Buffer buffer;
   protected final FrameEventsTrack track;
 
   protected double mouseXpos, mouseYpos;
@@ -63,12 +63,11 @@ public class FrameEventsSummaryPanel extends TrackPanel<FrameEventsSummaryPanel>
   protected Size hoveredSize = Size.ZERO;
   protected HoverCard hovered;
 
-  public FrameEventsSummaryPanel(State state, GpuInfo.Buffer buffer, FrameEventsTrack track) {
+  public FrameEventsSummaryPanel(State state, FrameInfo.Buffer buffer, FrameEventsTrack track) {
     super(state);
     this.buffer = buffer;
     this.track = track;
   }
-
 
   @Override
   public String getTitle() {

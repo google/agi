@@ -32,7 +32,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.google.common.primitives.Longs;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gapid.perfetto.TimeSpan;
@@ -90,7 +89,7 @@ public class FrameEventsTrack extends Track.WithQueryEngine<FrameEventsTrack.Dat
     this.trackId = trackId;
   }
 
-  public static FrameEventsTrack forBuffer(QueryEngine qe, GpuInfo.Buffer buffer) {
+  public static FrameEventsTrack forBuffer(QueryEngine qe, FrameInfo.Buffer buffer) {
     return new FrameEventsTrack(qe, buffer.trackId);
   }
 
@@ -128,12 +127,10 @@ public class FrameEventsTrack extends Track.WithQueryEngine<FrameEventsTrack.Dat
         data.ends[i] = start + row.getLong(2);
         data.titles[i] = row.getString(3);
         data.args[i] = args.getOrDefault(row.getLong(7), ArgSet.EMPTY);
-        long[] frameNumbers = Arrays.stream(row.getString(8).split(", "))
-            .mapToLong(Long::parseLong)
+        data.frameNumbers[i] = Arrays.stream(row.getString(8).split(", "))
+            .mapToLong(s -> s.isEmpty() ? 0 : Long.parseLong(s))
             .toArray();
-        String[] layerNames = row.getString(9).split(", ");
-        data.frameNumbers[i] = frameNumbers;
-        data.layerNames[i] = layerNames;
+        data.layerNames[i] = row.getString(9).split(", ");;
       });
       return data;
     }));
@@ -275,6 +272,7 @@ public class FrameEventsTrack extends Track.WithQueryEngine<FrameEventsTrack.Dat
     // Map of each buffer(layerName) that contributed to the displayed frame, to
     // its corresponding FrameStats
     public final Map<String, FrameStats> frameStats;
+    public final FrameSelection frameSelection;
 
     public Slice(long id, long time, long dur, String name, String frameNumbers,
         String layerNames, Map<String, FrameStats> frameStats) {
@@ -288,6 +286,7 @@ public class FrameEventsTrack extends Track.WithQueryEngine<FrameEventsTrack.Dat
           .toArray();
       this.layerNames = layerNames.split(", ");
       this.frameStats = frameStats;
+      this.frameSelection = new FrameSelection(this.frameNumbers, this.layerNames);
     }
 
     public Slice(long id, long time, long dur, String name, ArgSet args, String frameNumbers,
@@ -302,6 +301,7 @@ public class FrameEventsTrack extends Track.WithQueryEngine<FrameEventsTrack.Dat
           .toArray();
       this.layerNames = layerNames.split(", ");
       this.frameStats = frameStats;
+      this.frameSelection = new FrameSelection(this.frameNumbers, this.layerNames);
     }
 
     public Slice(QueryEngine.Row row, ArgSet args, Map<String, FrameStats> frameStats) {
@@ -344,7 +344,7 @@ public class FrameEventsTrack extends Track.WithQueryEngine<FrameEventsTrack.Dat
     }
 
     public FrameSelection getSelection() {
-      return new FrameSelection(frameNumbers, layerNames);
+      return frameSelection;
     }
   }
 
@@ -353,6 +353,7 @@ public class FrameEventsTrack extends Track.WithQueryEngine<FrameEventsTrack.Dat
     private final String title;
     public final ImmutableList<Node> nodes;
     public final ImmutableSet<Long> sliceKeys;
+    public final FrameSelection frameSelection;
 
     public Slices(List<Slice> slices, String title, ImmutableList<Node> nodes,
         ImmutableSet<Long> sliceKeys) {
@@ -360,6 +361,8 @@ public class FrameEventsTrack extends Track.WithQueryEngine<FrameEventsTrack.Dat
       this.title = title;
       this.nodes = nodes;
       this.sliceKeys = sliceKeys;
+      this.frameSelection = new FrameSelection();
+      slices.forEach(s -> frameSelection.combine(s.getSelection()));
     }
 
     @Override
@@ -390,31 +393,29 @@ public class FrameEventsTrack extends Track.WithQueryEngine<FrameEventsTrack.Dat
     }
 
     public FrameSelection getSelection() {
-      FrameSelection selection = new FrameSelection();
-      slices.forEach(s -> selection.combine(s.getSelection()));
-      return selection;
+      return frameSelection;
     }
   }
 
   public static class FrameSelection {
-    public final List<Long> frameNumbers;
-    public final List<String> layerNames;
     public static FrameSelection EMPTY = new FrameSelection();
+    // key = concat(layerName, '_', frameNumber)
+    private List<String> keys;
 
     public FrameSelection() {
-      frameNumbers = Lists.newArrayList();
-      layerNames = Lists.newArrayList();
+      keys = Lists.newArrayList();
     }
 
-    public FrameSelection(long[] frameNumbers, String[] layerNames) {
-      this.frameNumbers = Lists.newArrayList(Longs.asList(frameNumbers));
-      this.layerNames = Lists.newArrayList(layerNames);
+    public FrameSelection(long[] f, String[] l) {
+      keys = Lists.newArrayList();
+      for (int i = 0; i < l.length; i++) {
+        keys.add(l[i] + "_" + f[i]);
+      }
     }
 
     public boolean contains(long[] f, String[] l) {
       for (int i = 0; i < f.length; i++) {
-        int idx = frameNumbers.indexOf(f[i]);
-        if (idx != -1 && layerNames.get(idx).equals(l[i])) {
+        if (keys.contains(l[i] + "_" + f[i])) {
           return true;
         }
       }
@@ -422,12 +423,11 @@ public class FrameEventsTrack extends Track.WithQueryEngine<FrameEventsTrack.Dat
     }
 
     public void combine(FrameSelection other) {
-      frameNumbers.addAll(other.frameNumbers);
-      layerNames.addAll(other.layerNames);
+      keys.addAll(other.keys);
     }
 
     public boolean isEmpty() {
-      return frameNumbers.size() == 0 ? true : false;
+      return keys.isEmpty();
     }
   }
 
