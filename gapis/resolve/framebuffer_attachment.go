@@ -64,9 +64,9 @@ func (r *FramebufferAttachmentsResolvable) Resolve(ctx context.Context) (interfa
 
 func typeToString(t api.FramebufferAttachmentType) string {
 	switch t {
-	case api.FramebufferAttachmentType_ColorAttachment:
+	case api.FramebufferAttachmentType_OutputColor:
 		return "Color"
-	case api.FramebufferAttachmentType_DepthAttachment:
+	case api.FramebufferAttachmentType_OutputDepth:
 		return "Depth"
 	default:
 		return "Unknown"
@@ -106,7 +106,7 @@ func FramebufferAttachment(ctx context.Context, p *path.FramebufferAttachment, r
 	}
 	return &service.FramebufferAttachment{
 		Index:     p.Index,
-		Type:      api.FramebufferAttachmentType_ColorAttachment,
+		Type:      api.FramebufferAttachmentType_OutputColor,
 		ImageInfo: path.NewImageInfo(id),
 		Label:     fmt.Sprintf("Attachment %d", p.Index),
 	}, nil

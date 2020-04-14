@@ -21,12 +21,12 @@ import (
 
 // IsColor returns true if a is a color attachment.
 func (a FramebufferAttachmentType) IsColor() bool {
-	return a == FramebufferAttachmentType_ColorAttachment
+	return a == FramebufferAttachmentType_OutputColor
 }
 
 // IsDepth returns true if a is a depth attachment.
 func (a FramebufferAttachmentType) IsDepth() bool {
-	return a == FramebufferAttachmentType_DepthAttachment
+	return a == FramebufferAttachmentType_OutputDepth
 }
 
 // IsStencil returns true if a is a stencil attachment.

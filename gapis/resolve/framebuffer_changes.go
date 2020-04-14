@@ -80,8 +80,6 @@ func (r *FramebufferChangesResolvable) Resolve(ctx context.Context) (interface{}
 		count, _ := api.GetFramebufferAttachmentCount(ctx, s)
 		idx := append([]uint64(nil), subcommandIndex...)
 		for i := uint32(0); i < count; i++ {
-			//att := allFramebufferAttachments[i]
-			//log.E(ctx, "Attachment index: %d %d", i, att)
 			info := FramebufferAttachmentInfo{After: idx}
 			if api != nil {
 				if inf, err := api.GetFramebufferAttachmentInfo(ctx, idx, s, cmd.Thread(), i); err == nil && inf.Format != nil {

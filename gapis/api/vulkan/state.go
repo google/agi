@@ -58,7 +58,7 @@ func (st *State) getSubmitAttachmentInfo(attachment uint32) (w, h uint32,
 		attachmentType api.FramebufferAttachmentType,
 		err error) {
 
-		return 0, 0, VkFormat_VK_FORMAT_UNDEFINED, 0, true, api.FramebufferAttachmentType_ColorAttachment, fmt.Errorf(format_str, e...)
+		return 0, 0, VkFormat_VK_FORMAT_UNDEFINED, 0, true, api.FramebufferAttachmentType_OutputColor, fmt.Errorf(format_str, e...)
 	}
 
 	lastQueue := st.LastBoundQueue()
@@ -97,7 +97,7 @@ func (st *State) getSubmitAttachmentInfo(attachment uint32) (w, h uint32,
 						colorImg.Info().Extent().Height(),
 						colorImg.Info().Fmt(),
 						attRef.Attachment(), true,
-						api.FramebufferAttachmentType_ColorAttachment, nil
+						api.FramebufferAttachmentType_OutputColor, nil
 				}
 			}
 		}
@@ -117,7 +117,7 @@ func (st *State) getSubmitAttachmentInfo(attachment uint32) (w, h uint32,
 					depthImg.Info().Extent().Height(),
 					depthImg.Info().Fmt(),
 					subpassDesc.DepthStencilAttachment().Attachment(), true,
-					api.FramebufferAttachmentType_DepthAttachment, nil
+					api.FramebufferAttachmentType_OutputDepth, nil
 			}
 		}
 	}
@@ -141,7 +141,7 @@ func (st *State) getPresentAttachmentInfo(attachment uint32) (w, h uint32,
 		attachmentType api.FramebufferAttachmentType,
 		err error) {
 
-		return 0, 0, VkFormat_VK_FORMAT_UNDEFINED, 0, false, api.FramebufferAttachmentType_ColorAttachment, fmt.Errorf(format_str, e...)
+		return 0, 0, VkFormat_VK_FORMAT_UNDEFINED, 0, false, api.FramebufferAttachmentType_OutputColor, fmt.Errorf(format_str, e...)
 	}
 
 	if st.LastPresentInfo().PresentImageCount() <= attachment {
@@ -159,12 +159,12 @@ func (st *State) getPresentAttachmentInfo(attachment uint32) (w, h uint32,
 				return colorImg.Info().Extent().Width(),
 					colorImg.Info().Extent().Height(),
 					colorImg.Info().Fmt(), attachment, true,
-					api.FramebufferAttachmentType_ColorAttachment, nil
+					api.FramebufferAttachmentType_OutputColor, nil
 			}
 			return colorImg.Info().Extent().Width(),
 				colorImg.Info().Extent().Height(),
 				colorImg.Info().Fmt(), attachment, false,
-				api.FramebufferAttachmentType_ColorAttachment, nil
+				api.FramebufferAttachmentType_OutputColor, nil
 		}
 
 		return returnError("Last present queue does not exist", attachment)

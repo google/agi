@@ -81,8 +81,8 @@ enum ResourceType {
 
 // FramebufferAttachment values indicate the type of frame buffer attachment.
 enum FramebufferAttachmentType {
-  ColorAttachment = 0;
-  DepthAttachment = 1;
+  OutputColor = 0;
+  OutputDepth = 1;
 }
 
 enum ShaderType {

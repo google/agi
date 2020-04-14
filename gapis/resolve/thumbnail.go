@@ -58,7 +58,7 @@ func CommandThumbnail(
 
 	var fbaInfo *service.FramebufferAttachment = nil
 	for _, fba := range fbaList.(*service.FramebufferAttachments).GetAttachments() {
-		if fba.GetType() == api.FramebufferAttachmentType_ColorAttachment {
+		if fba.GetType() == api.FramebufferAttachmentType_OutputColor {
 			fbaInfo = fba
 			break
 		}

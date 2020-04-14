@@ -97,7 +97,7 @@ public class FramebufferView extends Composite
   protected final ImagePanel imagePanel;
   private Path.RenderSettings renderSettings;
   private int target = 0;
-  private API.FramebufferAttachmentType targetType = API.FramebufferAttachmentType.ColorAttachment;
+  private API.FramebufferAttachmentType targetType = API.FramebufferAttachmentType.OutputColor;
   private ToolItem targetItem;
   private AttachmentListener attachmentListener;
   private ToolBar toolBar;
@@ -272,11 +272,11 @@ public class FramebufferView extends Composite
           imagePanel.setImage(result);
 
           switch (targetType) {
-            case ColorAttachment:
+            case OutputColor:
               targetItem.setImage(widgets.theme.lit());
               break;
 
-            case DepthAttachment:
+            case OutputDepth:
               targetItem.setImage(widgets.theme.depthBuffer());
               break;
           }
@@ -349,13 +349,13 @@ public class FramebufferView extends Composite
           List<ToolItem> fbaItems = new ArrayList<ToolItem>();
           for (Service.FramebufferAttachment fba : fbaList) {
             switch(fba.getType()) {
-              case ColorAttachment:
+              case OutputColor:
                 fbaItems.add(createToggleToolItem(tb, theme.lit(),
                   x -> updateRenderTarget(fba.getIndex(), theme.lit()),
                   "Show " + fba.getLabel()));
                 break;
   
-              case DepthAttachment:
+              case OutputDepth:
                 fbaItems.add(createToggleToolItem(tb, theme.depthBuffer(),
                   x -> updateRenderTarget(fba.getIndex(), theme.depthBuffer()),
                   "Show " + fba.getLabel()));

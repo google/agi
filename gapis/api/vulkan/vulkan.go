@@ -104,13 +104,13 @@ func (API) GetFramebufferAttachmentInfo(
 	}
 
 	switch t {
-	case api.FramebufferAttachmentType_DepthAttachment:
+	case api.FramebufferAttachmentType_OutputDepth:
 		format, err := getDepthImageFormatFromVulkanFormat(form)
 		if err != nil {
 			return api.FramebufferAttachmentInfo{}, fmt.Errorf("Unknown format for Depth attachment: %v", form)
 		}
 		return api.FramebufferAttachmentInfo{w, h, i, format, r, t}, err
-	case api.FramebufferAttachmentType_ColorAttachment:
+	case api.FramebufferAttachmentType_OutputColor:
 		format, err := getImageFormatFromVulkanFormat(form)
 		if err != nil {
 			return api.FramebufferAttachmentInfo{}, fmt.Errorf("Unknown format for Color attachment: %v", form)
