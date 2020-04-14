@@ -21,10 +21,12 @@ import static com.google.gapid.widgets.Widgets.createDropDownViewer;
 import static com.google.gapid.widgets.Widgets.createGroup;
 import static com.google.gapid.widgets.Widgets.createLabel;
 import static com.google.gapid.widgets.Widgets.createLink;
+import static com.google.gapid.widgets.Widgets.scheduleIfNotDisposed;
 import static com.google.gapid.widgets.Widgets.withIndents;
 import static com.google.gapid.widgets.Widgets.withLayoutData;
 import static java.util.logging.Level.WARNING;
 
+import com.google.gapid.models.Capture;
 import com.google.gapid.models.Devices;
 import com.google.gapid.models.Devices.DeviceCaptureInfo;
 import com.google.gapid.models.Devices.DeviceValidationResult;
@@ -34,6 +36,7 @@ import com.google.gapid.rpc.Rpc;
 import com.google.gapid.rpc.RpcException;
 import com.google.gapid.rpc.SingleInFlight;
 import com.google.gapid.rpc.UiErrorCallback;
+import com.google.gapid.util.Loadable;
 import com.google.gapid.util.Messages;
 import com.google.gapid.util.Paths;
 import com.google.gapid.util.Scheduler;
@@ -65,31 +68,60 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
-public class DeviceDialog {
+/**
+ * View responsible to show a replay device selection dialog when need be.
+ */
+public class DeviceDialog  extends Composite implements Devices.Listener, Capture.Listener {
   protected static final Logger LOG = Logger.getLogger(DeviceDialog.class.getName());
 
-  private static Object mutex = new Object();
-  private static boolean dialogExists = false;
+  private final Shell shell;
+  private final Models models;
+  private final Widgets widgets;
+  protected SelectReplayDeviceDialog dialog = null;
 
-  private DeviceDialog() {
+  public DeviceDialog(Composite parent, Shell shell, Models models, Widgets widgets) {
+    super(parent, SWT.NONE);
+    this.shell = shell;
+    this.models = models;
+    this.widgets = widgets;
+
+    models.devices.addListener(this);
+    models.capture.addListener(this);
+    addListener(SWT.Dispose, e -> {
+      models.devices.removeListener(this);
+      models.capture.removeListener(this);
+      if (dialog != null && dialog.getShell() != null) {
+        dialog.close();
+      }
+    });
   }
 
-  public static void showSelectReplayDeviceDialog(Shell shell, Models models, Widgets widgets) {
-    SelectReplayDeviceDialog dialog = null;
+  @Override
+  public void onReplayDevicesLoaded() {
+    selectReplayDevice();
+  }
 
-    // This method is called every time the list replay devices are refreshed,
-    // and the dialog it opens may itself refresh the list of replay device.
-    // Thus, make sure to have only one dialog open at a time.
-    synchronized (mutex) {
-      if (!dialogExists) {
-        dialog = new SelectReplayDeviceDialog(shell, models, widgets);
-        dialogExists = true;
-      }
+  @Override
+  public void onCaptureLoaded(Loadable.Message error) {
+    selectReplayDevice();
+  }
+
+  protected void selectReplayDevice() {
+
+    // If the dialog has been closed, remove the reference to it.
+    if (dialog != null && dialog.getShell() == null) {
+      dialog = null;
     }
 
     if (dialog != null) {
-      // Skip dialog if there is only one compatible replay device,
-      // which is validated or validation-skipped.
+      // Dialog is already open, just refresh it
+      dialog.refresh();
+      return;
+    }
+
+    if (models.capture.isGraphics() && !models.devices.hasReplayDevice()) {
+      // Show dialog unless there is a single compatible and validated replay
+      // device available, in which case it is auto-selected
       boolean skipDialog = false;
       Device.Instance device = null;
       if (models.devices.getReplayDevices() != null
@@ -103,14 +135,8 @@ public class DeviceDialog {
       if (skipDialog) {
         models.devices.selectReplayDevice(device);
       } else {
-        dialog.setBlockOnOpen(true);
-        dialog.open();
-      }
-    }
-
-    synchronized (mutex) {
-      if (dialog != null) {
-        dialogExists = false;
+        dialog = new SelectReplayDeviceDialog(shell, models, widgets);
+        scheduleIfNotDisposed(this, () -> dialog.open());
       }
     }
   }
@@ -118,7 +144,7 @@ public class DeviceDialog {
   /**
    * Dialog to select a replay device.
    */
-  private static class SelectReplayDeviceDialog extends DialogBase {
+  static class SelectReplayDeviceDialog extends DialogBase {
 
     private final Models models;
     private final Widgets widgets;
@@ -199,14 +225,7 @@ public class DeviceDialog {
         runValidationCheck(getSelectedDevice());
       });
 
-      models.devices.addListener(new Devices.Listener() {
-        @Override
-        public void onReplayDevicesLoaded() {
-          replayDevicesLoaded();
-        }
-      });
-
-      replayDevicesLoaded();
+      refresh();
       return composite;
     }
 
@@ -224,7 +243,7 @@ public class DeviceDialog {
       super.buttonPressed(buttonId);
     }
 
-    protected void replayDevicesLoaded() {
+    protected void refresh() {
       boolean noReplayDevices =
           models.devices.getReplayDevices() == null || models.devices.getReplayDevices().isEmpty();
 

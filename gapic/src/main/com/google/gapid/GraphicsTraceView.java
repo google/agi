@@ -21,7 +21,6 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.gapid.models.Analytics.View;
-import com.google.gapid.models.Devices;
 import com.google.gapid.models.Follower;
 import com.google.gapid.models.Models;
 import com.google.gapid.models.Settings;
@@ -71,6 +70,7 @@ import java.util.function.Function;
 public class GraphicsTraceView extends Composite implements MainWindow.MainView, Follower.Listener {
   private final Models models;
   private final Widgets widgets;
+  private final DeviceDialog deviceDialog;
   protected final Set<MainTab.Type> hiddenTabs;
 
   protected final TabArea tabs;
@@ -82,6 +82,8 @@ public class GraphicsTraceView extends Composite implements MainWindow.MainView,
     this.hiddenTabs = getHiddenTabs(models.settings);
 
     setLayout(new GridLayout(1, false));
+
+    deviceDialog = new DeviceDialog(this, getShell(), models, widgets);
 
     tabs = new TabArea(this, models.analytics, widgets.theme, new Persistance() {
       @Override
@@ -102,12 +104,12 @@ public class GraphicsTraceView extends Composite implements MainWindow.MainView,
       models.follower.removeListener(this);
     });
 
-    models.devices.addListener(new Devices.Listener() {
-      @Override
-      public void onReplayDevicesLoaded() {
-        DeviceDialog.showSelectReplayDeviceDialog(getShell(), models, widgets);
-      }
-    });
+//    models.devices.addListener(new Devices.Listener() {
+//      @Override
+//      public void onReplayDevicesLoaded() {
+//        DeviceDialog.showSelectReplayDeviceDialog(getShell(), models, widgets);
+//      }
+//    });
   }
 
   private static Set<MainTab.Type> getHiddenTabs(Settings settings) {
