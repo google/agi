@@ -85,8 +85,6 @@ func (verb *videoVerb) sxsVideoSource(
 	// Get the draw call and end-of-frame events.
 	events, err := getEvents(ctx, client, &path.Events{
 		Capture:                 capture,
-		DrawCalls:               true,
-		Clears:                  true,
 		LastInFrame:             true,
 		FramebufferObservations: true,
 		Filter:                  filter,
@@ -101,22 +99,9 @@ func (verb *videoVerb) sxsVideoSource(
 	w, h := 0, 0
 	frameIndex, numDrawCalls := 0, 0
 
-	// Some traces call eglSwapBuffers without actually drawing to or clearing
-	// the framebuffer. This is most common during loading screens.
-	// These would result in a failed comparison as the observed frame could
-	// be anything and the replayed frame will show the undefined framebuffer
-	// pattern.
-	// Permit the first run of frames to have no content. If there are no
-	// draw-calls or clear calls at all however, then do not permit this.
+	// TODO: in GLES we used to handle empty frames specially here. Work out
+	// whether we should be doing something similar for Vulkan.
 	permitNoMatch := false
-
-	for _, e := range events {
-		if e.Kind == service.EventKind_Clear ||
-			e.Kind == service.EventKind_DrawCall {
-			permitNoMatch = true
-			break
-		}
-	}
 
 	var lastFrameEvent *path.Command
 	for _, e := range events {
@@ -146,13 +131,6 @@ func (verb *videoVerb) sxsVideoSource(
 				command:       lastFrameEvent,
 				permitNoMatch: permitNoMatch,
 			})
-		case service.EventKind_Clear:
-			permitNoMatch = false
-			lastFrameEvent = e.Command
-		case service.EventKind_DrawCall:
-			permitNoMatch = false
-			lastFrameEvent = e.Command
-			numDrawCalls++
 		case service.EventKind_LastInFrame:
 			lastFrameEvent = e.Command
 			frameIndex++

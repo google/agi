@@ -1056,22 +1056,19 @@ message Event {
 
 enum EventKind {
   Unknown = 0;
-  DrawCall = 1;
-  Submission = 2;
-  TransformFeedback = 3;
+  Submission = 1;
   // All command events should occur between FirstInFrame and LastInFrame
   // (except FramebufferObservation, which comes last as gapit sxs_video
   // depends on this).
-  FirstInFrame = 4;
-  LastInFrame = 5;
-  Clear = 6;
-  UserMarker = 7;
-  PushUserMarker = 8;
-  PopUserMarker = 9;
-  FramebufferObservation = 10;
+  FirstInFrame = 2;
+  LastInFrame = 3;
+  UserMarker = 4;
+  PushUserMarker = 5;
+  PopUserMarker = 6;
+  FramebufferObservation = 7;
   // Note you probably only want to use AllCommands for debugging/testing
   // purposes.
-  AllCommands = 11;
+  AllCommands = 8;
 }
 
 // StateTree represents a state tree hierarchy.

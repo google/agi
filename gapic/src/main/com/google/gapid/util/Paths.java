@@ -87,13 +87,12 @@ public class Paths {
         .setCommandTree(Path.CommandTree.newBuilder()
             .setCapture(capture)
             .setGroupByFrame(true)
-            .setGroupByDrawCall(true)
-            .setGroupByTransformFeedback(true)
             .setGroupByUserMarkers(true)
             .setGroupBySubmission(true)
             .setAllowIncompleteFrame(true)
             .setMaxChildren(2000)
-            .setMaxNeighbours(20))
+            .setMaxNeighbours(20)
+	    )
         .build();
   }
 

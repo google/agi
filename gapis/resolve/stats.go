@@ -90,7 +90,6 @@ func drawCallStats(ctx context.Context, capt *path.Capture, stats *service.Stats
 			if err != nil {
 				return err
 			}
-			// If the command has subcommands, ignore it (vkQueueSubmit or similar)
 			if _, ok := d.SubcommandReferences[api.CmdID(idx[0])]; len(idx) > 1 || !ok {
 				var cmdflags api.CmdFlags
 				if len(idx) == 1 {
@@ -98,9 +97,7 @@ func drawCallStats(ctx context.Context, capt *path.Capture, stats *service.Stats
 				} else {
 					cmdflags = cmd.CmdFlags()
 				}
-				if (len(idx) == 1 && cmdflags.IsDrawCall()) ||
-					(len(idx) > 1 && cmdflags.IsExecutedDraw()) {
-
+				if len(idx) > 1 && cmdflags.IsExecutedDraw() {
 					drawsSinceLastFrame += 1
 				}
 			}
@@ -125,14 +122,6 @@ func drawCallStats(ctx context.Context, capt *path.Capture, stats *service.Stats
 			return fmt.Errorf("Fail to mutate command %v: %v", cmd, err)
 		}
 		flags[idx] = cmd.CmdFlags()
-
-		// If the command wasn't included in the dependency graph,
-		// assume its a synchronous command (e.g. glDraw)
-		if _, ok := d.CmdSyncNodes[api.CmdID(idx)]; !ok {
-			if flags[idx].IsDrawCall() {
-				drawsSinceLastFrame += 1
-			}
-		}
 		return nil
 	}
 

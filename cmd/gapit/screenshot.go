@@ -197,11 +197,10 @@ func (verb *screenshotVerb) frameCommands(ctx context.Context, capture *path.Cap
 	requestEvents := path.Events{
 		Capture:     capture,
 		LastInFrame: true,
-		DrawCalls:   verb.Draws,
 		Filter:      filter,
 	}
 
-	// Get the end-of-frame and possibly draw call events.
+	// Get the end-of-frame events.
 	events, err := getEvents(ctx, client, &requestEvents)
 	if err != nil {
 		return nil, log.Err(ctx, err, "Couldn't get frame events")

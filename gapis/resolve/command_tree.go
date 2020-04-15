@@ -20,7 +20,6 @@ import (
 	"sort"
 
 	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/math/interval"
 	"github.com/google/gapid/gapis/api"
 	"github.com/google/gapid/gapis/capture"
 	"github.com/google/gapid/gapis/database"
@@ -260,12 +259,10 @@ func (r *CommandTreeResolvable) Resolve(ctx context.Context) (interface{}, error
 		}
 	}
 
-	if p.GroupByDrawCall || p.GroupByFrame || p.GroupBySubmission {
+	if p.GroupByFrame || p.GroupBySubmission {
 		events, err := Events(ctx, &path.Events{
 			Capture:            p.Capture,
 			Filter:             p.Filter,
-			DrawCalls:          true,
-			TransformFeedbacks: true,
 			FirstInFrame:       true,
 			LastInFrame:        true,
 			Submissions:        true,
@@ -276,21 +273,11 @@ func (r *CommandTreeResolvable) Resolve(ctx context.Context) (interface{}, error
 		if p.GroupByFrame {
 			addFrameGroups(ctx, events, p, out, api.CmdID(len(c.Commands)))
 		}
-		if p.GroupByTransformFeedback {
-			addFrameEventGroups(ctx, events, p, out, api.CmdID(len(c.Commands)),
-				service.EventKind_TransformFeedback, "Transform Feedback")
-		}
-		if p.GroupByDrawCall {
-			addFrameEventGroups(ctx, events, p, out, api.CmdID(len(c.Commands)),
-				service.EventKind_DrawCall, "Draw")
-		}
 		if p.GroupBySubmission {
 			addContainingGroups(ctx, events, p, out, api.CmdID(len(c.Commands)),
 				service.EventKind_Submission, "Host Coordination")
 		}
 	}
-
-	drawOrClearCmds := api.Spans{} // All the spans will have length 1
 
 	// Now we have all the groups, we finally need to add the filtered commands.
 	s = c.NewState(ctx)
@@ -324,12 +311,6 @@ func (r *CommandTreeResolvable) Resolve(ctx context.Context) (interface{}, error
 
 		out.root.AddCommand(id)
 
-		if flags := cmd.CmdFlags(); flags.IsDrawCall() || flags.IsClear() {
-			drawOrClearCmds = append(drawOrClearCmds, &api.CmdIDRange{
-				Start: id, End: id + 1,
-			})
-		}
-
 		return nil
 	})
 
@@ -341,59 +322,12 @@ func (r *CommandTreeResolvable) Resolve(ctx context.Context) (interface{}, error
 	out.root.Cluster(uint64(p.MaxChildren), uint64(p.MaxNeighbours))
 
 	// Set group representations.
-	setRepresentations(ctx, &out.root, drawOrClearCmds)
+	setRepresentations(ctx, &out.root)
 
 	return out, nil
 }
 
-func addFrameEventGroups(
-	ctx context.Context,
-	events *service.Events,
-	p *path.CommandTree,
-	t *commandTree,
-	last api.CmdID,
-	kind service.EventKind,
-	prefix string) {
-
-	count := 0
-	for _, e := range events.List {
-		i := api.CmdID(e.Command.Indices[0])
-		switch e.Kind {
-		case kind:
-			// Find group which contains this event
-			group := &t.root
-			for true {
-				if idx := group.Spans.IndexOf(i); idx != -1 {
-					if subgroup, ok := group.Spans[idx].(*api.CmdIDGroup); ok {
-						group = subgroup
-						continue
-					}
-				}
-				break
-			}
-
-			if data, ok := group.UserData.(*CmdGroupData); ok && data.NoFrameEventGroups {
-				continue
-			}
-
-			// Start with group of size 1 and grow it backward as long as nothing gets in the way.
-			start := i
-			for start >= group.Bounds().Start+1 && group.Spans.IndexOf(start-1) == -1 {
-				start--
-			}
-
-			t.root.AddGroup(start, i+1, fmt.Sprintf("%v %v", prefix, count+1))
-			count++
-
-		case service.EventKind_LastInFrame:
-			count = 0
-		}
-	}
-}
-
-// addContainingGroups works much the same as addFrameEventGroups
-// except it will lift the command in question OUT of the group.
-// Furthermore it does not number the groups.
+// Forms groups out of spans of commands which are not the specified `kind`.
 func addContainingGroups(
 	ctx context.Context,
 	events *service.Events,
@@ -491,23 +425,19 @@ func addFrameGroups(ctx context.Context, events *service.Events, p *path.Command
 	}
 }
 
-func setRepresentations(ctx context.Context, g *api.CmdIDGroup, drawOrClearCmds api.Spans) {
+func setRepresentations(ctx context.Context, g *api.CmdIDGroup) {
 	data, _ := g.UserData.(*CmdGroupData)
 	if data == nil {
 		data = &CmdGroupData{Representation: api.CmdNoID}
 		g.UserData = data
 	}
 	if data.Representation == api.CmdNoID {
-		if s, c := interval.Intersect(drawOrClearCmds, g.Bounds().Span()); c > 0 {
-			data.Representation = drawOrClearCmds[s+c-1].Bounds().Start
-		} else {
-			data.Representation = g.Range.Last()
-		}
+		data.Representation = g.Range.Last()
 	}
 
 	for _, s := range g.Spans {
 		if subgroup, ok := s.(*api.CmdIDGroup); ok {
-			setRepresentations(ctx, subgroup, drawOrClearCmds)
+			setRepresentations(ctx, subgroup)
 		}
 	}
 }

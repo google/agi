@@ -18,10 +18,7 @@ package api
 type CmdFlags uint32
 
 const (
-	DrawCall CmdFlags = 1 << iota
-	TransformFeedback
-	Clear
-	StartOfFrame
+	StartOfFrame CmdFlags = 1 << iota
 	EndOfFrame
 	PushUserMarker
 	PopUserMarker
@@ -29,15 +26,6 @@ const (
 	ExecutedDraw
 	Submission
 )
-
-// IsDrawCall returns true if the command is a draw call.
-func (f CmdFlags) IsDrawCall() bool { return (f & DrawCall) != 0 }
-
-// IsTransformFeedback returns true if the command is a transform-feedback call.
-func (f CmdFlags) IsTransformFeedback() bool { return (f & TransformFeedback) != 0 }
-
-// IsClear returns true if the command is a clear call.
-func (f CmdFlags) IsClear() bool { return (f & Clear) != 0 }
 
 // IsStartOfFrame returns true if the command represents the begin of a frame.
 func (f CmdFlags) IsStartOfFrame() bool { return (f & StartOfFrame) != 0 }

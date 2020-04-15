@@ -84,31 +84,9 @@ func Events(ctx context.Context, p *path.Events, r *path.ResolveConfig) (*servic
 		if p.FirstInFrame && f.IsEndOfFrame() {
 			pending = append(pending, service.EventKind_FirstInFrame)
 		}
-		if p.Clears && f.IsClear() {
-			events = append(events, &service.Event{
-				Kind:      service.EventKind_Clear,
-				Command:   p.Capture.Command(uint64(id)),
-				Timestamp: getTime(cmd),
-			})
-		}
-		// Add all non-special event types
-		if p.DrawCalls && f.IsDrawCall() {
-			events = append(events, &service.Event{
-				Kind:      service.EventKind_DrawCall,
-				Command:   p.Capture.Command(uint64(id)),
-				Timestamp: getTime(cmd),
-			})
-		}
 		if p.Submissions && f.IsSubmission() {
 			events = append(events, &service.Event{
 				Kind:      service.EventKind_Submission,
-				Command:   p.Capture.Command(uint64(id)),
-				Timestamp: getTime(cmd),
-			})
-		}
-		if p.TransformFeedbacks && f.IsTransformFeedback() {
-			events = append(events, &service.Event{
-				Kind:      service.EventKind_TransformFeedback,
 				Command:   p.Capture.Command(uint64(id)),
 				Timestamp: getTime(cmd),
 			})
