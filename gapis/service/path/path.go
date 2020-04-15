@@ -636,6 +636,12 @@ func (n *Command) ResourcesAfter(ids []*ID) *MultiResourceData {
 	}
 }
 
+func (n *Command) FramebufferAttachmentsAfter() *FramebufferAttachments {
+	return &FramebufferAttachments{
+		After: n,
+	}
+}
+
 // FramebufferObservation returns the path node to framebuffer observation
 // after this command.
 func (n *Command) FramebufferObservation() *FramebufferObservation {

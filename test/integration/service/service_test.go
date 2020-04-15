@@ -187,6 +187,7 @@ func TestGet(t *testing.T) {
 		{capture.CommandTree(nil), T((*service.CommandTree)(nil))},
 		{capture.Report(nil, false), T((*service.Report)(nil))},
 		{capture.Resources(), T((*service.Resources)(nil))},
+		{capture.Command(drawCmdIndex).FramebufferAttachmentsAfter(), T((*service.FramebufferAttachments)(nil))},
 	} {
 		ctx = log.V{"path": test.path}.Bind(ctx)
 		got, err := server.Get(ctx, test.path.Path(), nil)
