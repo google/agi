@@ -70,7 +70,6 @@ import java.util.function.Function;
 public class GraphicsTraceView extends Composite implements MainWindow.MainView, Follower.Listener {
   private final Models models;
   private final Widgets widgets;
-  private final DeviceDialog deviceDialog;
   protected final Set<MainTab.Type> hiddenTabs;
 
   protected final TabArea tabs;
@@ -81,9 +80,9 @@ public class GraphicsTraceView extends Composite implements MainWindow.MainView,
     this.widgets = widgets;
     this.hiddenTabs = getHiddenTabs(models.settings);
 
-    setLayout(new GridLayout(1, false));
+    new DeviceDialog(this, getShell(), models, widgets);
 
-    deviceDialog = new DeviceDialog(this, getShell(), models, widgets);
+    setLayout(new GridLayout(1, false));
 
     tabs = new TabArea(this, models.analytics, widgets.theme, new Persistance() {
       @Override
@@ -103,13 +102,6 @@ public class GraphicsTraceView extends Composite implements MainWindow.MainView,
     addListener(SWT.Dispose, e -> {
       models.follower.removeListener(this);
     });
-
-//    models.devices.addListener(new Devices.Listener() {
-//      @Override
-//      public void onReplayDevicesLoaded() {
-//        DeviceDialog.showSelectReplayDeviceDialog(getShell(), models, widgets);
-//      }
-//    });
   }
 
   private static Set<MainTab.Type> getHiddenTabs(Settings settings) {

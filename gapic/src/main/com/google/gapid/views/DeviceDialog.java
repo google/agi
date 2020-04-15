@@ -71,23 +71,24 @@ import java.util.logging.Logger;
 /**
  * View responsible to show a replay device selection dialog when need be.
  */
-public class DeviceDialog  extends Composite implements Devices.Listener, Capture.Listener {
+public class DeviceDialog implements Devices.Listener, Capture.Listener {
   protected static final Logger LOG = Logger.getLogger(DeviceDialog.class.getName());
 
   private final Shell shell;
   private final Models models;
   private final Widgets widgets;
+  private final Composite parent;
   protected SelectReplayDeviceDialog dialog = null;
 
   public DeviceDialog(Composite parent, Shell shell, Models models, Widgets widgets) {
-    super(parent, SWT.NONE);
     this.shell = shell;
     this.models = models;
     this.widgets = widgets;
+    this.parent = parent;
 
     models.devices.addListener(this);
     models.capture.addListener(this);
-    addListener(SWT.Dispose, e -> {
+    parent.addListener(SWT.Dispose, e -> {
       models.devices.removeListener(this);
       models.capture.removeListener(this);
       if (dialog != null && dialog.getShell() != null) {
@@ -119,7 +120,7 @@ public class DeviceDialog  extends Composite implements Devices.Listener, Captur
       return;
     }
 
-    if (models.capture.isGraphics() && !models.devices.hasReplayDevice()) {
+    if (models.capture.isGraphics() && models.devices.isReplayDevicesLoaded() && !models.devices.hasReplayDevice()) {
       // Show dialog unless there is a single compatible and validated replay
       // device available, in which case it is auto-selected
       boolean skipDialog = false;
@@ -136,7 +137,7 @@ public class DeviceDialog  extends Composite implements Devices.Listener, Captur
         models.devices.selectReplayDevice(device);
       } else {
         dialog = new SelectReplayDeviceDialog(shell, models, widgets);
-        scheduleIfNotDisposed(this, () -> dialog.open());
+        scheduleIfNotDisposed(parent, () -> dialog.open());
       }
     }
   }

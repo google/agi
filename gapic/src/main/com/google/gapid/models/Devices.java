@@ -107,7 +107,7 @@ public class Devices {
           List<Device.Instance> devs = result.get().stream()
               .map(v -> v.getDevice())
               .collect(toList());
-          return devs.isEmpty() ? error(null) : success(devs);
+          return success(devs);
         } catch (RpcException | ExecutionException e) {
           analytics.reportException(e);
           throttleLogRpcError(LOG, "LoadData error", e);
@@ -204,6 +204,10 @@ public class Devices {
 
   public boolean isLoaded() {
     return devices != null;
+  }
+
+  public boolean isReplayDevicesLoaded() {
+    return replayDevices != null;
   }
 
   public List<Device.Instance> getAllDevices() {
