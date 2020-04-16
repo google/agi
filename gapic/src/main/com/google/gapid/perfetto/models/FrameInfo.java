@@ -36,6 +36,7 @@ public class FrameInfo {
       "from gpu_track t join frame_slice s on (t.id = s.track_id) " +
       "group by t.id " +
       "order by t.id";
+  private static final String DISPLAYED_FRAME_TRACK_NAME = "Displayed Frame";
 
   private final List<Buffer> buffers;
 
@@ -67,12 +68,12 @@ public class FrameInfo {
               buffers.add(new Buffer(r));
             });
 
-            // Sort buffers by name, the query is sorted by track id for the queues.
+            // Sort buffers by name, the query is sorted by track id.
             buffers.sort((b1, b2) -> {
               // Displayed Frame track should always be at top
-              if (b1.name.equals("Displayed Frame")) {
+              if (b1.name.equals(DISPLAYED_FRAME_TRACK_NAME)) {
                 return -1;
-              } else if(b2.name.equals("Displayed Frame")) {
+              } else if(b2.name.equals(DISPLAYED_FRAME_TRACK_NAME)) {
                 return 1;
               }
               return b1.name.compareTo(b2.name);
