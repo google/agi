@@ -400,14 +400,14 @@ public class FrameEventsTrack extends Track.WithQueryEngine<FrameEventsTrack.Dat
   public static class FrameSelection {
     public static FrameSelection EMPTY = new FrameSelection();
     // key = concat(layerName, '_', frameNumber)
-    private List<String> keys;
+    private Set<String> keys;
 
     public FrameSelection() {
-      keys = Lists.newArrayList();
+      keys = Sets.newHashSet();
     }
 
     public FrameSelection(long[] f, String[] l) {
-      keys = Lists.newArrayList();
+      keys = Sets.newHashSet();
       for (int i = 0; i < l.length; i++) {
         keys.add(l[i] + "_" + f[i]);
       }
