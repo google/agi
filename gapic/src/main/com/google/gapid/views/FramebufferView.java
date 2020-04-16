@@ -29,7 +29,6 @@ import static com.google.gapid.widgets.Widgets.exclusiveSelection;
 import static com.google.gapid.widgets.Widgets.disposeAllChildren;
 
 import static java.util.Collections.emptyList;
-import static java.util.logging.Level.SEVERE;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -41,6 +40,7 @@ import com.google.gapid.models.CommandStream;
 import com.google.gapid.models.CommandStream.CommandIndex;
 import com.google.gapid.models.Devices;
 import com.google.gapid.models.Models;
+import com.google.gapid.models.Settings;
 import com.google.gapid.proto.device.Device;
 import com.google.gapid.proto.service.Service;
 import com.google.gapid.proto.service.Service.ClientAction;
@@ -85,17 +85,35 @@ import java.util.logging.Logger;
 public class FramebufferView extends Composite
     implements Tab, Capture.Listener, Devices.Listener, CommandStream.Listener {
   private static final Logger LOG = Logger.getLogger(FramebufferView.class.getName());
-  private final int MAX_SIZE = 0xffff;
-  private final Path.RenderSettings RENDER_SHADED;
-  private final Path.RenderSettings RENDER_OVERLAY;
-  private final Path.RenderSettings RENDER_WIREFRAME;
-  private final Path.RenderSettings RENDER_OVERDRAW;
+  private static final int MAX_SIZE = 0xffff;
+
+  private enum RenderSetting {
+    RENDER_SHADED(MAX_SIZE, MAX_SIZE, Path.DrawMode.NORMAL),
+    RENDER_OVERLAY(MAX_SIZE, MAX_SIZE, Path.DrawMode.WIREFRAME_OVERLAY),
+    RENDER_WIREFRAME(MAX_SIZE, MAX_SIZE, Path.DrawMode.WIREFRAME_ALL),
+    RENDER_OVERDRAW(MAX_SIZE, MAX_SIZE, Path.DrawMode.OVERDRAW);
+
+    public final int maxWidth;
+    public final int maxHeight;
+    public final Path.DrawMode drawMode;
+
+    private RenderSetting(int maxWidth, int maxHeight, Path.DrawMode drawMode) {
+      this.maxWidth = maxWidth;
+      this.maxHeight = maxHeight;
+      this.drawMode = drawMode;
+    }
+  
+    public Path.RenderSettings getRenderSettings(Settings settings) {
+      return Paths.renderSettings(maxWidth, maxHeight, drawMode, 
+        settings.preferences().getDisableReplayOptimization());
+    }
+  }
 
   private final Models models;
   private final Widgets widgets;
   private final SingleInFlight rpcController = new SingleInFlight();
   protected final ImagePanel imagePanel;
-  private Path.RenderSettings renderSettings;
+  private RenderSetting renderSettings;
   private int target = 0;
   private API.FramebufferAttachmentType targetType = API.FramebufferAttachmentType.OutputColor;
   private ToolItem targetItem;
@@ -121,19 +139,7 @@ public class FramebufferView extends Composite
     // Work around for https://bugs.eclipse.org/bugs/show_bug.cgi?id=517480
     Widgets.createSeparator(toolBar);
 
-    RENDER_SHADED = Paths.renderSettings(MAX_SIZE, MAX_SIZE, Path.DrawMode.NORMAL, 
-      models.settings.preferences().getDisableReplayOptimization());
-
-    RENDER_OVERLAY = Paths.renderSettings(MAX_SIZE, MAX_SIZE, Path.DrawMode.WIREFRAME_OVERLAY, 
-      models.settings.preferences().getDisableReplayOptimization());
-    
-    RENDER_WIREFRAME = Paths.renderSettings(MAX_SIZE, MAX_SIZE, Path.DrawMode.WIREFRAME_ALL, 
-      models.settings.preferences().getDisableReplayOptimization());
-    
-    RENDER_OVERDRAW = Paths.renderSettings(MAX_SIZE, MAX_SIZE, Path.DrawMode.OVERDRAW, 
-      models.settings.preferences().getDisableReplayOptimization());
-
-    renderSettings = RENDER_SHADED;
+    renderSettings = RenderSetting.RENDER_SHADED;
 
     models.capture.addListener(this);
     models.devices.addListener(this);
@@ -152,22 +158,22 @@ public class FramebufferView extends Composite
     exclusiveSelection(
         createToggleToolItem(bar, theme.wireframeNone(), e -> {
           models.analytics.postInteraction(View.Framebuffer, ClientAction.Shaded);
-          renderSettings = RENDER_SHADED;
+          renderSettings = RenderSetting.RENDER_SHADED;
           updateBuffer();
         }, "Render shaded geometry"),
         createToggleToolItem(bar, theme.wireframeOverlay(), e -> {
           models.analytics.postInteraction(View.Framebuffer, ClientAction.OverlayWireframe);
-          renderSettings = RENDER_OVERLAY;
+          renderSettings = RenderSetting.RENDER_OVERLAY;
           updateBuffer();
         }, "Render shaded geometry and overlay wireframe of last draw call"),
         createToggleToolItem(bar, theme.wireframeAll(), e -> {
           models.analytics.postInteraction(View.Framebuffer, ClientAction.Wireframe);
-          renderSettings = RENDER_WIREFRAME;
+          renderSettings = RenderSetting.RENDER_WIREFRAME;
           updateBuffer();
         }, "Render wireframe geometry"),
         createToggleToolItem(bar, theme.overdraw(), e -> {
           models.analytics.postInteraction(View.Framebuffer, ClientAction.Overdraw);
-          renderSettings = RENDER_OVERDRAW;
+          renderSettings = RenderSetting.RENDER_OVERDRAW;
           updateBuffer();
         }, "Render overdraw"));
     createSeparator(bar);
@@ -239,7 +245,7 @@ public class FramebufferView extends Composite
         target = 0;
       }
       targetType = fbaList.getAttachmentsList().get(target).getType();
-      return models.images.getFramebuffer(command, target, renderSettings);
+      return models.images.getFramebuffer(command, target, renderSettings.getRenderSettings(models.settings));
     });
   }
 
@@ -298,7 +304,7 @@ public class FramebufferView extends Composite
       imagePanel.showMessage(Error, Messages.NO_REPLAY_DEVICE);
     } else {
       imagePanel.startLoading();
-      rpcController.start().listen(models.images.getFramebuffer(command, target, renderSettings),
+      rpcController.start().listen(models.images.getFramebuffer(command, target, renderSettings.getRenderSettings(models.settings)),
           new UiErrorCallback<FetchedImage, MultiLayerAndLevelImage, Loadable.Message>(this, LOG) {
         @Override
         protected ResultOrError<MultiLayerAndLevelImage, Loadable.Message> onRpcThread(

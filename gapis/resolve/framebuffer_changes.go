@@ -77,20 +77,20 @@ func (r *FramebufferChangesResolvable) Resolve(ctx context.Context) (interface{}
 
 	postCmdAndSubCmd := func(s *api.GlobalState, subcommandIndex api.SubCmdIdx, cmd api.Cmd) {
 		api := cmd.API()
-		count, _ := api.GetFramebufferAttachmentCount(ctx, s)
+		fbaInfos, _ := api.GetFramebufferAttachmentInfos(ctx, s)
 		idx := append([]uint64(nil), subcommandIndex...)
-		for i := uint32(0); i < count; i++ {
+		for i, inf := range fbaInfos {
 			info := FramebufferAttachmentInfo{After: idx}
 			if api != nil {
-				if inf, err := api.GetFramebufferAttachmentInfo(ctx, idx, s, cmd.Thread(), i); err == nil && inf.Format != nil {
+				if inf.Err == nil {
 					info.Width, info.Height, info.Index, info.Format, info.CanResize, info.Type = inf.Width, inf.Height, inf.Index, inf.Format, inf.CanResize, inf.Type
 				} else {
-					info.Err = err
+					info.Err = inf.Err
 				}
 			} else {
 				info.Err = errNoAPI
 			}
-			if uint32(len(out.attachments)) == i {
+			if len(out.attachments) == i {
 				out.attachments = append(out.attachments, framebufferAttachmentChanges{changes: make([]FramebufferAttachmentInfo, 0)})
 			}
 			if last := out.attachments[i].last(); !last.equal(info) {
@@ -102,7 +102,7 @@ func (r *FramebufferChangesResolvable) Resolve(ctx context.Context) (interface{}
 
 		// Current command may be in a renderpass with fewer attachments.
 		// Go ahead and fill up the spaces with info.Err for future filtering
-		for i := count; i < uint32(len(out.attachments)); i++ {
+		for i := len(fbaInfos); i < len(out.attachments); i++ {
 			info := FramebufferAttachmentInfo{After: idx}
 			info.Err = errDetached
 			if last := out.attachments[i].last(); !last.equal(info) {

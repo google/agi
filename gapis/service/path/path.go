@@ -233,6 +233,15 @@ func (n Events) Format(f fmt.State, c rune) { fmt.Fprintf(f, "%v.events", n.Pare
 func (n Field) Format(f fmt.State, c rune) { fmt.Fprintf(f, "%v.%v", n.Parent(), n.Name) }
 
 // Format implements fmt.Formatter to print the path.
+func (n FramebufferAttachments) Format(f fmt.State, c rune) {
+	fmt.Fprintf(f, "%v.framebuffer-attachments", n.Parent())
+}
+
+func (n FramebufferAttachment) Format(f fmt.State, c rune) {
+	fmt.Fprintf(f, "%v.framevuffer-attachment<%x>", n.Parent(), n.Index)
+}
+
+// Format implements fmt.Formatter to print the path.
 func (n GlobalState) Format(f fmt.State, c rune) { fmt.Fprintf(f, "%v.global-state", n.Parent()) }
 
 // Format implements fmt.Formatter to print the path.
