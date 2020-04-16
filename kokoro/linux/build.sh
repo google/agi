@@ -19,6 +19,12 @@ set -ex
 BUILD_ROOT=$PWD
 SRC=$PWD/github/agi/
 
+ls ${KOKORO_GFILE_DIR}
+
+ls ${KOKORO_GFILE_DIR}/*
+
+exit 0
+
 # Get bazel.
 BAZEL_VERSION=2.0.0
 curl -L -k -O -s https://github.com/bazelbuild/bazel/releases/download/${BAZEL_VERSION}/bazel-${BAZEL_VERSION}-installer-linux-x86_64.sh
