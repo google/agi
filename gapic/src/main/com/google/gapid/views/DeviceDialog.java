@@ -74,14 +74,12 @@ import java.util.logging.Logger;
 public class DeviceDialog implements Devices.Listener, Capture.Listener {
   protected static final Logger LOG = Logger.getLogger(DeviceDialog.class.getName());
 
-  private final Shell shell;
   private final Models models;
   private final Widgets widgets;
   private final Composite parent;
   protected SelectReplayDeviceDialog dialog = null;
 
-  public DeviceDialog(Composite parent, Shell shell, Models models, Widgets widgets) {
-    this.shell = shell;
+  public DeviceDialog(Composite parent, Models models, Widgets widgets) {
     this.models = models;
     this.widgets = widgets;
     this.parent = parent;
@@ -136,7 +134,7 @@ public class DeviceDialog implements Devices.Listener, Capture.Listener {
       if (skipDialog) {
         models.devices.selectReplayDevice(device);
       } else {
-        dialog = new SelectReplayDeviceDialog(shell, models, widgets);
+        dialog = new SelectReplayDeviceDialog(parent.getShell(), models, widgets);
         scheduleIfNotDisposed(parent, () -> dialog.open());
       }
     }
@@ -145,7 +143,7 @@ public class DeviceDialog implements Devices.Listener, Capture.Listener {
   /**
    * Dialog to select a replay device.
    */
-  static class SelectReplayDeviceDialog extends DialogBase {
+  static private class SelectReplayDeviceDialog extends DialogBase {
 
     private final Models models;
     private final Widgets widgets;

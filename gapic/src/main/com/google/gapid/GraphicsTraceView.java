@@ -80,7 +80,7 @@ public class GraphicsTraceView extends Composite implements MainWindow.MainView,
     this.widgets = widgets;
     this.hiddenTabs = getHiddenTabs(models.settings);
 
-    new DeviceDialog(this, getShell(), models, widgets);
+    new DeviceDialog(this, models, widgets);
 
     setLayout(new GridLayout(1, false));
 
