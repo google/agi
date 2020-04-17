@@ -103,7 +103,7 @@ SRC=$PWD/github/agi/
 # cp -r ${KOKORO_GFILE_DIR}/${SWARMING_X20_TEST_DIR} ${SWARMING_DIR}/tests
 
 # # Swarming environment
-# export SWARMING_AUTH_FLAG="--auth-service-account-json=${KOKORO_KEYSTORE_DIR}/74894_kokoro_swarming_access_key"
+export SWARMING_AUTH_FLAG="--auth-service-account-json=${KOKORO_KEYSTORE_DIR}/74894_kokoro_swarming_access_key"
 # export SWARMING_BUILD_INFO="Kokoro-PR${KOKORO_GITHUB_PULL_REQUEST_NUMBER}"
 # export SWARMING_TRIGGERED_DIR="triggered"
 
