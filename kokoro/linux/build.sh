@@ -181,6 +181,16 @@ $SRC/test/swarming/collect.sh
 EXIT_CODE=$?
 echo "$EXIT_CODE"
 
+# Latest version
+curl -fsSL -o luci-py.tar.gz https://chromium.googlesource.com/infra/luci/luci-py.git/+archive/2128d8d9c36a0e2839afa200cf3da5e6f6ea845a.tar.gz
+mkdir luci-py-latest
+tar xzf luci-py.tar.gz --directory luci-py-latest
+export LUCI_CLIENT_ROOT="$PWD/luci-py-latest/client"
+
+$SRC/test/swarming/collect.sh
+EXIT_CODE=$?
+echo "$EXIT_CODE"
+
 
 exit 1
 
