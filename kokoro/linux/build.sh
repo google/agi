@@ -167,7 +167,7 @@ mkdir luci-py
 tar xzf luci-py.tar.gz --directory luci-py
 export LUCI_CLIENT_ROOT="$PWD/luci-py/client"
 
-./collect.sh
+$SRC/test/swarming/collect.sh
 EXIT_CODE=$?
 echo "$EXIT_CODE"
 
@@ -177,7 +177,7 @@ mkdir luci-py-recent
 tar xzf luci-py.tar.gz --directory luci-py-recent
 export LUCI_CLIENT_ROOT="$PWD/luci-py-recent/client"
 
-./collect.sh
+$SRC/test/swarming/collect.sh
 EXIT_CODE=$?
 echo "$EXIT_CODE"
 
