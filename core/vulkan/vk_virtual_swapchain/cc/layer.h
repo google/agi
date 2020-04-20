@@ -25,14 +25,14 @@
 #include "threading.h"
 
 #define EXPECT_SUCCESS(fn)                                                  \
-  ({                                                                        \
+  [&]() {                                                                   \
     auto r = fn;                                                            \
     if (VK_SUCCESS != r) {                                                  \
       swapchain::write_warning(__FILE__ ":" + std::to_string(__LINE__) +    \
                                ": " #fn " RETURNED: " + std::to_string(r)); \
     }                                                                       \
-    r;                                                                      \
-  })
+    return r;                                                               \
+  }()
 
 namespace swapchain {
 
