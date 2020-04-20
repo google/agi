@@ -24,13 +24,15 @@
 
 #include "threading.h"
 
-#define LOG_IF_FAILED(res, message)                                    \
-  do {                                                                 \
-    if (VK_SUCCESS != res) {                                           \
-      swapchain::write_warning("Unsuccessful(" + std::to_string(res) + \
-                               "): " + message);                       \
-    }                                                                  \
-  } while (0)
+#define EXPECT_SUCCESS(fn)                                                  \
+  ({                                                                        \
+    auto r = fn;                                                            \
+    if (VK_SUCCESS != r) {                                                  \
+      swapchain::write_warning(__FILE__ ":" + std::to_string(__LINE__) +    \
+                               ": " #fn " RETURNED: " + std::to_string(r)); \
+    }                                                                       \
+    r;                                                                      \
+  })
 
 namespace swapchain {
 

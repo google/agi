@@ -408,10 +408,9 @@ vkQueuePresentKHR(VkQueue queue, const VkPresentInfoKHR* pPresentInfo) {
         nullptr                                            // pSemaphores
     };
 
-    res = GetGlobalContext().GetQueueData(queue)->vkQueueSubmit(
-        queue, 1, &submitInfo, swp->GetFence(image_index));
+    res = EXPECT_SUCCESS(GetGlobalContext().GetQueueData(queue)->vkQueueSubmit(
+        queue, 1, &submitInfo, swp->GetFence(image_index)));
 
-    LOG_IF_FAILED(res, "vkQueuePresentKHR: vkQueueSubmit");
     if (res != VK_SUCCESS) {
       break;
     }
