@@ -33,7 +33,6 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gapid.perfetto.TimeSpan;
 import com.google.gapid.perfetto.models.CounterInfo;
 import com.google.gapid.perfetto.models.CpuInfo;
-import com.google.gapid.perfetto.models.FrameInfo;
 import com.google.gapid.perfetto.models.GpuInfo;
 import com.google.gapid.perfetto.models.ProcessInfo;
 import com.google.gapid.perfetto.models.QueryEngine;
@@ -93,10 +92,9 @@ public class Perfetto extends ModelBase<Perfetto.Data, Path.Capture, Loadable.Me
         transformAsync(withStatus("Examining the trace...", examineTrace(data)), $1 ->
           transformAsync(withStatus("Querying threads...", queryThreads(data)), $2 ->
             transformAsync(withStatus("Querying GPU info...", queryGpu(data)), $3 ->
-              transformAsync(withStatus("Querying Frame info...", queryFrame(data)), $4 ->
-                transformAsync(withStatus("Querying counters...", queryCounters(data)), $5 ->
-                  transform(withStatus("Enumerating tracks...", enumerateTracks(data)), $6 ->
-                    data.build()))))));
+              transformAsync(withStatus("Querying counters...", queryCounters(data)), $4 ->
+                transform(withStatus("Enumerating tracks...", enumerateTracks(data)), $5 ->
+                  data.build())))));
   }
 
   private static ListenableFuture<Data.Builder> examineTrace(Data.Builder data) {
@@ -112,10 +110,6 @@ public class Perfetto extends ModelBase<Perfetto.Data, Path.Capture, Loadable.Me
 
   private static ListenableFuture<Data.Builder> queryGpu(Data.Builder data) {
     return GpuInfo.listGpus(data);
-  }
-
-  private static ListenableFuture<Data.Builder> queryFrame(Data.Builder data) {
-    return FrameInfo.listFrames(data);
   }
 
   private static ListenableFuture<Data.Builder> queryCounters(Data.Builder data) {
@@ -182,22 +176,19 @@ public class Perfetto extends ModelBase<Perfetto.Data, Path.Capture, Loadable.Me
     public final ImmutableMap<Long, ProcessInfo> processes;
     public final ImmutableMap<Long, ThreadInfo> threads;
     public final GpuInfo gpu;
-    public final FrameInfo frame;
     public final ImmutableMap<Long, CounterInfo> counters;
     public final VSync vsync;
     public final TrackConfig tracks;
 
     public Data(QueryEngine queries, TimeSpan traceTime, CpuInfo cpu,
         ImmutableMap<Long, ProcessInfo> processes, ImmutableMap<Long, ThreadInfo> threads,
-        GpuInfo gpu, FrameInfo frame, ImmutableMap<Long, CounterInfo> counters, VSync vsync,
-        TrackConfig tracks) {
+        GpuInfo gpu, ImmutableMap<Long, CounterInfo> counters, VSync vsync, TrackConfig tracks) {
       this.qe = queries;
       this.traceTime = traceTime;
       this.cpu = cpu;
       this.processes = processes;
       this.threads = threads;
       this.gpu = gpu;
-      this.frame = frame;
       this.counters = counters;
       this.vsync = vsync;
       this.tracks = tracks;
@@ -210,7 +201,6 @@ public class Perfetto extends ModelBase<Perfetto.Data, Path.Capture, Loadable.Me
       private ImmutableMap<Long, ProcessInfo> processes;
       private ImmutableMap<Long, ThreadInfo> threads;
       private GpuInfo gpu = GpuInfo.NONE;
-      private FrameInfo frame = FrameInfo.NONE;
       private ImmutableMap<Long, CounterInfo> counters;
       private Map<CounterInfo.Type, ImmutableListMultimap<String, CounterInfo>> countersByName;
       private VSync vsync = VSync.EMPTY;
@@ -265,15 +255,6 @@ public class Perfetto extends ModelBase<Perfetto.Data, Path.Capture, Loadable.Me
         return this;
       }
 
-      public FrameInfo getFrame() {
-        return frame;
-      }
-
-      public Builder setFrame(FrameInfo frame) {
-        this.frame = frame;
-        return this;
-      }
-
       public ImmutableMap<Long, CounterInfo> getCounters() {
         return counters;
       }
@@ -301,7 +282,7 @@ public class Perfetto extends ModelBase<Perfetto.Data, Path.Capture, Loadable.Me
 
       public Data build() {
         return new Data(
-            qe, traceTime, cpu, processes, threads, gpu, frame, counters, vsync, tracks.build());
+            qe, traceTime, cpu, processes, threads, gpu, counters, vsync, tracks.build());
       }
     }
   }
