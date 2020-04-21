@@ -37,7 +37,7 @@ def main():
 
     #### Collect swarming result
     summary = 'summary.json'
-    # Make sure summary file does not exists
+    # Make sure summary file does not exist
     if os.path.exists(summary):
         os.remove(summary)
     cmd = [
@@ -106,7 +106,7 @@ def main():
         with open(args.results_json, 'r') as f:
             results = json.load(f)
     else:
-        print('Warning: results file "' + args.results_json + '" does not exists, it will be created')
+        print('Warning: results file "' + args.results_json + '" does not exist, it will be created')
         results = {}
 
     if args.build_timestamp in results.keys():
