@@ -54,6 +54,14 @@ function build {
   echo $(date): Build completed.
 }
 
+build //core/codegen:go_default_library
+
+$BUILD_ROOT/bazel/bin/bazel clean
+
+build //core/codegen:go_default_library
+
+exit 0
+
 # Build the Vulkan API package separately first, as the go-compiler needs ~8GB
 # of RAM for this
 build //gapis/api/vulkan:go_default_library
