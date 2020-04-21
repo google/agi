@@ -56,7 +56,7 @@ function build {
 
 build //core/codegen:go_default_library
 
-$BUILD_ROOT/bazel/bin/bazel clean
+$BUILD_ROOT/bazel/bin/bazel --output_base="${TMP}/bazel_out" clean
 
 build //core/codegen:go_default_library
 
