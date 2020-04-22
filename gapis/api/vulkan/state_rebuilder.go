@@ -299,9 +299,18 @@ func getPipelinesInOrder(s *State, compute bool) []VkPipeline {
 		}
 	}
 
+	// In the following, make sure to always iterate over the
+	// unhandledPipelines map in order, to make state rebuilding
+	// deterministic.
 	for len(unhandledPipelines) != 0 {
 		numHandled := 0
-		for k, v := range unhandledPipelines {
+		keys := []VkPipeline{}
+		for k := range unhandledPipelines {
+			keys = append(keys, k)
+		}
+		sort.Slice(keys, func(i, j int) bool { return keys[i] < keys[j] })
+		for _, k := range keys {
+			v := unhandledPipelines[k]
 			handled := false
 			if v == 0 {
 				pipelines = append(pipelines, k)
@@ -318,9 +327,14 @@ func getPipelinesInOrder(s *State, compute bool) []VkPipeline {
 		}
 		if numHandled == 0 {
 			// There is a cycle in the basePipeline indices.
-			// Or the no base pipelines does exist.
+			// Or no base pipelines does exist.
 			// Create the rest without base pipelines
+			keys = []VkPipeline{}
 			for k := range unhandledPipelines {
+				keys = append(keys, k)
+			}
+			sort.Slice(keys, func(i, j int) bool { return keys[i] < keys[j] })
+			for _, k := range keys {
 				pipelines = append(pipelines, k)
 			}
 			unhandledPipelines = map[VkPipeline]VkPipeline{}
