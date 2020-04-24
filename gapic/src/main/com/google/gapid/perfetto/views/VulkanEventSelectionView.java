@@ -39,31 +39,35 @@ public class VulkanEventSelectionView extends Composite {
   private static final int PROPERTIES_PER_PANEL = 8;
   private static final int PANEL_INDENT = 25;
 
-  public VulkanEventSelectionView(Composite parent, State state, VulkanEventTrack.Slice slice) {
+  public VulkanEventSelectionView(Composite parent, State state, VulkanEventTrack.Slices slice) {
     super(parent, SWT.NONE);
     setLayout(withMargin(new GridLayout(2, false), 0, 0));
+
+    if (slice.count != 1) {
+      throw new IllegalArgumentException("Slice count != 1. Should only use VulkanEventSelectionView for a single slice.");
+    }
 
     Composite main = withLayoutData(createComposite(this, new GridLayout(2, false)),
         new GridData(SWT.LEFT, SWT.TOP, false, false));
     withLayoutData(createBoldLabel(main, "Slice:"), withSpans(new GridData(), 2, 1));
 
     createLabel(main, "Name:");
-    createLabel(main, slice.name);
+    createLabel(main, slice.names.get(0));
 
     createLabel(main, "Time:");
-    createLabel(main, timeToString(slice.time - state.getTraceTime().start));
+    createLabel(main, timeToString(slice.times.get(0) - state.getTraceTime().start));
 
     createLabel(main, "Duration:");
-    createLabel(main, timeToString(slice.dur));
+    createLabel(main, timeToString(slice.durs.get(0)));
 
     createLabel(main, "Command Buffer:");
-    createLabel(main, Long.toString(slice.commandBuffer));
+    createLabel(main, Long.toString(slice.commandBuffers.get(0)));
 
     createLabel(main, "Submission ID:");
-    createLabel(main, Long.toString(slice.submissionId));
+    createLabel(main, Long.toString(slice.submissionIds.get(0)));
 
-    if (!slice.args.isEmpty()) {
-      String[] keys = Iterables.toArray(slice.args.keys(), String.class);
+    if (!slice.argSets.get(0).isEmpty()) {
+      String[] keys = Iterables.toArray(slice.argSets.get(0).keys(), String.class);
       int panels = (keys.length + PROPERTIES_PER_PANEL - 1) / PROPERTIES_PER_PANEL;
       Composite props = withLayoutData(createComposite(this, new GridLayout(2 * panels, false)),
           withIndents(new GridData(SWT.LEFT, SWT.TOP, false, false), PANEL_INDENT, 0));
@@ -75,7 +79,7 @@ public class VulkanEventSelectionView extends Composite {
         for (int c = 0; c < cols; c++) {
           withLayoutData(createLabel(props, keys[i + c * PROPERTIES_PER_PANEL] + ":"),
               withIndents(new GridData(), (c == 0) ? 0 : PANEL_INDENT, 0));
-          createLabel(props, String.valueOf(slice.args.get(keys[i + c * PROPERTIES_PER_PANEL])));
+          createLabel(props, String.valueOf(slice.argSets.get(0).get(keys[i + c * PROPERTIES_PER_PANEL])));
         }
         if (cols != panels) {
           withLayoutData(createLabel(props, ""), withSpans(new GridData(), 2 * (panels - cols), 1));

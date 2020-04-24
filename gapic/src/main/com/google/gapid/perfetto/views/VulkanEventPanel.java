@@ -226,8 +226,8 @@ public class VulkanEventPanel extends TrackPanel<VulkanEventPanel> implements Se
     }
 
     if (endDepth >= 0) {
-      builder.add(Selection.Kind.VulkanEvent, transform(
-          track.getSlices(ts, startDepth, endDepth), VulkanEventTrack.SlicesBuilder::new));
+      // Extra transform here solving a java generic type recognition problem.
+      builder.add(Selection.Kind.VulkanEvent, transform(track.getSlices(ts, startDepth, endDepth), s -> s));
     }
   }
 }
