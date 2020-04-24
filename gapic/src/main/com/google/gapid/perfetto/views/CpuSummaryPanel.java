@@ -155,9 +155,9 @@ public class CpuSummaryPanel extends TrackPanel<CpuSummaryPanel> implements Sele
   @Override
   public void computeSelection(Selection.CombiningBuilder builder, Area area, TimeSpan ts) {
     if (area.h / height >= SELECTION_THRESHOLD) {
-      builder.add(Selection.Kind.Cpu, transform(track.getSlices(ts), r -> {
-        r.stream().forEach(s -> state.addSelectedThread(state.getThreadInfo(s.utid)));
-        return new CpuTrack.SlicesBuilder(r);
+      builder.add(Selection.Kind.Cpu, transform(track.getSlices(ts), slices -> {
+        slices.utids.forEach(utid -> state.addSelectedThread(state.getThreadInfo(utid)));
+        return slices;
       }));
     }
   }

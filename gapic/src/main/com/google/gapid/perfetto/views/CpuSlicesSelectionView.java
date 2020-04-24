@@ -19,8 +19,10 @@ import static com.google.gapid.widgets.Widgets.createTreeColumn;
 import static com.google.gapid.widgets.Widgets.createTreeViewer;
 import static com.google.gapid.widgets.Widgets.packColumns;
 
+import com.google.common.collect.ImmutableList;
 import com.google.gapid.perfetto.TimeSpan;
 import com.google.gapid.perfetto.models.CpuTrack;
+import com.google.gapid.perfetto.models.CpuTrack.ByThread;
 import com.google.gapid.perfetto.models.ProcessInfo;
 import com.google.gapid.perfetto.models.ThreadInfo;
 
@@ -35,16 +37,18 @@ import org.eclipse.swt.widgets.Composite;
  * Displays information about a list of selected CPU slices.
  */
 public class CpuSlicesSelectionView extends Composite {
-  public CpuSlicesSelectionView(Composite parent, State state, CpuTrack.Slices sel) {
+  public CpuSlicesSelectionView(Composite parent, State state, CpuTrack.Slices slices) {
     super(parent, SWT.NONE);
     setLayout(new FillLayout());
+
+    CpuTrack.ByProcess[] byProcesses = CpuTrack.organizeSlicesByProcess(slices);
 
     TreeViewer viewer = createTreeViewer(this, SWT.NONE);
     viewer.getTree().setHeaderVisible(true);
     viewer.setContentProvider(new ITreeContentProvider() {
       @Override
       public Object[] getElements(Object inputElement) {
-        return sel.processes.toArray();
+        return byProcesses;
       }
 
       @Override
@@ -63,7 +67,7 @@ public class CpuSlicesSelectionView extends Composite {
         if (element instanceof CpuTrack.ByProcess) {
           return ((CpuTrack.ByProcess)element).threads.toArray();
         } else if (element instanceof CpuTrack.ByThread) {
-          return ((CpuTrack.ByThread)element).slices.toArray();
+          return ((ByThread)element).sliceIndexes.toArray();
         }
         return null;
       }
@@ -80,7 +84,7 @@ public class CpuSlicesSelectionView extends Composite {
         ThreadInfo ti = state.getThreadInfo(tid);
         return (ti == null) ? "<unknown thread> [" + tid + "]" : ti.getDisplay();
       } else {
-        return "Slice " + ((CpuTrack.Slice)el).id;
+        return "Slice " + slices.ids.get((int)el);
       }
     });
     createTreeColumn(viewer, "Slice Duration", el -> {
@@ -89,31 +93,31 @@ public class CpuSlicesSelectionView extends Composite {
       } else if (el instanceof CpuTrack.ByThread) {
         return TimeSpan.timeToString(((CpuTrack.ByThread)el).dur);
       } else {
-        return TimeSpan.timeToString(((CpuTrack.Slice)el).dur);
+        return TimeSpan.timeToString(slices.durs.get((int)el));
       }
     });
     createTreeColumn(viewer, "Slice Start Time", el -> {
-      if (el instanceof CpuTrack.Slice) {
-        return TimeSpan.timeToString(((CpuTrack.Slice)el).time - state.getTraceTime().start);
+      if (el instanceof Integer) {
+        return TimeSpan.timeToString(slices.times.get((int)el) - state.getTraceTime().start);
       } else {
         return "";
       }
     });
     createTreeColumn(viewer, "End State", el -> {
-      if (el instanceof CpuTrack.Slice) {
-        return ((CpuTrack.Slice)el).endState.label;
+      if (el instanceof Integer) {
+        return slices.endStates.get((int)el).label;
       } else {
         return "";
       }
     });
     createTreeColumn(viewer, "Priority", el -> {
-      if (el instanceof CpuTrack.Slice) {
-        return String.valueOf(((CpuTrack.Slice)el).priority);
+      if (el instanceof Integer) {
+        return String.valueOf(slices.priorities.get((int)el));
       } else {
         return "";
       }
     });
-    viewer.setInput(sel);
+    viewer.setInput(slices);
     packColumns(viewer.getTree());
   }
 }

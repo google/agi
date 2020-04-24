@@ -26,6 +26,7 @@ import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gapid.perfetto.TimeSpan;
 
+import com.google.gapid.perfetto.models.CpuTrack.Slices;
 import java.util.List;
 
 /**
@@ -76,12 +77,8 @@ public class CpuSummaryTrack extends Track.WithQueryEngine<CpuSummaryTrack.Data>
     return format(DATA_SQL, numCpus, ns, tableName("span"));
   }
 
-  public ListenableFuture<List<CpuTrack.Slice>> getSlices(TimeSpan ts) {
-    return transform(qe.query(sliceRangeSql(ts)), result -> {
-      List<CpuTrack.Slice> slices = Lists.newArrayList();
-      result.forEachRow((i, r) -> slices.add(new CpuTrack.Slice(r)));
-      return slices;
-    });
+  public ListenableFuture<CpuTrack.Slices> getSlices(TimeSpan ts) {
+    return transform(qe.query(sliceRangeSql(ts)), Slices::new);
   }
 
   private static String sliceRangeSql(TimeSpan ts) {

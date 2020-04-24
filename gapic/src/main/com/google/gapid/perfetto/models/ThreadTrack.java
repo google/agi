@@ -149,7 +149,7 @@ public class ThreadTrack extends Track.WithQueryEngine<ThreadTrack.Data> {
     return sliceTrack.getSlice(id);
   }
 
-  public ListenableFuture<CpuTrack.Slice> getCpuSlice(long id) {
+  public ListenableFuture<CpuTrack.Slices> getCpuSlice(long id) {
     return CpuTrack.getSlice(qe, id);
   }
 
@@ -161,7 +161,7 @@ public class ThreadTrack extends Track.WithQueryEngine<ThreadTrack.Data> {
     return sliceTrack.getSlices(ts, minDepth, maxDepth);
   }
 
-  public ListenableFuture<List<CpuTrack.Slice>> getCpuSlices(TimeSpan ts) {
+  public ListenableFuture<CpuTrack.Slices> getCpuSlices(TimeSpan ts) {
     return CpuTrack.getSlices(qe, thread.utid, ts);
   }
 

@@ -309,15 +309,15 @@ public class CpuPanel extends TrackPanel<CpuPanel> implements Selectable {
           return false;
         }
         if ((mods & SWT.MOD1) == SWT.MOD1) {
-          state.addSelection(Selection.Kind.Cpu, transform(track.getSlices(ids), r -> {
-            r.stream().forEach(s -> state.addSelectedThread(state.getThreadInfo(s.utid)));
-            return new CpuTrack.SlicesBuilder(r).build();
+          state.addSelection(Selection.Kind.Cpu, transform(track.getSlices(ids), slices -> {
+            slices.utids.forEach(utid -> state.addSelectedThread(state.getThreadInfo(utid)));
+            return slices;
           }));
         } else {
           state.clearSelectedThreads();
-          state.setSelection(Selection.Kind.Cpu, transform(track.getSlices(ids), r -> {
-            r.stream().forEach(s -> state.addSelectedThread(state.getThreadInfo(s.utid)));
-            return new CpuTrack.SlicesBuilder(r).build();
+          state.setSelection(Selection.Kind.Cpu, transform(track.getSlices(ids), slices -> {
+            slices.utids.forEach(utid -> state.addSelectedThread(state.getThreadInfo(utid)));
+            return slices;
           }));
         }
         return true;
@@ -328,9 +328,9 @@ public class CpuPanel extends TrackPanel<CpuPanel> implements Selectable {
   @Override
   public void computeSelection(CombiningBuilder builder, Area area, TimeSpan ts) {
     if (area.h / height >= SELECTION_THRESHOLD) {
-      builder.add(Selection.Kind.Cpu, transform(track.getSlices(ts), r -> {
-        r.stream().forEach(s -> state.addSelectedThread(state.getThreadInfo(s.utid)));
-        return new CpuTrack.SlicesBuilder(r);
+      builder.add(Selection.Kind.Cpu, transform(track.getSlices(ts), slices -> {
+        slices.utids.forEach(utid -> state.addSelectedThread(state.getThreadInfo(utid)));
+        return slices;
       }));
     }
   }
