@@ -33,7 +33,7 @@ import com.google.gapid.perfetto.models.GpuInfo;
 import com.google.gapid.perfetto.models.Selection;
 import com.google.gapid.perfetto.models.Selection.CombiningBuilder;
 import com.google.gapid.perfetto.models.SliceTrack;
-import com.google.gapid.perfetto.models.SliceTrack.Slice;
+import com.google.gapid.perfetto.models.SliceTrack.Slices;
 import com.google.gapid.perfetto.models.VulkanEventTrack;
 
 import org.eclipse.swt.SWT;
@@ -241,11 +241,9 @@ public class GpuQueuePanel extends TrackPanel<GpuQueuePanel> implements Selectab
               return true;
             } else if (!concatedId.isEmpty()) { // Track data with quantization.
               if ((mods & SWT.MOD1) == SWT.MOD1) {
-                state.addSelection(Selection.Kind.Gpu, transform(track.getSlices(concatedId),
-                    s -> new SliceTrack.SlicesBuilder(s).build()));
+                state.addSelection(Selection.Kind.Gpu, track.getSlices(concatedId));
               } else {
-                state.setSelection(Selection.Kind.Gpu, transform(track.getSlices(concatedId),
-                    s -> new SliceTrack.SlicesBuilder(s).build()));
+                state.setSelection(Selection.Kind.Gpu, track.getSlices(concatedId));
               }
               return true;
             }
@@ -278,10 +276,8 @@ public class GpuQueuePanel extends TrackPanel<GpuQueuePanel> implements Selectab
       if (endDepth >= queue.maxDepth) {
         endDepth = Integer.MAX_VALUE;
       }
-
-      builder.add(Selection.Kind.Gpu, transform(
-          track.getSlices(ts, startDepth, endDepth),
-          SliceTrack.SlicesBuilder::new));
+      // Extra transform here solving a java generic type recognition problem.
+      builder.add(Selection.Kind.Gpu, transform(track.getSlices(ts, startDepth, endDepth), s -> s));
     }
   }
 

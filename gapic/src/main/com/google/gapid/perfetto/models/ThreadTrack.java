@@ -34,7 +34,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gapid.perfetto.ThreadState;
 import com.google.gapid.perfetto.TimeSpan;
-import com.google.gapid.perfetto.models.SliceTrack.Slice;
+import com.google.gapid.perfetto.models.SliceTrack.Slices;
 import com.google.gapid.perfetto.views.State;
 import com.google.gapid.perfetto.views.ThreadStateSliceSelectionView;
 import com.google.gapid.perfetto.views.ThreadStateSlicesSelectionView;
@@ -145,7 +145,7 @@ public class ThreadTrack extends Track.WithQueryEngine<ThreadTrack.Data> {
     return format(SCHED_SQL, tableName("span"));
   }
 
-  public ListenableFuture<Slice> getSlice(long id) {
+  public ListenableFuture<Slices> getSlice(long id) {
     return sliceTrack.getSlice(id);
   }
 
@@ -153,11 +153,11 @@ public class ThreadTrack extends Track.WithQueryEngine<ThreadTrack.Data> {
     return CpuTrack.getSlice(qe, id);
   }
 
-  public ListenableFuture<List<Slice>> getSlices(String concatedId) {
+  public ListenableFuture<Slices> getSlices(String concatedId) {
     return sliceTrack.getSlices(concatedId);
   }
 
-  public ListenableFuture<List<Slice>> getSlices(TimeSpan ts, int minDepth, int maxDepth) {
+  public ListenableFuture<Slices> getSlices(TimeSpan ts, int minDepth, int maxDepth) {
     return sliceTrack.getSlices(ts, minDepth, maxDepth);
   }
 
@@ -353,18 +353,18 @@ public class ThreadTrack extends Track.WithQueryEngine<ThreadTrack.Data> {
     }
 
     @SuppressWarnings("unused")
-    public default ListenableFuture<Slice> getSlice(long id) {
+    public default ListenableFuture<Slices> getSlice(long id) {
       throw new UnsupportedOperationException();
     }
 
-    public default ListenableFuture<List<Slice>> getSlices(String concatedId) {
-      return Futures.immediateFuture(Collections.emptyList());
+    public default ListenableFuture<Slices> getSlices(String concatedId) {
+      return Futures.immediateFuture(null);
     }
 
     @SuppressWarnings("unused")
-    public default ListenableFuture<List<Slice>> getSlices(
+    public default ListenableFuture<Slices> getSlices(
         TimeSpan ts, int minDepth, int maxDepth) {
-      return Futures.immediateFuture(Collections.emptyList());
+      return Futures.immediateFuture(null);
     }
 
     public static SliceFetcher forThread(QueryEngine q, ThreadInfo thread) {
@@ -385,17 +385,17 @@ public class ThreadTrack extends Track.WithQueryEngine<ThreadTrack.Data> {
         }
 
         @Override
-        public ListenableFuture<Slice> getSlice(long id) {
+        public ListenableFuture<Slices> getSlice(long id) {
           return track.getSlice(id);
         }
 
         @Override
-        public ListenableFuture<List<Slice>> getSlices(String concatedId) {
+        public ListenableFuture<Slices> getSlices(String concatedId) {
           return track.getSlices(concatedId);
         }
 
         @Override
-        public ListenableFuture<List<Slice>> getSlices(TimeSpan ts, int minDepth, int maxDepth) {
+        public ListenableFuture<Slices> getSlices(TimeSpan ts, int minDepth, int maxDepth) {
           return track.getSlices(ts, minDepth, maxDepth);
         }
       };

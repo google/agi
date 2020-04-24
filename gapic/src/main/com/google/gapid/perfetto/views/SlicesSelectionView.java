@@ -33,16 +33,18 @@ import org.eclipse.swt.widgets.Composite;
  * Displays information about a list of selected slices.
  */
 public class SlicesSelectionView extends Composite {
-  public SlicesSelectionView(Composite parent, SliceTrack.Slices sel) {
+  public SlicesSelectionView(Composite parent, SliceTrack.Slices slices) {
     super(parent, SWT.NONE);
     setLayout(new FillLayout());
+
+    SliceTrack.Node[] nodes = SliceTrack.organizeSlicesToNodes(slices);
 
     TreeViewer viewer = createTreeViewer(this, SWT.NONE);
     viewer.getTree().setHeaderVisible(true);
     viewer.setContentProvider(new ITreeContentProvider() {
       @Override
       public Object[] getElements(Object inputElement) {
-        return sel.nodes.toArray();
+        return nodes;
       }
 
       @Override
@@ -68,7 +70,7 @@ public class SlicesSelectionView extends Composite {
     createTreeColumn(viewer, "Count", e -> Integer.toString(n(e).count));
     createTreeColumn(viewer, "Avg Wall Time", e -> timeToString(n(e).dur / n(e).count));
     createTreeColumn(viewer, "Avg Self TIme", e -> timeToString(n(e).self / n(e).count));
-    viewer.setInput(sel);
+    viewer.setInput(nodes);
     packColumns(viewer.getTree());
   }
 

@@ -33,7 +33,7 @@ import com.google.gapid.perfetto.models.ProcessInfo;
 import com.google.gapid.perfetto.models.Selection;
 import com.google.gapid.perfetto.models.Selection.CombiningBuilder;
 import com.google.gapid.perfetto.models.SliceTrack;
-import com.google.gapid.perfetto.models.SliceTrack.Slice;
+import com.google.gapid.perfetto.models.SliceTrack.Slices;
 import com.google.gapid.perfetto.models.ThreadTrack;
 import com.google.gapid.perfetto.models.ThreadTrack.StateSlice;
 
@@ -377,11 +377,9 @@ public class ThreadPanel extends TrackPanel<ThreadPanel> implements Selectable {
                 return true;
               } else if (!concatedId.isEmpty()) { // Track data with quantization.
                 if ((mods & SWT.MOD1) == SWT.MOD1) {
-                  state.addSelection(Selection.Kind.Thread, transform(track.getSlices(concatedId),
-                      s -> new SliceTrack.SlicesBuilder(s).build()));
+                  state.addSelection(Selection.Kind.Thread, track.getSlices(concatedId));
                 } else {
-                  state.setSelection(Selection.Kind.Thread, transform(track.getSlices(concatedId),
-                      s -> new SliceTrack.SlicesBuilder(s).build()));
+                  state.setSelection(Selection.Kind.Thread, track.getSlices(concatedId));
                 }
                 return true;
               }
@@ -426,8 +424,8 @@ public class ThreadPanel extends TrackPanel<ThreadPanel> implements Selectable {
       if (endDepth >= track.getThread().maxDepth) {
         endDepth = Integer.MAX_VALUE;
       }
-      builder.add(Selection.Kind.Thread,
-          transform(track.getSlices(ts, startDepth, endDepth), SliceTrack.SlicesBuilder::new));
+      // Extra transform here solving a java generic type recognition problem.
+      builder.add(Selection.Kind.Thread, transform(track.getSlices(ts, startDepth, endDepth), s -> s));
     }
   }
 
