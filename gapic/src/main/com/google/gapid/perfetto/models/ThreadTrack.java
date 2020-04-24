@@ -25,8 +25,6 @@ import static com.google.gapid.util.MoreFutures.transform;
 import static com.google.gapid.util.MoreFutures.transformAsync;
 import static java.lang.String.format;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -39,9 +37,9 @@ import com.google.gapid.perfetto.views.State;
 import com.google.gapid.perfetto.views.ThreadStateSliceSelectionView;
 import com.google.gapid.perfetto.views.ThreadStateSlicesSelectionView;
 
+import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Composite;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -165,12 +163,8 @@ public class ThreadTrack extends Track.WithQueryEngine<ThreadTrack.Data> {
     return CpuTrack.getSlices(qe, thread.utid, ts);
   }
 
-  public ListenableFuture<List<StateSlice>> getStates(TimeSpan ts) {
-    return transform(qe.query(stateRangeSql(ts)), res -> {
-      List<StateSlice> slices = Lists.newArrayList();
-      res.forEachRow((i, r) -> slices.add(new StateSlice(r, thread.utid)));
-      return slices;
-    });
+  public ListenableFuture<StateSlices> getStates(TimeSpan ts) {
+    return transform(qe.query(stateRangeSql(ts)), res -> new StateSlices(res, thread.utid));
   }
 
   private String stateRangeSql(TimeSpan ts) {
@@ -199,70 +193,39 @@ public class ThreadTrack extends Track.WithQueryEngine<ThreadTrack.Data> {
     }
   }
 
-  public static class StateSlice implements Selection {
-    public final long time;
-    public final long dur;
-    public final long utid;
-    public final boolean isSched;
-    public final ThreadState state;
-    public final long id;
+  public static class StateSlices implements Selection, Selection.Builder<StateSlices> {
+    public int count = 0;
+    public final List<Long> ids = Lists.newArrayList();
+    public final List<Long> times = Lists.newArrayList();
+    public final List<Long> durs = Lists.newArrayList();
+    public final List<Long> utids = Lists.newArrayList();
+    public final List<Boolean> isScheds = Lists.newArrayList();
+    public final List<ThreadState> states = Lists.newArrayList();
+    public final Set<Long> sliceKeys = Sets.newHashSet();
 
-    public StateSlice(long time, long dur, long utid, boolean isSched, ThreadState state, long id) {
-      this.time = time;
-      this.dur = dur;
-      this.utid = utid;
-      this.isSched = isSched;
-      this.state = state;
-      this.id = id;
+    public StateSlices(long time, long dur, long utid, boolean isSched, ThreadState state, long id) {
+      this.add(id, time, dur, utid, isSched, state);
     }
 
-    public StateSlice(QueryEngine.Row row, long utid) {
-      this.time = row.getLong(0);
-      this.dur = row.getLong(1);
-      this.utid = utid;
-      this.isSched = row.getInt(2) != 0;
-      this.state = ThreadState.of(row.getString(3));
-      this.id = row.getLong(4);
+    public StateSlices(QueryEngine.Row row, long utid) {
+      this.add(row.getLong(4), row.getLong(0), row.getLong(1), utid, row.getInt(2) != 0,
+          ThreadState.of(row.getString(3)));
     }
 
-    @Override
-    public String getTitle() {
-      return "Thread State";
+    public StateSlices(QueryEngine.Result result, long utid) {
+      result.forEachRow((i, row) -> this.add(row.getLong(4), row.getLong(0), row.getLong(1), utid, row.getInt(2) != 0,
+          ThreadState.of(row.getString(3))));
     }
 
-    @Override
-    public boolean contains(Long key) {
-      return key == id;
-    }
-
-    @Override
-    public Composite buildUi(Composite parent, State uiState) {
-      return new ThreadStateSliceSelectionView(parent, uiState, this);
-    }
-
-    @Override
-    public Selection.Builder<StateSlicesBuilder> getBuilder() {
-      return new StateSlicesBuilder(Lists.newArrayList(this));
-    }
-
-    @Override
-    public void getRange(Consumer<TimeSpan> span) {
-      if (dur > 0) {
-        span.accept(new TimeSpan(time, time + dur));
-      }
-    }
-  }
-
-  public static class StateSlices implements Selection {
-    private final List<StateSlice> slices;
-    public final ImmutableList<Entry> entries;
-    public final ImmutableSet<Long> sliceKeys;
-
-    public StateSlices(List<StateSlice> slices, ImmutableList<Entry> entries,
-        ImmutableSet<Long> sliceKeys) {
-      this.slices = slices;
-      this.entries = entries;
-      this.sliceKeys = sliceKeys;
+    private void add(long id, long time, long dur, long utid, boolean isSched, ThreadState state) {
+      this.count++;
+      this.ids.add(id);
+      this.times.add(time);
+      this.durs.add(dur);
+      this.utids.add(utid);
+      this.isScheds.add(isSched);
+      this.states.add(state);
+      this.sliceKeys.add(id);
     }
 
     @Override
@@ -277,54 +240,35 @@ public class ThreadTrack extends Track.WithQueryEngine<ThreadTrack.Data> {
 
     @Override
     public Composite buildUi(Composite parent, State state) {
-      return new ThreadStateSlicesSelectionView(parent, this);
+      if (count <= 0) {
+        return new Composite(parent, SWT.NONE);
+      } else if (count == 1) {
+        return new ThreadStateSliceSelectionView(parent, state, this);
+      } else {
+        return new ThreadStateSlicesSelectionView(parent, this);
+      }
     }
 
     @Override
-    public Selection.Builder<StateSlicesBuilder> getBuilder() {
-      return new StateSlicesBuilder(slices);
+    public Selection.Builder<StateSlices> getBuilder() {
+      return this;
     }
 
     @Override
     public void getRange(Consumer<TimeSpan> span) {
-      for (StateSlice slice : slices) {
-        slice.getRange(span);
-      }
-    }
-
-    public static class Entry {
-      public final ThreadState state;
-      public final long totalDur;
-
-      public Entry(ThreadState state, long totalDur) {
-        this.state = state;
-        this.totalDur = totalDur;
-      }
-    }
-  }
-
-  public static class StateSlicesBuilder implements Selection.Builder<StateSlicesBuilder> {
-    private final List<StateSlice> slices;
-    private final Map<ThreadState, Map<Long, Long>> byState = Maps.newHashMap(); // state -> (slice_id -> dur)
-    private final Set<Long> sliceKeys = Sets.newHashSet();
-
-    public StateSlicesBuilder(List<StateSlice> slices) {
-      this.slices = slices;
-      for (StateSlice slice : slices) {
-        byState.putIfAbsent(slice.state, Maps.newHashMap());
-        byState.get(slice.state).put(slice.id, slice.dur);
-        sliceKeys.add(slice.id);
+      for (int i = 0; i < count; i++) {
+        if (durs.get(i) > 0) {
+          span.accept(new TimeSpan(times.get(i), times.get(i) + durs.get(i)));
+        }
       }
     }
 
     @Override
-    public StateSlicesBuilder combine(StateSlicesBuilder other) {
-      for (StateSlice s : other.slices) {
-        if (!this.sliceKeys.contains(s.id)) {
-          this.slices.add(s);
-          this.sliceKeys.add(s.id);
-          byState.putIfAbsent(s.state, Maps.newHashMap());
-          byState.get(s.state).put(s.id, s.dur);
+    public StateSlices combine(StateSlices other) {
+      for (int i = 0; i < other.count; i++) {
+        if (!this.sliceKeys.contains(other.ids.get(i))) {
+          add(other.ids.get(i), other.times.get(i), other.durs.get(i), other.utids.get(i),
+              other.isScheds.get(i), other.states.get(i));
         }
       }
       return this;
@@ -332,10 +276,29 @@ public class ThreadTrack extends Track.WithQueryEngine<ThreadTrack.Data> {
 
     @Override
     public Selection build() {
-      return new StateSlices(slices, byState.entrySet().stream()
-          .map(e -> new StateSlices.Entry(e.getKey(), e.getValue().values().stream().mapToLong(v -> v).sum()))
-          .sorted((e1, e2) -> Long.compare(e2.totalDur, e1.totalDur))
-          .collect(ImmutableList.toImmutableList()), ImmutableSet.copyOf(sliceKeys));
+      return this;
+    }
+  }
+
+  public static Entry[] organizeSlicesToEntry(StateSlices slices) {
+    Map<ThreadState, Map<Long, Long>> byState = Maps.newHashMap(); // state -> (slice_id -> dur)
+    for (int i = 0; i < slices.count; i++) {
+      byState.putIfAbsent(slices.states.get(i), Maps.newHashMap());
+      byState.get(slices.states.get(i)).put(slices.ids.get(i), slices.durs.get(i));
+    }
+    return byState.entrySet().stream()
+        .map(e -> new Entry(e.getKey(), e.getValue().values().stream().mapToLong(v -> v).sum()))
+        .sorted((e1, e2) -> Long.compare(e2.totalDur, e1.totalDur))
+        .toArray(Entry[]::new);
+  }
+
+  public static class Entry {
+    public final ThreadState state;
+    public final long totalDur;
+
+    public Entry(ThreadState state, long totalDur) {
+      this.state = state;
+      this.totalDur = totalDur;
     }
   }
 

@@ -35,7 +35,7 @@ import com.google.gapid.perfetto.models.Selection.CombiningBuilder;
 import com.google.gapid.perfetto.models.SliceTrack;
 import com.google.gapid.perfetto.models.SliceTrack.Slices;
 import com.google.gapid.perfetto.models.ThreadTrack;
-import com.google.gapid.perfetto.models.ThreadTrack.StateSlice;
+import com.google.gapid.perfetto.models.ThreadTrack.StateSlices;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Cursor;
@@ -299,6 +299,17 @@ public class ThreadPanel extends TrackPanel<ThreadPanel> implements Selectable {
 
             @Override
             public boolean click() {
+              if ((mods & SWT.MOD1) == SWT.MOD1) {
+                state.addSelection(Selection.Kind.ThreadState,
+                    new ThreadTrack.StateSlices(data.schedStarts[index],
+                        data.schedEnds[index] - data.schedStarts[index], track.getThread().utid,
+                        data.isSched[index], data.schedStates[index], data.ids[index]));
+              } else {
+                state.setSelection(Selection.Kind.ThreadState,
+                    new ThreadTrack.StateSlices(data.schedStarts[index],
+                        data.schedEnds[index] - data.schedStarts[index], track.getThread().utid,
+                        data.isSched[index], data.schedStates[index], data.ids[index]));
+              }
               if (data.isSched[index]) {
                 if ((mods & SWT.MOD1) == SWT.MOD1) {
                   state.addSelection(Selection.Kind.Cpu, track.getCpuSlice(data.ids[index]));
@@ -306,18 +317,6 @@ public class ThreadPanel extends TrackPanel<ThreadPanel> implements Selectable {
                 } else {
                   state.setSelection(Selection.Kind.Cpu, track.getCpuSlice(data.ids[index]));
                   state.setSelectedThread(state.getThreadInfo(track.getThread().utid));
-                }
-              } else {
-                if ((mods & SWT.MOD1) == SWT.MOD1) {
-                  state.addSelection(Selection.Kind.ThreadState,
-                      new ThreadTrack.StateSlice(data.schedStarts[index],
-                          data.schedEnds[index] - data.schedStarts[index], track.getThread().utid,
-                          data.isSched[index], data.schedStates[index], data.ids[index]));
-                } else {
-                  state.setSelection(Selection.Kind.ThreadState,
-                      new ThreadTrack.StateSlice(data.schedStarts[index],
-                          data.schedEnds[index] - data.schedStarts[index], track.getThread().utid,
-                          data.isSched[index], data.schedStates[index], data.ids[index]));
                 }
               }
               return true;
@@ -410,8 +409,8 @@ public class ThreadPanel extends TrackPanel<ThreadPanel> implements Selectable {
     }
 
     if (startDepth == 0) {
-      builder.add(Selection.Kind.ThreadState,
-          transform(track.getStates(ts), ThreadTrack.StateSlicesBuilder::new));
+      // Extra transform here solving a java generic type recognition problem.
+      builder.add(Selection.Kind.ThreadState, transform(track.getStates(ts), s -> s));
       builder.add(Selection.Kind.Cpu, transform(track.getCpuSlices(ts), slices -> {
         slices.utids.forEach(utid -> state.addSelectedThread(state.getThreadInfo(utid)));
         return slices;

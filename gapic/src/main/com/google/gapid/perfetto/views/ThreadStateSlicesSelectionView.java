@@ -38,20 +38,22 @@ public class ThreadStateSlicesSelectionView extends Composite {
     super(parent, SWT.NONE);
     setLayout(new FillLayout());
 
+    ThreadTrack.Entry[] entries = ThreadTrack.organizeSlicesToEntry(slices);
+
     TableViewer viewer = createTableViewer(this, SWT.NONE);
     viewer.setContentProvider(new IStructuredContentProvider() {
       @Override
       public Object[] getElements(Object inputElement) {
-        return slices.entries.toArray();
+        return entries;
       }
     });
     viewer.setLabelProvider(new LabelProvider());
 
     createTableColumn(viewer, "State",
-        e -> ((ThreadTrack.StateSlices.Entry)e).state.label);
+        e -> ((ThreadTrack.Entry)e).state.label);
     createTableColumn(viewer, "Duration",
-        e -> timeToString(((ThreadTrack.StateSlices.Entry)e).totalDur));
-    viewer.setInput(slices);
+        e -> timeToString(((ThreadTrack.Entry)e).totalDur));
+    viewer.setInput(entries);
     packColumns(viewer.getTable());
   }
 }

@@ -35,19 +35,23 @@ import org.eclipse.swt.widgets.Composite;
  */
 public class ThreadStateSliceSelectionView extends Composite {
   public ThreadStateSliceSelectionView(
-      Composite parent, State state, ThreadTrack.StateSlice slice) {
+      Composite parent, State state, ThreadTrack.StateSlices slice) {
     super(parent, SWT.NONE);
     setLayout(new GridLayout(2, false));
+
+    if (slice.count != 1) {
+      throw new IllegalArgumentException("Slice count != 1. Should only use ThreadStateSliceSelectionView for a single slice.");
+    }
 
     withLayoutData(createBoldLabel(this, "Slice:"), withSpans(new GridData(), 2, 1));
 
     createLabel(this, "Time:");
-    createLabel(this, timeToString(slice.time - state.getTraceTime().start));
+    createLabel(this, timeToString(slice.times.get(0) - state.getTraceTime().start));
 
     createLabel(this, "Duration:");
-    createLabel(this, timeToString(slice.dur));
+    createLabel(this, timeToString(slice.durs.get(0)));
 
-    ThreadInfo thread = state.getThreadInfo(slice.utid);
+    ThreadInfo thread = state.getThreadInfo(slice.utids.get(0));
     if (thread != null) {
       ProcessInfo process = state.getProcessInfo(thread.upid);
       if (process != null) {
@@ -60,6 +64,6 @@ public class ThreadStateSliceSelectionView extends Composite {
     }
 
     createLabel(this, "State:");
-    createLabel(this, slice.state.label);
+    createLabel(this, slice.states.get(0).label);
   }
 }
