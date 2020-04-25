@@ -17,7 +17,6 @@ package fmts
 import "github.com/google/gapid/core/stream"
 
 var (
-
 	ARGB_U4_NORM = &stream.Format{
 		Components: []*stream.Component{{
 			DataType: &stream.U4,
