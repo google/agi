@@ -42,31 +42,35 @@ public class FrameEventsSelectionView extends Composite {
   private static final int PROPERTIES_PER_PANEL = 8;
   private static final int PANEL_INDENT = 25;
 
-  public FrameEventsSelectionView(Composite parent, State state, FrameEventsTrack.Slice slice) {
+  public FrameEventsSelectionView(Composite parent, State state, FrameEventsTrack.Slices slice) {
     super(parent, SWT.NONE);
     setLayout(withMargin(new GridLayout(3, false), 0, 0));
+
+    if (slice.count != 1) {
+      throw new IllegalArgumentException("Slice count != 1. Should only use FrameEventsSelectionView for a single FrameEvents slice.");
+    }
 
     Composite main = withLayoutData(createComposite(this, new GridLayout(2, false)),
         new GridData(SWT.LEFT, SWT.TOP, false, false));
     withLayoutData(createBoldLabel(main, "Slice:"), withSpans(new GridData(), 2, 1));
 
     createLabel(main, "Name:");
-    createLabel(main, slice.name);
+    createLabel(main, slice.names.get(0));
 
     createLabel(main, "Time:");
-    createLabel(main, timeToString(slice.time - state.getTraceTime().start));
+    createLabel(main, timeToString(slice.times.get(0) - state.getTraceTime().start));
 
     createLabel(main, "Duration:");
-    createLabel(main, timeToString(slice.dur));
+    createLabel(main, timeToString(slice.durs.get(0)));
 
-    if (slice.frameStats != null) {
+    if (slice.frameStats.get(0) != null) {
       // If the selected event is a displayed frame slice, show the frame stats
       Composite stats = withLayoutData(createComposite(this, new GridLayout(2, false)),
           withIndents(new GridData(SWT.LEFT, SWT.TOP, false, false), PANEL_INDENT, 0));
       withLayoutData(createBoldLabel(stats, "Frame Stats:"),
           withSpans(new GridData(), 2, 1));
 
-      slice.frameStats.forEach((k, v) -> {
+      slice.frameStats.get(0).forEach((k, v) -> {
         withLayoutData(createBoldLabel(stats, k.toString()),
             withSpans(new GridData(), 2, 1));
 
@@ -85,13 +89,13 @@ public class FrameEventsSelectionView extends Composite {
     } else {
       // Show the frame number associated with the event
       createLabel(main, "Frame Number:");
-      createLabel(main, Arrays.stream(slice.frameNumbers)
-          .mapToObj(Long::toString)
+      createLabel(main, Arrays.stream(slice.frameNumbers.get(0))
+          .map(l -> Long.toString(l))
           .collect(Collectors.joining(", ")));
     }
 
-    if (!slice.args.isEmpty()) {
-      String[] keys = Iterables.toArray(slice.args.keys(), String.class);
+    if (!slice.argsets.get(0).isEmpty()) {
+      String[] keys = Iterables.toArray(slice.argsets.get(0).keys(), String.class);
       int panels = (keys.length + PROPERTIES_PER_PANEL - 1) / PROPERTIES_PER_PANEL;
       Composite props = withLayoutData(createComposite(this, new GridLayout(2 * panels, false)),
           withIndents(new GridData(SWT.LEFT, SWT.TOP, false, false), PANEL_INDENT, 0));
@@ -103,7 +107,7 @@ public class FrameEventsSelectionView extends Composite {
         for (int c = 0; c < cols; c++) {
           withLayoutData(createLabel(props, keys[i + c * PROPERTIES_PER_PANEL] + ":"),
               withIndents(new GridData(), (c == 0) ? 0 : PANEL_INDENT, 0));
-          createLabel(props, String.valueOf(slice.args.get(keys[i + c * PROPERTIES_PER_PANEL])));
+          createLabel(props, String.valueOf(slice.argsets.get(0).get(keys[i + c * PROPERTIES_PER_PANEL])));
         }
         if (cols != panels) {
           withLayoutData(createLabel(props, ""), withSpans(new GridData(), 2 * (panels - cols), 1));

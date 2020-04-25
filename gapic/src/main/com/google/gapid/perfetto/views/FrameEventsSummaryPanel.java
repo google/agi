@@ -302,11 +302,9 @@ public class FrameEventsSummaryPanel extends TrackPanel<FrameEventsSummaryPanel>
           return false;
         }
         if ((mods & SWT.MOD1) == SWT.MOD1) {
-          state.addSelection(Selection.Kind.FrameEvents,
-              transform(track.getSlices(ids), r -> new FrameEventsTrack.SlicesBuilder(r).build()));
+          state.addSelection(Selection.Kind.FrameEvents, track.getSlices(ids));
         } else {
-          state.setSelection(Selection.Kind.FrameEvents,
-              transform(track.getSlices(ids), r -> new FrameEventsTrack.SlicesBuilder(r).build()));
+          state.setSelection(Selection.Kind.FrameEvents, track.getSlices(ids));
         }
         return true;
       }
@@ -401,17 +399,14 @@ public class FrameEventsSummaryPanel extends TrackPanel<FrameEventsSummaryPanel>
       if (endDepth >= buffer.maxDepth) {
         endDepth = Integer.MAX_VALUE;
       }
-
-      builder.add(Selection.Kind.FrameEvents,
-          transform(track.getSlices(ts, startDepth, endDepth), FrameEventsTrack.SlicesBuilder::new));
+      // Extra transform here solving a java generic type recognition problem.
+      builder.add(Selection.Kind.FrameEvents, transform(track.getSlices(ts, startDepth, endDepth), s -> s));
     }
   }
 
   private static FrameSelection getSelectedFrames(State state) {
     Selection selection = state.getSelection(Selection.Kind.FrameEvents);
-    if (selection instanceof FrameEventsTrack.Slice) {
-      return ((FrameEventsTrack.Slice) selection).getSelection();
-    } else if (selection instanceof FrameEventsTrack.Slices) {
+    if (selection instanceof FrameEventsTrack.Slices) {
       return ((FrameEventsTrack.Slices) selection).getSelection();
     }
     return FrameSelection.EMPTY;

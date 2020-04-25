@@ -33,16 +33,18 @@ import org.eclipse.swt.widgets.Composite;
  * Displays information about a list of selected slices.
  */
 public class FrameEventsMultiSelectionView extends Composite {
-  public FrameEventsMultiSelectionView(Composite parent, FrameEventsTrack.Slices sel) {
+  public FrameEventsMultiSelectionView(Composite parent, FrameEventsTrack.Slices slices) {
     super(parent, SWT.NONE);
     setLayout(new FillLayout());
+
+    FrameEventsTrack.Node[] nodes = FrameEventsTrack.organizeSlicesToNodes(slices);
 
     TreeViewer viewer = createTreeViewer(this, SWT.NONE);
     viewer.getTree().setHeaderVisible(true);
     viewer.setContentProvider(new ITreeContentProvider() {
       @Override
       public Object[] getElements(Object inputElement) {
-        return sel.nodes.toArray();
+        return nodes;
       }
 
       @Override
@@ -65,7 +67,7 @@ public class FrameEventsMultiSelectionView extends Composite {
     createTreeColumn(viewer, "Name", e -> n(e).name);
     createTreeColumn(viewer, "Self Time", e -> timeToString(n(e).self));
     createTreeColumn(viewer, "Layers", e -> String.join(", ", n(e).layers));
-    viewer.setInput(sel);
+    viewer.setInput(slices);
     packColumns(viewer.getTree());
   }
 
