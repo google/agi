@@ -193,7 +193,7 @@ public class ThreadTrack extends Track.WithQueryEngine<ThreadTrack.Data> {
     }
   }
 
-  public static class StateSlices implements Selection, Selection.Builder<StateSlices> {
+  public static class StateSlices implements Selection<StateSlices> {
     public int count = 0;
     public final List<Long> ids = Lists.newArrayList();
     public final List<Long> times = Lists.newArrayList();
@@ -250,11 +250,6 @@ public class ThreadTrack extends Track.WithQueryEngine<ThreadTrack.Data> {
     }
 
     @Override
-    public Selection.Builder<StateSlices> getBuilder() {
-      return this;
-    }
-
-    @Override
     public void getRange(Consumer<TimeSpan> span) {
       for (int i = 0; i < count; i++) {
         if (durs.get(i) > 0) {
@@ -271,11 +266,6 @@ public class ThreadTrack extends Track.WithQueryEngine<ThreadTrack.Data> {
               other.isScheds.get(i), other.states.get(i));
         }
       }
-      return this;
-    }
-
-    @Override
-    public Selection build() {
       return this;
     }
   }

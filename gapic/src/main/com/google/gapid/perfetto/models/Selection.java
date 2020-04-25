@@ -37,11 +37,11 @@ import java.util.function.Consumer;
 /**
  * Data about the current selection in the UI.
  */
-public interface Selection {
+public interface Selection<T extends Selection<T>> {
   public String getTitle();
   public boolean contains(Long key);
+  public T combine(T other);
   public Composite buildUi(Composite parent, State state);
-  public Selection.Builder<?> getBuilder();
 
   public default void getRange(@SuppressWarnings("unused") Consumer<TimeSpan> span) {
     /* do nothing */
@@ -57,7 +57,7 @@ public interface Selection {
       return EMPTY_SELECTION;
   }
 
-  public static class EmptySelection implements Selection, Builder<EmptySelection> {
+  public static class EmptySelection implements Selection<EmptySelection> {
     @Override
     public String getTitle() {
       return "";
@@ -79,17 +79,7 @@ public interface Selection {
     }
 
     @Override
-    public Selection.Builder<?> getBuilder() {
-      return this;
-    }
-
-    @Override
     public EmptySelection combine(EmptySelection other) {
-      return this;
-    }
-
-    @Override
-    public Selection build() {
       return this;
     }
   }
@@ -121,6 +111,7 @@ public interface Selection {
       return selections.containsKey(type) ? selections.get(type) : Selection.emptySelection();
     }
 
+    @SuppressWarnings({"rawtypes" })
     public void addSelection(MultiSelection other) {
       for (Selection.Kind k : other.selections.keySet()) {
         this.addSelection(k, other.selections.get(k));
@@ -128,12 +119,12 @@ public interface Selection {
     }
 
     @SuppressWarnings("unchecked")
-    public <T extends Builder<T>> void addSelection(Kind kind, Selection selection) {
+    public void addSelection(Kind kind, Selection selection) {
       Selection old = getSelection(kind);
       if (old == null || old == Selection.EMPTY_SELECTION) {
         selections.put(kind, selection);
       } else {
-        selections.put(kind, ((T)old.getBuilder()).combine((T)selection.getBuilder()).build());
+        selections.put(kind, old.combine(selection));
       }
     }
 
@@ -148,7 +139,7 @@ public interface Selection {
     private TimeSpan getRange() {
       TimeSpan[] range = new TimeSpan[] { TimeSpan.ZERO };
       for (Selection sel : selections.values()) {
-        sel.getRange(r -> range[0] = range[0].expand(r));
+        sel.getRange(r -> range[0] = range[0].expand((TimeSpan)r));
       }
       return range[0];
     }
@@ -162,37 +153,28 @@ public interface Selection {
    * Selection builder for combining selections across different {@link Kind}s.
    * */
   public static class CombiningBuilder {
-    private final Map<Kind, ListenableFuture<Selection.Builder<?>>> selections =
-        Maps.newTreeMap();
+    private final Map<Kind, ListenableFuture<Selection>> selections = Maps.newTreeMap();
 
     @SuppressWarnings("unchecked")
-    public <T extends Selection.Builder<T>> void add(
-        Kind type, ListenableFuture<Selection.Builder<?>> selection) {
-      selections.merge(type, selection, (f1, f2) -> transformAsync(f1, r1 ->
-        transform(f2, r2 -> (((T)r1).combine((T)r2)))));
+    public void add(Kind type, ListenableFuture<Selection> selection) {
+      selections.merge(type, selection, (f1, f2) ->
+          transformAsync(f1, r1 -> transform(f2, r2 -> (r1.combine(r2)))));
     }
 
     public ListenableFuture<MultiSelection> build() {
       return transform(Futures.allAsList(selections.values()), sels -> {
         Iterator<Kind> keys = selections.keySet().iterator();
-        Iterator<Selection.Builder<?>> vals = sels.iterator();
+        Iterator<Selection> vals = sels.iterator();
         TreeMap<Kind, Selection> res = Maps.newTreeMap();
         while (keys.hasNext()) {
-          res.put(keys.next(), vals.next().build());
+          res.put(keys.next(), vals.next());
         }
         return new MultiSelection(res);
       });
     }
   }
 
-  /**
-  * Selection builder for combining selections within a {@link Kind}.
-  * */
-  public static interface Builder<T extends Builder<T>> {
-    public T combine(T other);
-    public Selection build();
-  }
-
+  @SuppressWarnings("unused")
   public static class Kind implements Comparable<Kind>{
     public static final Kind Thread = new Kind(0);
     public static final Kind ThreadState = new Kind(1);

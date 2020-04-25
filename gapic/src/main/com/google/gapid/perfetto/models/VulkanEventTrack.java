@@ -156,7 +156,7 @@ public class VulkanEventTrack extends Track.WithQueryEngine<VulkanEventTrack.Dat
     }
   }
 
-  public static class Slices implements Selection, Selection.Builder<Slices> {
+  public static class Slices implements Selection<Slices> {
     public int count = 0;
     public final List<Long> ids = Lists.newArrayList();
     public final List<Long> times = Lists.newArrayList();
@@ -223,11 +223,6 @@ public class VulkanEventTrack extends Track.WithQueryEngine<VulkanEventTrack.Dat
     }
 
     @Override
-    public Selection.Builder<Slices> getBuilder() {
-      return this;
-    }
-
-    @Override
     public void getRange(Consumer<TimeSpan> span) {
       for (int i = 0; i < count; i++) {
         if (durs.get(i) > 0) {
@@ -245,11 +240,6 @@ public class VulkanEventTrack extends Track.WithQueryEngine<VulkanEventTrack.Dat
               other.argSets.get(i));
         }
       }
-      return this;
-    }
-
-    @Override
-    public Selection build() {
       return this;
     }
   }
