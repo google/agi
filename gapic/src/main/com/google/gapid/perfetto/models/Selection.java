@@ -75,7 +75,7 @@ public interface Selection {
 
     @Override
     public Composite buildUi(Composite parent, State state) {
-      return new Composite(parent, SWT.NONE);
+      return null;
     }
 
     @Override

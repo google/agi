@@ -306,7 +306,7 @@ public abstract class SliceTrack extends Track<SliceTrack.Data> {/*extends Track
     @Override
     public Composite buildUi(Composite parent, State state) {
       if (count <= 0) {
-        return new Composite(parent, SWT.NONE);
+        return null;
       } else if (count == 1) {
         return new SliceSelectionView(parent, state, this);
       } else {

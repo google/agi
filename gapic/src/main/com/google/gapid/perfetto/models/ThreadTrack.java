@@ -241,7 +241,7 @@ public class ThreadTrack extends Track.WithQueryEngine<ThreadTrack.Data> {
     @Override
     public Composite buildUi(Composite parent, State state) {
       if (count <= 0) {
-        return new Composite(parent, SWT.NONE);
+        return null;
       } else if (count == 1) {
         return new ThreadStateSliceSelectionView(parent, state, this);
       } else {

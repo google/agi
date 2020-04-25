@@ -324,7 +324,7 @@ public class FrameEventsTrack extends Track.WithQueryEngine<FrameEventsTrack.Dat
     @Override
     public Composite buildUi(Composite parent, State state) {
       if (count <= 0) {
-        return new Composite(parent, SWT.NONE);
+        return null;
       } else if (count == 1) {
         return new FrameEventsSelectionView(parent, state, this);
       } else {

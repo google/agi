@@ -260,7 +260,7 @@ public class CpuTrack extends Track.WithQueryEngine<CpuTrack.Data> {
     @Override
     public Composite buildUi(Composite parent, State state) {
       if (count <= 0) {
-        return new Composite(parent, SWT.NONE);
+        return null;
       } else if (count == 1) {
         return new CpuSliceSelectionView(parent, state, this);
       } else {
