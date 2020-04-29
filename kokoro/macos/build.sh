@@ -29,6 +29,12 @@ unzip -q android-ndk-r21-darwin-x86_64.zip -d android
 export ANDROID_HOME=$PWD/android
 export ANDROID_NDK_HOME=$PWD/android/android-ndk-r21
 
+# Install Java from https://adoptopenjdk.net/
+curl -L -k -O -s https://github.com/AdoptOpenJDK/openjdk8-binaries/releases/download/jdk8u252-b09.1/OpenJDK8U-jdk_x64_mac_hotspot_8u252b09.tar.gz
+echo "2caed3ec07d108bda613f9b4614b22a8bdd196ccf2a432a126161cd4077f07a5  OpenJDK8U-jdk_x64_mac_hotspot_8u252b09.tar.gz" | sha256sum --check
+tar xzf OpenJDK8U-jdk_x64_mac_hotspot_8u252b09.tar.gz
+export JAVA_HOME=${PWD}/jdk8u252-b09/Contents/Home
+
 # Get bazel.
 BAZEL_VERSION=2.0.0
 curl -L -k -O -s https://github.com/bazelbuild/bazel/releases/download/${BAZEL_VERSION}/bazel-${BAZEL_VERSION}-installer-darwin-x86_64.sh
