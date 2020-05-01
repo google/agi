@@ -19,8 +19,6 @@ import (
 	"strings"
 
 	"github.com/google/gapid/core/data/binary"
-	"github.com/google/gapid/core/data/endian"
-	"github.com/google/gapid/core/os/device"
 )
 
 type xmlEndElement struct {
@@ -37,16 +35,17 @@ func (c xmlEndElement) String() string {
 }
 
 func (c *xmlEndElement) decode(header, data []byte) error {
-	r := endian.Reader(bytes.NewReader(header), device.LittleEndian)
-	c.lineNumber = r.Uint32()
+	r := bytes.NewReader(header)
+	var err error
+	c.lineNumber, err = binary.ReadUint32(r)
 	c.comment = c.root().decodeString(r)
-	if err := r.Error(); err != nil {
+	if err != nil {
 		return err
 	}
-	r = endian.Reader(bytes.NewReader(data), device.LittleEndian)
+	r = bytes.NewReader(data)
 	c.namespace = c.root().decodeString(r)
 	c.name = c.root().decodeString(r)
-	return r.Error()
+	return nil
 }
 
 func (c *xmlEndElement) xml(ctx *xmlContext) string {

@@ -19,9 +19,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/gapid/core/data/endian"
+	"github.com/google/gapid/core/data/binary"
 	"github.com/google/gapid/core/data/id"
-	"github.com/google/gapid/core/os/device"
 	"github.com/google/gapid/gapis/database"
 	"github.com/google/gapid/gapis/service/path"
 )
@@ -58,29 +57,25 @@ func (c *IndexLimitsResolvable) Resolve(ctx context.Context) (interface{}, error
 	if err != nil {
 		return nil, err
 	}
-	byteOrder := device.LittleEndian
-	if !c.LittleEndian {
-		byteOrder = device.BigEndian
-	}
-	r := endian.Reader(bytes.NewReader(data.([]byte)), byteOrder)
+	r := bytes.NewReader(data.([]byte))
 
 	var decode func() uint32
 	switch c.IndexSize {
 	case 1:
-		decode = func() uint32 { return uint32(r.Uint8()) }
+		val, _ := binary.ReadUint8(r)
+		decode = func() uint32 { return uint32(val) }
 	case 2:
-		decode = func() uint32 { return uint32(r.Uint16()) }
+		val, _ := binary.ReadUint16(r)
+		decode = func() uint32 { return uint32(val) }
 	case 4:
-		decode = r.Uint32
+		val, _ := binary.ReadUint32(r)
+		decode = func() uint32 { return uint32(val) }
 	default:
 		return nil, fmt.Errorf("Unsupported index size %v", c.IndexSize)
 	}
 
 	for i := uint64(0); i < c.Count; i++ {
 		v := decode()
-		if r.Error() != nil {
-			return nil, r.Error()
-		}
 		if min > v {
 			min = v
 		}

@@ -17,6 +17,7 @@ package binaryxml
 import (
 	"bytes"
 	"strings"
+	"io"
 
 	"github.com/google/gapid/core/data/binary"
 )
@@ -74,7 +75,7 @@ func (a xmlAttribute) xml(ctx *xmlContext) string {
 
 const xmlAttributeSize = 20
 
-func (a *xmlAttribute) decode(r binary.Reader, root *xmlTree) error {
+func (a *xmlAttribute) decode(r io.Reader, root *xmlTree) error {
 	a.namespace = root.decodeString(r)
 	a.name = root.decodeString(r)
 	a.rawValue = root.decodeString(r)

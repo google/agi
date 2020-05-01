@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"math"
 
+	"github.com/google/gapid/core/data/binary"
 	"github.com/google/gapid/core/data/endian"
 	"github.com/google/gapid/core/os/device"
 )
@@ -40,10 +41,11 @@ func (m *mapping) transform(count int, f func(float64) float64) error {
 	if err := tmp.conv(count); err != nil {
 		return err
 	}
-	r := endian.Reader(bytes.NewReader(data), device.LittleEndian)
+	r := bytes.NewReader(data)
 	w := endian.Writer(bytes.NewBuffer(data[:0]), device.LittleEndian)
 	for i := 0; i < count; i++ {
-		w.Float64(f(r.Float64()))
+		val, _ := binary.ReadFloat64(r)
+		w.Float64(f(val))
 	}
 	m.src = tmp.dst
 	return nil

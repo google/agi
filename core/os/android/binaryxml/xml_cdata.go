@@ -19,8 +19,6 @@ import (
 	"strings"
 
 	"github.com/google/gapid/core/data/binary"
-	"github.com/google/gapid/core/data/endian"
-	"github.com/google/gapid/core/os/device"
 )
 
 type xmlCData struct {
@@ -32,20 +30,18 @@ type xmlCData struct {
 }
 
 func (c *xmlCData) decode(header, data []byte) error {
-	r := endian.Reader(bytes.NewReader(header), device.LittleEndian)
-	c.lineNumber = r.Uint32()
+	r := bytes.NewReader(header)
+	var err error
+	c.lineNumber, err = binary.ReadUint32(r)
 	c.comment = c.root().decodeString(r)
-	if err := r.Error(); err != nil {
-		return err
-	}
-
-	r = endian.Reader(bytes.NewReader(data), device.LittleEndian)
-	c.data = c.root().decodeString(r)
-	tv, err := decodeValue(r, c.root())
 	if err != nil {
 		return err
 	}
-	if err := r.Error(); err != nil {
+
+	r = bytes.NewReader(data)
+	c.data = c.root().decodeString(r)
+	tv, err := decodeValue(r, c.root())
+	if err != nil {
 		return err
 	}
 

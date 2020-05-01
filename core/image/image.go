@@ -19,8 +19,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/gapid/core/data/endian"
-	"github.com/google/gapid/core/os/device"
+	"github.com/google/gapid/core/data/binary"
 	"github.com/google/gapid/core/stream"
 	"github.com/google/gapid/gapis/database"
 )
@@ -171,12 +170,14 @@ func Difference(a, b *Data) (float32, error) {
 		return 1, err
 	}
 
-	p := endian.Reader(bytes.NewReader(a.Bytes), device.LittleEndian)
-	q := endian.Reader(bytes.NewReader(b.Bytes), device.LittleEndian)
+	p := bytes.NewReader(a.Bytes)
+	q := bytes.NewReader(b.Bytes)
 	sqrErr := float32(0)
 	c := a.Width * a.Height * uint32(len(channels))
 	for i := uint32(0); i < c; i++ {
-		err := p.Float32() - q.Float32()
+		valp, _ := binary.ReadFloat32(p)
+		valq, _ := binary.ReadFloat32(q)
+		err := valp - valq
 		sqrErr += err * err
 	}
 	return sqrErr / float32(c), nil

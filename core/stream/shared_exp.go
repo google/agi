@@ -19,6 +19,7 @@ import (
 	"math"
 
 	"github.com/google/gapid/core/data/endian"
+	"github.com/google/gapid/core/data/binary"
 	"github.com/google/gapid/core/os/device"
 )
 
@@ -58,14 +59,14 @@ func convertSharedExponent(dst, src *Format, data []byte) ([]byte, error) {
 	count := len(data) / (4 * len(format.Components))
 
 	// In-place scale all non-exponent components by the exponent.
-	r := endian.Reader(bytes.NewReader(data), device.LittleEndian)
+	r := bytes.NewReader(data)
 	w := endian.Writer(bytes.NewBuffer(data[:0]), device.LittleEndian)
 	for i := 0; i < count; i++ {
-		exp := r.Uint32()
+		exp, _ := binary.ReadUint32(r)
 		scale := float32(math.Pow(2, float64(exp)-exponentBias))
 		w.Uint32(0) // padding for exponent
 		for c := 0; c < len(format.Components)-1; c++ {
-			v := r.Float32()
+			v, _ := binary.ReadFloat32(r)
 			w.Float32(v * scale)
 		}
 	}

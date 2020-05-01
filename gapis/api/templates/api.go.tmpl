@@ -55,6 +55,7 @@ import(
   "fmt"
   "reflect"
   "sort"
+  "io"
   "github.com/google/gapid/core/data"
   "github.com/google/gapid/core/memory/arena"
   "github.com/google/gapid/core/os/device"
@@ -72,6 +73,7 @@ var ( // Don't error if these packages aren't used.
   _ = data.Dedupe
   _ = device.NewID
   _ = path.NewID
+  _ = io.SeekStart
 )
 
   {{template "Go.CommentHeader" "StaticArrays"}}
@@ -95,6 +97,7 @@ import(
   "context"
   "fmt"
   "reflect"
+  "io"
   "github.com/google/gapid/core/data/binary"
   "github.com/google/gapid/core/data/id"
   "github.com/google/gapid/core/math/u64"
@@ -110,6 +113,7 @@ import(
 
 var ( // Don't error if these packages aren't used.
   _ = protocol.OpCall
+  _ = io.SeekStart
 )
 
   {{template "Go.CommentHeader" "Slices"}}
@@ -1009,7 +1013,7 @@ import (
   }
 
   // Reader returns a binary reader for the slice.
-  func (s {{$slice_ty}}) Reader(ϟctx context.Context, ϟg *ϟapi.GlobalState) binary.Reader {
+  func (s {{$slice_ty}}) Reader(ϟctx context.Context, ϟg *ϟapi.GlobalState) io.Reader {
     return ϟg.MemoryReader(ϟctx, ϟg.Memory.MustGet(s.Pool()).Slice(s.Range()))
   }
 

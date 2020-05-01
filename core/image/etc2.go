@@ -17,10 +17,9 @@ package image
 import (
 	"bytes"
 
-	"github.com/google/gapid/core/data/endian"
+	"github.com/google/gapid/core/data/binary"
 	"github.com/google/gapid/core/math/sint"
 	"github.com/google/gapid/core/math/u64"
-	"github.com/google/gapid/core/os/device"
 	"github.com/google/gapid/core/stream"
 )
 
@@ -340,14 +339,15 @@ func decodeETC(src []byte, width, height, depth int, alphaMode etcAlphaMode) ([]
 		0xff, 0xff, 0xff, 0xff,
 	}
 
-	r := endian.Reader(bytes.NewReader(src), device.BigEndian)
+	// ALAN: BIG ENDIAN
+	r := bytes.NewReader(src)
 
 	for z := 0; z < depth; z++ {
 		dst := dst[z*width*height*4:]
 		for by := 0; by < blockHeight; by++ {
 			for bx := 0; bx < blockWidth; bx++ {
 				if alphaMode == etcAlpha8Bit {
-					v64 := r.Uint64()
+					v64, _ := binary.ReadBEUint64(r)
 					base, mul, modTbl := decodeETCBaseMulModTbl(v64)
 					for i := uint8(0); i < 16; i++ {
 						mod := modTbl[(v64>>(i*3))&7]
@@ -355,7 +355,7 @@ func decodeETC(src []byte, width, height, depth int, alphaMode etcAlphaMode) ([]
 					}
 				}
 
-				v64 := r.Uint64()
+				v64, _ := binary.ReadBEUint64(r)
 				flip := (v64 >> 32) & 1
 				diff := (v64 >> 33) & 1
 				opaque := 1
@@ -583,14 +583,14 @@ func decodeETCU11(src []byte, width, height, depth int, channels int) ([]byte, e
 	dst := make([]byte, width*height*depth*channels*2)
 	blockWidth := sint.Max((width+3)/4, 1)
 	blockHeight := sint.Max((height+3)/4, 1)
-	r := endian.Reader(bytes.NewReader(src), device.BigEndian)
+	r := bytes.NewReader(src)
 
 	for z := 0; z < depth; z++ {
 		dst := dst[z*width*height*channels*2:]
 		for by := 0; by < blockHeight; by++ {
 			for bx := 0; bx < blockWidth; bx++ {
 				for c := 0; c < channels; c++ {
-					v64 := r.Uint64()
+					v64, _ := binary.ReadBEUint64(r)
 					base, mul, modTbl := decodeETCBaseMulModTbl(v64)
 					if mul != 0 {
 						mul *= 8
@@ -623,13 +623,13 @@ func decodeETCS11(src []byte, width, height, depth int, channels int) ([]byte, e
 	dst := make([]byte, width*height*depth*channels*2)
 	blockWidth := sint.Max((width+3)/4, 1)
 	blockHeight := sint.Max((height+3)/4, 1)
-	r := endian.Reader(bytes.NewReader(src), device.BigEndian)
+	r := bytes.NewReader(src)
 	for z := 0; z < depth; z++ {
 		dst := dst[z*width*height*channels*2:]
 		for by := 0; by < blockHeight; by++ {
 			for bx := 0; bx < blockWidth; bx++ {
 				for c := 0; c < channels; c++ {
-					v64 := r.Uint64()
+					v64, _ := binary.ReadBEUint64(r)
 					base, mul, modTbl := decodeETCBaseMulModTbl(v64)
 					base = int(int8(base))
 					if mul != 0 {

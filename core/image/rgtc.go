@@ -15,6 +15,8 @@
 package image
 
 import (
+	"io"
+
 	"github.com/google/gapid/core/data/binary"
 	"github.com/google/gapid/core/math/sint"
 	"github.com/google/gapid/core/stream"
@@ -29,22 +31,22 @@ var (
 
 func init() {
 	RegisterConverter(RGTC1_BC4_R_U8_NORM, RGBA_U8_NORM, func(src []byte, w, h, d int) ([]byte, error) {
-		return decode4x4Blocks(src, w, h, d, func(r binary.Reader, dst []pixel) {
+		return decode4x4Blocks(src, w, h, d, func(r io.Reader, dst []pixel) {
 			decodeRGTC(r, dst, false, false)
 		})
 	})
 	RegisterConverter(RGTC1_BC4_R_S8_NORM, RGBA_U8_NORM, func(src []byte, w, h, d int) ([]byte, error) {
-		return decode4x4Blocks(src, w, h, d, func(r binary.Reader, dst []pixel) {
+		return decode4x4Blocks(src, w, h, d, func(r io.Reader, dst []pixel) {
 			decodeRGTC(r, dst, true, false)
 		})
 	})
 	RegisterConverter(RGTC2_BC5_RG_U8_NORM, RGBA_U8_NORM, func(src []byte, w, h, d int) ([]byte, error) {
-		return decode4x4Blocks(src, w, h, d, func(r binary.Reader, dst []pixel) {
+		return decode4x4Blocks(src, w, h, d, func(r io.Reader, dst []pixel) {
 			decodeRGTC(r, dst, false, true)
 		})
 	})
 	RegisterConverter(RGTC2_BC5_RG_S8_NORM, RGBA_U8_NORM, func(src []byte, w, h, d int) ([]byte, error) {
-		return decode4x4Blocks(src, w, h, d, func(r binary.Reader, dst []pixel) {
+		return decode4x4Blocks(src, w, h, d, func(r io.Reader, dst []pixel) {
 			decodeRGTC(r, dst, true, true)
 		})
 	})
@@ -126,8 +128,12 @@ func (*FmtRGTC2_BC5_RG_S8_NORM) channels() stream.Channels {
 	return stream.Channels{stream.Channel_Red, stream.Channel_Green}
 }
 
-func decodeRGTC(r binary.Reader, dst []pixel, signed bool, hasGreen bool) {
-	r0, r1, rc := r.Uint8(), r.Uint8(), uint64(r.Uint16())|(uint64(r.Uint32())<<16)
+func decodeRGTC(r io.Reader, dst []pixel, signed bool, hasGreen bool) {
+	r0, _ := binary.ReadUint8(r)
+	r1, _ := binary.ReadUint8(r)
+	rca16, _ := binary.ReadUint16(r)
+	rcb32, _ := binary.ReadUint32(r)
+	rc := uint64(rca16)|(uint64(rcb32)<<16)
 	mixer := &rgtcMixer{
 		signed: signed,
 		r0:     r0,
@@ -135,7 +141,11 @@ func decodeRGTC(r binary.Reader, dst []pixel, signed bool, hasGreen bool) {
 		rc:     rc,
 	}
 	if hasGreen {
-		g0, g1, gc := r.Uint8(), r.Uint8(), uint64(r.Uint16())|(uint64(r.Uint32())<<16)
+		g0, _ := binary.ReadUint8(r)
+		g1, _ := binary.ReadUint8(r)
+		gca16, _ := binary.ReadUint16(r)
+		gcb32, _ := binary.ReadUint32(r)
+		gc := uint64(gca16)|(uint64(gcb32)<<16)
 		mixer.hasGreen, mixer.g0, mixer.g1, mixer.gc = hasGreen, g0, g1, gc
 	}
 	for i := 0; i < 16; i++ {

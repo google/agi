@@ -19,8 +19,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/gapid/core/data/endian"
 	"github.com/google/gapid/core/log"
+	"github.com/google/gapid/core/data/binary"
 	"github.com/google/gapid/gapir"
 	"github.com/google/gapid/gapis/api"
 	"github.com/google/gapid/gapis/api/transform"
@@ -448,19 +448,18 @@ func (t *queryTimestamps) processNotification(ctx context.Context, s *api.Global
 		return
 	}
 
-	byteOrder := s.MemoryLayout.GetEndian()
-	r := endian.Reader(bytes.NewReader(timestampsData), byteOrder)
-	tStart := r.Uint64()
+	r := bytes.NewReader(timestampsData)
+	tStart, _ := binary.ReadUint64(r)
 	var timestamps service.Timestamps
 	resultCount := uint32(len(timestampsData) / 8)
 	resIdx := 0
 
 	for i := uint32(1); i < resultCount; i++ {
-		tEnd := r.Uint64()
+		tEnd, _ := binary.ReadUint64(r)
 		record := res[resIdx]
 		record.timestamp.TimeInNanoseconds = uint64(float32(tEnd-tStart) * t.timestampPeriod)
 		if record.IsEoC {
-			tStart = r.Uint64()
+			tStart, _ = binary.ReadUint64(r)
 			i++
 		} else {
 			tStart = tEnd

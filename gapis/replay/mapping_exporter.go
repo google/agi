@@ -22,7 +22,7 @@ import (
 	"reflect"
 	"sort"
 
-	"github.com/google/gapid/core/data/endian"
+	"github.com/google/gapid/core/data/binary"
 	"github.com/google/gapid/core/log"
 	"github.com/google/gapid/gapir"
 	"github.com/google/gapid/gapis/api"
@@ -78,20 +78,22 @@ func (m *MappingExporter) processNotification(ctx context.Context, s *api.Global
 	notificationData := n.GetData()
 	mappingData := notificationData.GetData()
 
-	byteOrder := s.MemoryLayout.GetEndian()
-	r := endian.Reader(bytes.NewReader(mappingData), byteOrder)
+	r := bytes.NewReader(mappingData)
 
 	for _, handle := range m.traceValues {
 		var replayValue uint64
 		switch handle.size {
 		case 1:
-			replayValue = uint64(r.Uint8())
+			val, _ := binary.ReadUint8(r)
+			replayValue = uint64(val)
 		case 2:
-			replayValue = uint64(r.Uint16())
+			val, _ := binary.ReadUint16(r)
+			replayValue = uint64(val)
 		case 4:
-			replayValue = uint64(r.Uint32())
+			val, _ := binary.ReadUint32(r)
+			replayValue = uint64(val)
 		case 8:
-			replayValue = r.Uint64()
+			replayValue, _ = binary.ReadUint64(r)
 		default:
 			log.F(ctx, true, "Invalid Handle size %s: %d", handle.name, handle.size)
 		}

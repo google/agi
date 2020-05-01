@@ -73,17 +73,19 @@ func (c *stringPool) decode(header, data []byte) error {
 	// dataOffset is the offset of data relative to the start of the chunk.
 	dataOffset := 8 + uint32(len(header))
 
-	r := endian.Reader(bytes.NewReader(header), device.LittleEndian)
-	stringCount := r.Uint32()
-	styleCount := r.Uint32()
-	c.flags = r.Uint32()
-	stringsStart := r.Uint32() - dataOffset
-	stylesStart := r.Uint32() - dataOffset
+	r := bytes.NewReader(header)
+	stringCount, _ := binary.ReadUint32(r)
+	styleCount, _ := binary.ReadUint32(r)
+	c.flags, _ = binary.ReadUint32(r)
+	stringsStart, _ := binary.ReadUint32(r)
+	stringsStart -= dataOffset
+	stylesStart, _ := binary.ReadUint32(r)
+	stylesStart -= dataOffset
 
-	r = endian.Reader(bytes.NewReader(data), device.LittleEndian)
+	r = bytes.NewReader(data)
 	indices := make([]uint32, stringCount)
 	for i := range indices {
-		indices[i] = r.Uint32()
+		indices[i], _ = binary.ReadUint32(r)
 	}
 
 	c.ptrs = make([]int, stringCount)
@@ -91,14 +93,14 @@ func (c *stringPool) decode(header, data []byte) error {
 	c.styles = make([]string, styleCount)
 	for i := range c.strings {
 		offset := stringsStart + indices[i]
-		r = endian.Reader(bytes.NewReader(data[offset:]), device.LittleEndian)
+		r = bytes.NewReader(data[offset:])
 		if c.flags&utf8Flag != 0 {
 			panic("TODO: UTF8 encoded xml support.")
 		} else {
 			runeCount := decodeLength(r)
 			str := make([]uint16, runeCount)
 			for i := range str {
-				str[i] = r.Uint16()
+				str[i], _ = binary.ReadUint16(r)
 			}
 			c.strings[i] = string(utf16.Decode(str))
 			c.ptrs[i] = i

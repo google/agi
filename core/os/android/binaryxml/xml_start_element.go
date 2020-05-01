@@ -22,8 +22,6 @@ import (
 	"sort"
 
 	"github.com/google/gapid/core/data/binary"
-	"github.com/google/gapid/core/data/endian"
-	"github.com/google/gapid/core/os/device"
 )
 
 type xmlStartElement struct {
@@ -36,42 +34,52 @@ type xmlStartElement struct {
 }
 
 func (c *xmlStartElement) decode(header, data []byte) error {
-	r := endian.Reader(bytes.NewReader(header), device.LittleEndian)
-	c.lineNumber = r.Uint32()
+	r := bytes.NewReader(header)
+	var err error
+	c.lineNumber, err = binary.ReadUint32(r)
 	c.comment = c.root().decodeString(r)
-	if err := r.Error(); err != nil {
+	if err != nil {
 		return err
 	}
 
-	r = endian.Reader(bytes.NewReader(data), device.LittleEndian)
+	r = bytes.NewReader(data)
 	c.namespace = c.root().decodeString(r)
 	c.name = c.root().decodeString(r)
-	attributeStart := r.Uint16()
-	attributeSize := r.Uint16()
-	attributeCount := r.Uint16()
-	if err := r.Error(); err != nil {
+	attributeStart, err := binary.ReadUint16(r)
+	if err != nil {
+		return err
+	}
+	attributeSize, err := binary.ReadUint16(r)
+	if err != nil {
+		return err
+	}
+	attributeCount, err := binary.ReadUint16(r)
+	if err != nil {
 		return err
 	}
 	if attributeSize != xmlAttributeSize {
 		return fmt.Errorf("Attribute size was not as expected. Got %d, expected %d",
 			attributeSize, xmlAttributeSize)
 	}
-	if r.Uint16() != 0 {
+	idIndex, err := binary.ReadUint16(r) 
+	if err != nil || idIndex != 0 {
 		return fmt.Errorf("idIndex != 0 not supported.")
 	}
-	if r.Uint16() != 0 {
+	classIndex, err := binary.ReadUint16(r) 
+	if err != nil || classIndex != 0 {
 		return fmt.Errorf("classIndex != 0 not supported.")
 	}
-	if r.Uint16() != 0 {
+	styleIndex, err := binary.ReadUint16(r) 
+	if err != nil || styleIndex != 0 {
 		return fmt.Errorf("styleIndex != 0 not supported.")
 	}
 
-	r = endian.Reader(bytes.NewReader(data[attributeStart:]), device.LittleEndian)
+	r = bytes.NewReader(data[attributeStart:])
 	c.attributes = make([]xmlAttribute, attributeCount)
 	for i := range c.attributes {
 		c.attributes[i].decode(r, c.root())
 	}
-	return r.Error()
+	return nil
 }
 
 func (c *xmlStartElement) updateContext(ctx *xmlContext) {

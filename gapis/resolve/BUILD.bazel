@@ -62,6 +62,7 @@ go_library(
         "//core/data/dictionary:go_default_library",
         "//core/data/endian:go_default_library",
         "//core/data/id:go_default_library",
+        "//core/data/binary:go_default_library",
         "//core/data/protoutil:go_default_library",
         "//core/event/task:go_default_library",
         "//core/fault:go_default_library",

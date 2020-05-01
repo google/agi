@@ -17,6 +17,7 @@ package vulkan
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/google/gapid/core/data/binary"
 	"github.com/google/gapid/core/image"
@@ -3066,12 +3067,11 @@ func postImageData(ctx context.Context,
 	// Add post command
 	writeEach(ctx, out,
 		cb.Custom(func(ctx context.Context, s *api.GlobalState, b *builder.Builder) error {
-			b.Post(value.ObservedPointer(at.Address()), uint64(bufferSize), func(r binary.Reader, err error) {
+			b.Post(value.ObservedPointer(at.Address()), uint64(bufferSize), func(r io.Reader, err error) {
 				var bytes []byte
 				if err == nil {
 					bytes = make([]byte, bufferSize)
-					r.Data(bytes)
-					r.Error()
+					binary.ReadData(r, bytes)
 
 					// For the depth aspect of VK_FORMAT_X8_D24_UNORM_PACK32 and
 					// VK_FORMAT_D24_UNORM_S8_UINT format, we need to strip the

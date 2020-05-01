@@ -18,8 +18,6 @@ import (
 	"bytes"
 
 	"github.com/google/gapid/core/data/binary"
-	"github.com/google/gapid/core/data/endian"
-	"github.com/google/gapid/core/os/device"
 )
 
 type xmlResourceMap struct {
@@ -38,11 +36,11 @@ func (c *xmlResourceMap) encode() []byte {
 }
 
 func (c *xmlResourceMap) decode(header, data []byte) error {
-	r := endian.Reader(bytes.NewReader(data), device.LittleEndian)
-	id := r.Uint32()
-	for r.Error() == nil {
+	r := bytes.NewReader(data)
+	id, err := binary.ReadUint32(r)
+	for err == nil {
 		c.ids = append(c.ids, id)
-		id = r.Uint32()
+		id, err = binary.ReadUint32(r)
 	}
 	return nil
 }

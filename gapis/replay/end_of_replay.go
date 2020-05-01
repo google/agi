@@ -16,6 +16,7 @@ package replay
 
 import (
 	"context"
+	"io"
 
 	"github.com/google/gapid/core/data/binary"
 	"github.com/google/gapid/core/log"
@@ -61,13 +62,14 @@ func (t *EndOfReplay) AddNotifyInstruction(ctx context.Context, out transform.Wr
 		// Post had occurred, which may not be anywhere near the end of the stream.
 		code := uint32(0x6060fa51)
 		b.Push(value.U32(code))
-		b.Post(b.Buffer(1), 4, func(r binary.Reader, err error) {
+		b.Post(b.Buffer(1), 4, func(r io.Reader, err error) {
 			for _, res := range t.res {
 				res.Do(func() (interface{}, error) {
 					if err != nil {
 						return nil, log.Err(ctx, err, "Flush did not get expected EOS code: '%v'")
 					}
-					if r.Uint32() != code {
+					readCode, err := binary.ReadUint32(r)
+					if err != nil || readCode != code {
 						return nil, log.Err(ctx, nil, "Flush did not get expected EOS code")
 					}
 					return result(), nil

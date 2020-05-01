@@ -17,6 +17,7 @@ package client
 import (
 	"context"
 	"fmt"
+	"io"
 	"net"
 	"sync"
 	"sync/atomic"
@@ -36,7 +37,7 @@ import (
 type Connection struct {
 	conn    net.Conn
 	out     binary.Writer
-	in      binary.Reader
+	in      io.Reader
 	reqID   uint64
 	cleanup app.Cleanup
 
@@ -66,7 +67,7 @@ func Connect(ctx context.Context, conn net.Conn, cleanup app.Cleanup) (*Connecti
 	c := &Connection{
 		conn:    conn,
 		out:     endian.Writer(conn, device.LittleEndian),
-		in:      endian.Reader(conn, device.LittleEndian),
+		in:      conn,
 		cleanup: cleanup,
 
 		closed:   make(chan struct{}),
@@ -250,10 +251,10 @@ func (c *Connection) writeFrame(ctx context.Context, frame *wire.IPCFrame, handl
 }
 
 func (c *Connection) readFrame(ctx context.Context) (*wire.IPCFrame, error) {
-	size := c.in.Uint32()
+	size, _ := binary.ReadUint32(c.in)
 	buf := make([]byte, size)
-	c.in.Data(buf)
-	if err := c.in.Error(); err != nil {
+	err := binary.ReadData(c.in, buf)
+	if err != nil {
 		return nil, err
 	}
 

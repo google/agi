@@ -18,8 +18,6 @@ import (
 	"bytes"
 
 	"github.com/google/gapid/core/data/binary"
-	"github.com/google/gapid/core/data/endian"
-	"github.com/google/gapid/core/os/device"
 )
 
 type xmlEndNamespace struct {
@@ -36,16 +34,17 @@ func (c xmlEndNamespace) String() string {
 }
 
 func (c *xmlEndNamespace) decode(header, data []byte) error {
-	r := endian.Reader(bytes.NewReader(header), device.LittleEndian)
-	c.lineNumber = r.Uint32()
+	r := bytes.NewReader(header)
+	var err error
+	c.lineNumber, err = binary.ReadUint32(r)
 	c.comment = c.root().decodeString(r)
-	if err := r.Error(); err != nil {
+	if err != nil {
 		return err
 	}
-	r = endian.Reader(bytes.NewReader(data), device.LittleEndian)
+	r = bytes.NewReader(data)
 	c.namespacePrefix = c.root().decodeString(r)
 	c.namespaceURI = c.root().decodeString(r)
-	return r.Error()
+	return nil
 }
 
 func (c *xmlEndNamespace) xml(ctx *xmlContext) string {

@@ -18,7 +18,6 @@ import (
 	"context"
 	"reflect"
 
-	"github.com/google/gapid/core/data/endian"
 	"github.com/google/gapid/core/data/slice"
 	"github.com/google/gapid/core/os/device"
 )
@@ -28,26 +27,18 @@ func LoadSlice(ctx context.Context, s Slice, pools Pools, l *device.MemoryLayout
 	pool := pools.MustGet(s.Pool())
 	rng := Range{s.Base(), s.Size()}
 	ioR := pool.Slice(rng).NewReader(ctx)
-	binR := endian.Reader(ioR, l.GetEndian())
-	d := NewDecoder(binR, l)
+	d := NewDecoder(ioR, l)
 	count := int(s.Count())
 	sli := slice.New(reflect.SliceOf(s.ElementType()), count, count)
 	Read(d, sli.Addr().Interface())
-	if err := binR.Error(); err != nil {
-		return nil, err
-	}
 	return sli.Interface(), nil
 }
 
 // LoadPointer loads the element from p.
 func LoadPointer(ctx context.Context, p Pointer, pools Pools, l *device.MemoryLayout) (interface{}, error) {
 	ioR := pools.ApplicationPool().At(p.Address()).NewReader(ctx)
-	binR := endian.Reader(ioR, l.GetEndian())
-	d := NewDecoder(binR, l)
+	d := NewDecoder(ioR, l)
 	elPtr := reflect.New(p.ElementType())
 	Read(d, elPtr.Interface())
-	if err := binR.Error(); err != nil {
-		return nil, err
-	}
 	return elPtr.Elem().Interface(), nil
 }

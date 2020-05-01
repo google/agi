@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 
 	"github.com/google/gapid/core/app/crash"
 	"github.com/google/gapid/core/app/status"
@@ -90,7 +91,7 @@ const (
 // Postback decodes a single command's post. If err is nil, it means there is
 // no error in prior check of the post data, otherwise err will hold the error
 // from the prior check (like a length mismatch error).
-type Postback func(d binary.Reader, err error)
+type Postback func(d io.Reader, err error)
 
 // Builder is used to build the Payload to send to the replay virtual machine.
 // The builder has a number of methods for mutating the virtual machine stack,
@@ -942,7 +943,7 @@ func (b *Builder) Build(ctx context.Context) (gapir.Payload, PostDataHandler, No
 				if len(data) != decoders[id].expectedSize {
 					err = fmt.Errorf("%d'th post size mismatch, actual size: %d, expected size: %d", id, len(data), decoders[id].expectedSize)
 				}
-				r := endian.Reader(bytes.NewReader(data), byteOrder)
+				r := bytes.NewReader(data)
 				decoders[id].decode(r, err)
 			}
 		})

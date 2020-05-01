@@ -17,17 +17,15 @@ package opcode
 import (
 	"io"
 
-	"github.com/google/gapid/core/data/endian"
 	"github.com/google/gapid/core/os/device"
 )
 
 // Disassemble disassembles and returns the stream of encoded Opcodes from r,
 // stopping once an EOF is reached.
 func Disassemble(r io.Reader, byteOrder device.Endian) ([]Opcode, error) {
-	d := endian.Reader(r, byteOrder)
 	opcodes := []Opcode{}
 	for {
-		opcode, err := Decode(d)
+		opcode, err := Decode(r)
 		switch err {
 		case nil:
 			opcodes = append(opcodes, opcode)

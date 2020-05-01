@@ -16,6 +16,7 @@ package binaryxml
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/google/gapid/core/data/binary"
 )
@@ -155,12 +156,12 @@ func writeTypedValueHeader(w binary.Writer, ty valueType) {
 	w.Uint8(uint8(ty))
 }
 
-func decodeDimension(r binary.Reader) (typedValue, error) {
+func decodeDimension(r io.Reader) (typedValue, error) {
 	radixes := []float32{1.0 / (1 << 8),
 		1.0 / (1 << 15),
 		1.0 / (1 << 23),
 		1.0 / (1 << 31)}
-	v := r.Uint32()
+	v, _ := binary.ReadUint32(r)
 	fval := float32(int32(v&0xffffff00)) * radixes[(v>>4)&0x3]
 	switch v & 0xf {
 	case 0:
@@ -180,32 +181,39 @@ func decodeDimension(r binary.Reader) (typedValue, error) {
 	}
 }
 
-func decodeValue(r binary.Reader, xml *xmlTree) (typedValue, error) {
-	size := r.Uint16()
+func decodeValue(r io.Reader, xml *xmlTree) (typedValue, error) {
+	size, _ := binary.ReadUint16(r)
 	if size != valueSize {
 		return nil, fmt.Errorf("Value size was not as expected. Got %d, expected %d",
 			size, valueSize)
 	}
-	res0 := r.Uint8()
+	res0, _ := binary.ReadUint8(r)
 	if res0 != 0 {
 		return nil, fmt.Errorf("res0 was %d, expected 0", res0)
 	}
-	ty := valueType(r.Uint8())
+	tyval, _ := binary.ReadUint8(r)
+	ty := valueType(tyval)
 	switch ty {
 	case typeIntDec:
-		return valIntDec(r.Int32()), nil
+		val, _ := binary.ReadInt32(r)
+		return valIntDec(val), nil
 	case typeIntHex:
-		return valIntHex(r.Uint32()), nil
+		val, _ := binary.ReadUint32(r)
+		return valIntHex(val), nil
 	case typeReference:
-		return valReference(r.Uint32()), nil
+		val, _ := binary.ReadUint32(r)
+		return valReference(val), nil
 	case typeString:
 		return valStringID(xml.decodeString(r)), nil
 	case typeFloat:
-		return valFloat(r.Float32()), nil
+		val, _ := binary.ReadFloat32(r)
+		return valFloat(val), nil
 	case typeIntBoolean:
-		return valIntBoolean(r.Uint32() != 0), nil
+		val, _ := binary.ReadUint32(r)
+		return valIntBoolean(val != 0), nil
 	case typeNull:
-		return valNull(r.Uint32()), nil
+		val, _ := binary.ReadUint32(r)
+		return valNull(val), nil
 	case typeDimension:
 		return decodeDimension(r)
 	default:

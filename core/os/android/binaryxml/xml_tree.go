@@ -20,8 +20,6 @@ import (
 	"io"
 
 	"github.com/google/gapid/core/data/binary"
-	"github.com/google/gapid/core/data/endian"
-	"github.com/google/gapid/core/os/device"
 )
 
 type xmlTree struct {
@@ -60,7 +58,7 @@ func (c *xmlTree) visit(visitor chunkVisitor) {
 }
 
 func (c *xmlTree) decode(header, data []byte) error {
-	r := endian.Reader(bytes.NewReader(data), device.LittleEndian)
+	r := bytes.NewReader(data)
 
 	var chunk chunk
 	var err error
@@ -113,8 +111,8 @@ func (c *xmlTree) toXmlString() string {
 	})
 }
 
-func (c *xmlTree) decodeString(r binary.Reader) stringPoolRef {
-	idx := r.Uint32()
+func (c *xmlTree) decodeString(r io.Reader) stringPoolRef {
+	idx, _ := binary.ReadUint32(r)
 	if idx != missingString {
 		return stringPoolRef{c.strings, idx}
 	}

@@ -92,9 +92,8 @@ type chunk interface {
 }
 
 func decodeXmlTree(r io.Reader) (*xmlTree, error) {
-	br := endian.Reader(r, device.LittleEndian)
 
-	chunk, err := decodeChunk(br, &xmlTree{})
+	chunk, err := decodeChunk(r, &xmlTree{})
 	if err != nil {
 		return nil, err
 	}
@@ -107,20 +106,32 @@ func decodeXmlTree(r io.Reader) (*xmlTree, error) {
 	return tree, nil
 }
 
-func decodeChunk(r binary.Reader, x *xmlTree) (chunk, error) {
-	ty := r.Uint16()
-	if err := r.Error(); err != nil {
+func decodeChunk(r io.Reader, x *xmlTree) (chunk, error) {
+	ty, err := binary.ReadUint16(r)
+	if err != nil {
 		return nil, err
 	}
-	headerSize := r.Uint16()
+	headerSize, err := binary.ReadUint16(r)
+	if err != nil {
+		return nil, err
+	}
 	if headerSize < 8 {
 		return nil, fmt.Errorf("Unexpected header size %d", headerSize)
 	}
-	dataSize := r.Uint32()
+	dataSize, err := binary.ReadUint32(r)
+	if err != nil {
+		return nil, err
+	}
 	header := make([]byte, headerSize-8)
 	data := make([]byte, dataSize-uint32(headerSize))
-	r.Data(header)
-	r.Data(data)
+	err = binary.ReadData(r, header)
+	if err != nil {
+		return nil, fmt.Errorf("Could not read chunk header")
+	}
+	err = binary.ReadData(r, data)
+	if err != nil {
+		return nil, fmt.Errorf("Could not read chunk data")
+	}
 	var c chunk
 	switch ty {
 	case resXMLResourceMapType:
@@ -143,20 +154,22 @@ func decodeChunk(r binary.Reader, x *xmlTree) (chunk, error) {
 		return nil, fmt.Errorf("Unknown chunk type 0x%x", ty)
 	}
 	c.setRoot(x)
-	err := c.decode(header, data)
+	err = c.decode(header, data)
 	if errors.Cause(err) == io.EOF {
 		return nil, fmt.Errorf("Chunk type %T read past end of data", c)
 	}
 	return c, err
 }
 
-func decodeLength(r binary.Reader) uint32 {
-	length := uint32(r.Uint16())
-	if length&0x8000 != 0 {
+func decodeLength(r io.Reader) uint32 {
+	length16, _ := binary.ReadUint16(r)
+	length32 := uint32(length16)
+	if length32&0x8000 != 0 {
 		panic("UNTESTED CODE")
-		length = (length << 16) | uint32(r.Uint16())
+		next16, _ := binary.ReadUint16(r)
+		length32 = (length32 << 16) | uint32(next16)
 	}
-	return length
+	return length32
 }
 
 func encodeLength(w binary.Writer, length uint32) {

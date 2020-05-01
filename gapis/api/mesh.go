@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/google/gapid/core/data/endian"
+	"github.com/google/gapid/core/data/binary"
 	"github.com/google/gapid/core/log"
 	"github.com/google/gapid/core/math/f32"
 	"github.com/google/gapid/core/os/device"
@@ -165,11 +166,11 @@ func (m *Mesh) Triangle(i int) (a, b, c uint32) {
 }
 
 func bytesToVec3Ds(data []byte) []f32.Vec3 {
-	r := endian.Reader(bytes.NewReader(data), device.LittleEndian)
+	r := bytes.NewReader(data)
 	out := make([]f32.Vec3, len(data)/(3*4))
 	for i := range out {
 		for j := 0; j < 3; j++ {
-			out[i][j] = r.Float32()
+			out[i][j], _ = binary.ReadFloat32(r)
 		}
 	}
 	return out

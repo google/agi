@@ -17,6 +17,7 @@ package opcode
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/google/gapid/core/data/binary"
 	"github.com/google/gapid/gapis/replay/protocol"
@@ -516,7 +517,7 @@ func (r TrivialPointerResolver) ResolvePointerIndex(value.PointerIndex) (protoco
 // 	return w.Error()
 // }
 
-func DecodeInlineResource(opcode uint32, reader binary.Reader) InlineResource {
+func DecodeInlineResource(opcode uint32, reader io.Reader) InlineResource {
 
 	numValuePatchUps := unpackY(opcode)
 	dataSize := unpackZ(opcode)
@@ -525,18 +526,22 @@ func DecodeInlineResource(opcode uint32, reader binary.Reader) InlineResource {
 	valuePatchUps := make([]InlineResourceValuePatchUp, numValuePatchUps)
 
 	for i := 0; i < int(dataSize); i++ {
-		data[i] = reader.Uint32()
+		data[i], _ = binary.ReadUint32(reader)
 	}
 
 	for i := 0; i < int(numValuePatchUps); i++ {
-		valuePatchUps[i] = InlineResourceValuePatchUp{Destination: TrivialPointer{Value: reader.Uint32()}, Value: TrivialValue{Value: reader.Uint32()}}
+		dst, _ := binary.ReadUint32(reader)
+		val, _ := binary.ReadUint32(reader)
+		valuePatchUps[i] = InlineResourceValuePatchUp{Destination: TrivialPointer{Value: dst}, Value: TrivialValue{Value: val}}
 	}
 
-	numPointerPatchUps := reader.Uint32()
+	numPointerPatchUps, _ := binary.ReadUint32(reader)
 	pointerPatchUps := make([]InlineResourcePointerPatchUp, numPointerPatchUps)
 
 	for i := 0; i < int(numPointerPatchUps); i++ {
-		pointerPatchUps[i] = InlineResourcePointerPatchUp{Destination: TrivialPointer{Value: reader.Uint32()}, Source: TrivialPointer{Value: reader.Uint32()}}
+		dst, _ := binary.ReadUint32(reader)
+		val, _ := binary.ReadUint32(reader)
+		pointerPatchUps[i] = InlineResourcePointerPatchUp{Destination: TrivialPointer{Value: dst}, Source: TrivialPointer{Value: val}}
 	}
 
 	return InlineResource{
@@ -550,10 +555,10 @@ func DecodeInlineResource(opcode uint32, reader binary.Reader) InlineResource {
 }
 
 // Decode returns the opcode decoded from decoder d.
-func Decode(r binary.Reader) (Opcode, error) {
-	i := r.Uint32()
-	if r.Error() != nil {
-		return nil, r.Error()
+func Decode(r io.Reader) (Opcode, error) {
+	i, err := binary.ReadUint32(r)
+	if err != nil {
+		return nil, err
 	}
 	code := unpackC(i)
 	switch code {

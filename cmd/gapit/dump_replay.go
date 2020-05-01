@@ -26,8 +26,6 @@ import (
 	"github.com/golang/protobuf/proto"
 
 	"github.com/google/gapid/core/app"
-	"github.com/google/gapid/core/data/endian"
-	"github.com/google/gapid/core/os/device"
 	replaysrv "github.com/google/gapid/gapir/replay_service"
 	"github.com/google/gapid/gapis/replay/opcode"
 )
@@ -79,7 +77,7 @@ func dumpOpcodes(payload *replaysrv.Payload) error {
 	fmt.Printf("Opcodes:\n")
 
 	f := fmt.Sprintf("%%.%dd: %%v\n", int(math.Round(math.Log10(float64(count)))+0.5))
-	r := endian.Reader(bytes.NewReader(payload.Opcodes), device.LittleEndian)
+	r := bytes.NewReader(payload.Opcodes)
 	idx := 0
 	for {
 		opcode, err := opcode.Decode(r)

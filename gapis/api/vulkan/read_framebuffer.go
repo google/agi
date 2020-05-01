@@ -17,6 +17,7 @@ package vulkan
 import (
 	"context"
 	"fmt"
+	"io"
 	"math/rand"
 
 	"github.com/google/gapid/core/data/binary"
@@ -1159,13 +1160,12 @@ type pendingReadWrapper struct {
 	at api.AllocResult
 }
 
-func (w *pendingReadWrapper) postPendingRead(r binary.Reader, err error) {
+func (w *pendingReadWrapper) postPendingRead(r io.Reader, err error) {
 	var bytes []byte
 	if err == nil {
 		bufferSize := w.r.bufferSize
 		bytes = make([]byte, bufferSize)
-		r.Data(bytes)
-		r.Error()
+		binary.ReadData(r, bytes)
 
 		// For the depth aspect of VK_FORMAT_X8_D24_UNORM_PACK32 and
 		// VK_FORMAT_D24_UNORM_S8_UINT format, we need to strip the

@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"io"
 
 	"github.com/google/gapid/core/data/binary"
 	"github.com/google/gapid/core/data/endian"
@@ -131,8 +132,8 @@ func (s GlobalState) String() string {
 
 // MemoryReader returns a binary reader using the state's memory endianness to
 // read data from d.
-func (s GlobalState) MemoryReader(ctx context.Context, d memory.Data) binary.Reader {
-	return endian.Reader(d.NewReader(ctx), s.MemoryLayout.GetEndian())
+func (s GlobalState) MemoryReader(ctx context.Context, d memory.Data) io.Reader {
+	return d.NewReader(ctx)
 }
 
 // MemoryWriter returns a binary writer using the state's memory endianness to
