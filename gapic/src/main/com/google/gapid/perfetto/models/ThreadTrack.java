@@ -37,7 +37,6 @@ import com.google.gapid.perfetto.views.State;
 import com.google.gapid.perfetto.views.ThreadStateSliceSelectionView;
 import com.google.gapid.perfetto.views.ThreadStateSlicesSelectionView;
 
-import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Composite;
 
 import java.util.List;
@@ -310,6 +309,7 @@ public class ThreadTrack extends Track.WithQueryEngine<ThreadTrack.Data> {
       throw new UnsupportedOperationException();
     }
 
+    @SuppressWarnings("unused")
     public default ListenableFuture<Slices> getSlices(String concatedId) {
       return Futures.immediateFuture(null);
     }

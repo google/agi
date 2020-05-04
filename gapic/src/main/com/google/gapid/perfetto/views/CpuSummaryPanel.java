@@ -29,7 +29,6 @@ import com.google.gapid.perfetto.canvas.Fonts;
 import com.google.gapid.perfetto.canvas.RenderContext;
 import com.google.gapid.perfetto.canvas.Size;
 import com.google.gapid.perfetto.models.CpuSummaryTrack;
-import com.google.gapid.perfetto.models.CpuTrack;
 import com.google.gapid.perfetto.models.Selection;
 
 /**

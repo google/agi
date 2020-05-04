@@ -25,7 +25,6 @@ import com.google.gapid.perfetto.TimeSpan;
 import com.google.gapid.perfetto.views.MultiSelectionView;
 import com.google.gapid.perfetto.views.State;
 
-import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Composite;
 
 import java.util.Iterator;
@@ -51,10 +50,11 @@ public interface Selection<T extends Selection<T>> {
     return false;
   }
 
-  public static final Selection EMPTY_SELECTION = new EmptySelection();
+  public static final Selection<EmptySelection> EMPTY_SELECTION = new EmptySelection();
 
-  public static Selection emptySelection() {
-      return EMPTY_SELECTION;
+  @SuppressWarnings("unchecked")
+  public static <T extends Selection<T>> T emptySelection() {
+      return (T)EMPTY_SELECTION;
   }
 
   public static class EmptySelection implements Selection<EmptySelection> {
@@ -88,14 +88,14 @@ public interface Selection<T extends Selection<T>> {
    * MultiSelection stores selections across different {@link Kind}s.
    * */
   public static class MultiSelection {
-    private final NavigableMap<Kind, Selection> selections;
+    private final NavigableMap<Kind, Selection<?>> selections;
 
-    public MultiSelection(Kind type, Selection selection) {
+    public MultiSelection(Kind type, Selection<?> selection) {
       this.selections = Maps.newTreeMap();
       this.selections.put(type, selection);
     }
 
-    public MultiSelection(NavigableMap<Kind, Selection> selections) {
+    public MultiSelection(NavigableMap<Kind, Selection<?>> selections) {
       this.selections = selections;
     }
 
@@ -107,24 +107,23 @@ public interface Selection<T extends Selection<T>> {
       }
     }
 
-    public  Selection getSelection(Kind type) {
-      return selections.containsKey(type) ? selections.get(type) : Selection.emptySelection();
+    @SuppressWarnings("unchecked")
+    public <T extends Selection<T>> T getSelection(Kind type) {
+      return (T)(selections.containsKey(type) ? selections.get(type) : Selection.emptySelection());
     }
 
-    @SuppressWarnings({"rawtypes" })
     public void addSelection(MultiSelection other) {
       for (Selection.Kind k : other.selections.keySet()) {
-        this.addSelection(k, other.selections.get(k));
+        this.addSelection(k, other.getSelection(k));
       }
     }
 
-    @SuppressWarnings("unchecked")
-    public void addSelection(Kind kind, Selection selection) {
-      Selection old = getSelection(kind);
+    public void addSelection(Kind kind, Selection<?> selection) {
+      Selection<?> old = getSelection(kind);
       if (old == null || old == Selection.EMPTY_SELECTION) {
         selections.put(kind, selection);
       } else {
-        selections.put(kind, old.combine(selection));
+        selections.put(kind, combine(old, selection));
       }
     }
 
@@ -138,14 +137,19 @@ public interface Selection<T extends Selection<T>> {
 
     private TimeSpan getRange() {
       TimeSpan[] range = new TimeSpan[] { TimeSpan.ZERO };
-      for (Selection sel : selections.values()) {
-        sel.getRange(r -> range[0] = range[0].expand((TimeSpan)r));
+      for (Selection<?> sel : selections.values()) {
+        sel.getRange(r -> range[0] = range[0].expand(r));
       }
       return range[0];
     }
 
-    private Selection firstSelection() {
+    private Selection<?> firstSelection() {
       return selections.firstEntry().getValue();
+    }
+
+    @SuppressWarnings("unchecked")
+    protected static <T extends Selection<T>> Selection<?> combine(Selection<?> a, Selection<?> b) {
+      return ((T)a).combine((T)b);
     }
   }
 
@@ -153,19 +157,19 @@ public interface Selection<T extends Selection<T>> {
    * Selection builder for combining selections across different {@link Kind}s.
    * */
   public static class CombiningBuilder {
-    private final Map<Kind, ListenableFuture<Selection>> selections = Maps.newTreeMap();
+    private final Map<Kind, ListenableFuture<Selection<?>>> selections = Maps.newTreeMap();
 
     @SuppressWarnings("unchecked")
-    public void add(Kind type, ListenableFuture<Selection> selection) {
-      selections.merge(type, selection, (f1, f2) ->
-          transformAsync(f1, r1 -> transform(f2, r2 -> (r1.combine(r2)))));
+    public <T extends Selection<T>> void add(Kind type, ListenableFuture<T> selection) {
+      selections.merge(type, (ListenableFuture<Selection<?>>)selection, (f1, f2) ->
+          transformAsync(f1, r1 -> transform(f2, r2 -> (MultiSelection.combine(r1, r2)))));
     }
 
     public ListenableFuture<MultiSelection> build() {
       return transform(Futures.allAsList(selections.values()), sels -> {
         Iterator<Kind> keys = selections.keySet().iterator();
-        Iterator<Selection> vals = sels.iterator();
-        TreeMap<Kind, Selection> res = Maps.newTreeMap();
+        Iterator<Selection<?>> vals = sels.iterator();
+        TreeMap<Kind, Selection<?>> res = Maps.newTreeMap();
         while (keys.hasNext()) {
           res.put(keys.next(), vals.next());
         }
@@ -174,7 +178,6 @@ public interface Selection<T extends Selection<T>> {
     }
   }
 
-  @SuppressWarnings("unused")
   public static class Kind implements Comparable<Kind>{
     public static final Kind Thread = new Kind(0);
     public static final Kind ThreadState = new Kind(1);

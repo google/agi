@@ -22,12 +22,9 @@ import static com.google.gapid.util.MoreFutures.transform;
 import static com.google.gapid.util.MoreFutures.transformAsync;
 import static java.lang.String.format;
 
-import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gapid.perfetto.TimeSpan;
-
 import com.google.gapid.perfetto.models.CpuTrack.Slices;
-import java.util.List;
 
 /**
  * {@link Track} summarizing the total CPU usage.

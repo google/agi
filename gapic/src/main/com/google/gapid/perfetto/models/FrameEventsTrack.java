@@ -37,7 +37,6 @@ import com.google.gapid.perfetto.views.FrameEventsMultiSelectionView;
 import com.google.gapid.perfetto.views.FrameEventsSelectionView;
 import com.google.gapid.perfetto.views.State;
 
-import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Composite;
 
 import java.util.Arrays;
@@ -129,7 +128,7 @@ public class FrameEventsTrack extends Track.WithQueryEngine<FrameEventsTrack.Dat
         data.frameNumbers[i] = Arrays.stream(row.getString(8).split(", "))
             .mapToLong(s -> s.isEmpty() ? 0 : Long.parseLong(s))
             .toArray();
-        data.layerNames[i] = row.getString(9).split(", ");;
+        data.layerNames[i] = row.getString(9).split(", ");
       });
       return data;
     }));

@@ -25,7 +25,6 @@ import static com.google.gapid.util.MoreFutures.transformAsync;
 import static java.lang.String.format;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -36,11 +35,9 @@ import com.google.gapid.perfetto.views.CpuSliceSelectionView;
 import com.google.gapid.perfetto.views.CpuSlicesSelectionView;
 import com.google.gapid.perfetto.views.State;
 
-import java.util.Arrays;
-import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Composite;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;

@@ -20,7 +20,6 @@ import static com.google.gapid.perfetto.views.StyleConstants.SELECTION_THRESHOLD
 import static com.google.gapid.perfetto.views.StyleConstants.TRACK_MARGIN;
 import static com.google.gapid.perfetto.views.StyleConstants.colors;
 import static com.google.gapid.perfetto.views.StyleConstants.mainGradient;
-import static com.google.gapid.util.MoreFutures.transform;
 
 import com.google.common.collect.Lists;
 import com.google.gapid.perfetto.TimeSpan;
@@ -106,7 +105,7 @@ public class FrameEventsSummaryPanel extends TrackPanel<FrameEventsSummaryPanel>
       RenderContext ctx, FrameEventsTrack.Data data, double w, double h) {
     long tStart = data.request.range.start;
     int start = Math.max(0, (int)((state.getVisibleTime().start - tStart) / data.bucketSize));
-    Selection selected = state.getSelection(Selection.Kind.FrameEvents);
+    Selection<?> selected = state.getSelection(Selection.Kind.FrameEvents);
     List<Integer> visibleSelected = Lists.newArrayList();
 
     mainGradient().applyBaseAndBorder(ctx);
@@ -159,7 +158,7 @@ public class FrameEventsSummaryPanel extends TrackPanel<FrameEventsSummaryPanel>
 
   public void renderSlices(RenderContext ctx, FrameEventsTrack.Data data) {
     TimeSpan visible = state.getVisibleTime();
-    Selection selected = state.getSelection(Selection.Kind.FrameEvents);
+    Selection<?> selected = state.getSelection(Selection.Kind.FrameEvents);
     List<Highlight> visibleSelected = Lists.newArrayList();
 
     FrameSelection selectedFrames = getSelectedFrames(state);
@@ -399,13 +398,12 @@ public class FrameEventsSummaryPanel extends TrackPanel<FrameEventsSummaryPanel>
       if (endDepth >= buffer.maxDepth) {
         endDepth = Integer.MAX_VALUE;
       }
-      // Extra transform here solving a java generic type recognition problem.
-      builder.add(Selection.Kind.FrameEvents, transform(track.getSlices(ts, startDepth, endDepth), s -> s));
+      builder.add(Selection.Kind.FrameEvents, track.getSlices(ts, startDepth, endDepth));
     }
   }
 
   private static FrameSelection getSelectedFrames(State state) {
-    Selection selection = state.getSelection(Selection.Kind.FrameEvents);
+    Selection<?> selection = state.getSelection(Selection.Kind.FrameEvents);
     if (selection instanceof FrameEventsTrack.Slices) {
       return ((FrameEventsTrack.Slices) selection).getSelection();
     }

@@ -33,7 +33,6 @@ import com.google.gapid.perfetto.views.State;
 import com.google.gapid.perfetto.views.VulkanEventSelectionView;
 import com.google.gapid.perfetto.views.VulkanEventsSelectionView;
 
-import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Composite;
 
 import java.util.List;

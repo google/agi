@@ -25,12 +25,11 @@ import static com.google.gapid.util.MoreFutures.transformAsync;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
 
-import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gapid.perfetto.TimeSpan;
 import com.google.gapid.perfetto.models.CpuTrack.Slices;
+
 import java.util.Arrays;
-import java.util.List;
 
 /**
  * {@link Track} containing CPU usage data of all threads in a process.

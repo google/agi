@@ -29,7 +29,6 @@ import static java.lang.String.format;
 import static java.util.Collections.emptyList;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -40,9 +39,8 @@ import com.google.gapid.perfetto.models.QueryEngine.Row;
 import com.google.gapid.perfetto.views.SliceSelectionView;
 import com.google.gapid.perfetto.views.SlicesSelectionView;
 import com.google.gapid.perfetto.views.State;
-
 import com.google.gapid.proto.service.Service;
-import org.eclipse.swt.SWT;
+
 import org.eclipse.swt.widgets.Composite;
 
 import java.util.List;
@@ -358,7 +356,7 @@ public abstract class SliceTrack extends Track<SliceTrack.Data> {/*extends Track
   }
 
   public static class GpuSlices extends Slices {
-    private final List<RenderStageInfo> renderStageInfos = Lists.newArrayList();;
+    private final List<RenderStageInfo> renderStageInfos = Lists.newArrayList();
 
     public GpuSlices(Row row, ArgSet args) {
       super(row, args, "GPU Queue Events");
@@ -575,10 +573,6 @@ public abstract class SliceTrack extends Track<SliceTrack.Data> {/*extends Track
     public ListenableFuture<Slices> getSlice(long id) {
       return transformAsync(expectOneRow(qe.query(sliceSql(id))), r ->
           transform(qe.getArgs(r.getLong(8)), args -> buildSlices(r, args)));
-    }
-
-    private Slices buildSlices(QueryEngine.Row row) {
-      return buildSlices(row, ArgSet.EMPTY);
     }
 
     protected abstract Slices buildSlices(QueryEngine.Row row, ArgSet args);

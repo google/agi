@@ -33,8 +33,8 @@ import com.google.gapid.perfetto.models.CpuTrack;
 import com.google.gapid.perfetto.models.Selection;
 import com.google.gapid.perfetto.models.Selection.CombiningBuilder;
 import com.google.gapid.perfetto.models.ThreadInfo;
-
 import com.google.gapid.util.Arrays;
+
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Cursor;
 import org.eclipse.swt.graphics.RGBA;
@@ -98,7 +98,7 @@ public class CpuPanel extends TrackPanel<CpuPanel> implements Selectable {
   private void renderSummary(RenderContext ctx, CpuTrack.Data data, double w, double h) {
     long tStart = data.request.range.start;
     int start = Math.max(0, (int)((state.getVisibleTime().start - tStart) / data.bucketSize));
-    Selection selected = state.getSelection(Selection.Kind.Cpu);
+    Selection<?> selected = state.getSelection(Selection.Kind.Cpu);
     List<Integer> visibleSelected = Lists.newArrayList();
 
     gradient(track.getCpu().id).applyBase(ctx);
@@ -149,7 +149,7 @@ public class CpuPanel extends TrackPanel<CpuPanel> implements Selectable {
 
   private void renderSlices(RenderContext ctx, CpuTrack.Data data, double h) {
     TimeSpan visible = state.getVisibleTime();
-    Selection selected = state.getSelection(Selection.Kind.Cpu);
+    Selection<?> selected = state.getSelection(Selection.Kind.Cpu);
     List<Highlight> visibleSelected = Lists.newArrayList();
     for (int i = 0; i < data.starts.length; i++) {
       long tStart = data.starts[i];

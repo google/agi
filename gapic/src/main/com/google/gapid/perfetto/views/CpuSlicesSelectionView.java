@@ -19,7 +19,6 @@ import static com.google.gapid.widgets.Widgets.createTreeColumn;
 import static com.google.gapid.widgets.Widgets.createTreeViewer;
 import static com.google.gapid.widgets.Widgets.packColumns;
 
-import com.google.common.collect.ImmutableList;
 import com.google.gapid.perfetto.TimeSpan;
 import com.google.gapid.perfetto.models.CpuTrack;
 import com.google.gapid.perfetto.models.CpuTrack.ByThread;

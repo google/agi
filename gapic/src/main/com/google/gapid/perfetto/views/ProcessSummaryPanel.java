@@ -19,7 +19,6 @@ import static com.google.gapid.perfetto.TimeSpan.timeToString;
 import static com.google.gapid.perfetto.views.Loading.drawLoading;
 import static com.google.gapid.perfetto.views.StyleConstants.TRACK_MARGIN;
 import static com.google.gapid.perfetto.views.StyleConstants.colors;
-import static com.google.gapid.perfetto.views.StyleConstants.gradient;
 import static com.google.gapid.perfetto.views.StyleConstants.mainGradient;
 import static com.google.gapid.util.MoreFutures.transform;
 
@@ -30,13 +29,12 @@ import com.google.gapid.perfetto.canvas.Fonts;
 import com.google.gapid.perfetto.canvas.RenderContext;
 import com.google.gapid.perfetto.canvas.Size;
 import com.google.gapid.perfetto.models.CpuInfo;
-import com.google.gapid.perfetto.models.CpuTrack;
 import com.google.gapid.perfetto.models.ProcessSummaryTrack;
 import com.google.gapid.perfetto.models.Selection;
 import com.google.gapid.perfetto.models.Selection.CombiningBuilder;
 import com.google.gapid.perfetto.models.ThreadInfo;
-
 import com.google.gapid.util.Arrays;
+
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Cursor;
 import org.eclipse.swt.graphics.RGBA;
@@ -114,7 +112,7 @@ public class ProcessSummaryPanel extends TrackPanel<ProcessSummaryPanel> impleme
     // TODO: dedupe with CpuRenderer
     long tStart = data.request.range.start;
     int start = Math.max(0, (int)((state.getVisibleTime().start - tStart) / data.bucketSize));
-    Selection selected = state.getSelection(Selection.Kind.Cpu);
+    Selection<?> selected = state.getSelection(Selection.Kind.Cpu);
     List<Integer> visibleSelected = Lists.newArrayList();
 
     mainGradient().applyBaseAndBorder(ctx);
@@ -167,7 +165,7 @@ public class ProcessSummaryPanel extends TrackPanel<ProcessSummaryPanel> impleme
   private void renderSlices(RenderContext ctx, ProcessSummaryTrack.Data data, double h) {
     // TODO: dedupe with CpuRenderer
     TimeSpan visible = state.getVisibleTime();
-    Selection selected = state.getSelection(Selection.Kind.Cpu);
+    Selection<?> selected = state.getSelection(Selection.Kind.Cpu);
     List<Highlight> visibleSelected = Lists.newArrayList();
     int cpuCount = state.getCpuInfo().count();
     double cpuH = (h - cpuCount + 1) / cpuCount;
