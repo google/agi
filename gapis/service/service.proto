@@ -1203,8 +1203,7 @@ message TraceTypeCapabilities {
   TraceType type = 5;
   // What is the API this is for.
   string api = 1;
-  // Does this API support disabling pre-compiled shaders.
-  bool can_disable_pcs = 2;
+  reserved 2;
   // Does this API support MEC.
   FeatureStatus mid_execution_capture_support = 3;
   // Whether unsupported extensions can be enabled.
