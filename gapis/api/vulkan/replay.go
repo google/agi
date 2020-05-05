@@ -995,6 +995,11 @@ func (a API) Replay(
 
 			cmdID := req.after[0]
 
+			_, err := expandCommands(optimize)
+			if err != nil {
+				return err
+			}
+
 			if optimize {
 				// Should have been built in expandCommands()
 				if dceBuilder != nil {
