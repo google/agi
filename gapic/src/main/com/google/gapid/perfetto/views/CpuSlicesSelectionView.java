@@ -15,10 +15,16 @@
  */
 package com.google.gapid.perfetto.views;
 
+import static com.google.gapid.perfetto.TimeSpan.timeToString;
+import static com.google.gapid.widgets.Widgets.createBoldLabel;
+import static com.google.gapid.widgets.Widgets.createLabel;
 import static com.google.gapid.widgets.Widgets.createTreeColumn;
 import static com.google.gapid.widgets.Widgets.createTreeViewer;
 import static com.google.gapid.widgets.Widgets.packColumns;
+import static com.google.gapid.widgets.Widgets.withLayoutData;
+import static com.google.gapid.widgets.Widgets.withSpans;
 
+import com.google.gapid.perfetto.ThreadState;
 import com.google.gapid.perfetto.TimeSpan;
 import com.google.gapid.perfetto.models.CpuTrack;
 import com.google.gapid.perfetto.models.CpuTrack.ByThread;
@@ -30,6 +36,8 @@ import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.FillLayout;
+import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 
 /**
@@ -38,6 +46,50 @@ import org.eclipse.swt.widgets.Composite;
 public class CpuSlicesSelectionView extends Composite {
   public CpuSlicesSelectionView(Composite parent, State state, CpuTrack.Slices slices) {
     super(parent, SWT.NONE);
+    if (slices.count == 1) {
+      setSingleSliceView(state, slices);
+    } else if (slices.count > 1) {
+      setMultiSlicesView(state, slices);
+    }
+  }
+
+  private void setSingleSliceView(State state, CpuTrack.Slices slice) {
+    setLayout(new GridLayout(2, false));
+
+    withLayoutData(createBoldLabel(this, "Slice:"), withSpans(new GridData(), 2, 1));
+
+    createLabel(this, "Time:");
+    createLabel(this, timeToString(slice.times.get(0) - state.getTraceTime().start));
+
+    createLabel(this, "Duration:");
+    createLabel(this, timeToString(slice.durs.get(0)));
+
+    ThreadInfo thread = state.getThreadInfo(slice.utids.get(0));
+    if (thread != null) {
+      ProcessInfo process = state.getProcessInfo(thread.upid);
+      if (process != null) {
+        createLabel(this, "Process:");
+        createLabel(this, process.getDisplay());
+      }
+
+      createLabel(this, "Thread:");
+      createLabel(this, thread.getDisplay());
+    }
+
+    createLabel(this, "State:");
+    createLabel(this, ThreadState.RUNNING.label);
+
+    createLabel(this, "CPU:");
+    createLabel(this, Integer.toString(slice.cpus.get(0) + 1));
+
+    createLabel(this, "End State:");
+    createLabel(this, slice.endStates.get(0).label);
+
+    createLabel(this, "Priority:");
+    createLabel(this, Integer.toString(slice.priorities.get(0)));
+  }
+
+  private void setMultiSlicesView(State state, CpuTrack.Slices slices) {
     setLayout(new FillLayout());
 
     CpuTrack.ByProcess[] byProcesses = CpuTrack.organizeSlicesByProcess(slices);

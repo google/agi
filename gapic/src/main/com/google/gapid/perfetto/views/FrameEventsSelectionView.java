@@ -19,6 +19,9 @@ import static com.google.gapid.perfetto.TimeSpan.timeToString;
 import static com.google.gapid.widgets.Widgets.createBoldLabel;
 import static com.google.gapid.widgets.Widgets.createComposite;
 import static com.google.gapid.widgets.Widgets.createLabel;
+import static com.google.gapid.widgets.Widgets.createTreeColumn;
+import static com.google.gapid.widgets.Widgets.createTreeViewer;
+import static com.google.gapid.widgets.Widgets.packColumns;
 import static com.google.gapid.widgets.Widgets.withIndents;
 import static com.google.gapid.widgets.Widgets.withLayoutData;
 import static com.google.gapid.widgets.Widgets.withMargin;
@@ -27,7 +30,11 @@ import static com.google.gapid.widgets.Widgets.withSpans;
 import com.google.common.collect.Iterables;
 import com.google.gapid.perfetto.models.FrameEventsTrack;
 
+import org.eclipse.jface.viewers.ITreeContentProvider;
+import org.eclipse.jface.viewers.LabelProvider;
+import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
@@ -42,13 +49,17 @@ public class FrameEventsSelectionView extends Composite {
   private static final int PROPERTIES_PER_PANEL = 8;
   private static final int PANEL_INDENT = 25;
 
-  public FrameEventsSelectionView(Composite parent, State state, FrameEventsTrack.Slices slice) {
+  public FrameEventsSelectionView(Composite parent, State state, FrameEventsTrack.Slices slices) {
     super(parent, SWT.NONE);
-    setLayout(withMargin(new GridLayout(3, false), 0, 0));
-
-    if (slice.count != 1) {
-      throw new IllegalArgumentException("Slice count != 1. Should only use FrameEventsSelectionView for a single FrameEvents slice.");
+    if (slices.count == 1) {
+      setSingleSliceView(state, slices);
+    } else if (slices.count > 1) {
+      setMultiSlicesView(slices);
     }
+  }
+
+  private void setSingleSliceView(State state, FrameEventsTrack.Slices slice) {
+    setLayout(withMargin(new GridLayout(3, false), 0, 0));
 
     Composite main = withLayoutData(createComposite(this, new GridLayout(2, false)),
         new GridData(SWT.LEFT, SWT.TOP, false, false));
@@ -114,5 +125,46 @@ public class FrameEventsSelectionView extends Composite {
         }
       }
     }
+  }
+
+  private void setMultiSlicesView(FrameEventsTrack.Slices slices) {
+    setLayout(new FillLayout());
+
+    FrameEventsTrack.Node[] nodes = FrameEventsTrack.organizeSlicesToNodes(slices);
+
+    TreeViewer viewer = createTreeViewer(this, SWT.NONE);
+    viewer.getTree().setHeaderVisible(true);
+    viewer.setContentProvider(new ITreeContentProvider() {
+      @Override
+      public Object[] getElements(Object inputElement) {
+        return nodes;
+      }
+
+      @Override
+      public boolean hasChildren(Object element) {
+        return false;
+      }
+
+      @Override
+      public Object getParent(Object element) {
+        return null;
+      }
+
+      @Override
+      public Object[] getChildren(Object element) {
+        return null;
+      }
+    });
+    viewer.setLabelProvider(new LabelProvider());
+
+    createTreeColumn(viewer, "Name", e -> n(e).name);
+    createTreeColumn(viewer, "Self Time", e -> timeToString(n(e).self));
+    createTreeColumn(viewer, "Layers", e -> String.join(", ", n(e).layers));
+    viewer.setInput(slices);
+    packColumns(viewer.getTree());
+  }
+
+  private static FrameEventsTrack.Node n(Object o) {
+    return (FrameEventsTrack.Node)o;
   }
 }

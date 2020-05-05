@@ -30,7 +30,6 @@ import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gapid.perfetto.TimeSpan;
 import com.google.gapid.perfetto.views.State;
-import com.google.gapid.perfetto.views.VulkanEventSelectionView;
 import com.google.gapid.perfetto.views.VulkanEventsSelectionView;
 
 import org.eclipse.swt.widgets.Composite;
@@ -214,10 +213,8 @@ public class VulkanEventTrack extends Track.WithQueryEngine<VulkanEventTrack.Dat
     public Composite buildUi(Composite parent, State state) {
       if (count <= 0) {
         return null;
-      } else if (count == 1) {
-        return new VulkanEventSelectionView(parent, state, this);
       } else {
-        return new VulkanEventsSelectionView(parent, this);
+        return new VulkanEventsSelectionView(parent, state, this);
       }
     }
 

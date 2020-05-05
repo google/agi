@@ -33,7 +33,6 @@ import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gapid.perfetto.TimeSpan;
-import com.google.gapid.perfetto.views.FrameEventsMultiSelectionView;
 import com.google.gapid.perfetto.views.FrameEventsSelectionView;
 import com.google.gapid.perfetto.views.State;
 
@@ -324,10 +323,8 @@ public class FrameEventsTrack extends Track.WithQueryEngine<FrameEventsTrack.Dat
     public Composite buildUi(Composite parent, State state) {
       if (count <= 0) {
         return null;
-      } else if (count == 1) {
-        return new FrameEventsSelectionView(parent, state, this);
       } else {
-        return new FrameEventsMultiSelectionView(parent, this);
+        return new FrameEventsSelectionView(parent, state, this);
       }
     }
 

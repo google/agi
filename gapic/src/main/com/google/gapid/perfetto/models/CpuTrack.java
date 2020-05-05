@@ -31,7 +31,6 @@ import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gapid.perfetto.ThreadState;
 import com.google.gapid.perfetto.TimeSpan;
-import com.google.gapid.perfetto.views.CpuSliceSelectionView;
 import com.google.gapid.perfetto.views.CpuSlicesSelectionView;
 import com.google.gapid.perfetto.views.State;
 
@@ -258,8 +257,6 @@ public class CpuTrack extends Track.WithQueryEngine<CpuTrack.Data> {
     public Composite buildUi(Composite parent, State state) {
       if (count <= 0) {
         return null;
-      } else if (count == 1) {
-        return new CpuSliceSelectionView(parent, state, this);
       } else {
         return new CpuSlicesSelectionView(parent, state, this);
       }

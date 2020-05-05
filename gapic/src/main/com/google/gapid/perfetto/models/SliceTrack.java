@@ -36,7 +36,6 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gapid.perfetto.TimeSpan;
 import com.google.gapid.perfetto.models.QueryEngine.Result;
 import com.google.gapid.perfetto.models.QueryEngine.Row;
-import com.google.gapid.perfetto.views.SliceSelectionView;
 import com.google.gapid.perfetto.views.SlicesSelectionView;
 import com.google.gapid.perfetto.views.State;
 import com.google.gapid.proto.service.Service;
@@ -305,10 +304,8 @@ public abstract class SliceTrack extends Track<SliceTrack.Data> {/*extends Track
     public Composite buildUi(Composite parent, State state) {
       if (count <= 0) {
         return null;
-      } else if (count == 1) {
-        return new SliceSelectionView(parent, state, this);
       } else {
-        return new SlicesSelectionView(parent, this);
+        return new SlicesSelectionView(parent, state, this);
       }
     }
 

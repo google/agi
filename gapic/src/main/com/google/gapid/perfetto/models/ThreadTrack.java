@@ -34,7 +34,6 @@ import com.google.gapid.perfetto.ThreadState;
 import com.google.gapid.perfetto.TimeSpan;
 import com.google.gapid.perfetto.models.SliceTrack.Slices;
 import com.google.gapid.perfetto.views.State;
-import com.google.gapid.perfetto.views.ThreadStateSliceSelectionView;
 import com.google.gapid.perfetto.views.ThreadStateSlicesSelectionView;
 
 import org.eclipse.swt.widgets.Composite;
@@ -241,10 +240,8 @@ public class ThreadTrack extends Track.WithQueryEngine<ThreadTrack.Data> {
     public Composite buildUi(Composite parent, State state) {
       if (count <= 0) {
         return null;
-      } else if (count == 1) {
-        return new ThreadStateSliceSelectionView(parent, state, this);
       } else {
-        return new ThreadStateSlicesSelectionView(parent, this);
+        return new ThreadStateSlicesSelectionView(parent, state, this);
       }
     }
 
