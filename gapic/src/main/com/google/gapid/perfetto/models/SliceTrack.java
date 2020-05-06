@@ -282,14 +282,6 @@ public abstract class SliceTrack extends Track<SliceTrack.Data> {/*extends Track
       this.sliceKeys.add(id);
     }
 
-    public ThreadInfo getThreadAt(int index) {
-      return ThreadInfo.EMPTY;
-    }
-
-    public RenderStageInfo getRenderStageInfoAt(int index) {
-      return RenderStageInfo.EMPTY;
-    }
-
     @Override
     public String getTitle() {
       return title;
@@ -350,7 +342,6 @@ public abstract class SliceTrack extends Track<SliceTrack.Data> {/*extends Track
       }
     }
 
-    @Override
     public ThreadInfo getThreadAt(int index) {
       return index < threads.size() ? threads.get(index) : ThreadInfo.EMPTY;
     }
@@ -372,7 +363,6 @@ public abstract class SliceTrack extends Track<SliceTrack.Data> {/*extends Track
       }
     }
 
-    @Override
     public RenderStageInfo getRenderStageInfoAt(int index) {
       return index < renderStageInfos.size() ? renderStageInfos.get(index) : RenderStageInfo.EMPTY;
     }

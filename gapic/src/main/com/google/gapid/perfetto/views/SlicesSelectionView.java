@@ -32,7 +32,9 @@ import com.google.common.collect.Iterables;
 import com.google.gapid.perfetto.models.ProcessInfo;
 import com.google.gapid.perfetto.models.SliceTrack;
 
+import com.google.gapid.perfetto.models.SliceTrack.GpuSlices;
 import com.google.gapid.perfetto.models.SliceTrack.RenderStageInfo;
+import com.google.gapid.perfetto.models.SliceTrack.ThreadSlices;
 import com.google.gapid.perfetto.models.ThreadInfo;
 import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.LabelProvider;
@@ -72,7 +74,10 @@ public class SlicesSelectionView extends Composite {
     createLabel(main, "Duration:");
     createLabel(main, timeToString(slice.durs.get(0)));
 
-    ThreadInfo thread = slice.getThreadAt(0);
+    ThreadInfo thread = ThreadInfo.EMPTY;
+    if (slice instanceof ThreadSlices) {
+      thread = ((ThreadSlices)slice).getThreadAt(0);
+    }
     if (thread != null && thread != ThreadInfo.EMPTY) {
       ProcessInfo process = state.getProcessInfo(thread.upid);
       if (process != null) {
@@ -94,7 +99,10 @@ public class SlicesSelectionView extends Composite {
       createLabel(main, slice.names.get(0));
     }
 
-    RenderStageInfo renderStageInfo = slice.getRenderStageInfoAt(0);
+    RenderStageInfo renderStageInfo = RenderStageInfo.EMPTY;
+    if (slice instanceof GpuSlices) {
+      renderStageInfo = ((GpuSlices)slice).getRenderStageInfoAt(0);
+    }
     if (renderStageInfo != null && renderStageInfo != RenderStageInfo.EMPTY) {
       ImmutableMap.Builder<String, String> propsBuilder = ImmutableMap.builder();
       if (renderStageInfo.frameBufferHandle != 0) {
