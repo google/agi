@@ -22,12 +22,15 @@ import static com.google.gapid.perfetto.views.StyleConstants.colors;
 import static com.google.gapid.util.MoreFutures.transform;
 
 import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.ListenableFuture;
+
 import com.google.gapid.perfetto.ThreadState;
 import com.google.gapid.perfetto.TimeSpan;
 import com.google.gapid.perfetto.canvas.Area;
 import com.google.gapid.perfetto.canvas.Fonts;
 import com.google.gapid.perfetto.canvas.RenderContext;
 import com.google.gapid.perfetto.canvas.Size;
+import com.google.gapid.perfetto.models.CpuTrack.Slices;
 import com.google.gapid.perfetto.models.ProcessInfo;
 import com.google.gapid.perfetto.models.Selection;
 import com.google.gapid.perfetto.models.Selection.CombiningBuilder;
@@ -407,7 +410,7 @@ public class ThreadPanel extends TrackPanel<ThreadPanel> implements Selectable {
 
     if (startDepth == 0) {
       builder.add(Selection.Kind.ThreadState, track.getStates(ts));
-      builder.add(Selection.Kind.Cpu, transform(track.getCpuSlices(ts), slices -> {
+      builder.add(Selection.Kind.Cpu, (ListenableFuture<Slices>)transform(track.getCpuSlices(ts), slices -> {
         slices.utids.forEach(utid -> state.addSelectedThread(state.getThreadInfo(utid)));
         return slices;
       }));
