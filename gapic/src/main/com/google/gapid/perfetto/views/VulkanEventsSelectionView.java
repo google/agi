@@ -48,9 +48,9 @@ public class VulkanEventsSelectionView extends Composite {
 
   public VulkanEventsSelectionView(Composite parent, State state, VulkanEventTrack.Slices slices) {
     super(parent, SWT.NONE);
-    if (slices.count == 1) {
+    if (slices.getCount() == 1) {
       setSingleSliceView(state, slices);
-    } else if (slices.count > 1) {
+    } else if (slices.getCount() > 1) {
       setMultiSlicesView(slices);
     }
   }
@@ -111,7 +111,7 @@ public class VulkanEventsSelectionView extends Composite {
     createTableColumn(viewer, "Duration", e -> Long.toString(slices.durs.get((Integer)e)));
     createTableColumn(viewer, "Event Name", e -> slices.names.get((Integer)e));
 
-    Integer[] rows = new Integer[slices.count];
+    Integer[] rows = new Integer[slices.getCount()];
     for (int i = 0; i < rows.length; i++) {
       rows[i] = i;
     }

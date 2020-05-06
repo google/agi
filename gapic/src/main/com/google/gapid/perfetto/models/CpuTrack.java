@@ -211,7 +211,7 @@ public class CpuTrack extends Track.WithQueryEngine<CpuTrack.Data> {
   }
 
   public static class Slices implements Selection<Slices> {
-    public int count = 0;
+    private int count = 0;
     public final List<Long> ids = Lists.newArrayList();
     public final List<Long> times = Lists.newArrayList();
     public final List<Long> durs = Lists.newArrayList();
@@ -288,6 +288,10 @@ public class CpuTrack extends Track.WithQueryEngine<CpuTrack.Data> {
         }
       }
       return this;
+    }
+
+    public int getCount() {
+      return count;
     }
   }
 

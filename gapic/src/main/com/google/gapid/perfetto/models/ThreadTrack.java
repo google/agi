@@ -192,7 +192,7 @@ public class ThreadTrack extends Track.WithQueryEngine<ThreadTrack.Data> {
   }
 
   public static class StateSlices implements Selection<StateSlices> {
-    public int count = 0;
+    private int count = 0;
     public final List<Long> ids = Lists.newArrayList();
     public final List<Long> times = Lists.newArrayList();
     public final List<Long> durs = Lists.newArrayList();
@@ -263,6 +263,10 @@ public class ThreadTrack extends Track.WithQueryEngine<ThreadTrack.Data> {
         }
       }
       return this;
+    }
+
+    public int getCount() {
+      return count;
     }
   }
 

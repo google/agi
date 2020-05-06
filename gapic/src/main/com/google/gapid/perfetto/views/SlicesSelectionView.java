@@ -52,9 +52,9 @@ public class SlicesSelectionView extends Composite {
 
   public SlicesSelectionView(Composite parent, State state, SliceTrack.Slices slices) {
     super(parent, SWT.NONE);
-    if (slices.count == 1) {
+    if (slices.getCount() == 1) {
       setSingleSliceView(state, slices);
-    } else if (slices.count > 1) {
+    } else if (slices.getCount() > 1) {
       setMultiSlicesView(slices);
     }
   }

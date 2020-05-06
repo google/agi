@@ -253,7 +253,7 @@ public class FrameEventsTrack extends Track.WithQueryEngine<FrameEventsTrack.Dat
   }
 
   public static class Slices implements Selection<Slices> {
-    public int count = 0;
+    private int count = 0;
     public final List<Long> ids = Lists.newArrayList();
     public final List<Long> times = Lists.newArrayList();
     public final List<Long> durs = Lists.newArrayList();
@@ -349,6 +349,10 @@ public class FrameEventsTrack extends Track.WithQueryEngine<FrameEventsTrack.Dat
         }
       }
       return this;
+    }
+
+    public int getCount() {
+      return count;
     }
   }
 

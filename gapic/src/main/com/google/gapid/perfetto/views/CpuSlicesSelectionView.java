@@ -46,9 +46,9 @@ import org.eclipse.swt.widgets.Composite;
 public class CpuSlicesSelectionView extends Composite {
   public CpuSlicesSelectionView(Composite parent, State state, CpuTrack.Slices slices) {
     super(parent, SWT.NONE);
-    if (slices.count == 1) {
+    if (slices.getCount() == 1) {
       setSingleSliceView(state, slices);
-    } else if (slices.count > 1) {
+    } else if (slices.getCount() > 1) {
       setMultiSlicesView(state, slices);
     }
   }
