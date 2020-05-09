@@ -139,22 +139,23 @@ public class FramebufferView extends Composite
 
     setLayout(new GridLayout(2, false));
 
+    ToolBar toolBar = createToolBar(widgets.theme);
+
     Composite header = createComposite(this, new GridLayout(2, false));
 
     picker = new AttachmentPicker(this);
     picker.addContentListener(SWT.MouseDown,
       e -> picker.selectAttachment(picker.getItemAt(e.x)));
 
-    ToolBar toolBar = createToolBar(widgets.theme);
     imagePanel = new ImagePanel(this, View.Framebuffer, models.analytics, widgets, true);
 
-    GridData pickerGridData = new GridData(SWT.FILL, SWT.FILL, true, true, 2, 1);
+    GridData pickerGridData = new GridData(SWT.FILL, SWT.FILL, true, false);
     pickerGridData.exclude = !models.settings.ui().getFramebufferPicker().getEnabled();
     picker.setVisible(!pickerGridData.exclude);
 
-    header.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false, 2, 1));
+    toolBar.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, true, 1, 3));
+    header.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
     picker.setLayoutData(pickerGridData);
-    toolBar.setLayoutData(new GridData(SWT.LEFT, SWT.FILL, false, true));
     imagePanel.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
     pickerLabel = withLayoutData(createLabel(header, "Attachment:"),
