@@ -341,7 +341,8 @@ public class CommandTree extends Composite
                 string, string.identifierStyle());
           }
         } else {
-          string.append(Formatter.firstIndex(data.getCommands()) + ": ", string.defaultStyle());
+          String index = shouldShowLastIndex(data) ? Formatter.lastIndex(data.getCommands()) : Formatter.firstIndex(data.getCommands());
+          string.append(index + ": ", string.defaultStyle());
           string.append(data.getGroup(), string.labelStyle());
           long count = data.getNumCommands();
           string.append(
@@ -433,6 +434,14 @@ public class CommandTree extends Composite
         color.dispose();
       }
       threadBackgroundColors.clear();
+    }
+
+    private boolean shouldShowLastIndex(Service.CommandTreeNode data) {
+      // The grouping node for draw commands.
+      if (data.getGroup().startsWith("Draw") || data.getGroup().startsWith("Dispatch")) {
+        return true;
+      }
+      return false;
     }
   }
 }
