@@ -131,6 +131,12 @@ def main():
     time.sleep(2)
     adb(['shell', 'input', 'keyevent', '26'])
 
+    #### Force-stop AGI and test app
+    for abi in ['armeabiv7a', 'arm64v8a']:
+        adb(['shell', 'am', 'force-stop', 'com.google.android.gapid.' + abi])
+    if 'package' in test_params.keys():
+        adb(['shell', 'am', 'force-stop', test_params['package']])
+
     #### Test may fail halfway through, salvage any gfxtrace
     gfxtraces = glob.glob(os.path.join(test_dir, '*.gfxtrace'))
     if len(gfxtraces) != 0:
