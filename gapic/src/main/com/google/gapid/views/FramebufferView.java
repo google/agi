@@ -69,6 +69,7 @@ import com.google.gapid.widgets.Theme;
 import com.google.gapid.widgets.Widgets;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.SashForm;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Rectangle;
@@ -143,18 +144,22 @@ public class FramebufferView extends Composite
 
     Composite header = createComposite(this, new GridLayout(2, false));
 
-    picker = new AttachmentPicker(this);
+    SashForm splitter = new SashForm(this, SWT.VERTICAL);
+    splitter.setLayout(new GridLayout(1, false));
+
+    picker = new AttachmentPicker(splitter);
     picker.addContentListener(SWT.MouseDown,
       e -> picker.selectAttachment(picker.getItemAt(e.x)));
 
-    imagePanel = new ImagePanel(this, View.Framebuffer, models.analytics, widgets, true);
+    imagePanel = new ImagePanel(splitter, View.Framebuffer, models.analytics, widgets, true);
 
     GridData pickerGridData = new GridData(SWT.FILL, SWT.FILL, true, false);
     pickerGridData.exclude = !models.settings.ui().getFramebufferPicker().getEnabled();
     picker.setVisible(!pickerGridData.exclude);
 
-    toolBar.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, true, 1, 3));
+    toolBar.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, true, 1, 2));
     header.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+    splitter.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
     picker.setLayoutData(pickerGridData);
     imagePanel.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
@@ -168,8 +173,13 @@ public class FramebufferView extends Composite
       picker.setVisible(!pickerGridData.exclude);
       models.settings.writeUi().getFramebufferPickerBuilder().setEnabled(!pickerGridData.exclude);
       pickerToggle.setText(pickerGridData.exclude ? "Show Attachments" : "Hide Attachments");
-      layout();
+      splitter.layout();
     });
+
+    splitter.setWeights(models.settings.getSplitterWeights(Settings.SplitterWeights.Framebuffers));
+    splitter.addListener(SWT.Dispose, e ->
+        models.settings.setSplitterWeights(Settings.SplitterWeights.Framebuffers, splitter.getWeights()));
+    splitter.setSashWidth(5);
 
     imagePanel.createToolbar(toolBar, widgets.theme);
     // Work around for https://bugs.eclipse.org/bugs/show_bug.cgi?id=517480
@@ -267,7 +277,9 @@ public class FramebufferView extends Composite
   }
 
   private void loadBuffer() {
-    if (!models.devices.hasReplayDevice()) {
+    if (models.commands.getSelectedCommands() == null) {
+      imagePanel.showMessage(Info, Messages.SELECT_COMMAND);
+    } else if (!models.devices.hasReplayDevice()) {
       imagePanel.showMessage(Error, Messages.NO_REPLAY_DEVICE);
     } else {
       imagePanel.startLoading();
@@ -398,7 +410,7 @@ public class FramebufferView extends Composite
     private int selectedIndex = -1;
 
     public AttachmentPicker(Composite parent) {
-      super(parent);
+      super(parent, SWT.BORDER);
     }
 
     @Override

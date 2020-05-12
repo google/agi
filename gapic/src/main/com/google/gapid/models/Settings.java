@@ -376,7 +376,8 @@ public class Settings {
     Report(new int[] { 75, 25 }),
     Shaders(new int[] { 20, 80 }),
     Programs(new int[] { 20, 80 }),
-    Uniforms(new int[] { 70, 30 });
+    Uniforms(new int[] { 70, 30 }),
+    Framebuffers(new int[] { 25, 75 });
 
     private final int[] dflt;
 
