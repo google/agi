@@ -29,6 +29,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 /**
@@ -36,6 +37,8 @@ import java.util.logging.Logger;
  */
 public abstract class ChildProcess<T> {
   private static final Logger LOG = Logger.getLogger(ChildProcess.class.getName());
+  // Number of seconds to wait for a child process to terminate before force-killing it.
+  private static final int terminateTimeoutSec = 2;
 
   protected final String name;
   protected final Settings settings;
@@ -104,9 +107,24 @@ public abstract class ChildProcess<T> {
     } catch (InterruptedException e) {
       LOG.log(INFO, "Killing " + name);
       result.setException(e);
-      process.destroy();
+      killProcess();
     } finally {
       onExit(exitCode);
+    }
+  }
+
+  protected void killProcess() {
+
+    process.destroy();
+    try {
+      boolean destroyed = process.waitFor(terminateTimeoutSec, TimeUnit.SECONDS);
+      if (!destroyed) {
+        LOG.log(WARNING, "The " + name + " process did not terminate within " + terminateTimeoutSec + " seconds, force-killing it");
+        process.destroyForcibly();
+      }
+    } catch (InterruptedException e) {
+      LOG.log(WARNING, "Interruption while waiting for " + name + " process to terminate, force-killing it");
+      process.destroyForcibly();
     }
   }
 
