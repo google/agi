@@ -15,7 +15,6 @@
 package replay
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"os"
@@ -79,7 +78,7 @@ func (m *MappingExporter) processNotification(ctx context.Context, s *api.Global
 	mappingData := notificationData.GetData()
 
 	byteOrder := s.MemoryLayout.GetEndian()
-	r := endian.Reader(bytes.NewReader(mappingData), byteOrder)
+	r := endian.ReaderForBytes(mappingData, byteOrder)
 
 	for _, handle := range m.traceValues {
 		var replayValue uint64

@@ -58,7 +58,7 @@ func convertSharedExponent(dst, src *Format, data []byte) ([]byte, error) {
 	count := len(data) / (4 * len(format.Components))
 
 	// In-place scale all non-exponent components by the exponent.
-	r := endian.Reader(bytes.NewReader(data), device.LittleEndian)
+	r := endian.ReaderForBytes(data, device.LittleEndian)
 	w := endian.Writer(bytes.NewBuffer(data[:0]), device.LittleEndian)
 	for i := 0; i < count; i++ {
 		exp := r.Uint32()

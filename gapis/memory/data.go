@@ -54,4 +54,6 @@ type Data interface {
 	// data.
 	// If the Data does not contain a zero byte, then -1 is returned.
 	Strlen(ctx context.Context) (int, error)
+
+	//Bytes() []byte
 }

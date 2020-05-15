@@ -130,7 +130,7 @@ func (s GlobalState) String() string {
 }
 
 // MemoryReader returns a binary reader using the state's memory endianness to
-// read data from d.
+// read data from d. // ALAN
 func (s GlobalState) MemoryReader(ctx context.Context, d memory.Data) binary.Reader {
 	return endian.Reader(d.NewReader(ctx), s.MemoryLayout.GetEndian())
 }

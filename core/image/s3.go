@@ -15,8 +15,6 @@
 package image
 
 import (
-	"bytes"
-
 	"github.com/google/gapid/core/data/binary"
 	"github.com/google/gapid/core/data/endian"
 	"github.com/google/gapid/core/math/sint"
@@ -83,7 +81,7 @@ func (p *pixel) setToMix3(c0, c1 pixel) {
 func decode4x4Blocks(src []byte, width, height, depth int, decodeBlock func(r binary.Reader, dst []pixel)) ([]byte, error) {
 	dst := make([]byte, width*height*depth*4)
 	block := make([]pixel, 16)
-	r := endian.Reader(bytes.NewReader(src), device.LittleEndian)
+	r := endian.ReaderForBytes(src, device.LittleEndian)
 	for z := 0; z < depth; z++ {
 		dst := dst[z*width*height*4:]
 		for y := 0; y < height; y += 4 {

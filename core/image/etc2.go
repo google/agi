@@ -15,8 +15,6 @@
 package image
 
 import (
-	"bytes"
-
 	"github.com/google/gapid/core/data/endian"
 	"github.com/google/gapid/core/math/sint"
 	"github.com/google/gapid/core/math/u64"
@@ -340,7 +338,7 @@ func decodeETC(src []byte, width, height, depth int, alphaMode etcAlphaMode) ([]
 		0xff, 0xff, 0xff, 0xff,
 	}
 
-	r := endian.Reader(bytes.NewReader(src), device.BigEndian)
+	r := endian.ReaderForBytes(src, device.BigEndian)
 
 	for z := 0; z < depth; z++ {
 		dst := dst[z*width*height*4:]
@@ -583,7 +581,7 @@ func decodeETCU11(src []byte, width, height, depth int, channels int) ([]byte, e
 	dst := make([]byte, width*height*depth*channels*2)
 	blockWidth := sint.Max((width+3)/4, 1)
 	blockHeight := sint.Max((height+3)/4, 1)
-	r := endian.Reader(bytes.NewReader(src), device.BigEndian)
+	r := endian.ReaderForBytes(src, device.BigEndian)
 
 	for z := 0; z < depth; z++ {
 		dst := dst[z*width*height*channels*2:]
@@ -623,7 +621,7 @@ func decodeETCS11(src []byte, width, height, depth int, channels int) ([]byte, e
 	dst := make([]byte, width*height*depth*channels*2)
 	blockWidth := sint.Max((width+3)/4, 1)
 	blockHeight := sint.Max((height+3)/4, 1)
-	r := endian.Reader(bytes.NewReader(src), device.BigEndian)
+	r := endian.ReaderForBytes(src, device.BigEndian)
 	for z := 0; z < depth; z++ {
 		dst := dst[z*width*height*channels*2:]
 		for by := 0; by < blockHeight; by++ {

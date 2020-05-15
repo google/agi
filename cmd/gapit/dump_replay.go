@@ -15,7 +15,6 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"flag"
 	"fmt"
@@ -79,7 +78,7 @@ func dumpOpcodes(payload *replaysrv.Payload) error {
 	fmt.Printf("Opcodes:\n")
 
 	f := fmt.Sprintf("%%.%dd: %%v\n", int(math.Round(math.Log10(float64(count)))+0.5))
-	r := endian.Reader(bytes.NewReader(payload.Opcodes), device.LittleEndian)
+	r := endian.ReaderForBytes(payload.Opcodes, device.LittleEndian)
 	idx := 0
 	for {
 		opcode, err := opcode.Decode(r)

@@ -359,7 +359,7 @@ func (t test) run(ctx context.Context) (succeeded bool) {
 	payload, err := replay.Build(env)
 	succeeded = assert.For(ctx, "Build").ThatError(err).Succeeded()
 	if succeeded {
-		got, err := opcode.Disassemble(bytes.NewReader(payload.Opcodes), device.LittleEndian)
+		got, err := opcode.Disassemble(payload.Opcodes, device.LittleEndian)
 		succeeded = assert.For(ctx, "Disassemble").ThatError(err).Succeeded()
 		if succeeded {
 			succeeded = assert.For(ctx, "opcodes").ThatSlice(got).Equals(t.expected)

@@ -50,7 +50,7 @@ func resizeRGBA_F32(data []byte, srcW, srcH, srcD, dstW, dstH, dstD int) ([]byte
 	if dstW <= 0 || dstH <= 0 || dstD <= 0 {
 		return nil, fmt.Errorf("Invalid target size for Resize: %dx%dx%d", dstW, dstH, dstD)
 	}
-	r := endian.Reader(bytes.NewReader(data), device.LittleEndian)
+	r := endian.ReaderForBytes(data, device.LittleEndian)
 	bufTexels := sint.Max(srcW*srcH*srcD, dstW*dstH*dstD)
 	bufA, bufB := make([]rgbaF32, bufTexels), make([]rgbaF32, bufTexels)
 	for i := range bufA {
