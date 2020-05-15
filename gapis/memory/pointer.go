@@ -117,7 +117,7 @@ func (p *ptr) Assign(o interface{}) bool {
 func (p ptr) Encode(e *Encoder) { e.Pointer(p.addr) }
 
 // Decode decodes this object from the decoder.
-func (p *ptr) Decode(d *Decoder) { p.addr = d.Pointer() }
+func (p *ptr) Decode(d Decoder) { p.addr = d.Pointer() }
 
 // PointerToString returns a string representation of the pointer.
 func PointerToString(p Pointer) string {

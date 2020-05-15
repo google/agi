@@ -115,5 +115,5 @@ type Encodable interface {
 // from an encoder.
 type Decodable interface {
 	// Decode decodes this object from the decoder.
-	Decode(*Decoder)
+	Decode(Decoder)
 }

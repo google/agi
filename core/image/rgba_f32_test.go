@@ -262,7 +262,7 @@ func TestRGBAF32Resize(t *testing.T) {
 				test.name, e, g)
 		}
 
-		r, i := endian.Reader(bytes.NewReader(res), device.LittleEndian), 0
+		r, i := endian.ReaderForBytes(res, device.LittleEndian), 0
 		for z := 0; z < dD; z++ {
 			for y := 0; y < dH; y++ {
 				for x := 0; x < dW; x++ {

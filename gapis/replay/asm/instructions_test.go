@@ -52,7 +52,7 @@ func test(ctx context.Context, Instructions []Instruction, expected ...interface
 		}.Bind(ctx)
 		assert.For(ctx, "err").ThatError(err).Succeeded()
 	}
-	got, err := opcode.Disassemble(buf, device.LittleEndian)
+	got, err := opcode.Disassemble(buf.Bytes(), device.LittleEndian)
 	assert.For(ctx, "err").ThatError(err).Succeeded()
 	assert.For(ctx, "got").ThatSlice(got).Equals(expected)
 }

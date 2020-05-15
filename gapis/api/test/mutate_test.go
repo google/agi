@@ -70,8 +70,7 @@ func (test test) check(ctx context.Context, ca, ra *device.MemoryLayout) {
 	payload, _, _, _, err := b.Build(ctx)
 	assert.For(ctx, "Build opcodes").ThatError(err).Succeeded()
 
-	ops := bytes.NewBuffer(payload.Opcodes)
-	gotOpcodes, err := opcode.Disassemble(ops, device.LittleEndian)
+	gotOpcodes, err := opcode.Disassemble(payload.Opcodes, device.LittleEndian)
 	assert.For(ctx, "Dissasemble opcodes").ThatError(err).Succeeded()
 	assert.For(ctx, "Opcodes").ThatSlice(gotOpcodes).Equals(test.expected.opcodes)
 	checkResource(ctx, payload.Resources, test.expected.resources)

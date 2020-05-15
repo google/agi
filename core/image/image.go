@@ -15,7 +15,6 @@
 package image
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 
@@ -171,8 +170,8 @@ func Difference(a, b *Data) (float32, error) {
 		return 1, err
 	}
 
-	p := endian.Reader(bytes.NewReader(a.Bytes), device.LittleEndian)
-	q := endian.Reader(bytes.NewReader(b.Bytes), device.LittleEndian)
+	p := endian.ReaderForBytes(a.Bytes, device.LittleEndian)
+	q := endian.ReaderForBytes(b.Bytes, device.LittleEndian)
 	sqrErr := float32(0)
 	c := a.Width * a.Height * uint32(len(channels))
 	for i := uint32(0); i < c; i++ {

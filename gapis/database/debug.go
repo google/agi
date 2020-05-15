@@ -15,7 +15,6 @@
 package database
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"runtime"

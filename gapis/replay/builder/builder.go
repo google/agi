@@ -942,7 +942,7 @@ func (b *Builder) Build(ctx context.Context) (gapir.Payload, PostDataHandler, No
 				if len(data) != decoders[id].expectedSize {
 					err = fmt.Errorf("%d'th post size mismatch, actual size: %d, expected size: %d", id, len(data), decoders[id].expectedSize)
 				}
-				r := endian.Reader(bytes.NewReader(data), byteOrder)
+				r := endian.ReaderForBytes(data, byteOrder)
 				decoders[id].decode(r, err)
 			}
 		})

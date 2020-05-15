@@ -165,7 +165,7 @@ func (m *Mesh) Triangle(i int) (a, b, c uint32) {
 }
 
 func bytesToVec3Ds(data []byte) []f32.Vec3 {
-	r := endian.Reader(bytes.NewReader(data), device.LittleEndian)
+	r := endian.ReaderForBytes(data, device.LittleEndian)
 	out := make([]f32.Vec3, len(data)/(3*4))
 	for i := range out {
 		for j := 0; j < 3; j++ {

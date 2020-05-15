@@ -31,7 +31,7 @@ import (
 
 // See: https://www.khronos.org/opengles/sdk/tools/KTX/file_format_spec/
 func loadKTX(data []byte) (*image.Data, error) {
-	r := endian.Reader(bytes.NewBuffer(data), device.LittleEndian)
+	r := endian.ReaderForBytes(data, device.LittleEndian)
 
 	var ident [12]byte
 	r.Data(ident[:])
@@ -119,7 +119,7 @@ glBaseInternalFormat=0x%x
 }
 
 func loadASTC(data []byte) (*image.Data, error) {
-	r := endian.Reader(bytes.NewBuffer(data), device.LittleEndian)
+	r := endian.ReaderForBytes(data, device.LittleEndian)
 
 	if got := r.Uint32(); got != 0x5ca1ab13 {
 		return nil, fmt.Errorf("Invalid header. Got: %x", got)

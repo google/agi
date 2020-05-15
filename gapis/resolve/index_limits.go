@@ -15,7 +15,6 @@
 package resolve
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 
@@ -62,7 +61,7 @@ func (c *IndexLimitsResolvable) Resolve(ctx context.Context) (interface{}, error
 	if !c.LittleEndian {
 		byteOrder = device.BigEndian
 	}
-	r := endian.Reader(bytes.NewReader(data.([]byte)), byteOrder)
+	r := endian.ReaderForBytes(data.([]byte), byteOrder)
 
 	var decode func() uint32
 	switch c.IndexSize {

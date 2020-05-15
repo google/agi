@@ -16,9 +16,9 @@ package memory
 
 import (
 	"context"
-	"io"
 
 	"github.com/google/gapid/core/data/id"
+	"github.com/google/gapid/core/os/device"
 )
 
 // Data is the interface for a data source that can be resolved to a byte
@@ -30,7 +30,7 @@ type Data interface {
 
 	// NewReader returns an io.Reader to efficiently read from the slice.
 	// There shouldn't be a need to wrap this in additional buffers.
-	NewReader(ctx context.Context) io.Reader
+	//NewReader(ctx context.Context) io.Reader
 
 	// ResourceID returns the identifier of the resource representing the slice,
 	// creating a new resource if it isn't already backed by one.
@@ -54,4 +54,6 @@ type Data interface {
 	// data.
 	// If the Data does not contain a zero byte, then -1 is returned.
 	Strlen(ctx context.Context) (int, error)
+
+	NewDecoder(ctx context.Context, memLayout *device.MemoryLayout) Decoder
 }

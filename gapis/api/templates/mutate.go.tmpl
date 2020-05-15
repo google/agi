@@ -34,6 +34,7 @@
     "github.com/google/gapid/gapis/replay/protocol"
     "github.com/google/gapid/gapis/replay/value"
     "github.com/google/gapid/gapis/stringtable"
+    "github.com/google/gapid/core/log"
 
 
     ϟmem "github.com/google/gapid/gapis/memory"
@@ -45,7 +46,7 @@
     _ = messages.ErrFileCannotBeRead()
     _ = strings.Reader{}
     _ = stringtable.Msg{}
-    _ = ϟmem.Decoder{}
+    _ = log.W
     _ = u64.Min
   )
 

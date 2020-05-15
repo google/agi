@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/google/gapid/core/data/binary"
 	"github.com/google/gapid/core/data/endian"
 	"github.com/google/gapid/core/data/id"
 	"github.com/google/gapid/core/log"
@@ -129,29 +128,18 @@ func (s GlobalState) String() string {
 		s.MemoryLayout, s.Memory, strings.Join(apis, "\n"))
 }
 
-// MemoryReader returns a binary reader using the state's memory endianness to
-// read data from d.
-func (s GlobalState) MemoryReader(ctx context.Context, d memory.Data) binary.Reader {
-	return endian.Reader(d.NewReader(ctx), s.MemoryLayout.GetEndian())
-}
-
-// MemoryWriter returns a binary writer using the state's memory endianness to
-// write data to the pool p, for the range rng.
-func (s GlobalState) MemoryWriter(p memory.PoolID, rng memory.Range) binary.Writer {
-	bw := memory.Writer(s.Memory.MustGet(p), rng)
-	return endian.Writer(bw, s.MemoryLayout.GetEndian())
-}
-
 // MemoryDecoder returns a memory decoder using the state's memory layout to
 // decode data from d.
-func (s GlobalState) MemoryDecoder(ctx context.Context, d memory.Data) *memory.Decoder {
-	return memory.NewDecoder(s.MemoryReader(ctx, d), s.MemoryLayout)
+func (s GlobalState) MemoryDecoder(ctx context.Context, d memory.Data) memory.Decoder {
+	return d.NewDecoder(ctx, s.MemoryLayout);
 }
 
 // MemoryEncoder returns a memory encoder using the state's memory layout
 // to encode to the pool p, for the range rng.
 func (s GlobalState) MemoryEncoder(p memory.PoolID, rng memory.Range) *memory.Encoder {
-	return memory.NewEncoder(s.MemoryWriter(p, rng), s.MemoryLayout)
+	bw := memory.Writer(s.Memory.MustGet(p), rng)
+	writer := endian.Writer(bw, s.MemoryLayout.GetEndian())
+	return memory.NewEncoder(writer, s.MemoryLayout)
 }
 
 // Alloc allocates a memory range using the Allocator associated with

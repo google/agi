@@ -22,7 +22,7 @@ import (
 // Read reads the value pointed at p from the decoder d using C alignment rules.
 // If v is an array or slice, then each of the elements will be read,
 // sequentially.
-func Read(d *Decoder, p interface{}) {
+func Read(d Decoder, p interface{}) {
 	v := reflect.ValueOf(p)
 	if v.Kind() != reflect.Ptr {
 		panic(fmt.Errorf("p must be pointer, got %T", p))
@@ -30,7 +30,7 @@ func Read(d *Decoder, p interface{}) {
 	decode(d, v)
 }
 
-func decode(d *Decoder, v reflect.Value) {
+func decode(d Decoder, v reflect.Value) {
 	t := v.Type()
 
 	if t.Implements(tyDecodable) {
@@ -93,13 +93,13 @@ func decode(d *Decoder, v reflect.Value) {
 			}
 		}
 	case reflect.Struct:
-		d.Align(AlignOf(v.Type(), d.m))
-		base := d.o
+		d.Align(AlignOf(v.Type(), d.MemoryLayout()))
+		base := d.Offset()
 		for i, c := 0, v.NumField(); i < c; i++ {
 			decode(d, v.Field(i))
 		}
-		read := d.o - base
-		padding := SizeOf(v.Type(), d.m) - read
+		read := d.Offset() - base
+		padding := SizeOf(v.Type(), d.MemoryLayout()) - read
 		d.Skip(padding)
 	case reflect.String:
 		v.SetString(d.String())

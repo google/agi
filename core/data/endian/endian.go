@@ -42,6 +42,12 @@ func Reader(r io.Reader, endian device.Endian) binary.Reader {
 	return &reader{reader: r, byteOrder: byteOrder(endian)}
 }
 
+// Reader creates a binary.Reader that reads from the provided io.Reader, with
+// the specified byte order.
+func ReaderForBytes(data []byte, endian device.Endian) binary.Reader {
+	return &bytesReader{data: data, byteOrder: byteOrder(endian)}
+}
+
 // Writer creates a binary.Writer that writes to the supplied stream, with the
 // specified byte order.
 func Writer(w io.Writer, endian device.Endian) binary.Writer {
@@ -51,6 +57,13 @@ func Writer(w io.Writer, endian device.Endian) binary.Writer {
 type reader struct {
 	reader    io.Reader
 	tmp       [8]byte
+	byteOrder eb.ByteOrder
+	err       error
+}
+
+type bytesReader struct {
+	data []byte
+	head int
 	byteOrder eb.ByteOrder
 	err       error
 }
@@ -66,6 +79,26 @@ func (r *reader) Read(p []byte) (n int, err error) {
 	return r.reader.Read(p)
 }
 
+func (r *bytesReader) Read(p []byte) (int, error) {
+	if r.err != nil {
+		return 0, r.err
+	}
+
+	n := len(p)
+
+	if r.head +n > len(r.data) {
+		r.err = fmt.Errorf("error after reading %d dynamic bytes", n)
+		return 0, r.err
+	}
+
+	for i := 0; i < n; i++ {
+		p[i] = r.data[r.head +i]
+	}
+
+	r.head += n
+	return n, nil
+}
+
 func (r *reader) Data(p []byte) {
 	if r.err != nil {
 		return
@@ -73,8 +106,12 @@ func (r *reader) Data(p []byte) {
 	n, err := io.ReadFull(r.reader, p)
 	if err != nil {
 		r.err = err
-		err = fmt.Errorf("%v after reading %d bytes", err, n)
+		err = fmt.Errorf("%v after reading %d dynamic bytes", err, n)
 	}
+}
+
+func (r *bytesReader) Data(p []byte) {
+	r.Read(p)
 }
 
 func (w *writer) Data(data []byte) {
@@ -93,6 +130,10 @@ func (r *reader) Bool() bool {
 	return r.Uint8() != 0
 }
 
+func (r *bytesReader) Bool() bool {
+	return r.Uint8() != 0
+}
+
 func (w *writer) Bool(v bool) {
 	if v {
 		w.Uint8(1)
@@ -102,6 +143,10 @@ func (w *writer) Bool(v bool) {
 }
 
 func (r *reader) Int8() int8 {
+	return int8(r.Uint8())
+}
+
+func (r *bytesReader) Int8() int8 {
 	return int8(r.Uint8())
 }
 
@@ -118,6 +163,19 @@ func (r *reader) Uint8() uint8 {
 	return b[0]
 }
 
+func (r *bytesReader) Uint8() uint8 {
+	if r.err != nil {
+		return 0
+	}
+	if r.head +1 > len(r.data) {
+		r.err = fmt.Errorf("error after reading 1 byte type. len(r.data) = %v, r.head +1 = %v", len(r.data), r.head +1)
+		return 0
+	}
+	ret := r.data[r.head]
+	r.head += 1
+	return ret
+}
+
 func (w *writer) Uint8(v uint8) {
 	w.tmp[0] = v
 	w.Data(w.tmp[:1])
@@ -129,6 +187,10 @@ func (r *reader) Int16() int16 {
 	}
 	_, r.err = io.ReadFull(r.reader, r.tmp[:2])
 	return int16(r.byteOrder.Uint16(r.tmp[:]))
+}
+
+func (r *bytesReader) Int16() int16 {
+	return int16(r.Uint16())
 }
 
 func (w *writer) Int16(v int16) {
@@ -143,8 +205,21 @@ func (r *reader) Uint16() uint16 {
 	if r.err != nil {
 		return 0
 	}
-	_, r.err = io.ReadFull(r.reader, r.tmp[:2])
+	_, r.err = io.ReadFull(r.reader, r.tmp[:2]) // ALAN: Handle error if we don't get enough bytes. Do so everywhere in sister functions.
 	return r.byteOrder.Uint16(r.tmp[:])
+}
+
+func (r *bytesReader) Uint16() uint16 {
+	if r.err != nil {
+		return 0
+	}
+	if r.head +2 > len(r.data) {
+		r.err = fmt.Errorf("error after reading 2 byte type")
+		return 0
+	}
+	ret := r.byteOrder.Uint16(r.data[r.head : r.head +2])
+	r.head += 2
+	return ret
 }
 
 func (w *writer) Uint16(v uint16) {
@@ -163,6 +238,10 @@ func (r *reader) Int32() int32 {
 	return int32(r.byteOrder.Uint32(r.tmp[:]))
 }
 
+func (r *bytesReader) Int32() int32 {
+	return int32(r.Uint32())
+}
+
 func (w *writer) Int32(v int32) {
 	if w.err != nil {
 		return
@@ -177,6 +256,19 @@ func (r *reader) Uint32() uint32 {
 	}
 	_, r.err = io.ReadFull(r.reader, r.tmp[:4])
 	return r.byteOrder.Uint32(r.tmp[:])
+}
+
+func (r *bytesReader) Uint32() uint32 {
+	if r.err != nil {
+		return 0
+	}
+	if r.head +4 > len(r.data) {
+		r.err = fmt.Errorf("error after reading 4 byte type")
+		return 0
+	}
+	ret := r.byteOrder.Uint32(r.data[r.head : r.head +4])
+	r.head += 4
+	return ret
 }
 
 func (w *writer) Uint32(v uint32) {
@@ -195,6 +287,10 @@ func (r *reader) Int64() int64 {
 	return int64(r.byteOrder.Uint64(r.tmp[:]))
 }
 
+func (r *bytesReader) Int64() int64 {
+	return int64(r.Uint64())
+}
+
 func (w *writer) Int64(v int64) {
 	if w.err != nil {
 		return
@@ -211,6 +307,19 @@ func (r *reader) Uint64() uint64 {
 	return r.byteOrder.Uint64(r.tmp[:])
 }
 
+func (r *bytesReader) Uint64() uint64 {
+	if r.err != nil {
+		return 0
+	}
+	if r.head +8 > len(r.data) {
+		r.err = fmt.Errorf("error after reading 8 byte type")
+		return 0
+	}
+	ret := r.byteOrder.Uint64(r.data[r.head : r.head +8])
+	r.head += 8
+	return ret
+}
+
 func (w *writer) Uint64(v uint64) {
 	if w.err != nil {
 		return
@@ -220,6 +329,10 @@ func (w *writer) Uint64(v uint64) {
 }
 
 func (r *reader) Float16() f16.Number {
+	return f16.Number(r.Uint16())
+}
+
+func (r *bytesReader) Float16() f16.Number {
 	return f16.Number(r.Uint16())
 }
 
@@ -233,6 +346,10 @@ func (r *reader) Float32() float32 {
 	}
 	_, r.err = io.ReadFull(r.reader, r.tmp[:4])
 	return math.Float32frombits(r.byteOrder.Uint32(r.tmp[:]))
+}
+
+func (r *bytesReader) Float32() float32 {
+	return math.Float32frombits(r.Uint32())
 }
 
 func (w *writer) Float32(v float32) {
@@ -251,6 +368,10 @@ func (r *reader) Float64() float64 {
 	return math.Float64frombits(r.byteOrder.Uint64(r.tmp[:]))
 }
 
+func (r *bytesReader) Float64() float64 {
+	return math.Float64frombits(r.Uint64())
+}
+
 func (w *writer) Float64(v float64) {
 	if w.err != nil {
 		return
@@ -260,6 +381,18 @@ func (w *writer) Float64(v float64) {
 }
 
 func (r *reader) String() string {
+	s := []byte{}
+	for {
+		c := r.Uint8()
+		if c == 0 {
+			break
+		}
+		s = append(s, c)
+	}
+	return string(s)
+}
+
+func (r *bytesReader) String() string {
 	s := []byte{}
 	for {
 		c := r.Uint8()
@@ -283,15 +416,40 @@ func (r *reader) Count() uint32 {
 	return r.Uint32()
 }
 
-func (w *writer) Error() error {
-	return w.err
+func (r *bytesReader) Count() uint32 {
+	return r.Uint32()
+}
+
+func (r *reader) Skip(bytes uint64) {
+	for i := uint64(0); i < bytes; i += 1 {
+		r.Uint8()
+	}
+}
+
+func (r *bytesReader) Skip(bytes uint64) {
+	r.head += int(bytes)
 }
 
 func (r *reader) Error() error {
 	return r.err
 }
 
+func (w *bytesReader) Error() error {
+	return w.err
+}
+
+func (r *writer) Error() error {
+	return r.err
+}
+
 func (r *reader) SetError(err error) {
+	if r.err != nil {
+		return
+	}
+	r.err = err
+}
+
+func (r *bytesReader) SetError(err error) {
 	if r.err != nil {
 		return
 	}

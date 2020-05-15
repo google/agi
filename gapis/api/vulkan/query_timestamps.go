@@ -15,7 +15,6 @@
 package vulkan
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 
@@ -449,7 +448,7 @@ func (t *queryTimestamps) processNotification(ctx context.Context, s *api.Global
 	}
 
 	byteOrder := s.MemoryLayout.GetEndian()
-	r := endian.Reader(bytes.NewReader(timestampsData), byteOrder)
+	r := endian.ReaderForBytes(timestampsData, byteOrder)
 	tStart := r.Uint64()
 	var timestamps service.Timestamps
 	resultCount := uint32(len(timestampsData) / 8)
