@@ -389,7 +389,9 @@ func (r *poolSliceReader) prepareAndRead(p []byte) (n int, err error) {
 					Size: intersection.Size,
 				})
 			}
-			sliceReader := slice.NewReader(r.ctx)
+			_ = slice
+			var sliceReader io.Reader
+			//sliceReader := slice.NewReader(r.ctx)
 			r.readImpl = r.readerReadFunc(sliceReader, intersection.Size)
 		}
 	} else {

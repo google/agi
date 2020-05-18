@@ -16,7 +16,6 @@ package memory
 
 import (
 	"context"
-	"io"
 
 	"github.com/google/gapid/core/data/id"
 	"github.com/google/gapid/core/os/device"
@@ -31,7 +30,7 @@ type Data interface {
 
 	// NewReader returns an io.Reader to efficiently read from the slice.
 	// There shouldn't be a need to wrap this in additional buffers.
-	NewReader(ctx context.Context) io.Reader
+	//NewReader(ctx context.Context) io.Reader
 
 	// ResourceID returns the identifier of the resource representing the slice,
 	// creating a new resource if it isn't already backed by one.

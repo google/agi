@@ -95,7 +95,6 @@ import(
   "context"
   "fmt"
   "reflect"
-  "github.com/google/gapid/core/data/binary"
   "github.com/google/gapid/core/data/id"
   "github.com/google/gapid/core/math/u64"
   "github.com/google/gapid/core/memory/arena"
@@ -1006,16 +1005,6 @@ import (
       panic(err)
     }
     return id
-  }
-
-  // Reader returns a binary reader for the slice.
-  func (s {{$slice_ty}}) Reader(ϟctx context.Context, ϟg *ϟapi.GlobalState) binary.Reader {
-    return ϟg.MemoryReader(ϟctx, ϟg.Memory.MustGet(s.Pool()).Slice(s.Range()))
-  }
-
-  // Writer returns a binary writer for the slice.
-  func (s {{$slice_ty}}) Writer(ϟg *ϟapi.GlobalState) binary.Writer {
-    return ϟg.MemoryWriter(s.Pool(), s.Range())
   }
 
   // Decoder returns a memory decoder for the slice.
