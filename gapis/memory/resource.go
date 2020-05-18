@@ -21,6 +21,8 @@ import (
 	"io"
 
 	"github.com/google/gapid/core/data/id"
+	"github.com/google/gapid/core/data/endian"
+	"github.com/google/gapid/core/os/device"
 	"github.com/google/gapid/gapis/database"
 )
 
@@ -99,6 +101,15 @@ func (r resource) NewReader(ctx context.Context) io.Reader {
 	return bytes.NewReader(data)
 }
 
+func (r resource) NewDecoder(ctx context.Context, memLayout *device.MemoryLayout) *Decoder {
+	data, err := r.getData(ctx)
+	if err != nil {
+		panic("ALAN")
+	}
+	decode := NewDecoder(endian.ReaderForBytes(data, memLayout.Endian), memLayout)
+	return decode
+}
+
 func newResourceSlice(src resource, rng Range) Data {
 	if uint64(rng.Last()) > src.Size() {
 		panic(fmt.Errorf("Slice range %v out of bounds %v", rng, Range{Base: 0, Size: src.Size()}))
@@ -122,6 +133,15 @@ func (r resourceSlice) NewReader(ctx context.Context) io.Reader {
 		return failedReader{err}
 	}
 	return bytes.NewReader(data[r.rng.First() : r.rng.Last()+1])
+}
+
+func (r resourceSlice) NewDecoder(ctx context.Context, memLayout *device.MemoryLayout) *Decoder {
+	data, err := r.src.getData(ctx)
+	if err != nil {
+		panic("ALAN")
+	}
+	decode := NewDecoder(endian.ReaderForBytes(data[r.rng.First() : r.rng.Last()+1], memLayout.Endian), memLayout)
+	return decode
 }
 
 func (s resourceSlice) ResourceID(ctx context.Context) (id.ID, error) {

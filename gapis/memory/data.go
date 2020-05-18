@@ -19,6 +19,7 @@ import (
 	"io"
 
 	"github.com/google/gapid/core/data/id"
+	"github.com/google/gapid/core/os/device"
 )
 
 // Data is the interface for a data source that can be resolved to a byte
@@ -56,4 +57,5 @@ type Data interface {
 	Strlen(ctx context.Context) (int, error)
 
 	//Bytes() []byte
+	NewDecoder(ctx context.Context, memLayout *device.MemoryLayout) *Decoder
 }

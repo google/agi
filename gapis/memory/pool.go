@@ -21,9 +21,11 @@ import (
 	"strings"
 
 	"github.com/google/gapid/core/data/id"
+	"github.com/google/gapid/core/data/endian"
 	"github.com/google/gapid/core/math/interval"
 	"github.com/google/gapid/core/math/u64"
 	"github.com/google/gapid/gapis/database"
+	"github.com/google/gapid/core/os/device"
 	"github.com/pkg/errors"
 )
 
@@ -335,6 +337,11 @@ func (m poolSlice) NewReader(ctx context.Context) io.Reader {
 	r := &poolSliceReader{ctx: ctx, writes: m.writes, rng: m.rng}
 	r.readImpl = r.prepareAndRead
 	return r
+}
+
+func (m poolSlice) NewDecoder(ctx context.Context, memLayout *device.MemoryLayout) *Decoder {
+	decode := NewDecoder(endian.Reader(m.NewReader(ctx), memLayout.Endian), memLayout) // ALAN
+	return decode
 }
 
 type readFunction func([]byte) (int, error)
