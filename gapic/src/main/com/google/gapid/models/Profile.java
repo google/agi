@@ -18,7 +18,12 @@ import static com.google.gapid.rpc.UiErrorCallback.error;
 import static com.google.gapid.rpc.UiErrorCallback.success;
 import static com.google.gapid.util.Logging.throttleLogRpcError;
 import static com.google.gapid.util.MoreFutures.transform;
+import static java.util.Collections.binarySearch;
 import static java.util.logging.Level.WARNING;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.summingLong;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 
 import com.google.common.base.Objects;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -31,9 +36,14 @@ import com.google.gapid.rpc.UiErrorCallback.ResultOrError;
 import com.google.gapid.server.Client;
 import com.google.gapid.util.Events;
 import com.google.gapid.util.Loadable;
+import com.google.gapid.util.Paths;
+import com.google.gapid.util.Ranges;
 
 import org.eclipse.swt.widgets.Shell;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Logger;
 
@@ -119,10 +129,32 @@ public class Profile
 
   public static class Data extends DeviceDependentModel.Data {
     public final Service.ProfilingData profile;
+    private final Map<Integer, Long> durationByGroup;
+    private final List<Service.ProfilingData.GpuSlices.Group> groups;
 
     public Data(Path.Device device, Service.ProfilingData profile) {
       super(device);
       this.profile = profile;
+      this.durationByGroup = aggregateSliceTimeByGroup(profile);
+      this.groups = getSortedGroups(profile, durationByGroup.keySet());
+    }
+
+    private static Map<Integer, Long> aggregateSliceTimeByGroup(Service.ProfilingData profile) {
+      Set<Integer> groups = profile.getSlices().getGroupsList().stream()
+          .map(Service.ProfilingData.GpuSlices.Group::getId)
+          .collect(toSet());
+      return profile.getSlices().getSlicesList().stream()
+          .filter(s -> (s.getDepth() == 0) && groups.contains(s.getGroupId()))
+          .collect(groupingBy(Service.ProfilingData.GpuSlices.Slice::getGroupId,
+              summingLong(Service.ProfilingData.GpuSlices.Slice::getDur)));
+    }
+
+    private static List<Service.ProfilingData.GpuSlices.Group> getSortedGroups(
+        Service.ProfilingData profile, Set<Integer> ids) {
+      return profile.getSlices().getGroupsList().stream()
+          .filter(g -> ids.contains(g.getId()))
+          .sorted((g1, g2) -> Paths.compare(g1.getLink(), g2.getLink()))
+          .collect(toList());
     }
 
     public boolean hasSlices() {
@@ -145,6 +177,21 @@ public class Profile
         end = Math.max(slice.getTs() + slice.getDur(), end);
       }
       return new TimeSpan(start, end);
+    }
+
+    public long getDuration(Path.Commands range) {
+      int idx = binarySearch(groups, null, (g, $) -> Ranges.compare(range, g.getLink()));
+      if (idx < 0) {
+        return -1;
+      }
+      long duration = durationByGroup.get(groups.get(idx).getId());
+      for (int i = idx - 1; i >= 0 && Ranges.contains(range, groups.get(i).getLink()); i--) {
+        duration += durationByGroup.get(groups.get(i).getId());
+      }
+      for (int i = idx + 1; i < groups.size() && Ranges.contains(range, groups.get(i).getLink()); i++) {
+        duration += durationByGroup.get(groups.get(i).getId());
+      }
+      return duration;
     }
   }
 
