@@ -303,18 +303,23 @@ public class CommandTree extends Composite
       this.models = models;
       this.widgets = widgets;
 
-      TreeViewerColumn durColumn = addColumn("Duration", node -> {
+      addColumn("GPU Time", false);
+      addColumn("Wall Time", true);
+    }
+
+    private void addColumn(String title, boolean wallTime) {
+      TreeViewerColumn column = addColumn(title, node -> {
         Service.CommandTreeNode data = node.getData();
         if (data == null) {
           return "";
         } else if (!models.profile.isLoaded()) {
           return "Profiling...";
         } else {
-          long duration = models.profile.getData().getDuration(data.getCommands());
-          return (duration < 0) ? "" : String.format("%.3fms", duration / 1e6);
+          Profile.Duration duration = models.profile.getData().getDuration(data.getCommands());
+          return wallTime ? duration.formatWallTime() : duration.formatGpuTime();
         }
       }, DURATION_WIDTH);
-      durColumn.getColumn().setAlignment(SWT.RIGHT);
+      column.getColumn().setAlignment(SWT.RIGHT);
     }
 
     public void refresh() {

@@ -21,11 +21,12 @@ import static com.google.gapid.util.MoreFutures.transform;
 import static java.util.Collections.binarySearch;
 import static java.util.logging.Level.WARNING;
 import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.summingLong;
+import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 import com.google.common.base.Objects;
+import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gapid.perfetto.TimeSpan;
 import com.google.gapid.proto.service.Service;
@@ -41,6 +42,7 @@ import com.google.gapid.util.Ranges;
 
 import org.eclipse.swt.widgets.Shell;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -129,24 +131,25 @@ public class Profile
 
   public static class Data extends DeviceDependentModel.Data {
     public final Service.ProfilingData profile;
-    private final Map<Integer, Long> durationByGroup;
+    private final Map<Integer, List<TimeSpan>> spansByGroup;
     private final List<Service.ProfilingData.GpuSlices.Group> groups;
 
     public Data(Path.Device device, Service.ProfilingData profile) {
       super(device);
       this.profile = profile;
-      this.durationByGroup = aggregateSliceTimeByGroup(profile);
-      this.groups = getSortedGroups(profile, durationByGroup.keySet());
+      this.spansByGroup = aggregateSliceTimeByGroup(profile);
+      this.groups = getSortedGroups(profile, spansByGroup.keySet());
     }
 
-    private static Map<Integer, Long> aggregateSliceTimeByGroup(Service.ProfilingData profile) {
+    private static Map<Integer, List<TimeSpan>>
+        aggregateSliceTimeByGroup(Service.ProfilingData profile) {
       Set<Integer> groups = profile.getSlices().getGroupsList().stream()
           .map(Service.ProfilingData.GpuSlices.Group::getId)
           .collect(toSet());
       return profile.getSlices().getSlicesList().stream()
           .filter(s -> (s.getDepth() == 0) && groups.contains(s.getGroupId()))
           .collect(groupingBy(Service.ProfilingData.GpuSlices.Slice::getGroupId,
-              summingLong(Service.ProfilingData.GpuSlices.Slice::getDur)));
+              mapping(s -> new TimeSpan(s.getTs(), s.getTs() + s.getDur()), toList())));
     }
 
     private static List<Service.ProfilingData.GpuSlices.Group> getSortedGroups(
@@ -179,19 +182,66 @@ public class Profile
       return new TimeSpan(start, end);
     }
 
-    public long getDuration(Path.Commands range) {
+    public Duration getDuration(Path.Commands range) {
       int idx = binarySearch(groups, null, (g, $) -> Ranges.compare(range, g.getLink()));
       if (idx < 0) {
-        return -1;
+        return Duration.NONE;
       }
-      long duration = durationByGroup.get(groups.get(idx).getId());
+      List<TimeSpan> spans = Lists.newArrayList(spansByGroup.get(groups.get(idx).getId()));
       for (int i = idx - 1; i >= 0 && Ranges.contains(range, groups.get(i).getLink()); i--) {
-        duration += durationByGroup.get(groups.get(i).getId());
+        spans.addAll(spansByGroup.get(groups.get(i).getId()));
       }
       for (int i = idx + 1; i < groups.size() && Ranges.contains(range, groups.get(i).getLink()); i++) {
-        duration += durationByGroup.get(groups.get(i).getId());
+        spans.addAll(spansByGroup.get(groups.get(i).getId()));
       }
-      return duration;
+
+      Collections.sort(spans, (s1, s2) -> Long.compare(s1.start, s2.start));
+      long gpuTime = 0, wallTime = 0;
+      TimeSpan last = TimeSpan.ZERO;
+      for (TimeSpan span : spans) {
+        long duration = span.getDuration();
+        gpuTime += duration;
+        if (span.start < last.end) {
+          if (span.end <= last.end) {
+            continue; // completely contained within the other, can ignore it.
+          }
+          duration -= last.end - span.start;
+        }
+        wallTime += duration;
+        last = span;
+      }
+
+      return new Duration(gpuTime, wallTime);
+    }
+  }
+
+  public static class Duration {
+    public static final Duration NONE = new Duration(0, 0) {
+      @Override
+      public String formatGpuTime() {
+        return "";
+      }
+
+      @Override
+      public String formatWallTime() {
+        return "";
+      }
+    };
+
+    public final long gpuTime;
+    public final long wallTime;
+
+    public Duration(long gpuTime, long wallTime) {
+      this.gpuTime = gpuTime;
+      this.wallTime = wallTime;
+    }
+
+    public String formatGpuTime() {
+      return String.format("%.3fms", gpuTime / 1e6);
+    }
+
+    public String formatWallTime() {
+      return String.format("%.3fms", wallTime / 1e6);
     }
   }
 

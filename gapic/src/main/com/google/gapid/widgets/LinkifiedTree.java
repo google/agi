@@ -152,7 +152,7 @@ public abstract class LinkifiedTree<T, F> extends Composite {
 
   // Should be called from the constructor.
   protected TreeViewerColumn addColumn(String title, Function<T, String> labels, int width) {
-    if (viewer.getTree().getColumnCount() <= 1) {
+    if (viewer.getTree().getColumnCount() < 1) {
       // This is the first additional column being added. Get us in a good state.
       viewer.getTree().setHeaderVisible(true);
       TreeViewerColumn column = createTreeColumn(viewer, "");
