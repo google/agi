@@ -10,7 +10,7 @@ title: Home
 
   <div class="col2-l">
     <h1>Android GPU Inspector</h1>
-    <p>A single tool that will help you profile and debug graphics on Android across Qualcomm® Adreno™ GPUs and Arm® Mali™ GPUs.</p>
+    <p>A single tool that will help you profile and debug graphics on Android across several GPUs: Qualcomm® Adreno™, Arm® Mali™, and Imagination® PowerVR™.</p>
     <br/>
     <div style="text-align: center;">
       <a class="home-signup" href="https://services.google.com/fb/forms/androidgpuinspectordeveloperpreview/">Sign-up for Developer Preview</a>
