@@ -127,6 +127,20 @@ func Memory(ctx context.Context, p *path.Memory, rc *path.ResolveConfig) (*servi
 				if rng.Overlaps(r) {
 					interval.Merge(&reads, rng.Window(r).Span(), false)
 					if p.IncludeTypes {
+						pathMemoryAsType := &path.MemoryAsType{
+							Address: rng.Base,
+							Size:    rng.Size,
+							Pool:    p.Pool,
+							After:   p.After,
+							Type: &path.Type{
+								TypeIndex: id,
+								API:       &path.API{ID: path.NewID(apiId)},
+							},
+						}
+						value, err := MemoryAsType(ctx, pathMemoryAsType, rc)
+						if err != nil {
+							return
+						}
 						typedRanges = append(typedRanges,
 							&service.TypedMemoryRange{
 								Type: &path.Type{
@@ -137,7 +151,8 @@ func Memory(ctx context.Context, p *path.Memory, rc *path.ResolveConfig) (*servi
 									Base: rng.Base,
 									Size: rng.Size,
 								},
-								Root: root,
+								Root:  root,
+								Value: value,
 							},
 						)
 					}
@@ -147,6 +162,20 @@ func Memory(ctx context.Context, p *path.Memory, rc *path.ResolveConfig) (*servi
 				if rng.Overlaps(r) {
 					interval.Merge(&writes, rng.Window(r).Span(), false)
 					if p.IncludeTypes {
+						pathMemoryAsType := &path.MemoryAsType{
+							Address: rng.Base,
+							Size:    rng.Size,
+							Pool:    p.Pool,
+							After:   p.After,
+							Type: &path.Type{
+								TypeIndex: id,
+								API:       &path.API{ID: path.NewID(apiId)},
+							},
+						}
+						value, err := MemoryAsType(ctx, pathMemoryAsType, rc)
+						if err != nil {
+							return
+						}
 						typedRanges = append(typedRanges,
 							&service.TypedMemoryRange{
 								Type: &path.Type{
@@ -157,7 +186,8 @@ func Memory(ctx context.Context, p *path.Memory, rc *path.ResolveConfig) (*servi
 									Base: rng.Base,
 									Size: rng.Size,
 								},
-								Root: root,
+								Root:  root,
+								Value: value,
 							},
 						)
 					}
