@@ -46,6 +46,7 @@ BUILD_SHA=${DEV_PREFIX}${KOKORO_GITHUB_COMMIT:-$KOKORO_GITHUB_PULL_REQUEST_COMMI
 function build {
   echo $(date): Starting build for $@...
   $BUILD_ROOT/bazel/bin/bazel \
+    --verbose_failures \
     --output_base="${TMP}/bazel_out" \
     build -c opt --config symbols \
     --define AGI_BUILD_NUMBER="$KOKORO_BUILD_NUMBER" \

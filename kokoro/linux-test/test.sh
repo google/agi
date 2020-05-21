@@ -38,6 +38,7 @@ BUILD_SHA=${KOKORO_GITHUB_COMMIT:-$KOKORO_GITHUB_PULL_REQUEST_COMMIT}
 function test {
     echo $(date): Starting test for $@...
     $BUILD_ROOT/bazel/bin/bazel \
+        --verbose_failures \
         --output_base="${TMP}/bazel_out" \
         test -c opt --config symbols \
         --define AGI_BUILD_NUMBER="$KOKORO_BUILD_NUMBER" \

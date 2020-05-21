@@ -78,14 +78,14 @@ if "%KOKORO_GITHUB_COMMIT%." == "." (
   set BUILD_SHA=%DEV_PREFIX%%KOKORO_GITHUB_COMMIT%
 )
 
-%BUILD_ROOT%\bazel build -c opt --config symbols ^
+%BUILD_ROOT%\bazel build --verbose_failures -c opt --config symbols ^
     --define AGI_BUILD_NUMBER="%KOKORO_BUILD_NUMBER%" ^
     --define AGI_BUILD_SHA="%BUILD_SHA%" ^
     //gapis/api/vulkan:go_default_library
 if %ERRORLEVEL% GEQ 1 exit /b %ERRORLEVEL%
 
 REM Build everything else.
-%BUILD_ROOT%\bazel build -c opt --config symbols ^
+%BUILD_ROOT%\bazel build --verbose_failures -c opt --config symbols ^
     --define AGI_BUILD_NUMBER="%KOKORO_BUILD_NUMBER%" ^
     --define AGI_BUILD_SHA="%BUILD_SHA%" ^
     //:pkg //:symbols //cmd/smoketests //cmd/vulkan_sample:vulkan_sample //tools/logo:agi_ico

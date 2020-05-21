@@ -47,6 +47,7 @@ function build {
   # required for the symbol dumping to work, as the linker *always* puts absolute
   # paths to the .a files into the debug section of the executable.
   $BUILD_ROOT/bazel/bin/bazel \
+      --verbose_failures \
       --output_base="${TMP}/bazel_out" \
       build -c opt --config symbols \
       --define AGI_BUILD_NUMBER="$KOKORO_BUILD_NUMBER" \
