@@ -256,69 +256,8 @@ func MemoryAsType(ctx context.Context, p *path.MemoryAsType, rc *path.ResolveCon
 		return nil, err
 	}
 
-	// Check whether the requested pool was ever created.
-	pool, err := s.Memory.Get(memory.PoolID(p.Pool))
-	if err != nil {
-		return nil, &service.ErrDataUnavailable{Reason: messages.ErrInvalidMemoryPool(p.Pool)}
-	}
-	sz := p.Size
-	if sz == 0 {
-		sz = 0xFFFFFFFFFFFFFFFF
-	}
-
-	dec := s.MemoryDecoder(ctx, pool.Slice(memory.Range{
-		Base: p.Address,
-		Size: sz,
-	}))
-
-	e, err := types.GetType(p.Type.TypeIndex)
-	if err != nil {
-		return nil, err
-	}
-
-	nElems := 1
-	elemSize := 0
-	isSlice := false
-	ty := e
-	if sl, ok := e.Ty.(*types.Type_Slice); ok {
-		isSlice = true
-		sliceType, err := types.GetType(sl.Slice.Underlying)
-		if err != nil {
-			return nil, err
-		}
-		elemSize, err = sliceType.Size(ctx, s.MemoryLayout)
-		if err != nil {
-			return nil, err
-		}
-		if p.Size == 0 {
-			return nil, log.Err(ctx, nil, "Cannot have an unsized range with a slice")
-		}
-		nElems = int(sz / uint64(elemSize))
-		ty = sliceType
-	} else {
-		elemSize, err = e.Size(ctx, s.MemoryLayout)
-		if err != nil {
-			return nil, err
-		}
-	}
-	vals := []*memory_box.Value{}
-	for i := 0; i < nElems; i++ {
-		v, err := memory_box.Box(ctx, dec, ty, p, rc)
-		if err != nil {
-			return nil, err
-		}
-		vals = append(vals, v)
-	}
-
-	if isSlice {
-		return &memory_box.Value{
-			Val: &memory_box.Value_Slice{
-				Slice: &memory_box.Slice{
-					Values: vals,
-				}}}, nil
-	}
-
-	return vals[0], nil
+	rng := memory.Range{Base: p.Address, Size: p.Size}
+	return memoryAsType(ctx, s, rng, p.Pool, p.Type.TypeIndex, p, rc)
 }
 
 // Function memoryAsType resolves typed memory related raw data,
