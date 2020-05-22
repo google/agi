@@ -127,7 +127,7 @@ func Memory(ctx context.Context, p *path.Memory, rc *path.ResolveConfig) (*servi
 				if rng.Overlaps(r) {
 					interval.Merge(&reads, rng.Window(r).Span(), false)
 					if p.IncludeTypes {
-						value, err := memoryAsType(ctx, s, rng, p.Pool, id, p, rc)
+						value, err := memoryAsType(ctx, s, rng, pool, id, p, rc)
 						if err != nil {
 							return
 						}
@@ -152,7 +152,7 @@ func Memory(ctx context.Context, p *path.Memory, rc *path.ResolveConfig) (*servi
 				if rng.Overlaps(r) {
 					interval.Merge(&writes, rng.Window(r).Span(), false)
 					if p.IncludeTypes {
-						value, err := memoryAsType(ctx, s, rng, p.Pool, id, p, rc)
+						value, err := memoryAsType(ctx, s, rng, pool, id, p, rc)
 						if err != nil {
 							return
 						}
@@ -256,20 +256,21 @@ func MemoryAsType(ctx context.Context, p *path.MemoryAsType, rc *path.ResolveCon
 		return nil, err
 	}
 
+	// Check whether the requested pool was ever created.
+	pool, err := s.Memory.Get(memory.PoolID(p.Pool))
+	if err != nil {
+		return nil, &service.ErrDataUnavailable{Reason: messages.ErrInvalidMemoryPool(p.Pool)}
+	}
+
 	rng := memory.Range{Base: p.Address, Size: p.Size}
-	return memoryAsType(ctx, s, rng, p.Pool, p.Type.TypeIndex, p, rc)
+	return memoryAsType(ctx, s, rng, pool, p.Type.TypeIndex, p, rc)
 }
 
 // Function memoryAsType resolves typed memory related raw data,
 // and return the decoded memory.
 // This is a private resolving function inside gapis,.
-func memoryAsType(ctx context.Context, s *api.GlobalState, rng memory.Range, poolId uint32, typeIndex uint64,
+func memoryAsType(ctx context.Context, s *api.GlobalState, rng memory.Range, pool *memory.Pool, typeIndex uint64,
 	p path.Node, rc *path.ResolveConfig) (*memory_box.Value, error) {
-	// Check whether the requested pool was ever created.
-	pool, err := s.Memory.Get(memory.PoolID(poolId))
-	if err != nil {
-		return nil, &service.ErrDataUnavailable{Reason: messages.ErrInvalidMemoryPool(poolId)}
-	}
 	sz := rng.Size
 	if sz == 0 {
 		sz = 0xFFFFFFFFFFFFFFFF
