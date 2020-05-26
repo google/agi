@@ -792,15 +792,12 @@ public class MemoryView extends Composite
         packColumns(treeViewer.getTree());
         return;
       }
-      // long start = System.currentTimeMillis();
 
       Rpc.listen(models.types.loadStructNodes(structs),
           new UiCallback<List<StructNode>, List<StructNode>>(this, LOG) {
         @Override
         protected List<StructNode> onRpcThread(Result<List<StructNode>> result)
             throws RpcException, ExecutionException {
-          // Snippet for time cost evaluation.
-          // System.out.println("loadStructNodes() method duration: " + (System.currentTimeMillis() - start) + "ms.");
           return StructNode.simplifyTrees(result.get());
         }
 
