@@ -281,7 +281,7 @@ func memoryAsType(ctx context.Context, s *api.GlobalState, rng memory.Range, poo
 		Size: sz,
 	}))
 
-	e, err := types.GetType(typeIndex)
+	ty, err := types.GetType(typeIndex)
 	if err != nil {
 		return nil, err
 	}
@@ -289,8 +289,7 @@ func memoryAsType(ctx context.Context, s *api.GlobalState, rng memory.Range, poo
 	nElems := 1
 	elemSize := 0
 	isSlice := false
-	ty := e
-	if sl, ok := e.Ty.(*types.Type_Slice); ok {
+	if sl, ok := ty.Ty.(*types.Type_Slice); ok {
 		isSlice = true
 		sliceType, err := types.GetType(sl.Slice.Underlying)
 		if err != nil {
@@ -306,7 +305,7 @@ func memoryAsType(ctx context.Context, s *api.GlobalState, rng memory.Range, poo
 		nElems = int(sz / uint64(elemSize))
 		ty = sliceType
 	} else {
-		elemSize, err = e.Size(ctx, s.MemoryLayout)
+		elemSize, err = ty.Size(ctx, s.MemoryLayout)
 		if err != nil {
 			return nil, err
 		}
