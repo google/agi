@@ -600,6 +600,114 @@ cmd void vkUpdateDescriptorSets(
     }
   }
 
+  descriptor_writes := pDescriptorWrites[0:descriptorWriteCount]
+  for i in (0 .. descriptorWriteCount) {
+    w := descriptor_writes[i]
+    set := DescriptorSets[w.dstSet]
+    layoutBinding := set.Layout.Bindings[w.dstBinding]
+    firstSlot := layoutBinding.FirstSlot + w.dstArrayElement
+
+    switch layoutBinding.Type {
+      case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+           VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
+           VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+           VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC: {
+        srcs := w.pBufferInfo[0:w.descriptorCount]
+        for j in (0 .. w.descriptorCount) {
+          set.BufferBindings[firstSlot + j] = srcs[j]
+        }
+      }
+
+      case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,
+           VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER: {
+        srcs := w.pTexelBufferView[0:w.descriptorCount]
+        for j in (0 .. w.descriptorCount) {
+          set.BufferViewBindings[firstSlot + j] = srcs[j]
+        }
+      }
+
+      case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER: {
+        srcs := w.pImageInfo[0:w.descriptorCount]
+        for j in (0 .. w.descriptorCount) {
+          set.ImageBindings[firstSlot + j] = srcs[j]
+        }
+      }
+
+      case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
+           VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+           VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE: {
+        srcs := w.pImageInfo[0:w.descriptorCount]
+        // sampler portion of the src structure may be junk, do not capture it
+        for j in (0 .. w.descriptorCount) {
+          set.ImageBindings[firstSlot + j] = VkDescriptorImageInfo(
+            Sampler: as!VkSampler(0),
+            ImageView: srcs[j].ImageView,
+            ImageLayout: srcs[j].ImageLayout
+          )
+        }
+      }
+
+      case VK_DESCRIPTOR_TYPE_SAMPLER: {
+        srcs := w.pImageInfo[0:w.descriptorCount]
+        // imageView and imageLayout portions of the src structure may be
+        // junk, do not capture them.
+        for j in (0 .. w.descriptorCount) {
+          set.ImageBindings[firstSlot + j] = VkDescriptorImageInfo(
+            Sampler: srcs[j].Sampler,
+            ImageView: as!VkImageView(0),
+            ImageLayout: as!VkImageLayout(0)
+          )
+        }
+      }
+    }
+  }
+
+  descriptor_copies := pDescriptorCopies[0:descriptorCopyCount]
+  for i in (0 .. descriptorCopyCount) {
+    c := descriptor_copies[i]
+    dstSet := DescriptorSets[c.dstSet]
+    dstLayoutBinding := dstSet.Layout.Bindings[c.dstBinding]
+    dstFirstSlot := dstLayoutBinding.FirstSlot + c.dstArrayElement
+
+    srcSet := DescriptorSets[c.srcSet]
+    srcLayoutBinding := srcSet.Layout.Bindings[c.srcBinding]
+    srcFirstSlot := srcLayoutBinding.FirstSlot + c.srcArrayElement
+
+    switch dstLayoutBinding.Type {
+      case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+           VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
+           VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+           VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC: {
+        for j in (0 .. c.descriptorCount) {
+          if (j+srcFirstSlot) in srcSet.BufferBindings {
+            dstSet.BufferBindings[j+dstFirstSlot] = srcSet.BufferBindings[j+srcFirstSlot]
+          }
+        }
+      }
+
+      case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,
+           VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER: {
+        for j in (0 .. c.descriptorCount) {
+          if (j+srcFirstSlot) in srcSet.BufferViewBindings {
+            dstSet.BufferViewBindings[j+dstFirstSlot] = srcSet.BufferViewBindings[j+srcFirstSlot]
+          }
+        }
+      }
+
+      case VK_DESCRIPTOR_TYPE_SAMPLER,
+          VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+          VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
+          VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+          VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT: {
+        for j in (0 .. c.descriptorCount) {
+          if (j+srcFirstSlot) in srcSet.ImageBindings {
+            dstSet.ImageBindings[j+dstFirstSlot] = srcSet.ImageBindings[j+srcFirstSlot]
+          }
+        }
+      }
+    }
+  }
+
   writes := RewriteWriteDescriptorSets(
     descriptorWriteCount,
     pDescriptorWrites)
