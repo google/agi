@@ -45,12 +45,16 @@
   @unused u32                          Count
   @unused VkShaderStageFlags           Stages
   @unused map!(u32, ref!SamplerObject) ImmutableSamplers
+  @unused u32                          FirstSlot
 }
 
 @internal class DescriptorSetLayoutObject {
   @unused VkDevice              Device
   @unused VkDescriptorSetLayout VulkanHandle
+  // Maximum binding index used by this layout
   u32                           MaximumBinding
+  // Total number of descriptor slots required for a set in this layout
+  u32                           NumSlots
   // Map of binding numbers to binding information
   map!(u32, DescriptorSetLayoutBinding) Bindings
   @unused ref!VulkanDebugMarkerInfo     DebugInfo
@@ -103,6 +107,18 @@ cmd VkResult vkCreateDescriptorSetLayout(
     }
   }
   descriptorSetLayout.MaximumBinding = largestBinding.Val
+
+  nextSlot := MutableU32(0)
+  for i in (0 .. largestBinding.Val) {
+    if i in descriptorSetLayout.Bindings {
+      // TODO: this is incredibly stupid. let me mutate this in place please.
+      l := descriptorSetLayout.Bindings[i]
+      l.FirstSlot = nextSlot.Val
+      nextSlot.Val += l.Count
+      descriptorSetLayout.Bindings[i] = l
+    }
+  }
+  descriptorSetLayout.NumSlots = nextSlot.Val
 
   handle := ?
   if pSetLayout == null { vkErrorNullPointer("VkDescriptorSetLayout") }
