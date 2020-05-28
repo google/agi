@@ -266,6 +266,12 @@ cmd VkResult vkResetDescriptorPool(
 
   @untracked @untrackedMap @unused @hidden @nobox
   map!(VkCommandBuffer, bool)           CommandBufferUsers
+
+  // Maps from a slot index to a single descriptor
+  // Use the layout to find the starting slot index for a particular descriptor.
+  dense_map!(u32, VkDescriptorBufferInfo)     BufferBindings
+  dense_map!(u32, VkDescriptorImageInfo)      ImageBindings
+  dense_map!(u32, VkBufferView)               BufferViewBindings
 }
 
 @threadSafety("app")
