@@ -1304,55 +1304,31 @@ func (f *frameLoop) isSameDescriptorSet(src, dst DescriptorSetObjectʳ) bool {
 
 	// TODO(chrisforbes): enhance this to model invalidation of descriptors when the backing resource
 	// is deleted or recreated.
-	if src.VulkanHandle() != dst.VulkanHandle() || src.Device() != dst.Device() || src.DescriptorPool() != dst.DescriptorPool() {
+	if src.VulkanHandle() != dst.VulkanHandle() ||
+		src.Device() != dst.Device() ||
+		src.DescriptorPool() != dst.DescriptorPool() ||
+		src.Layout() != dst.Layout() {
 		return false
 	}
 
-	for i, srcBinding := range src.Bindings().All() {
-
-		dstBinding, ok := dst.Bindings().All()[i]
-		if !ok {
+	for i, s := range src.BufferBindings().All() {
+		d, ok := dst.BufferBindings().All()[i]
+		if !ok || s.Buffer() != d.Buffer() || s.Offset() != d.Offset() || s.Range() != d.Range() {
 			return false
 		}
+	}
 
-		if srcBinding.BindingType() != dstBinding.BindingType() {
+	for i, s := range src.ImageBindings().All() {
+		d, ok := dst.ImageBindings().All()[i]
+		if !ok || s.Sampler() != d.Sampler() || s.ImageView() != d.ImageView() || s.ImageLayout() != d.ImageLayout() {
 			return false
 		}
+	}
 
-		for j, srcBufferInfo := range srcBinding.BufferBinding().All() {
-
-			dstBufferInfo, ok := dstBinding.BufferBinding().All()[j]
-			if !ok {
-				return false
-			}
-			if srcBufferInfo.Buffer() != dstBufferInfo.Buffer() || srcBufferInfo.Offset() != dstBufferInfo.Offset() || srcBufferInfo.Range() != dstBufferInfo.Range() {
-				return false
-			}
-
-		}
-
-		for j, srcImageInfo := range srcBinding.ImageBinding().All() {
-
-			dstImageInfo, ok := dstBinding.ImageBinding().All()[j]
-			if !ok {
-				return false
-			}
-			if srcImageInfo.Sampler() != dstImageInfo.Sampler() || srcImageInfo.ImageView() != dstImageInfo.ImageView() || srcImageInfo.ImageLayout() != dstImageInfo.ImageLayout() {
-				return false
-			}
-
-		}
-
-		for j, srcbufferView := range srcBinding.BufferViewBindings().All() {
-
-			dstbufferView, ok := dstBinding.BufferViewBindings().All()[j]
-			if !ok {
-				return false
-			}
-			if srcbufferView != dstbufferView {
-				return false
-			}
-
+	for i, s := range src.BufferViewBindings().All() {
+		d, ok := dst.BufferViewBindings().All()[i]
+		if !ok || s != d {
+			return false
 		}
 	}
 
