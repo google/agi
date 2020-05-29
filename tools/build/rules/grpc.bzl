@@ -135,7 +135,7 @@ _gen_cc_source = rule(
       cfg = "host",
     ),
     "_plugin": attr.label(
-      default = Label("@com_github_grpc_grpc//:grpc_cpp_plugin"),
+      default = Label("@com_github_grpc_grpc//src/compiler:grpc_cpp_plugin"),
       executable = True,
       cfg = "host",
     ),

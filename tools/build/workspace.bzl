@@ -69,8 +69,8 @@ def gapid_dependencies(android = True, mingw = True, locals = {}):
         locals = locals,
         organization = "grpc",
         project = "grpc",
-        commit = "c599e6a922a80e40e24a2d3c994a6dd51046796b",  # 1.22.1
-        sha256 = "d17ead923510b3c8a03eec623fffe4cba64d43e10b3695f027a1c8f10c03756a",
+        commit = "7d89dbb311f049b43bda7bbf6f7d7bf1b4c24419",  # 1.29.1
+        sha256 = "f8f61b159bf43d49c434046314e9743a2b0e8f019774a6251d7950ec47a941a4",
     )
     _grpc_deps(locals)
 

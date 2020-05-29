@@ -26,10 +26,8 @@
 #include <string>
 #include <thread>
 
-namespace grpc {
-template <typename RES, typename REQ>
-class ServerReaderWriter;
-}
+// For grpc_impl::ServerReaderWriter
+#include "grpcpp/support/sync_stream_impl.h"
 
 namespace replay_service {
 class ReplayRequest;
@@ -39,8 +37,8 @@ class ReplayResponse;
 namespace gapir {
 
 using ReplayGrpcStream =
-    grpc::ServerReaderWriter<replay_service::ReplayResponse,
-                             replay_service::ReplayRequest>;
+    grpc_impl::ServerReaderWriter<replay_service::ReplayResponse,
+                                  replay_service::ReplayRequest>;
 
 // GrpcReplayService implements ReplayService interface for GRPC connection.
 // It represents a source of all replay data which is based on grpc stream.
