@@ -137,6 +137,7 @@ sub ref!DescriptorUpdateTemplateObject createDescriptorUpdateTemplate(
         obj.PipelineLayout = info.pipelineLayout
         obj.SetNumber = info.set
         obj.FromKHR = fromKHR
+        // TODO(chrisforbes): remove rewriting?
         obj.Entries = rewriteDescriptorUpdateEntries(
             info.descriptorUpdateEntryCount,
             info.pDescriptorUpdateEntries,
@@ -153,11 +154,70 @@ sub void updateDescriptorSetWithTemplate(
         vkErrorInvalidDescriptorSet(descriptorSet)
     } else {
         if !(descriptorUpdateTemplate in DescriptorUpdateTemplates) {
-	    vkErrorInvalidDescriptorUpdateTemplate(descriptorUpdateTemplate)
-	} else {
+            vkErrorInvalidDescriptorUpdateTemplate(descriptorUpdateTemplate)
+        } else {
             dat := as!const char*(pData)
             template := DescriptorUpdateTemplates[descriptorUpdateTemplate]
             set := DescriptorSets[descriptorSet]
+            layout := set.Layout
+            for i in (0 .. len(template.Entries)) {
+                entry := template.Entries[as!u32(i)]
+                layoutBinding := layout.Bindings[entry.dstBinding]
+
+                switch (entry.descriptorType) {
+                    case VK_DESCRIPTOR_TYPE_SAMPLER: {
+                        for j in (0 .. entry.descriptorCount) {
+                            o := entry.offset + entry.stride * as!size(j)
+                            inf := as!VkDescriptorImageInfo[](dat[o:o + as!size(24)])[0]
+                            set.ImageBindings[layoutBinding.FirstSlot + entry.dstArrayElement + j] = VkDescriptorImageInfo(
+                                Sampler: inf.Sampler,
+                                ImageView: as!VkImageView(0),
+                                ImageLayout: as!VkImageLayout(0))
+                        }
+                    }
+
+                    case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
+                         VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+                         VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT: {
+                        for j in (0 .. entry.descriptorCount) {
+                            o := entry.offset + entry.stride * as!size(j)
+                            inf := as!VkDescriptorImageInfo[](dat[o:o + as!size(24)])[0]
+                            set.ImageBindings[layoutBinding.FirstSlot + entry.dstArrayElement + j] = VkDescriptorImageInfo(
+                                Sampler: as!VkSampler(0),
+                                ImageView: inf.ImageView,
+                                ImageLayout: inf.ImageLayout)
+                        }
+                    }
+
+                    case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER: {
+                        for j in (0 .. entry.descriptorCount) {
+                            o := entry.offset + entry.stride * as!size(j)
+                            inf := as!VkDescriptorImageInfo[](dat[o:o + as!size(24)])[0]
+                            set.ImageBindings[layoutBinding.FirstSlot + entry.dstArrayElement + j] = inf
+                        }
+                    }
+
+                    case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                         VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
+                         VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                         VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC: {
+                        for j in (0 .. entry.descriptorCount) {
+                            o := entry.offset + entry.stride * as!size(j)
+                            inf := as!VkDescriptorBufferInfo[](dat[o:o + as!size(24)])[0]
+                            set.BufferBindings[layoutBinding.FirstSlot + entry.dstArrayElement + j] = inf
+                        }
+                    }
+
+                    case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,
+                         VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER: {
+                        for j in (0 .. entry.descriptorCount) {
+                            o := entry.offset + entry.stride * as!size(j)
+                            inf := as!VkBufferView[](dat[o:o + as!size(8)])[0]
+                            set.BufferViewBindings[layoutBinding.FirstSlot + entry.dstArrayElement + j] = inf
+                        }
+                    }
+                }
+            }
 
             for i in (0 .. len(template.Entries)) {
                 entry := template.Entries[as!u32(i)]
