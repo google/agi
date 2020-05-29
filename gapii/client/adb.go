@@ -89,6 +89,36 @@ func Start(ctx context.Context, p *android.InstalledPackage, a *android.Activity
 		return nil, cleanup.Invoke(ctx), log.Err(ctx, nil, "Failed to locate pre-release driver package")
 	}
 
+	// TODO: Need to clean this up and get it working
+	// If Angle was selected, then save current angle settings to restore and then set Angle for selected app
+	log.I(ctx, "Checking if ANGLE requested")
+	if o.EnableAngle {
+		log.I(ctx, "ANGLE is enabled")
+		if anglePackage := p.Device.Instance().GetConfiguration().AnglePackage; anglePackage != "" {
+			log.I(ctx, "Found ANGLE package %s, enabling it for %s", anglePackage, p.Name)
+			// Restore ANGLE settings during app cleanup
+			// TODO: Am I cleaning up these settings correctly?
+			angle_driver_values, _ := d.SystemSetting(ctx, "global", "angle_gl_driver_selection_values")
+			angle_driver_pkgs, _ := d.SystemSetting(ctx, "global", "angle_gl_driver_selection_pkgs")
+			angle_package, _ := d.SystemSetting(ctx, "global", "angle_debug_package")
+			log.I(ctx, "Saving original ANGLE pkg %s for app %s to restore during cleanup.", angle_package, angle_driver_pkgs)
+			cleanup = cleanup.Then(func(ctx context.Context) {
+				d.SetSystemSetting(ctx, "global", "angle_gl_driver_selection_values", angle_driver_values)
+				d.SetSystemSetting(ctx, "global", "angle_gl_driver_selection_pkgs", angle_driver_pkgs)
+				d.SetSystemSetting(ctx, "global", "angle_debug_package", angle_package)
+			})
+			// Now set ANGLE values for tracing
+			d.SetSystemSetting(ctx, "global", "angle_gl_driver_selection_values", "angle")
+			// Is this where to get the angle package name from?
+			d.SetSystemSetting(ctx, "global", "angle_debug_package", anglePackage)
+			d.SetSystemSetting(ctx, "global", "angle_gl_driver_selection_pkgs", p.Name)
+		} else {
+			// TODO: We shouldn't be able to get here. EnableAngle flag should only be set
+			//  when there's an Angle package on the device to enable.
+			log.W(ctx, "ANGLE enabled but no package found")
+		}
+	}
+
 	// For NativeBridge emulated devices opt for the native ABI of the emulator.
 	abi = d.NativeBridgeABI(ctx, abi)
 

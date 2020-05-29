@@ -804,6 +804,7 @@ message ErrUnsupportedVersion {
 enum TraceType {
   Graphics = 0;
   Perfetto = 1;
+  Angle = 2;
 }
 
 // Capture describes single capture file held by the server.

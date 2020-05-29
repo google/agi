@@ -373,6 +373,35 @@ func (b *binding) QueryPerfettoServiceState(ctx context.Context) (*device.Perfet
 	return result, nil
 }
 
+// TODO: Currently using Android Q/10, API 29 as ANGLE support cut-off
+// TODO: If I knew squat about go then I would refactor this to be shared
+//  function w/ "SupportsPerfetto" and have const values defined somewhere
+//  such as "PERFETTO_SUPPORT_OS_VERSION = 28" and "ANGLE_SUPPORT_OS_VERSION = 29"
+//  then call that shared version with the version as input
+func (b *binding) SupportsAngle(ctx context.Context) bool {
+	os := b.Instance().GetConfiguration().GetOS()
+	return os.GetAPIVersion() >= 29
+}
+
+func (b *binding) QueryAnglePackageName(ctx context.Context) (string, error) {
+	if !b.SupportsAngle(ctx) {
+		return "", fmt.Errorf("ANGLE not supported on this device")
+	}
+	// ANGLE supported, so check for installed ANGLE package
+	//  Favor custom installed package first, followed by default system package
+	custom := "com.chromium.angle"
+	system := "com.google.android.angle"
+	// Check installed packages for ANGLE package
+	packages, _ := b.InstalledPackages(ctx)
+	if pkg := packages.FindByName(custom); pkg != nil {
+		return custom, nil
+	}
+	if pkg := packages.FindByName(system); pkg != nil {
+		return system, nil
+	}
+	return "", fmt.Errorf("No ANGLE packages installed on this device")
+}
+
 func extrasFlags(extras []android.ActionExtra) []string {
 	flags := []string{}
 	for _, e := range extras {

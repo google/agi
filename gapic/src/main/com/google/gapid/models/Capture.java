@@ -80,6 +80,10 @@ public class Capture extends ModelBase<Capture.Data, File, Loadable.Message, Cap
     return isLoaded() && getData().isPerfetto();
   }
 
+  public boolean isAngle() {
+    return isLoaded() && getData().isAngle();
+  }
+
   @Override
   protected ListenableFuture<Data> doLoad(File file) {
     if (!file.exists() || !file.canRead()) {
@@ -234,6 +238,10 @@ public class Capture extends ModelBase<Capture.Data, File, Loadable.Message, Cap
 
     public boolean isPerfetto() {
       return capture != null && capture.getType() == Service.TraceType.Perfetto;
+    }
+
+    public boolean isAngle() {
+      return capture != null && capture.getType() == Service.TraceType.Angle;
     }
   }
 
