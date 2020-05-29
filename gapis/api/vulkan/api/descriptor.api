@@ -734,19 +734,6 @@ cmd void vkUpdateDescriptorSets(
             imageBinding := setBinding.ImageBinding
             imageBinding[arrayIndex] = w.ImageInfo
             setBinding.ImageBinding = imageBinding
-
-            if w.ImageInfo.Sampler in Samplers {
-              samObj := Samplers[w.ImageInfo.Sampler]
-              if samObj != null {
-                registerDescriptorUser!SamplerObject(samObj, w.DstSet, binding, arrayIndex)
-              }
-            }
-            if w.ImageInfo.ImageView in ImageViews {
-              viewObj := ImageViews[w.ImageInfo.ImageView]
-              if viewObj != null {
-                registerDescriptorUser!ImageViewObject(viewObj, w.DstSet, binding, arrayIndex)
-              }
-            }
           }
 
       case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,
@@ -754,12 +741,6 @@ cmd void vkUpdateDescriptorSets(
             viewBindings := setBinding.BufferViewBindings
             viewBindings[arrayIndex] = w.BufferView
             setBinding.BufferViewBindings = viewBindings
-            if w.BufferView in BufferViews {
-              viewObj := BufferViews[w.BufferView]
-              if viewObj != null {
-                registerDescriptorUser!BufferViewObject(viewObj, w.DstSet, binding, arrayIndex)
-              }
-            }
           }
 
       case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
@@ -802,14 +783,6 @@ cmd void vkUpdateDescriptorSets(
           imageBinding := dstBinding.ImageBinding
           imageBinding[c.DstArrayIndex] = srcBinding.ImageBinding[c.SrcArrayIndex]
           dstBinding.ImageBinding = imageBinding
-
-          vkSam := srcBinding.ImageBinding[c.SrcArrayIndex].Sampler
-          if vkSam in Samplers {
-            samObj := Samplers[vkSam]
-            if samObj != null {
-              registerDescriptorUser!SamplerObject(samObj, c.DstSet, c.DstBinding, c.DstArrayIndex)
-            }
-          }
         }
         case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
             VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
@@ -818,22 +791,6 @@ cmd void vkUpdateDescriptorSets(
           imageBinding := dstBinding.ImageBinding
           imageBinding[c.DstArrayIndex] = srcBinding.ImageBinding[c.SrcArrayIndex]
           dstBinding.ImageBinding = imageBinding
-
-          vkSam := srcBinding.ImageBinding[c.SrcArrayIndex].Sampler
-          if vkSam in Samplers {
-            samObj := Samplers[vkSam]
-            if samObj != null {
-              registerDescriptorUser!SamplerObject(samObj, c.DstSet, c.DstBinding, c.DstArrayIndex)
-            }
-          }
-
-          vkView := srcBinding.ImageBinding[c.SrcArrayIndex].ImageView
-          if vkView in ImageViews {
-            viewObj := ImageViews[vkView]
-            if viewObj != null {
-              registerDescriptorUser!ImageViewObject(viewObj, c.DstSet, c.DstBinding, c.DstArrayIndex)
-            }
-          }
         }
 
         case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,
@@ -842,14 +799,6 @@ cmd void vkUpdateDescriptorSets(
           bufferViews[c.DstArrayIndex] =
           srcBinding.BufferViewBindings[c.SrcArrayIndex]
           dstBinding.BufferViewBindings = bufferViews
-
-          vkView := srcBinding.BufferViewBindings[c.SrcArrayIndex]
-          if vkView in BufferViews {
-            viewObj := BufferViews[vkView]
-            if viewObj != null {
-              registerDescriptorUser!BufferViewObject(viewObj, c.DstSet, c.DstBinding, c.DstArrayIndex)
-            }
-          }
         }
 
         case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
@@ -1055,24 +1004,6 @@ sub void readPushConstants(VkPipelineBindPoint bindPoint) {
       read(pushConstants.Data[r.offset:r.offset+r.size])
     }
   }
-}
-
-
-// Util
-
-@spy_disabled
-sub void registerDescriptorUser!T(ref!T user, VkDescriptorSet descSet, u32 binding, u32 arrayIndex) {
-  if !(descSet in user.DescriptorUsers) {
-    bindings := user.DescriptorUsers[descSet]
-    user.DescriptorUsers[descSet] = bindings
-  }
-  bindings := user.DescriptorUsers[descSet]
-  if !(binding in bindings) {
-    indices := bindings[binding]
-    bindings[binding] = indices
-  }
-  indices := bindings[binding]
-  indices[arrayIndex] = true
 }
 
 // ----------------------------------------------------------------------------

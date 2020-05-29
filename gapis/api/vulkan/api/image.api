@@ -435,8 +435,6 @@ cmd VkResult vkBindImageMemory(
   @unused ref!VulkanDebugMarkerInfo DebugInfo
   // Do not track dependency for the following back-references.
   @hidden @untrackedMap @untracked
-  map!(VkDescriptorSet, map!(u32, map!(u32, bool))) DescriptorUsers
-  @hidden @untrackedMap @untracked
   map!(VkFramebuffer, map!(u32, bool)) FramebufferUsers
   // Vulkan 1.1 core
   @unused ref!ImageViewUsageInfo UsageInfo
@@ -529,35 +527,6 @@ cmd void vkDestroyImageView(
   if imageView in ImageViews {
     viewObj := ImageViews[imageView]
 
-    // Release the binding with descriptor sets
-    for _, vkDesSet, bindingAndIndices in viewObj.DescriptorUsers {
-      if vkDesSet in DescriptorSets {
-        desSetObj := DescriptorSets[vkDesSet]
-        for _, binding, indices in bindingAndIndices {
-          if binding in desSetObj.Bindings {
-            switch desSetObj.Bindings[binding].BindingType {
-              case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                  VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
-                  VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-                  VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT: {
-                _ = indices
-                for _, index, _ in indices {
-                  if index in desSetObj.Bindings[binding].ImageBinding {
-                    if desSetObj.Bindings[binding].ImageBinding[index].ImageView == imageView {
-                      desSetObj.Bindings[binding].ImageBinding[index].ImageView = as!VkImageView(0)
-                    }
-                  }
-                }
-              }
-              default: {
-                // do nothing
-              }
-            }
-          }
-        }
-      }
-    }
-
     // Release the binding with framebuffers
     for _, vkFmBuf, attachmentIndices in viewObj.FramebufferUsers {
       if vkFmBuf in Framebuffers {
@@ -605,9 +574,6 @@ cmd void vkDestroyImageView(
   @unused VkBorderColor             BorderColor
   @unsued VkBool32                  UnnormalizedCoordinates
   @unused ref!VulkanDebugMarkerInfo DebugInfo
-  // Do not track dependency for the following back-references.
-  @hidden @untrackedMap @untracked
-  map!(VkDescriptorSet, map!(u32, map!(u32, bool))) DescriptorUsers
 
   // Vulkan 1.1 core
   @unused ref!SamplerYcbcrConversionObject YcbcrConversion
@@ -679,31 +645,6 @@ cmd void vkDestroySampler(
     AllocationCallbacks pAllocator) {
   if !(device in Devices) { vkErrorInvalidDevice(device) }
   if sampler in Samplers {
-    obj := Samplers[sampler]
-    if obj != null {
-      for _, vkDesSet, bindingAndIndices in obj.DescriptorUsers {
-        if vkDesSet in DescriptorSets {
-          desSetObj := DescriptorSets[vkDesSet]
-          for _, binding, indices in bindingAndIndices {
-            if binding in desSetObj.Bindings {
-              switch desSetObj.Bindings[binding].BindingType {
-                case VK_DESCRIPTOR_TYPE_SAMPLER,
-                  VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER: {
-                  for _, index, _ in indices {
-                    if desSetObj.Bindings[binding].ImageBinding[index].Sampler == sampler {
-                      desSetObj.Bindings[binding].ImageBinding[index].Sampler = as!VkSampler(0)
-                    }
-                  }
-                }
-                default: {
-                  // do nothing
-                }
-              }
-            }
-          }
-        }
-      }
-    }
     delete(Samplers, sampler)
   }
 }

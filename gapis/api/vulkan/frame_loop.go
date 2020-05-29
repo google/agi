@@ -1302,6 +1302,8 @@ func (f *frameLoop) detectChangedImages(ctx context.Context) {
 
 func (f *frameLoop) isSameDescriptorSet(src, dst DescriptorSetObjectʳ) bool {
 
+	// TODO(chrisforbes): enhance this to model invalidation of descriptors when the backing resource
+	// is deleted or recreated.
 	if src.VulkanHandle() != dst.VulkanHandle() || src.Device() != dst.Device() || src.DescriptorPool() != dst.DescriptorPool() {
 		return false
 	}
@@ -1906,25 +1908,6 @@ func (f *frameLoop) updateChangedResourcesMap(ctx context.Context, stateBuilder 
 			if _, ok := f.samplerYcbcrConversionToCreate[ycbcrConversion.VulkanHandle()]; ok {
 				f.samplerToDestroy[samplerObject.VulkanHandle()] = true
 				f.samplerToCreate[samplerObject.VulkanHandle()] = true
-			}
-		}
-	}
-
-	// Samplers
-	{
-		// For every Sampler that we need to create at the end of the loop...
-		for toCreate := range f.samplerToCreate {
-			// Write the commands needed to recreate the destroyed object
-			sampler := GetState(f.loopStartState).samplers.Get(toCreate)
-
-			// If we (re)created a sampler, then we will have invalidated all descriptor sets that were using it at the time the loop started.
-			// (things using it that were created inside the loop will be automatically recreated anyway so they don't need special treatment here)
-			// These descriptor sets will need to be (re)created, so add them to the maps to destroy, create and restore state in that order.
-			descriptorSetUsers := sampler.DescriptorUsers().All()
-			for descriptorSet := range descriptorSetUsers {
-				f.handleFreeDescriptorSet(ctx, descriptorSet)
-				f.descriptorSetToAllocate[descriptorSet] = true
-				f.descriptorSetChanged[descriptorSet] = true
 			}
 		}
 	}

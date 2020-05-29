@@ -168,9 +168,6 @@ cmd void vkDestroyBuffer(
   @unused VkDeviceSize              Offset
   @unused VkDeviceSize              Range
   @unused ref!VulkanDebugMarkerInfo DebugInfo
-  // Do not track depedency for the following back-references.
-  @hidden @untrackedMap @untracked
-  map!(VkDescriptorSet, map!(u32, map!(u32, bool))) DescriptorUsers
 }
 
 // Buffer view functions
@@ -220,33 +217,6 @@ cmd void vkDestroyBufferView(
     AllocationCallbacks          pAllocator) {
   if !(device in Devices) { vkErrorInvalidDevice(device) }
   if bufferView in BufferViews {
-    viewObj := BufferViews[bufferView]
-
-    // Release the binding with descriptor sets
-    for _, vkDesSet, bindingAndIndices in viewObj.DescriptorUsers {
-      if vkDesSet in DescriptorSets {
-        desSetObj := DescriptorSets[vkDesSet]
-        for _, binding, indices in bindingAndIndices {
-          if binding in desSetObj.Bindings {
-            switch desSetObj.Bindings[binding].BindingType {
-              case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,
-                  VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER: {
-                for _, index, _ in indices {
-                  if index in desSetObj.Bindings[binding].BufferViewBindings {
-                    if desSetObj.Bindings[binding].BufferViewBindings[index] == bufferView {
-                      desSetObj.Bindings[binding].BufferViewBindings[index] = as!VkBufferView(0)
-                    }
-                  }
-                }
-              }
-              default: {
-                // do nothing
-              }
-            }
-          }
-        }
-      }
-    }
     delete(BufferViews, bufferView)
   }
 }
