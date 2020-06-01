@@ -210,6 +210,11 @@ cd <sdk-path>
 tools/bin/sdkmanager platform-tools
 ```
 
+### Install gcc (required version is 8)
+sudo apt-get install gcc-8 g++-8
+export CC=gcc-8
+export CXX=g++-8
+
 ### Install other libraries
 
 ```
