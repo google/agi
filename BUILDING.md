@@ -55,9 +55,9 @@ Using the msys64 shell (installed by choco at `C:\tools\msys64\mingw64`):
 1. Update MSYS with: `pacman -Syu`.
 2. If the update ends with “close the window and run it again”, close and reopen the window and repeat 1.
 3. Fetch required tools with: `pacman -S curl git zip unzip patch`
-4. Download gcc with: `curl -O http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-9.2.0-2-any.pkg.tar.xz`
-5. Download gcc-libs with: `curl -O http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-libs-9.2.0-2-any.pkg.tar.xz`
-6. Install gcc with: `pacman -U mingw-w64-x86_64-gcc*-9.2.0-2-any.pkg.tar.xz`
+4. Download gcc *8.2* with: `curl -O http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-8.2.0-3-any.pkg.tar.xz`
+5. Download gcc-libs with: `curl -O http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-libs-8.2.0-3-any.pkg.tar.xz`
+6. Install gcc with: `pacman -U mingw-w64-x86_64-gcc*-8.2.0-3-any.pkg.tar.xz`
 7. Close the MSYS terminal
 
 ### Install Java Development Kit 8
