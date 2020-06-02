@@ -2797,30 +2797,25 @@ func (sb *stateBuilder) writeDescriptorSet(ds DescriptorSetObjectʳ) {
 	}
 
 	writes := []VkWriteDescriptorSet{}
-	for _, k := range ds.Bindings().Keys() {
-		binding := ds.Bindings().Get(k)
-		switch binding.BindingType() {
+	for _, k := range ds.Layout().Bindings().Keys() {
+		binding := ds.Layout().Bindings().Get(k)
+		switch binding.Type() {
 		case VkDescriptorType_VK_DESCRIPTOR_TYPE_SAMPLER:
-			numImages := uint32(binding.ImageBinding().Len())
-			for i := uint32(0); i < numImages; i++ {
-				im := binding.ImageBinding().Get(i)
-				if im.Sampler() == 0 {
-					continue
-				}
-
-				if im.Sampler() != 0 && !ns.Samplers().Contains(im.Sampler()) {
+			for i := uint32(0); i < binding.Count(); i++ {
+				im, ok := ds.ImageBindings().All()[i + binding.FirstSlot()]
+				if !ok || im.Sampler() == 0 || !ns.Samplers().Contains(im.Sampler()) {
 					continue
 				}
 
 				writes = append(writes, NewVkWriteDescriptorSet(sb.ta,
 					VkStructureType_VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // sType
-					0,                     // pNext
-					ds.VulkanHandle(),     // dstSet
-					k,                     // dstBinding
-					i,                     // dstArrayElement
-					1,                     // descriptorCount
-					binding.BindingType(), // descriptorType
-					NewVkDescriptorImageInfoᶜᵖ(sb.MustAllocReadData(im.Get()).Ptr()), // pImageInfo
+					0,                 // pNext
+					ds.VulkanHandle(), // dstSet
+					k,                 // dstBinding
+					i,                 // dstArrayElement
+					1,                 // descriptorCount
+					binding.Type(),    // descriptorType
+					NewVkDescriptorImageInfoᶜᵖ(sb.MustAllocReadData(im).Ptr()), // pImageInfo
 					0, // pBufferInfo
 					0, // pTexelBufferView
 				))
@@ -2830,16 +2825,15 @@ func (sb *stateBuilder) writeDescriptorSet(ds DescriptorSetObjectʳ) {
 			VkDescriptorType_VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
 			VkDescriptorType_VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
 
-			numImages := uint32(binding.ImageBinding().Len())
-			for i := uint32(0); i < numImages; i++ {
-				im := binding.ImageBinding().Get(i)
-				if im.Sampler() == 0 && im.ImageView() == 0 {
+			for i := uint32(0); i < binding.Count(); i++ {
+				im, ok := ds.ImageBindings().All()[i + binding.FirstSlot()]
+				if !ok || im.Sampler() == 0 && im.ImageView() == 0 {
 					continue
 				}
 				// If this is a combined image sampler but we have an immutable sampler,
 				// we should still be setting the image view
-				if binding.BindingType() == VkDescriptorType_VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER {
-					if ds.Layout().Bindings().Get(k).ImmutableSamplers().Get(i).IsNil() && im.Sampler() == 0 {
+				if binding.Type() == VkDescriptorType_VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER {
+					if binding.ImmutableSamplers().Get(i).IsNil() && im.Sampler() == 0 {
 						continue
 					}
 					if im.ImageView() == 0 {
@@ -2856,13 +2850,13 @@ func (sb *stateBuilder) writeDescriptorSet(ds DescriptorSetObjectʳ) {
 
 				writes = append(writes, NewVkWriteDescriptorSet(sb.ta,
 					VkStructureType_VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // sType
-					0,                     // pNext
-					ds.VulkanHandle(),     // dstSet
-					k,                     // dstBinding
-					i,                     // dstArrayElement
-					1,                     // descriptorCount
-					binding.BindingType(), // descriptorType
-					NewVkDescriptorImageInfoᶜᵖ(sb.MustAllocReadData(im.Get()).Ptr()), // pImageInfo
+					0,                 // pNext
+					ds.VulkanHandle(), // dstSet
+					k,                 // dstBinding
+					i,                 // dstArrayElement
+					1,                 // descriptorCount
+					binding.Type(),    // descriptorType
+					NewVkDescriptorImageInfoᶜᵖ(sb.MustAllocReadData(im).Ptr()), // pImageInfo
 					0, // pBufferInfo
 					0, // pTexelBufferView
 				))
@@ -2872,50 +2866,42 @@ func (sb *stateBuilder) writeDescriptorSet(ds DescriptorSetObjectʳ) {
 			VkDescriptorType_VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
 			VkDescriptorType_VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
 			VkDescriptorType_VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
-			numBuffers := uint32(binding.BufferBinding().Len())
-			for i := uint32(0); i < numBuffers; i++ {
-				buff := binding.BufferBinding().Get(i)
-				if buff.Buffer() == 0 {
-					continue
-				}
-				if buff.Buffer() != 0 && !ns.Buffers().Contains(buff.Buffer()) {
+			for i := uint32(0); i < binding.Count(); i++ {
+				buff, ok := ds.BufferBindings().All()[i + binding.FirstSlot()]
+				if !ok || buff.Buffer() == 0 || !ns.Buffers().Contains(buff.Buffer()) {
 					continue
 				}
 				writes = append(writes, NewVkWriteDescriptorSet(sb.ta,
 					VkStructureType_VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // sType
-					0,                     // pNext
-					ds.VulkanHandle(),     // dstSet
-					k,                     // dstBinding
-					i,                     // dstArrayElement
-					1,                     // descriptorCount
-					binding.BindingType(), // descriptorType
-					0,                     // pImageInfo
-					NewVkDescriptorBufferInfoᶜᵖ(sb.MustAllocReadData(buff.Get()).Ptr()), // pBufferInfo
+					0,                 // pNext
+					ds.VulkanHandle(), // dstSet
+					k,                 // dstBinding
+					i,                 // dstArrayElement
+					1,                 // descriptorCount
+					binding.Type(),    // descriptorType
+					0,                 // pImageInfo
+					NewVkDescriptorBufferInfoᶜᵖ(sb.MustAllocReadData(buff).Ptr()), // pBufferInfo
 					0, // pTexelBufferView
 				))
 			}
 
 		case VkDescriptorType_VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,
 			VkDescriptorType_VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
-			numBuffers := uint32(binding.BufferViewBindings().Len())
-			for i := uint32(0); i < numBuffers; i++ {
-				bv := binding.BufferViewBindings().Get(i)
-				if bv == 0 {
-					continue
-				}
-				if bv != 0 && !ns.BufferViews().Contains(bv) {
+			for i := uint32(0); i < binding.Count(); i++ {
+				bv, ok := ds.BufferViewBindings().All()[i + binding.FirstSlot()]
+				if !ok || bv == 0 || !ns.BufferViews().Contains(bv) {
 					continue
 				}
 				writes = append(writes, NewVkWriteDescriptorSet(sb.ta,
 					VkStructureType_VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // sType
-					0,                     // pNext
-					ds.VulkanHandle(),     // dstSet
-					k,                     // dstBinding
-					i,                     // dstArrayElement
-					1,                     // descriptorCount
-					binding.BindingType(), // descriptorType
-					0,                     // pImageInfo
-					0,                     // pBufferInfo
+					0,                 // pNext
+					ds.VulkanHandle(), // dstSet
+					k,                 // dstBinding
+					i,                 // dstArrayElement
+					1,                 // descriptorCount
+					binding.Type(),    // descriptorType
+					0,                 // pImageInfo
+					0,                 // pBufferInfo
 					NewVkBufferViewᶜᵖ(sb.MustAllocReadData(bv).Ptr()), // pTexelBufferView
 				))
 			}
