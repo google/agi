@@ -1,0 +1,18 @@
+--- a/absl/time/internal/cctz/BUILD.bazel	2020-03-04 20:57:37.000000000 +0000
++++ b/absl/time/internal/cctz/BUILD-fixed.bazel	2020-05-29 18:02:08.000000000 +0100
+@@ -74,15 +74,6 @@
+         "include/cctz/time_zone.h",
+         "include/cctz/zone_info_source.h",
+     ],
+-    linkopts = select({
+-        ":osx": [
+-            "-framework Foundation",
+-        ],
+-        ":ios": [
+-            "-framework Foundation",
+-        ],
+-        "//conditions:default": [],
+-    }),
+     visibility = ["//visibility:public"],
+     deps = [
+         ":civil_time",

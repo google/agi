@@ -350,6 +350,16 @@ def _grpc_deps(locals):
         sha256 = "e7e635b26fa11246e8fd1c46df141d2f094a659b905ac61e957234018308f883",
     )
 
+    maybe_repository(github_repository,
+        name = "com_google_absl",
+        locals = locals,
+        organization = "abseil",
+        project = "abseil-cpp",
+        commit = "df3ea785d8c30a9503321a3d35ee7d35808f190d",
+        sha256 = "d3311ead20ffce78c7fde96df803b73d0de8d992d46bdf36753954bd2d459f31",
+        patch_file = "@gapid//tools/build/third_party/com_google_absl:com_google_absl_fix.patch",
+    )
+
     native.bind(
         name = "libssl",
         actual = "@boringssl//:ssl",

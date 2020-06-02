@@ -71,6 +71,7 @@ def _github_repository_impl(ctx):
     stripPrefix = args.strip_prefix,
     sha256 = ctx.attr.sha256,
   )
+  _apply_patch(ctx)
   _add_build_file(ctx)
 
 _github_repository = repository_rule(
@@ -81,6 +82,7 @@ _github_repository = repository_rule(
         branch = attr.string(),
         commit = attr.string(),
         sha256 = attr.string(),
+        patch_file = attr.string(),
     ),
 )
 
@@ -111,6 +113,19 @@ def maybe_repository(repo_rule, name, locals, **kwargs):
             path = locals.get(name),
             build_file = build_file
         )
+
+def _apply_patch(ctx):
+  if ctx.attr.patch_file:
+    ctx.symlink(Label(ctx.attr.patch_file), "patch_to_repository.patch")
+    cmd = "cd \"{}\" && /usr/bin/patch -p1 -i patch_to_repository.patch".format(ctx.path("."))
+    print(cmd)
+    bash_exe = "bash"
+    if ctx.os.name.startswith("windows"):
+      bash_exe = ctx.os.environ["BAZEL_SH"] if "BAZEL_SH" in ctx.os.environ else "c:/tools/msys64/usr/bin/bash.exe"
+    print(bash_exe)
+    result = ctx.execute([bash_exe, "--login", "-c", cmd])
+    if result.return_code:
+        fail("Failed to apply patch: (%d)\n%s" % (result.return_code, result.stderr))
 
 # This is *not* a complete maven implementation, it's just good enough for our rules.
 
