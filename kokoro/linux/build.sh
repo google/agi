@@ -31,6 +31,8 @@ sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
 sudo apt-get -q update
 sudo apt-get -qy install gcc-8 g++-8
 export CC=/usr/bin/gcc-8
+gcc --version
+ldd --version
 
 # Get the Android NDK
 curl -L -k -O -s https://dl.google.com/android/repository/android-ndk-r21-linux-x86_64.zip
