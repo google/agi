@@ -357,6 +357,7 @@ def _grpc_deps(locals):
         project = "abseil-cpp",
         commit = "df3ea785d8c30a9503321a3d35ee7d35808f190d",
         sha256 = "d3311ead20ffce78c7fde96df803b73d0de8d992d46bdf36753954bd2d459f31",
+        # Patch needed due to https://github.com/abseil/abseil-cpp/issues/326 (build failures on macOS)
         patch_file = "@gapid//tools/build/third_party/com_google_absl:com_google_absl_fix.patch",
     )
 

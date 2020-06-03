@@ -118,11 +118,9 @@ def _apply_patch(ctx):
   if ctx.attr.patch_file:
     ctx.symlink(Label(ctx.attr.patch_file), "patch_to_repository.patch")
     cmd = "cd \"{}\" && /usr/bin/patch -p1 -i patch_to_repository.patch".format(ctx.path("."))
-    print(cmd)
     bash_exe = "bash"
     if ctx.os.name.startswith("windows"):
       bash_exe = ctx.os.environ["BAZEL_SH"] if "BAZEL_SH" in ctx.os.environ else "c:/tools/msys64/usr/bin/bash.exe"
-    print(bash_exe)
     result = ctx.execute([bash_exe, "--login", "-c", cmd])
     if result.return_code:
         fail("Failed to apply patch: (%d)\n%s" % (result.return_code, result.stderr))
