@@ -83,7 +83,7 @@ import java.util.logging.Logger;
 public class CommandTree extends Composite
     implements Tab, Capture.Listener, CommandStream.Listener {
   protected static final Logger LOG = Logger.getLogger(CommandTree.class.getName());
-  private static final String COMMAND_INDEX_HOVER = "Double click to copy index. Use Ctrl+G to do command jumping.";
+  private static final String COMMAND_INDEX_HOVER = "Double click to copy index. Use Ctrl+G to jump to a given command index.";
   private static final String COMMAND_INDEX_DSCRP = "Command index: ";
 
   private final Models models;
