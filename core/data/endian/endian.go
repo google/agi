@@ -87,7 +87,7 @@ func (r *bytesReader) Read(p []byte) (int, error) {
 	n := len(p)
 
 	if r.head +n > len(r.data) {
-		r.err = fmt.Errorf("error after reading %d bytes", n)
+		r.err = fmt.Errorf("error after reading %d dynamic bytes", n)
 		return 0, r.err
 	}
 
@@ -106,7 +106,7 @@ func (r *reader) Data(p []byte) {
 	n, err := io.ReadFull(r.reader, p)
 	if err != nil {
 		r.err = err
-		err = fmt.Errorf("%v after reading %d bytes", err, n)
+		err = fmt.Errorf("%v after reading %d dynamic bytes", err, n)
 	}
 }
 
@@ -168,7 +168,8 @@ func (r *bytesReader) Uint8() uint8 {
 		return 0
 	}
 	if r.head +1 > len(r.data) {
-		r.err = fmt.Errorf("error after reading %d bytes", 1)
+		panic("AAAA")
+		r.err = fmt.Errorf("error after reading 1 byte type")
 		return 0
 	}
 	ret := r.data[r.head]
@@ -214,7 +215,7 @@ func (r *bytesReader) Uint16() uint16 {
 		return 0
 	}
 	if r.head +2 > len(r.data) {
-		r.err = fmt.Errorf("error after reading %d bytes", 2)
+		r.err = fmt.Errorf("error after reading 2 byte type")
 		return 0
 	}
 	ret := r.byteOrder.Uint16(r.data[r.head : r.head +2])
@@ -263,7 +264,7 @@ func (r *bytesReader) Uint32() uint32 {
 		return 0
 	}
 	if r.head +4 > len(r.data) {
-		r.err = fmt.Errorf("error after reading %d bytes", 4)
+		r.err = fmt.Errorf("error after reading 4 byte type")
 		return 0
 	}
 	ret := r.byteOrder.Uint32(r.data[r.head : r.head +4])
@@ -312,7 +313,7 @@ func (r *bytesReader) Uint64() uint64 {
 		return 0
 	}
 	if r.head +8 > len(r.data) {
-		r.err = fmt.Errorf("error after reading %d bytes", 8)
+		r.err = fmt.Errorf("error after reading 8 byte type")
 		return 0
 	}
 	ret := r.byteOrder.Uint64(r.data[r.head : r.head +8])

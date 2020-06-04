@@ -29,7 +29,7 @@ var (
 	tyLinkable = reflect.TypeOf((*path.Linker)(nil)).Elem()
 )
 
-func Box(ctx context.Context, d *memory.Decoder, t *types.Type, p path.Node, rc *path.ResolveConfig) (*Value, error) {
+func Box(ctx context.Context, d memory.Decoder, t *types.Type, p path.Node, rc *path.ResolveConfig) (*Value, error) {
 	a, err := t.Alignment(ctx, d.MemoryLayout())
 	if err != nil {
 		return nil, err

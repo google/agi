@@ -61,6 +61,7 @@ import(
   "github.com/google/gapid/gapis/replay/builder"
   "github.com/google/gapid/gapis/replay/value"
   "github.com/google/gapid/gapis/service/path"
+  "github.com/google/gapid/core/log"
   ϟapi "github.com/google/gapid/gapis/api"
   ϟmem "github.com/google/gapid/gapis/memory"
 )
@@ -72,6 +73,7 @@ var ( // Don't error if these packages aren't used.
   _ = data.Dedupe
   _ = device.NewID
   _ = path.NewID
+  _ = log.W
 )
 
   {{template "Go.CommentHeader" "StaticArrays"}}
@@ -103,12 +105,14 @@ import(
   "github.com/google/gapid/gapis/replay/protocol"
   "github.com/google/gapid/gapis/replay/value"
   "github.com/google/gapid/gapis/service/path"
+  "github.com/google/gapid/core/log"
   ϟapi "github.com/google/gapid/gapis/api"
   ϟmem "github.com/google/gapid/gapis/memory"
 )
 
 var ( // Don't error if these packages aren't used.
   _ = protocol.OpCall
+  _ = log.W
 )
 
   {{template "Go.CommentHeader" "Slices"}}
@@ -281,7 +285,7 @@ import (
     return fmt.Sprintf("{{$.Name}}(%d)", e)
   }
 
-  func Decode{{$name}}(ϟd *ϟmem.Decoder) {{$name}} {
+  func Decode{{$name}}(ϟd ϟmem.Decoder) {{$name}} {
     return {{$name}}({{Template "Go.Decode" $.NumberType}})
   }
 
@@ -388,7 +392,7 @@ import (
   }
 
   // Decode decodes this static array from the decoder.
-  func Decode{{$name}}(ϟd *ϟmem.Decoder, ϟa arena.Arena) {{$name}} {
+  func Decode{{$name}}(ϟd ϟmem.Decoder, ϟa arena.Arena) {{$name}} {
     out := New{{$name}}(ϟa)
     for i, c := 0, {{$ty.Size}}; i < c; i++ {
       out.Set(i, {{Template "Go.Decode" $ty.ValueType}})
@@ -1008,7 +1012,7 @@ import (
   }
 
   // Decoder returns a memory decoder for the slice.
-  func (s {{$slice_ty}}) Decoder(ϟctx context.Context, ϟg *ϟapi.GlobalState) *ϟmem.Decoder {
+  func (s {{$slice_ty}}) Decoder(ϟctx context.Context, ϟg *ϟapi.GlobalState) ϟmem.Decoder {
     return ϟg.MemoryDecoder(ϟctx, ϟg.Memory.MustGet(s.Pool()).Slice(s.Range()))
   }
 
@@ -1066,6 +1070,8 @@ import (
     // MustRead calls and returns Read, panicing if there was an error.
     func (s {{$slice_ty}}) MustReadʷ(ϟctx context.Context, ϟc ϟapi.Cmd, ϟg *ϟapi.GlobalState, ϟb *builder.Builder, ϟw ϟapi.StateWatcher) []{{$el_ty}} {
       vals, err := s.Readʷ(ϟctx, ϟc, ϟg, ϟb, ϟw)
+      // ALAN
+      log.W(ϟctx , "{{$slice_ty}} ERR IS: %v", err)
       panicOnError(err)
       return vals
     }
@@ -1513,7 +1519,7 @@ import (
       // Dummy function to make {{$name}} implement UintTy interface
       func ({{$name}}) IsUint() {}
     {{end}}
-    func Decode{{$name}}(ϟd *ϟmem.Decoder, ϟa arena.Arena) {{$name}} {
+    func Decode{{$name}}(ϟd ϟmem.Decoder, ϟa arena.Arena) {{$name}} {
       return {{$name}}({{Template "Go.Decode" $ty}})
     }
   {{end}}
@@ -1668,7 +1674,7 @@ import (
     }
 
     // Decode decodes this class from the decoder.
-    func (c {{$name}}) Decode(ϟd *ϟmem.Decoder) {
+    func (c {{$name}}) Decode(ϟd ϟmem.Decoder) {
       ϟa := c.Arena(); _ = ϟa
       ϟd.Align({{$name}}Alignment(ϟd.MemoryLayout()))
       base := ϟd.Offset();
@@ -1684,7 +1690,7 @@ import (
     }
 
     // Decode decodes a new class from the decoder.
-    func Decode{{$name}}(ϟd *ϟmem.Decoder, ϟa arena.Arena) {{$name}} {
+    func Decode{{$name}}(ϟd ϟmem.Decoder, ϟa arena.Arena) {{$name}} {
       out := Make{{$name}}(ϟa)
       out.Decode(ϟd)
       return out

@@ -208,5 +208,5 @@ func (d SimpleDecoder) Error() error {
 }
 
 func (d SimpleDecoder) SetError(err error) {
-	return d.reader.SetError(err)
+	d.reader.SetError(err)
 }

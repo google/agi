@@ -34,6 +34,7 @@
     "github.com/google/gapid/gapis/replay/protocol"
     "github.com/google/gapid/gapis/replay/value"
     "github.com/google/gapid/gapis/stringtable"
+    "github.com/google/gapid/core/log"
 
 
     ϟmem "github.com/google/gapid/gapis/memory"
@@ -45,7 +46,8 @@
     _ = messages.ErrFileCannotBeRead()
     _ = strings.Reader{}
     _ = stringtable.Msg{}
-    _ = ϟmem.Decoder{}
+    //_ = ϟmem.Decoder{}
+    _ = log.W
     _ = u64.Min
   )
 
@@ -159,6 +161,7 @@
 
       {{if not $r}}ϟb = nil // @no_replay{{end}}
 
+      log.W(ϟctx, "MUTATE {{$name}} START")
       ϟs, ϟt := GetState(ϟg), ϟc.Thread()
       ϟl, ϟa := ϟg.MemoryLayout, ϟg.Arena; _, _ = ϟl, ϟa
       ϟo := ϟc.Extras().Observations()

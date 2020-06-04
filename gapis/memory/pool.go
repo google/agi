@@ -26,7 +26,7 @@ import (
 	"github.com/google/gapid/core/math/u64"
 	"github.com/google/gapid/gapis/database"
 	"github.com/google/gapid/core/os/device"
-	"github.com/pkg/errors"
+	// "github.com/pkg/errors"
 )
 
 // Pool represents an unbounded and isolated memory space. Pool can be used
@@ -334,10 +334,7 @@ func (m poolSlice) String() string {
 }
 
 func (m poolSlice) NewDecoder(ctx context.Context, memLayout *device.MemoryLayout) Decoder {
-
-	//simpleDecoder := SimpleDecoder{memLayout: memLayout, offset: 0}
 	decode := &poolSliceDecoder{ctx: ctx, writes: m.writes, rng: m.rng}
-	//decode.readImpl = decode.prepareAndRead
 	return decode
 }
 
@@ -345,101 +342,227 @@ type poolSliceDecoder struct {
 	ctx      context.Context
 	writes   poolWriteList
 	rng      Range
-	simpleDecoder SimpleDecoder
+	simpleDecoder Decoder
 }
 
 func (r *poolSliceDecoder) alignAndOffset(l *device.DataTypeLayout) {
-	ensureDecoder()
-	if simpleDecoder.Error() != nil {
-		panic("ALAN")
-		r.handleError()
+	r.ensureDecoder()
+	r.simpleDecoder.alignAndOffset(l)
+	if r.simpleDecoder.Error() != nil {
+		panic("ALAN") //r.handleError()
 	}
-	ret := simpleDecoder.alignAndOffset(l)
-	if simpleDecoder.Error() != nil {
-		handleError()
-		return alignAndOffset(l)
+}
+
+func (r *poolSliceDecoder) MemoryLayout() *device.MemoryLayout {
+	r.ensureDecoder()
+	ret := r.simpleDecoder.MemoryLayout()
+	if r.simpleDecoder.Error() != nil {
+		panic("ALAN") //r.handleError()
 	}
 	return ret
 }
-func (r *poolSliceDecoder) MemoryLayout() *device.MemoryLayout {
 
-}
 func (r *poolSliceDecoder) Offset() uint64 {
-
+	r.ensureDecoder()
+	ret := r.simpleDecoder.Offset()
+	if r.simpleDecoder.Error() != nil {
+		panic("ALAN") //r.handleError()
+	}
+	return ret
 }
+
 func (r *poolSliceDecoder) Align(to uint64) {
-
+	r.ensureDecoder()
+	r.simpleDecoder.Align(to)
+	if r.simpleDecoder.Error() != nil {
+		panic("ALAN") //r.handleError()
+	}
 }
+
 func (r *poolSliceDecoder) Skip(n uint64) {
-
+	r.ensureDecoder()
+	r.simpleDecoder.Skip(n)
+	if r.simpleDecoder.Error() != nil {
+		panic("ALAN") //r.handleError()
+	}
 }
+
 func (r *poolSliceDecoder) Pointer() uint64 {
-
+	r.ensureDecoder()
+	ret := r.simpleDecoder.Pointer()
+	if r.simpleDecoder.Error() != nil {
+		panic("ALAN") //r.handleError()
+	}
+	return ret
 }
+
 func (r *poolSliceDecoder) F32() float32 {
-
+	r.ensureDecoder()
+	ret := r.simpleDecoder.F32()
+	if r.simpleDecoder.Error() != nil {
+		panic("ALAN") //r.handleError()
+	}
+	return ret
 }
+
 func (r *poolSliceDecoder) F64() float64 {
-
+	r.ensureDecoder()
+	ret := r.simpleDecoder.F64()
+	if r.simpleDecoder.Error() != nil {
+		panic("ALAN") //r.handleError()
+	}
+	return ret
 }
+
 func (r *poolSliceDecoder) I8() int8 {
-
+	r.ensureDecoder()
+	ret := r.simpleDecoder.I8()
+	if r.simpleDecoder.Error() != nil {
+		panic("ALAN") //r.handleError()
+	}
+	return ret
 }
+
 func (r *poolSliceDecoder) I16() int16 {
-
+	r.ensureDecoder()
+	ret := r.simpleDecoder.I16()
+	if r.simpleDecoder.Error() != nil {
+		panic("ALAN") //r.handleError()
+	}
+	return ret
 }
+
 func (r *poolSliceDecoder) I32() int32 {
-
+	r.ensureDecoder()
+	ret := r.simpleDecoder.I32()
+	if r.simpleDecoder.Error() != nil {
+		panic("ALAN") //r.handleError()
+	}
+	return ret
 }
+
 func (r *poolSliceDecoder) I64() int64 {
-
+	r.ensureDecoder()
+	ret := r.simpleDecoder.I64()
+	if r.simpleDecoder.Error() != nil {
+		panic("ALAN") //r.handleError()
+	}
+	return ret
 }
+
 func (r *poolSliceDecoder) U8() uint8 {
-
+	r.ensureDecoder()
+	ret := r.simpleDecoder.U8()
+	if r.simpleDecoder.Error() != nil {
+		panic("ALAN") //r.handleError()
+	}
+	return ret
 }
+
 func (r *poolSliceDecoder) U16() uint16 {
-
+	r.ensureDecoder()
+	ret := r.simpleDecoder.U16()
+	if r.simpleDecoder.Error() != nil {
+		panic("ALAN") //r.handleError()
+	}
+	return ret
 }
+
 func (r *poolSliceDecoder) U32() uint32 {
-
+	r.ensureDecoder()
+	ret := r.simpleDecoder.U32()
+	if r.simpleDecoder.Error() != nil {
+		panic("ALAN") //r.handleError()
+	}
+	return ret
 }
+
 func (r *poolSliceDecoder) U64() uint64 {
-
+	r.ensureDecoder()
+	ret := r.simpleDecoder.U64()
+	if r.simpleDecoder.Error() != nil {
+		panic("ALAN") //r.handleError()
+	}
+	return ret
 }
+
 func (r *poolSliceDecoder) Char() Char {
-
+	r.ensureDecoder()
+	ret := r.simpleDecoder.Char()
+	if r.simpleDecoder.Error() != nil {
+		panic("ALAN") //r.handleError()
+	}
+	return ret
 }
+
 func (r *poolSliceDecoder) Int() Int {
-
+	r.ensureDecoder()
+	ret := r.simpleDecoder.Int()
+	if r.simpleDecoder.Error() != nil {
+		panic("ALAN") //r.handleError()
+	}
+	return ret
 }
+
 func (r *poolSliceDecoder) Uint() Uint {
-
+	r.ensureDecoder()
+	ret := r.simpleDecoder.Uint()
+	if r.simpleDecoder.Error() != nil {
+		panic("ALAN") //r.handleError()
+	}
+	return ret
 }
+
 func (r *poolSliceDecoder) Size() Size {
-
+	r.ensureDecoder()
+	ret := r.simpleDecoder.Size()
+	if r.simpleDecoder.Error() != nil {
+		panic("ALAN") //r.handleError()
+	}
+	return ret
 }
+
 func (r *poolSliceDecoder) String() string {
-
+	r.ensureDecoder()
+	ret := r.simpleDecoder.String()
+	if r.simpleDecoder.Error() != nil {
+		panic("ALAN") //r.handleError()
+	}
+	return ret
 }
+
 func (r *poolSliceDecoder) Bool() bool {
-
+	r.ensureDecoder()
+	ret := r.simpleDecoder.Bool()
+	if r.simpleDecoder.Error() != nil {
+		panic("ALAN") //r.handleError()
+	}
+	return ret
 }
+
 func (r *poolSliceDecoder) Data(buf []byte) {
-
+	r.ensureDecoder()
+	if r.simpleDecoder.Error() != nil {
+		panic("ALAN") //r.handleError()
+	}
+	r.simpleDecoder.Data(buf)
 }
-func (r *poolSliceDecoder) Error() error {
 
+func (r *poolSliceDecoder) Error() error {
+	r.ensureDecoder()
+	return r.simpleDecoder.Error()
 }
 
 func (r *poolSliceDecoder) ensureDecoder() {
 	if r.simpleDecoder == nil {
-		handleError()
+		r.handleError() // If we don't have an initalised simple decoder, then this is the first read.
+		// We can treat this the same as an error, so call handleError to go get a new simpleDecoder.
 	}
 }
 
 func (r *poolSliceDecoder) handleError() {
 	if r.rng.Size <= 0 {
-		return r.setError(0, io.EOF)
+		r.SetError(io.EOF)
 	}
 
 	if len(r.writes) > 0 {
@@ -447,7 +570,8 @@ func (r *poolSliceDecoder) handleError() {
 		intersection := w.dst.Intersect(r.rng)
 
 		if intersection.First() > r.rng.First() {
-			r.readImpl = r.zeroReadFunc(intersection.First() - r.rng.First())
+			zeroSize := intersection.First() - r.rng.First()
+			r.simpleDecoder = &zeroReadDecoder{size: zeroSize}
 		} else {
 			r.writes = r.writes[1:]
 			slice := w.src
@@ -457,17 +581,11 @@ func (r *poolSliceDecoder) handleError() {
 					Size: intersection.Size,
 				})
 			}
-			//var sliceReader io.Reader
-			//_ = slice
-			//sliceReader := slice.NewReader(r.ctx)
-			sliceDecoder := slice.NewDecoder(r.ctx, r.MemoryLayout())
-			r.readImpl = r.readerReadFunc(sliceReader, intersection.Size)
+			r.simpleDecoder = slice.NewDecoder(r.ctx, r.MemoryLayout()) // intersection.Size
 		}
 	} else {
-		r.readImpl = r.zeroReadFunc(r.rng.Size)
+		r.simpleDecoder = &zeroReadDecoder{size: r.rng.Size}
 	}
-
-	return r.readImpl(p)
 }
 
 // prepareAndRead determines whether we are about to read from an area covered
@@ -478,88 +596,116 @@ func (r *poolSliceDecoder) handleError() {
 // have a fast path until the end of the unwritten area which simply fills the
 // output buffers with zeros. At the end of each contiguous region (one single
 // write or unwritten area), we go through this again.
-func (r *poolSliceDecoder) prepareAndRead(p []byte) (n int, err error) {
-	if r.rng.Size <= 0 {
-		return r.setError(0, io.EOF)
-	}
-	if len(p) == 0 {
-		return 0, nil
-	}
+// func (r *poolSliceDecoder) prepareAndRead(p []byte) (n int, err error) {
+// 	if r.rng.Size <= 0 {
+// 		return r.setError(0, io.EOF)
+// 	}
+// 	if len(p) == 0 {
+// 		return 0, nil
+// 	}
 
-	if len(r.writes) > 0 {
-		w := r.writes[0]
-		intersection := w.dst.Intersect(r.rng)
+// 	if len(r.writes) > 0 {
+// 		w := r.writes[0]
+// 		intersection := w.dst.Intersect(r.rng)
 
-		if intersection.First() > r.rng.First() {
-			r.readImpl = r.zeroReadFunc(intersection.First() - r.rng.First())
-		} else {
-			r.writes = r.writes[1:]
-			slice := w.src
-			if intersection != w.dst {
-				slice = w.src.Slice(Range{
-					Base: intersection.First() - w.dst.First(),
-					Size: intersection.Size,
-				})
-			}
-			//var sliceReader io.Reader
-			//_ = slice
-			//sliceReader := slice.NewReader(r.ctx)
-			sliceDecoder := slice.NewDecoder(r.ctx, r.MemoryLayout())
-			r.readImpl = r.readerReadFunc(sliceReader, intersection.Size)
-		}
-	} else {
-		r.readImpl = r.zeroReadFunc(r.rng.Size)
-	}
+// 		if intersection.First() > r.rng.First() {
+// 			r.readImpl = r.zeroReadFunc(intersection.First() - r.rng.First())
+// 		} else {
+// 			r.writes = r.writes[1:]
+// 			slice := w.src
+// 			if intersection != w.dst {
+// 				slice = w.src.Slice(Range{
+// 					Base: intersection.First() - w.dst.First(),
+// 					Size: intersection.Size,
+// 				})
+// 			}
+// 			//var sliceReader io.Reader
+// 			//_ = slice
+// 			//sliceReader := slice.NewReader(r.ctx)
+// 			sliceDecoder := slice.NewDecoder(r.ctx, r.MemoryLayout())
+// 			r.readImpl = r.readerReadFunc(sliceReader, intersection.Size)
+// 		}
+// 	} else {
+// 		r.readImpl = r.zeroReadFunc(r.rng.Size)
+// 	}
 
-	return r.readImpl(p)
-}
+// 	return r.readImpl(p)
+// }
 
 // zeroReadFunc returns a read function that fills up to bytesLeft bytes
 // in the buffer with zeros, after which it switches to the slow path.
-func (r *poolSliceDecoder) zeroReadFunc(bytesLeft uint64) readFunction {
-	r.rng = r.rng.TrimLeft(bytesLeft)
-	return func(p []byte) (n int, err error) {
-		zeroCount := min(bytesLeft, uint64(len(p)))
-		for i := uint64(0); i < zeroCount; i++ {
-			p[i] = 0
-		}
+// func (r *poolSliceDecoder) zeroReadFunc(bytesLeft uint64) readFunction {
+// 	r.rng = r.rng.TrimLeft(bytesLeft)
+// 	return func(p []byte) (n int, err error) {
+// 		zeroCount := min(bytesLeft, uint64(len(p)))
+// 		for i := uint64(0); i < zeroCount; i++ {
+// 			p[i] = 0
+// 		}
 
-		bytesLeft -= zeroCount
-		if bytesLeft == 0 {
-			r.readImpl = r.prepareAndRead
-		}
+// 		bytesLeft -= zeroCount
+// 		if bytesLeft == 0 {
+// 			r.readImpl = r.prepareAndRead
+// 		}
 
-		return int(zeroCount), nil
-	}
-}
+// 		return int(zeroCount), nil
+// 	}
+// }
 
 // readerReadFunc returns a read function that reads up to bytesLeft
 // bytes from srcReader after which it switches to the slow path.
-func (r *poolSliceDecoder) readerReadFunc(srcReader io.Reader, bytesLeft uint64) readFunction {
-	r.rng = r.rng.TrimLeft(bytesLeft)
-	return func(p []byte) (n int, err error) {
-		bytesToRead := min(bytesLeft, uint64(len(p)))
+// func (r *poolSliceDecoder) readerReadFunc(srcReader io.Reader, bytesLeft uint64) readFunction {
+// 	r.rng = r.rng.TrimLeft(bytesLeft)
+// 	return func(p []byte) (n int, err error) {
+// 		bytesToRead := min(bytesLeft, uint64(len(p)))
 
-		bytesRead, err := srcReader.Read(p[:bytesToRead])
-		if bytesRead == 0 && errors.Cause(err) == io.EOF {
-			return r.setError(0, fmt.Errorf("Premature EOF from underlying reader"))
-		}
-		if err != nil && err != io.EOF {
-			return r.setError(bytesRead, err)
-		}
+// 		bytesRead, err := srcReader.Read(p[:bytesToRead])
+// 		if bytesRead == 0 && errors.Cause(err) == io.EOF {
+// 			return r.setError(0, fmt.Errorf("Premature EOF from underlying reader"))
+// 		}
+// 		if err != nil && err != io.EOF {
+// 			return r.setError(bytesRead, err)
+// 		}
 
-		bytesLeft -= uint64(bytesRead)
-		if bytesLeft == 0 {
-			r.readImpl = r.prepareAndRead
-		}
-		return bytesRead, nil
-	}
-}
+// 		bytesLeft -= uint64(bytesRead)
+// 		if bytesLeft == 0 {
+// 			r.readImpl = r.prepareAndRead
+// 		}
+// 		return bytesRead, nil
+// 	}
+// }
 
 // setError returns its arguments and makes subsequent Read()s return (0, err).
-func (r *poolSliceDecoder) setError(n int, err error) (int, error) {
-	r.readImpl = func([]byte) (int, error) {
-		return 0, err
-	}
-	return n, err
+func (r *poolSliceDecoder) SetError(err error) {
+	panic("qwerty")
+	r.simpleDecoder.SetError(err) // ALAN: Is this right? Because we're using the error to advance across pool slices?
 }
+
+type zeroReadDecoder struct {
+	size uint64
+}
+
+func (r *zeroReadDecoder) alignAndOffset(l *device.DataTypeLayout) {}
+func (r *zeroReadDecoder) MemoryLayout() *device.MemoryLayout { return nil }
+func (r *zeroReadDecoder) Offset() uint64  { return 0 }
+func (r *zeroReadDecoder) Align(to uint64) {}
+func (r *zeroReadDecoder) Skip(n uint64) {}
+func (r *zeroReadDecoder) Pointer() uint64 { return 0 }
+func (r *zeroReadDecoder) F32() float32 { return 0 }
+func (r *zeroReadDecoder) F64() float64 { return 0 }
+func (r *zeroReadDecoder) I8() int8 { return 0 }
+func (r *zeroReadDecoder) I16() int16 { return 0 }
+func (r *zeroReadDecoder) I32() int32 { return 0 }
+func (r *zeroReadDecoder) I64() int64 { return 0 }
+func (r *zeroReadDecoder) U8() uint8 { return 0 }
+func (r *zeroReadDecoder) U16() uint16 { return 0 }
+func (r *zeroReadDecoder) U32() uint32 { return 0 }
+func (r *zeroReadDecoder) U64() uint64 { return 0 }
+func (r *zeroReadDecoder) Char() Char { return 0 }
+func (r *zeroReadDecoder) Int() Int { return 0 }
+func (r *zeroReadDecoder) Uint() Uint { return 0 }
+func (r *zeroReadDecoder) Size() Size { return 0 }
+func (r *zeroReadDecoder) String() string { return "" }
+func (r *zeroReadDecoder) Bool() bool { return false } 
+func (r *zeroReadDecoder) Data(buf []byte) {}
+func (r *zeroReadDecoder) Error() error { return nil }
+func (r *zeroReadDecoder) SetError(err error) {}

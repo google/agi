@@ -130,7 +130,7 @@ func (s GlobalState) String() string {
 
 // MemoryDecoder returns a memory decoder using the state's memory layout to
 // decode data from d.
-func (s GlobalState) MemoryDecoder(ctx context.Context, d memory.Data) *memory.Decoder {
+func (s GlobalState) MemoryDecoder(ctx context.Context, d memory.Data) memory.Decoder {
 	return d.NewDecoder(ctx, s.MemoryLayout);
 }
 
