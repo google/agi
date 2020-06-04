@@ -76,7 +76,7 @@ func (r *blob) NewReader(ctx context.Context) io.Reader {
 	return bytes.NewReader(r.data)
 }
 
-func (r *blob) NewDecoder(ctx context.Context, memLayout *device.MemoryLayout) *Decoder {
+func (r *blob) NewDecoder(ctx context.Context, memLayout *device.MemoryLayout) Decoder {
 	decode := NewDecoder(endian.ReaderForBytes(r.data, memLayout.Endian), memLayout)
 	return decode
 }

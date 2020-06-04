@@ -21,7 +21,7 @@ import (
 	"strings"
 
 	"github.com/google/gapid/core/data/id"
-	"github.com/google/gapid/core/data/endian"
+	// "github.com/google/gapid/core/data/endian"
 	"github.com/google/gapid/core/math/interval"
 	"github.com/google/gapid/core/math/u64"
 	"github.com/google/gapid/gapis/database"
@@ -333,28 +333,140 @@ func (m poolSlice) String() string {
 	return fmt.Sprintf("Slice(%v)", m.rng)
 }
 
-func (m poolSlice) NewReader(ctx context.Context) io.Reader {
-	r := &poolSliceReader{ctx: ctx, writes: m.writes, rng: m.rng}
-	r.readImpl = r.prepareAndRead
-	return r
-}
+func (m poolSlice) NewDecoder(ctx context.Context, memLayout *device.MemoryLayout) Decoder {
 
-func (m poolSlice) NewDecoder(ctx context.Context, memLayout *device.MemoryLayout) *Decoder {
-	decode := NewDecoder(endian.Reader(m.NewReader(ctx), memLayout.Endian), memLayout) // ALAN
+	//simpleDecoder := SimpleDecoder{memLayout: memLayout, offset: 0}
+	decode := &poolSliceDecoder{ctx: ctx, writes: m.writes, rng: m.rng}
+	//decode.readImpl = decode.prepareAndRead
 	return decode
 }
 
-type readFunction func([]byte) (int, error)
-
-type poolSliceReader struct {
+type poolSliceDecoder struct {
 	ctx      context.Context
 	writes   poolWriteList
 	rng      Range
-	readImpl readFunction
+	simpleDecoder SimpleDecoder
 }
 
-// Implements io.Reader
-func (r *poolSliceReader) Read(p []byte) (n int, err error) {
+func (r *poolSliceDecoder) alignAndOffset(l *device.DataTypeLayout) {
+	ensureDecoder()
+	if simpleDecoder.Error() != nil {
+		panic("ALAN")
+		r.handleError()
+	}
+	ret := simpleDecoder.alignAndOffset(l)
+	if simpleDecoder.Error() != nil {
+		handleError()
+		return alignAndOffset(l)
+	}
+	return ret
+}
+func (r *poolSliceDecoder) MemoryLayout() *device.MemoryLayout {
+
+}
+func (r *poolSliceDecoder) Offset() uint64 {
+
+}
+func (r *poolSliceDecoder) Align(to uint64) {
+
+}
+func (r *poolSliceDecoder) Skip(n uint64) {
+
+}
+func (r *poolSliceDecoder) Pointer() uint64 {
+
+}
+func (r *poolSliceDecoder) F32() float32 {
+
+}
+func (r *poolSliceDecoder) F64() float64 {
+
+}
+func (r *poolSliceDecoder) I8() int8 {
+
+}
+func (r *poolSliceDecoder) I16() int16 {
+
+}
+func (r *poolSliceDecoder) I32() int32 {
+
+}
+func (r *poolSliceDecoder) I64() int64 {
+
+}
+func (r *poolSliceDecoder) U8() uint8 {
+
+}
+func (r *poolSliceDecoder) U16() uint16 {
+
+}
+func (r *poolSliceDecoder) U32() uint32 {
+
+}
+func (r *poolSliceDecoder) U64() uint64 {
+
+}
+func (r *poolSliceDecoder) Char() Char {
+
+}
+func (r *poolSliceDecoder) Int() Int {
+
+}
+func (r *poolSliceDecoder) Uint() Uint {
+
+}
+func (r *poolSliceDecoder) Size() Size {
+
+}
+func (r *poolSliceDecoder) String() string {
+
+}
+func (r *poolSliceDecoder) Bool() bool {
+
+}
+func (r *poolSliceDecoder) Data(buf []byte) {
+
+}
+func (r *poolSliceDecoder) Error() error {
+
+}
+
+func (r *poolSliceDecoder) ensureDecoder() {
+	if r.simpleDecoder == nil {
+		handleError()
+	}
+}
+
+func (r *poolSliceDecoder) handleError() {
+	if r.rng.Size <= 0 {
+		return r.setError(0, io.EOF)
+	}
+
+	if len(r.writes) > 0 {
+		w := r.writes[0]
+		intersection := w.dst.Intersect(r.rng)
+
+		if intersection.First() > r.rng.First() {
+			r.readImpl = r.zeroReadFunc(intersection.First() - r.rng.First())
+		} else {
+			r.writes = r.writes[1:]
+			slice := w.src
+			if intersection != w.dst {
+				slice = w.src.Slice(Range{
+					Base: intersection.First() - w.dst.First(),
+					Size: intersection.Size,
+				})
+			}
+			//var sliceReader io.Reader
+			//_ = slice
+			//sliceReader := slice.NewReader(r.ctx)
+			sliceDecoder := slice.NewDecoder(r.ctx, r.MemoryLayout())
+			r.readImpl = r.readerReadFunc(sliceReader, intersection.Size)
+		}
+	} else {
+		r.readImpl = r.zeroReadFunc(r.rng.Size)
+	}
+
 	return r.readImpl(p)
 }
 
@@ -366,7 +478,7 @@ func (r *poolSliceReader) Read(p []byte) (n int, err error) {
 // have a fast path until the end of the unwritten area which simply fills the
 // output buffers with zeros. At the end of each contiguous region (one single
 // write or unwritten area), we go through this again.
-func (r *poolSliceReader) prepareAndRead(p []byte) (n int, err error) {
+func (r *poolSliceDecoder) prepareAndRead(p []byte) (n int, err error) {
 	if r.rng.Size <= 0 {
 		return r.setError(0, io.EOF)
 	}
@@ -389,9 +501,10 @@ func (r *poolSliceReader) prepareAndRead(p []byte) (n int, err error) {
 					Size: intersection.Size,
 				})
 			}
-			_ = slice
-			var sliceReader io.Reader
+			//var sliceReader io.Reader
+			//_ = slice
 			//sliceReader := slice.NewReader(r.ctx)
+			sliceDecoder := slice.NewDecoder(r.ctx, r.MemoryLayout())
 			r.readImpl = r.readerReadFunc(sliceReader, intersection.Size)
 		}
 	} else {
@@ -403,7 +516,7 @@ func (r *poolSliceReader) prepareAndRead(p []byte) (n int, err error) {
 
 // zeroReadFunc returns a read function that fills up to bytesLeft bytes
 // in the buffer with zeros, after which it switches to the slow path.
-func (r *poolSliceReader) zeroReadFunc(bytesLeft uint64) readFunction {
+func (r *poolSliceDecoder) zeroReadFunc(bytesLeft uint64) readFunction {
 	r.rng = r.rng.TrimLeft(bytesLeft)
 	return func(p []byte) (n int, err error) {
 		zeroCount := min(bytesLeft, uint64(len(p)))
@@ -422,7 +535,7 @@ func (r *poolSliceReader) zeroReadFunc(bytesLeft uint64) readFunction {
 
 // readerReadFunc returns a read function that reads up to bytesLeft
 // bytes from srcReader after which it switches to the slow path.
-func (r *poolSliceReader) readerReadFunc(srcReader io.Reader, bytesLeft uint64) readFunction {
+func (r *poolSliceDecoder) readerReadFunc(srcReader io.Reader, bytesLeft uint64) readFunction {
 	r.rng = r.rng.TrimLeft(bytesLeft)
 	return func(p []byte) (n int, err error) {
 		bytesToRead := min(bytesLeft, uint64(len(p)))
@@ -444,7 +557,7 @@ func (r *poolSliceReader) readerReadFunc(srcReader io.Reader, bytesLeft uint64) 
 }
 
 // setError returns its arguments and makes subsequent Read()s return (0, err).
-func (r *poolSliceReader) setError(n int, err error) (int, error) {
+func (r *poolSliceDecoder) setError(n int, err error) (int, error) {
 	r.readImpl = func([]byte) (int, error) {
 		return 0, err
 	}

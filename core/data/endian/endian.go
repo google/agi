@@ -205,7 +205,7 @@ func (r *reader) Uint16() uint16 {
 	if r.err != nil {
 		return 0
 	}
-	_, r.err = io.ReadFull(r.reader, r.tmp[:2])
+	_, r.err = io.ReadFull(r.reader, r.tmp[:2]) // ALAN: Handle error if we don't get enough bytes. Do so everywhere in sister functions.
 	return r.byteOrder.Uint16(r.tmp[:])
 }
 

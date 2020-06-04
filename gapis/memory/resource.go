@@ -101,7 +101,7 @@ func (r resource) NewReader(ctx context.Context) io.Reader {
 	return bytes.NewReader(data)
 }
 
-func (r resource) NewDecoder(ctx context.Context, memLayout *device.MemoryLayout) *Decoder {
+func (r resource) NewDecoder(ctx context.Context, memLayout *device.MemoryLayout) Decoder {
 	data, err := r.getData(ctx)
 	if err != nil {
 		panic("ALAN")
@@ -135,7 +135,7 @@ func (r resourceSlice) NewReader(ctx context.Context) io.Reader {
 	return bytes.NewReader(data[r.rng.First() : r.rng.Last()+1])
 }
 
-func (r resourceSlice) NewDecoder(ctx context.Context, memLayout *device.MemoryLayout) *Decoder {
+func (r resourceSlice) NewDecoder(ctx context.Context, memLayout *device.MemoryLayout) Decoder {
 	data, err := r.src.getData(ctx)
 	if err != nil {
 		panic("ALAN")

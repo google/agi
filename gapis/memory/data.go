@@ -56,5 +56,5 @@ type Data interface {
 	Strlen(ctx context.Context) (int, error)
 
 	//Bytes() []byte
-	NewDecoder(ctx context.Context, memLayout *device.MemoryLayout) *Decoder
+	NewDecoder(ctx context.Context, memLayout *device.MemoryLayout) Decoder
 }
