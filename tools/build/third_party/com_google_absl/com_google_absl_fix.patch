@@ -1,6 +1,50 @@
---- a/absl/time/internal/cctz/BUILD.bazel	2020-03-04 20:57:37.000000000 +0000
-+++ b/absl/time/internal/cctz/BUILD-fixed.bazel	2020-05-29 18:02:08.000000000 +0100
-@@ -74,15 +74,6 @@
+diff --git a/absl/copts/configure_copts.bzl b/absl/copts/configure_copts.bzl
+index 9dd6bd0..fcce52b 100644
+--- a/absl/copts/configure_copts.bzl
++++ b/absl/copts/configure_copts.bzl
+@@ -22,7 +22,7 @@ load(
+ )
+ 
+ ABSL_DEFAULT_COPTS = select({
+-    "//absl:windows": ABSL_MSVC_FLAGS,
++    "//absl:windows": ABSL_GCC_FLAGS,
+     "//absl:llvm_compiler": ABSL_LLVM_FLAGS,
+     "//conditions:default": ABSL_GCC_FLAGS,
+ })
+@@ -30,13 +30,12 @@ ABSL_DEFAULT_COPTS = select({
+ # in absence of modules (--compiler=gcc or -c opt), cc_tests leak their copts
+ # to their (included header) dependencies and fail to build outside absl
+ ABSL_TEST_COPTS = ABSL_DEFAULT_COPTS + select({
+-    "//absl:windows": ABSL_MSVC_TEST_FLAGS,
++    "//absl:windows": ABSL_GCC_TEST_FLAGS,
+     "//absl:llvm_compiler": ABSL_LLVM_TEST_FLAGS,
+     "//conditions:default": ABSL_GCC_TEST_FLAGS,
+ })
+ 
+ ABSL_DEFAULT_LINKOPTS = select({
+-    "//absl:windows": ABSL_MSVC_LINKOPTS,
+     "//conditions:default": [],
+ })
+ 
+diff --git a/absl/copts/copts.py b/absl/copts/copts.py
+index 704ef23..facf083 100644
+--- a/absl/copts/copts.py
++++ b/absl/copts/copts.py
+@@ -140,6 +140,9 @@ COPT_VARS = {
+         # Google style does not use unsigned integers, though STL containers
+         # have unsigned types.
+         "-Wno-sign-compare",
++	"-Wno-format",
++	"-Wno-format=",
++	"-Wno-format-extra-args",
+     ],
+     "ABSL_GCC_TEST_FLAGS": [
+         "-Wno-conversion-null",
+diff --git a/absl/time/internal/cctz/BUILD.bazel b/absl/time/internal/cctz/BUILD.bazel
+index 7a53c81..159b0f0 100644
+--- a/absl/time/internal/cctz/BUILD.bazel
++++ b/absl/time/internal/cctz/BUILD.bazel
+@@ -74,15 +74,6 @@ cc_library(
          "include/cctz/time_zone.h",
          "include/cctz/zone_info_source.h",
      ],
@@ -16,29 +60,3 @@
      visibility = ["//visibility:public"],
      deps = [
          ":civil_time",
---- a/absl/copts/configure_copts.bzl	2020-03-04 12:57:36.000000000 +0000
-+++ b/absl/copts/configure_copts-FIXED.bzl	2020-06-04 00:42:51.000000000 +0100
-@@ -22,7 +22,7 @@
- )
- 
- ABSL_DEFAULT_COPTS = select({
--    "//absl:windows": ABSL_MSVC_FLAGS,
-+    "//absl:windows": ABSL_GCC_FLAGS,
-     "//absl:llvm_compiler": ABSL_LLVM_FLAGS,
-     "//conditions:default": ABSL_GCC_FLAGS,
- })
-@@ -30,13 +30,12 @@
- # in absence of modules (--compiler=gcc or -c opt), cc_tests leak their copts
- # to their (included header) dependencies and fail to build outside absl
- ABSL_TEST_COPTS = ABSL_DEFAULT_COPTS + select({
--    "//absl:windows": ABSL_MSVC_TEST_FLAGS,
-+    "//absl:windows": ABSL_GCC_TEST_FLAGS,
-     "//absl:llvm_compiler": ABSL_LLVM_TEST_FLAGS,
-     "//conditions:default": ABSL_GCC_TEST_FLAGS,
- })
- 
- ABSL_DEFAULT_LINKOPTS = select({
--    "//absl:windows": ABSL_MSVC_LINKOPTS,
-     "//conditions:default": [],
- })
- 
