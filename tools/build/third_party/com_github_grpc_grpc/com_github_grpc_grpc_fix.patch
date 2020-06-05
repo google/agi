@@ -17,7 +17,7 @@ index 561276f0c2..81026e5689 100644
  #include <unistd.h>
  
 -static long gettid(void) { return syscall(__NR_gettid); }
-+// Not naming it as gettid() to avoid duplicate declarations when complied with
++// Not naming it as gettid() to avoid duplicate declarations when compiled with
 +// GCC 9.1.
 +static long local_gettid(void) { return syscall(__NR_gettid); }
  
@@ -41,7 +41,7 @@ index c2d80c08dd..991c061219 100644
  
  #ifndef NDEBUG
 -static long gettid(void) { return syscall(__NR_gettid); }
-+// Not naming it as gettid() to avoid duplicate declarations when complied with
++// Not naming it as gettid() to avoid duplicate declarations when compiled with
 +// GCC 9.1.
 +static long local_gettid(void) { return syscall(__NR_gettid); }
  #endif
