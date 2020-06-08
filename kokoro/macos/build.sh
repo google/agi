@@ -33,7 +33,7 @@ export ANDROID_NDK_HOME=$PWD/android/android-ndk-r21
 # Get Zulu JDK11 from bazel, see https://mirror.bazel.build/openjdk/index.html
 ZULU_JDK="zulu11.31.11-ca-jdk11.0.3"
 curl -L -k -O -s https://mirror.bazel.build/openjdk/azul-${ZULU_JDK}/${ZULU_JDK}-macosx_x64.tar.gz
-echo "98df91fa49f16b73dbc09e153628190640ff6c3fac2322b8142bc00077a0f738  ${ZULU_JDK}-macosx_x64.tar.gz" | sha256sum --check
+echo "98df91fa49f16b73dbc09e153628190640ff6c3fac2322b8142bc00077a0f738  ${ZULU_JDK}-macosx_x64.tar.gz" | shasum -c
 tar xzf ${ZULU_JDK}-macosx_x64.tar.gz
 export JAVA_HOME=${PWD}/${ZULU_JDK}-macosx_x64
 

@@ -34,10 +34,7 @@ cp -r ${JAVA_HOME}/* ${DEST}/
 #
 # Also, the macOS Zulu JDK package contains symlinks, hence the bespoke remove().
 function remove() {
-  rm -rf ${DEST}/zulu-11.jdk/Contents/Home/$1
-  if [ -L ${DEST}/$1 ]; then
-    unlink ${DEST}/$1
-  fi
+  rm -rf ${DEST}/$1
 }
 
 remove bin/jar
@@ -63,64 +60,13 @@ remove bin/jstat
 remove bin/jstatd
 remove bin/rmic
 remove bin/serialver
+remove conf
 remove demo
 remove include
 remove jmods
+remove legal
 remove lib/ct.sym
 remove lib/libattach.dylib
 remove lib/libsaproc.dylib
 remove lib/src.zip
-remove man/ja/man1/jar.1
-remove man/ja/man1/jarsigner.1
-remove man/ja/man1/javac.1
-remove man/ja/man1/javadoc.1
-remove man/ja/man1/javap.1
-remove man/ja/man1/jcmd.1
-remove man/ja/man1/jconsole.1
-remove man/ja/man1/jdb.1
-remove man/ja/man1/jdeps.1
-remove man/ja/man1/jinfo.1
-remove man/ja/man1/jmap.1
-remove man/ja/man1/jps.1
-remove man/ja/man1/jrunscript.1
-remove man/ja/man1/jstack.1
-remove man/ja/man1/jstat.1
-remove man/ja/man1/jstatd.1
-remove man/ja/man1/rmic.1
-remove man/ja/man1/serialver.1
-remove man/ja_JP.UTF-8/man1/jar.1
-remove man/ja_JP.UTF-8/man1/jarsigner.1
-remove man/ja_JP.UTF-8/man1/javac.1
-remove man/ja_JP.UTF-8/man1/javadoc.1
-remove man/ja_JP.UTF-8/man1/javap.1
-remove man/ja_JP.UTF-8/man1/jcmd.1
-remove man/ja_JP.UTF-8/man1/jconsole.1
-remove man/ja_JP.UTF-8/man1/jdb.1
-remove man/ja_JP.UTF-8/man1/jdeps.1
-remove man/ja_JP.UTF-8/man1/jinfo.1
-remove man/ja_JP.UTF-8/man1/jmap.1
-remove man/ja_JP.UTF-8/man1/jps.1
-remove man/ja_JP.UTF-8/man1/jrunscript.1
-remove man/ja_JP.UTF-8/man1/jstack.1
-remove man/ja_JP.UTF-8/man1/jstat.1
-remove man/ja_JP.UTF-8/man1/jstatd.1
-remove man/ja_JP.UTF-8/man1/rmic.1
-remove man/ja_JP.UTF-8/man1/serialver.1
-remove man/man1/jar.1
-remove man/man1/jarsigner.1
-remove man/man1/javac.1
-remove man/man1/javadoc.1
-remove man/man1/javap.1
-remove man/man1/jcmd.1
-remove man/man1/jconsole.1
-remove man/man1/jdb.1
-remove man/man1/jdeps.1
-remove man/man1/jinfo.1
-remove man/man1/jmap.1
-remove man/man1/jps.1
-remove man/man1/jrunscript.1
-remove man/man1/jstack.1
-remove man/man1/jstat.1
-remove man/man1/jstatd.1
-remove man/man1/rmic.1
-remove man/man1/serialver.1
+remove man
