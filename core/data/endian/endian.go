@@ -168,7 +168,7 @@ func (r *bytesReader) Uint8() uint8 {
 		return 0
 	}
 	if r.head +1 > len(r.data) {
-		panic("AAAA")
+		//panic("AAAA")
 		r.err = fmt.Errorf("error after reading 1 byte type")
 		return 0
 	}

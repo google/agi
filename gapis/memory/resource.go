@@ -24,6 +24,7 @@ import (
 	"github.com/google/gapid/core/data/endian"
 	"github.com/google/gapid/core/os/device"
 	"github.com/google/gapid/gapis/database"
+	//"github.com/google/gapid/core/log"
 )
 
 // Resource returns a Data that wraps a resource stored in the database.
@@ -50,10 +51,12 @@ func (r resource) Get(ctx context.Context, offset uint64, out []byte) error {
 func (r resource) getData(ctx context.Context) ([]byte, error) {
 	res, err := database.Resolve(ctx, r.resID)
 	if err != nil {
+		panic("aaa")
 		return nil, err
 	}
 	data := res.([]byte)
 	if r.size != uint64(len(data)) {
+		panic("bbb")
 		return nil, fmt.Errorf("Loaded resource is unexpected size. Expected 0x%x, got 0x%x for resource %v",
 			r.size, len(data), r.resID)
 	}
@@ -102,11 +105,14 @@ func (r resource) NewReader(ctx context.Context) io.Reader {
 }
 
 func (r resource) NewDecoder(ctx context.Context, memLayout *device.MemoryLayout) Decoder {
-	data, err := r.getData(ctx)
-	if err != nil {
-		panic("ALAN")
-	}
-	decode := NewDecoder(endian.ReaderForBytes(data, memLayout.Endian), memLayout)
+	//panic(fmt.Errorf("XXXXXXX %v", r))
+	data, _ := r.getData(ctx)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	panic(fmt.Errorf("DDDDDDDD %v", memLayout))
+	reader := endian.ReaderForBytes(data, memLayout.Endian)
+	decode := NewDecoder(reader, memLayout)
 	return decode
 }
 

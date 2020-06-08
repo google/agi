@@ -15,7 +15,7 @@
 package database
 
 import (
-	"bytes"
+	//"bytes"
 	"context"
 	"fmt"
 	"runtime"
@@ -74,37 +74,37 @@ func (p rethrownPanic) Error() string { return string(p) }
 // resolvePanicHandler catches and rethrows panics to add resolve chain
 // information to the error message.
 func (d *memory) resolvePanicHandler(ctx context.Context) {
-	err := recover()
-	switch err.(type) {
-	case nil:
-		return
-	case rethrownPanic:
-		panic(err)
-	default:
-		d.mutex.Lock()
-		defer d.mutex.Unlock()
+	// err := recover()
+	// switch err.(type) {
+	// case nil:
+	// 	return
+	// case rethrownPanic:
+	// 	panic(err)
+	// default:
+	// 	d.mutex.Lock()
+	// 	defer d.mutex.Unlock()
 
-		buf := &bytes.Buffer{}
-		for c := getResolveChain(ctx); c != nil; c = c.parent {
-			r := c.record
-			fmt.Fprintln(buf)
-			fmt.Fprintf(buf, "--- %T ---\n", r.object)
-			fmt.Fprintln(buf, indent(fmt.Sprintf("%+v", r.object), 1))
-			fmt.Fprintf(buf, " Store():\n")
-			fmt.Fprintln(buf, indent(r.created.String(), 2))
-			fmt.Fprintln(buf)
-			for i, c := range r.resolveState.callstacks {
-				if i >= 10 {
-					fmt.Fprintf(buf, " ... %d more Build() calls (truncated)\n", len(r.resolveState.callstacks)-i-1)
-					break
-				}
-				fmt.Fprintf(buf, " Build() #%d:\n", i)
-				fmt.Fprintln(buf, indent(c.String(), 2))
-			}
-		}
+	// 	buf := &bytes.Buffer{}
+	// 	for c := getResolveChain(ctx); c != nil; c = c.parent {
+	// 		r := c.record
+	// 		fmt.Fprintln(buf)
+	// 		fmt.Fprintf(buf, "--- %T ---\n", r.object)
+	// 		fmt.Fprintln(buf, indent(fmt.Sprintf("%+v", r.object), 1))
+	// 		fmt.Fprintf(buf, " Store():\n")
+	// 		fmt.Fprintln(buf, indent(r.created.String(), 2))
+	// 		fmt.Fprintln(buf)
+	// 		for i, c := range r.resolveState.callstacks {
+	// 			if i >= 10 {
+	// 				fmt.Fprintf(buf, " ... %d more Build() calls (truncated)\n", len(r.resolveState.callstacks)-i-1)
+	// 				break
+	// 			}
+	// 			fmt.Fprintf(buf, " Build() #%d:\n", i)
+	// 			fmt.Fprintln(buf, indent(c.String(), 2))
+	// 		}
+	// 	}
 
-		panic(rethrownPanic(buf.String()))
-	}
+	// 	panic(rethrownPanic(buf.String()))
+	// }
 }
 
 func indent(s string, depth int) string {

@@ -102,12 +102,14 @@ func (m *Pool) Slice(rng Range) Data {
 		w := m.writes[i]
 		if rng == w.dst {
 			// Exact hit
-			return w.src
+			//return w.src
+			return poolSlice{rng: rng, writes: m.writes[i : i+1]}
 		}
 		if rng.First() >= w.dst.First() && rng.Last() <= w.dst.Last() {
 			// Subset of a write.
 			rng.Base -= w.dst.First()
-			return w.src.Slice(rng)
+			//return w.src.Slice(rng)
+			return poolSlice{rng: rng, writes: m.writes[i : i+1]}
 		}
 	}
 	writes := make(poolWriteList, c)
@@ -581,6 +583,7 @@ func (r *poolSliceDecoder) handleError() {
 					Size: intersection.Size,
 				})
 			}
+			//panic(fmt.Errorf("XXXXXXX %v", r))
 			r.simpleDecoder = slice.NewDecoder(r.ctx, r.MemoryLayout()) // intersection.Size
 		}
 	} else {
