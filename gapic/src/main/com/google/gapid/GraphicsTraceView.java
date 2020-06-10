@@ -36,6 +36,7 @@ import com.google.gapid.views.FramebufferView;
 import com.google.gapid.views.GeometryView;
 import com.google.gapid.views.LogView;
 import com.google.gapid.views.MemoryView;
+import com.google.gapid.views.PerformanceView;
 import com.google.gapid.views.PipelineView;
 import com.google.gapid.views.ProfileView;
 import com.google.gapid.views.ReportView;
@@ -362,6 +363,7 @@ public class GraphicsTraceView extends Composite implements MainWindow.MainView,
       Textures(View.Textures, "Textures", DefaultPosition.Center, TextureView::new),
       Geometry(View.Geometry, "Geometry", DefaultPosition.Center, GeometryView::new),
       Shaders(View.Shaders, "Shaders", DefaultPosition.Center, ShaderView::new),
+      Performance(View.Performance, "Performance", DefaultPosition.Center, PerformanceView::new),
       Report(View.Report, "Report", DefaultPosition.Center, ReportView::new),
       Log(View.Log, "Log", DefaultPosition.Center, (p, m, w) -> new LogView(p, w)),
 
