@@ -196,9 +196,12 @@ public class Profile
       }
 
       Collections.sort(spans, (s1, s2) -> Long.compare(s1.start, s2.start));
+      long start = Long.MAX_VALUE, end = Long.MIN_VALUE;
       long gpuTime = 0, wallTime = 0;
       TimeSpan last = TimeSpan.ZERO;
       for (TimeSpan span : spans) {
+        start = Math.min(start, span.start);
+        end = Math.max(end, span.end);
         long duration = span.getDuration();
         gpuTime += duration;
         if (span.start < last.end) {
@@ -211,37 +214,22 @@ public class Profile
         last = span;
       }
 
-      return new Duration(gpuTime, wallTime);
+      TimeSpan ts = start < end ? new TimeSpan(start, end) : TimeSpan.ZERO;
+      return new Duration(gpuTime, wallTime, ts);
     }
   }
 
   public static class Duration {
-    public static final Duration NONE = new Duration(0, 0) {
-      @Override
-      public String formatGpuTime() {
-        return "";
-      }
-
-      @Override
-      public String formatWallTime() {
-        return "";
-      }
-    };
+    public static final Duration NONE = new Duration(0, 0, TimeSpan.ZERO);
 
     public final long gpuTime;
     public final long wallTime;
+    public final TimeSpan timeSpan;
 
-    public Duration(long gpuTime, long wallTime) {
+    public Duration(long gpuTime, long wallTime, TimeSpan timeSpan) {
       this.gpuTime = gpuTime;
       this.wallTime = wallTime;
-    }
-
-    public String formatGpuTime() {
-      return String.format("%.3fms", gpuTime / 1e6);
-    }
-
-    public String formatWallTime() {
-      return String.format("%.3fms", wallTime / 1e6);
+      this.timeSpan = timeSpan;
     }
   }
 

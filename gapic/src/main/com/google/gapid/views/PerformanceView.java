@@ -17,11 +17,14 @@ package com.google.gapid.views;
 
 import static com.google.gapid.util.Loadable.MessageType.Error;
 
+import com.google.common.base.Function;
 import com.google.gapid.models.Capture;
 import com.google.gapid.models.CommandStream;
 import com.google.gapid.models.CommandStream.Node;
 import com.google.gapid.models.Models;
 import com.google.gapid.models.Profile;
+import com.google.gapid.models.Profile.Duration;
+import com.google.gapid.perfetto.TimeSpan;
 import com.google.gapid.proto.service.Service;
 import com.google.gapid.util.Loadable;
 import com.google.gapid.util.Messages;
@@ -113,11 +116,12 @@ public class PerformanceView extends Composite
 
     public PerfTree(Composite parent, Models models, Widgets widgets) {
       super(parent, models, widgets);
-      addColumn("GPU Time", false);
-      addColumn("Wall Time", true);
+      addColumn("GPU Time", this::formatGpuTime);
+      addColumn("Wall Time", this::formatWallTime);
+      addColumn("Time Span", this::formatTimeSpan);
     }
 
-    private void addColumn(String title, boolean wallTime) {
+    private void addColumn(String title, Function<Service.CommandTreeNode, String> formatter) {
       TreeViewerColumn column = addColumn(title, node -> {
         Service.CommandTreeNode data = node.getData();
         if (data == null) {
@@ -125,8 +129,7 @@ public class PerformanceView extends Composite
         } else if (!models.profile.isLoaded()) {
           return "Profiling...";
         } else {
-          Profile.Duration duration = models.profile.getData().getDuration(data.getCommands());
-          return wallTime ? duration.formatWallTime() : duration.formatGpuTime();
+          return formatter.apply(data);
         }
       }, DURATION_WIDTH);
       column.getColumn().setAlignment(SWT.RIGHT);
@@ -134,6 +137,26 @@ public class PerformanceView extends Composite
 
     public void refresh() {
       refresher.refresh();
+    }
+
+    private String formatGpuTime(Service.CommandTreeNode node) {
+      Profile.Duration duration = models.profile.getData().getDuration(node.getCommands());
+      return duration == Duration.NONE ? "" : String.format("%.3fms", duration.gpuTime / 1e6);
+    }
+
+    private String formatWallTime(Service.CommandTreeNode node) {
+      Profile.Duration duration = models.profile.getData().getDuration(node.getCommands());
+      return duration == Duration.NONE ? "" : String.format("%.3fms", duration.wallTime / 1e6);
+    }
+
+    private String formatTimeSpan(Service.CommandTreeNode node) {
+      Profile.Duration duration = models.profile.getData().getDuration(node.getCommands());
+      if (duration == Duration.NONE || duration.timeSpan.isEmpty()) {
+        return "";
+      }
+      long slicesStart = models.profile.getData().getSlicesTimeSpan().start;
+      return String.format("%.3fms", (duration.timeSpan.start - slicesStart) / 1e6) + " ~ " +
+          String.format("%.3fms", (duration.timeSpan.end - slicesStart) / 1e6);
     }
   }
 }
