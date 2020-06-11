@@ -1572,7 +1572,7 @@ int main(int argc, const char** argv) {
                               VK_NULL_HANDLE, &next_image));
 
     REQUIRE_SUCCESS(vkWaitForFences(device, 1, &ready_fences[frame_parity],
-                                    false, static_cast<uint64_t>(-1)));
+                                    true, static_cast<uint64_t>(-1)));
     REQUIRE_SUCCESS(vkResetFences(device, 1, &ready_fences[frame_parity]));
 
     VkCommandBufferBeginInfo begin_info{
