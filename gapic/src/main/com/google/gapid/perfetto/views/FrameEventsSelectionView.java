@@ -95,17 +95,17 @@ public class FrameEventsSelectionView extends Composite {
       Composite props = withLayoutData(createComposite(this, new GridLayout(2 * panels, false)),
           withIndents(new GridData(SWT.LEFT, SWT.TOP, false, false), PANEL_INDENT, 0));
       withLayoutData(createBoldLabel(props, "Properties:"),
-        withSpans(new GridData(), 2 * panels, 1));
+          withSpans(new GridData(), 2 * panels, 1));
 
-    for (int i = 0; i < keys.length && i < PROPERTIES_PER_PANEL; i++) {
-      int cols = (keys.length - i + PROPERTIES_PER_PANEL - 1) / PROPERTIES_PER_PANEL;
-      for (int c = 0; c < cols; c++) {
-        withLayoutData(createLabel(props, keys[i + c * PROPERTIES_PER_PANEL] + ":"),
-            withIndents(new GridData(), (c == 0) ? 0 : PANEL_INDENT, 0));
-        createLabel(props, String.valueOf(slice.argsets.get(0).get(keys[i + c * PROPERTIES_PER_PANEL])));
-      }
-      if (cols != panels) {
-        withLayoutData(createLabel(props, ""), withSpans(new GridData(), 2 * (panels - cols), 1));
+      for (int i = 0; i < keys.length && i < PROPERTIES_PER_PANEL; i++) {
+        int cols = (keys.length - i + PROPERTIES_PER_PANEL - 1) / PROPERTIES_PER_PANEL;
+        for (int c = 0; c < cols; c++) {
+          withLayoutData(createLabel(props, keys[i + c * PROPERTIES_PER_PANEL] + ":"),
+              withIndents(new GridData(), (c == 0) ? 0 : PANEL_INDENT, 0));
+          createLabel(props, String.valueOf(slice.argsets.get(0).get(keys[i + c * PROPERTIES_PER_PANEL])));
+        }
+        if (cols != panels) {
+          withLayoutData(createLabel(props, ""), withSpans(new GridData(), 2 * (panels - cols), 1));
         }
       }
     }
@@ -142,9 +142,13 @@ public class FrameEventsSelectionView extends Composite {
     viewer.setLabelProvider(new LabelProvider());
 
     createTreeColumn(viewer, "Name", e -> n(e).name);
+    createTreeColumn(viewer, "Frame Number", e -> Long.toString(n(e).frameNumber));
     createTreeColumn(viewer, "Self Time", e -> timeToString(n(e).self));
     createTreeColumn(viewer, "Event type", e -> n(e).eventName);
     createTreeColumn(viewer, "Layers", e -> n(e).layerName);
+    createTreeColumn(viewer, "Queue to Acquire Time", e -> timeToString(n(e).queueToAcquireTime));
+    createTreeColumn(viewer, "Acquire to Latch Time", e -> timeToString(n(e).acquireToLatchTime));
+    createTreeColumn(viewer, "Latch to Present Time", e -> timeToString(n(e).latchToPresentTime));
     viewer.setInput(slices);
     packColumns(viewer.getTree());
   }

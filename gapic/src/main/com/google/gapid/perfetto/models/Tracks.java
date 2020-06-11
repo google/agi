@@ -64,8 +64,6 @@ public class Tracks {
       enumerateCpu(data);
       enumerateCounters(data);
       enumerateGpu(data);
-      //enumerateFrame(data);
-      //enumerateFrame2(data);
       enumerateFrame(data);
       enumerateProcesses(data);
       enumerateVSync(data);

@@ -51,13 +51,14 @@ public class FrameInfo {
   // for generating ownership phases where there can be more than one slice (not related) at the
   // same time.
 
+  // TODO: (b/158706107)
   // Cast name as int for the phases. This is needed because experimental_slice_layout generates
   // columns only based on slice_table. frame_slice is a child of slice_table and the extra columns
   // such as frame_number and layer_name won't be generated. The alternate is doing a join on
   // frame_slice table with slice_id but that query is very expensive in that it visibly slows down
   // the loading of tracks.
   private static final String PHASE_QUERY =
-      "select phase.*, cast(NAME as INT) as frame_number from " +
+      "select phase.*, cast(name as INT) as frame_number from " +
       "(select id, ts, dur, name, layout_depth as depth, stack_id, parent_stack_id, arg_set_id " +
       "from experimental_slice_layout where filter_track_ids = (%s)) phase";
   // We don't need layout_depth for display phase because slice1.end = slice2.start in this track
@@ -77,7 +78,7 @@ public class FrameInfo {
       "select max(depth) from %s";
 
   private static final String DISPLAY_TOOLTIP =
-      "Shows how long the frame was on screen";
+      "The time when from was on screen";
   private static final String APP_TOOLTIP =
       "The time from when the buffer was dequeued by the app to when it was enqueued back";
   private static final String GPU_TOOLTIP =
@@ -186,16 +187,16 @@ public class FrameInfo {
         createView(compositionViewName, compositionQuery),
         createView(displayViewName, displayQuery)), $ -> {
           return transformAsync(getMaxDepth(qe, displayViewName), displayDepth -> {
-            currentLayerPhases.add(new Event("DISPLAY",baseName + "_DISPLAY", displayDepth + 1,
+            currentLayerPhases.add(new Event("On Display",baseName + "_DISPLAY", displayDepth + 1,
                 DISPLAY_TOOLTIP));
             return transformAsync(getMaxDepth(qe, appViewName), appDepth -> {
-              currentLayerPhases.add(new Event("APP", baseName + "_APP", appDepth + 1,
+              currentLayerPhases.add(new Event("Application", baseName + "_APP", appDepth + 1,
                   APP_TOOLTIP));
               return transformAsync(getMaxDepth(qe, gpuViewName), gpuDepth -> {
                 currentLayerPhases.add(new Event("Wait for GPU", baseName + "_GPU", gpuDepth + 1,
                     GPU_TOOLTIP));
                 return transformAsync(getMaxDepth(qe, compositionViewName), compositionDepth -> {
-                  currentLayerPhases.add(new Event("COMPOSITION", baseName + "_COMPOSITION",
+                  currentLayerPhases.add(new Event("Composition", baseName + "_COMPOSITION",
                       compositionDepth + 1, COMPOSITION_TOOLTIP));
                   phases.add(currentLayerPhases);
                   if (idx + 1 >= layerNames.size()) {

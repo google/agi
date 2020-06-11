@@ -57,7 +57,12 @@ public class FrameEventsTrack extends Track.WithQueryEngine<FrameEventsTrack.Dat
        "select " + BASE_COLUMNS + " from %s " +
        "where ts >= %d - dur and ts <= %d order by ts";
   private static final String RANGE_SQL =
-      "select " + BASE_COLUMNS + " from %s " +
+      "select " + BASE_COLUMNS + ", " + STAT_COLUMNS + " from " +
+      "(select " + BASE_COLUMNS + " from %s) " +
+      "inner join " +
+      "(select frame_number, " + STAT_COLUMNS + " from frame_slice " +
+          "where layer_name = '%s' and name = 'PresentFenceSignaled') " +
+      "using(frame_number) " +
       "where ts < %d and ts + dur >= %d and depth >= %d and depth <= %d";
 
   private static final long SIGNAL_MARGIN_NS = 10000;
@@ -129,12 +134,25 @@ public class FrameEventsTrack extends Track.WithQueryEngine<FrameEventsTrack.Dat
   }
 
   public ListenableFuture<Slices> getSlices(TimeSpan ts, int minDepth, int maxDepth) {
+    // Stats are available only on PresentFenceSignaled events in frame_slice, so we need
+    // to do a join to get stats.
+
+    // Example
+    // select  id, ts, dur, name, depth, stack_id, parent_stack_id, arg_set_id, frame_number,
+    // queue_to_acquire_time, acquire_to_latch_time, latch_to_present_time from
+    // (select id, ts, dur, name, depth, stack_id, parent_stack_id, arg_set_id, frame_number,"
+    //      from NavigationBar00_APP)
+    // inner join
+    // (select frame_number, queue_to_acquire_time, acquire_to_latch_time, latch_to_present_time
+    //      from frame_slice where layer_name = '%s' and name = 'PresentFenceSignaled')
+    // using(frame_number)
+    // where ts < 123 and ts + dur >= 234 and depth >= 0 and depth <= 1
     return transform(qe.query(sliceRangeSql(ts, minDepth, maxDepth)),
         r -> new Slices(r, layerName, eventName));
   }
 
   private String sliceRangeSql(TimeSpan ts, int minDepth, int maxDepth) {
-    return format(RANGE_SQL, viewName, ts.end, ts.start, minDepth, maxDepth);
+    return format(RANGE_SQL, viewName, layerName, ts.end, ts.start, minDepth, maxDepth);
   }
 
   public static class Data extends Track.Data {
@@ -189,7 +207,8 @@ public class FrameEventsTrack extends Track.WithQueryEngine<FrameEventsTrack.Dat
 
     public Slices(QueryEngine.Result result, String layerName, String eventName) {
       result.forEachRow((i, row) -> this.add(row.getLong(0), row.getLong(1), row.getLong(2),
-          row.getString(3), ArgSet.EMPTY, row.getLong(8), layerName, eventName));
+          row.getString(3), ArgSet.EMPTY, row.getLong(8), layerName, eventName,
+          row.getLong(9), row.getLong(10), row.getLong(11)));
     }
 
     private void add(long id, long time, long dur, String name, ArgSet args, long frameNumber,
@@ -206,24 +225,6 @@ public class FrameEventsTrack extends Track.WithQueryEngine<FrameEventsTrack.Dat
       this.queueToAcquireTimes.add(qaTime);
       this.acquireToLatchTimes.add(alTime);
       this.latchToPresentTimes.add(lpTime);
-      this.sliceKeys.add(id);
-      this.selectedFrameNumbers.add(frameNumber);
-    }
-
-    private void add(long id, long time, long dur, String name, ArgSet args,
-        long frameNumber, String layerName, String eventName) {
-      count++;
-      this.ids.add(id);
-      this.times.add(time);
-      this.durs.add(dur);
-      this.names.add(name);
-      this.argsets.add(args);
-      this.frameNumbers.add(frameNumber);
-      this.layerNames.add(layerName);
-      this.eventNames.add(eventName);
-      this.queueToAcquireTimes.add((long)0);
-      this.acquireToLatchTimes.add((long)0);
-      this.latchToPresentTimes.add((long)0);
       this.sliceKeys.add(id);
       this.selectedFrameNumbers.add(frameNumber);
     }
@@ -284,25 +285,36 @@ public class FrameEventsTrack extends Track.WithQueryEngine<FrameEventsTrack.Dat
   public static Node[] organizeSlicesToNodes(Slices slices) {
     TreeMap<Long, Node> roots = Maps.newTreeMap();
     for (int i = 0; i < slices.count; i++) {
-      roots.put(slices.ids.get(i), new Node(slices.names.get(i), slices.durs.get(i),
-          slices.durs.get(i), slices.eventNames.get(i), slices.layerNames.get(i)));
+      roots.put(slices.ids.get(i), new Node(slices.names.get(i), slices.frameNumbers.get(i),
+          slices.durs.get(i), slices.durs.get(i), slices.eventNames.get(i),
+          slices.layerNames.get(i), slices.queueToAcquireTimes.get(i),
+          slices.acquireToLatchTimes.get(i), slices.latchToPresentTimes.get(i)));
     }
     return roots.values().stream().toArray(Node[]::new);
   }
 
   public static class Node {
     public final String name;
+    public final long frameNumber;
     public final long dur;
     public final long self;
     public final String eventName;
     public final String layerName;
+    public final long queueToAcquireTime;
+    public final long acquireToLatchTime;
+    public final long latchToPresentTime;
 
-    public Node(String name, long dur, long self, String eventName, String layerName) {
+    public Node(String name, long frameNumber, long dur, long self, String eventName,
+        String layerName, long qaTime, long alTime, long lpTime) {
       this.name = name;
+      this.frameNumber = frameNumber;
       this.dur = dur;
       this.self = self;
       this.eventName = eventName;
       this.layerName = layerName;
+      this.queueToAcquireTime = qaTime;
+      this.acquireToLatchTime = alTime;
+      this.latchToPresentTime = lpTime;
     }
   }
 }
