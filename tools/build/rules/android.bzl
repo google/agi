@@ -135,3 +135,30 @@ ndk_vk_validation_layer = repository_rule(
         "ANDROID_NDK_HOME",
     ],
 )
+
+# Enforce NDK version by checking $ANDROID_NDK_HOME/source.properties
+def _ndk_version_check(repository_ctx):
+    # This should be updated in sync with BUILDING.md documentation
+    version = "21.0.6113669"
+    sourcePropFile = repository_ctx.os.environ["ANDROID_NDK_HOME"] + "/source.properties"
+    sourceProp = repository_ctx.read(sourcePropFile)
+    if not ("Pkg.Revision = " + version) in sourceProp:
+        fail("NDK version mismatch: expected version " + version + " in file " + sourcePropFile)
+
+    build = """
+# Dummy rule
+cc_import(
+    name = "ndk_version_check",
+    visibility = ["//visibility:public"],
+)
+"""
+
+    repository_ctx.file("BUILD", build)
+
+ndk_version_check = repository_rule(
+    implementation = _ndk_version_check,
+    local = True,
+    environ = [
+        "ANDROID_NDK_HOME",
+    ]
+)
