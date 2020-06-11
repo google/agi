@@ -145,7 +145,6 @@ go_library(
         "//gapis/memory:go_default_library",
         "//gapis/memory/memory_pb:go_default_library",  # keep
         "//gapis/messages:go_default_library",
-        "//gapis/replay:go_default_library",
         "//gapis/replay/builder:go_default_library",
         "//gapis/replay/protocol:go_default_library",
         "//gapis/replay/value:go_default_library",
