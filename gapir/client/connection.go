@@ -224,7 +224,7 @@ func (c *connection) HandleReplayCommunication(
 	}()
 	for {
 		if c.stream == nil {
-			return log.Errf(ctx, nil, "Replayer connection lost")
+			return log.Errf(ctx, nil, "No connection to replayer")
 		}
 		r, err := c.stream.Recv()
 		if err != nil {
