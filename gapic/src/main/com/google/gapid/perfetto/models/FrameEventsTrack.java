@@ -94,8 +94,7 @@ public class FrameEventsTrack extends Track.WithQueryEngine<FrameEventsTrack.Dat
   @Override
   public ListenableFuture<Data> computeData(DataRequest req) {
     Window window = Window.compute(req, 5);
-    return transformAsync(window.update(qe, tableName("window")),
-        $ -> computeSlices(req));
+    return transformAsync(window.update(qe, tableName("window")), $ -> computeSlices(req));
   }
 
   private ListenableFuture<Data> computeSlices(DataRequest req) {
@@ -197,11 +196,6 @@ public class FrameEventsTrack extends Track.WithQueryEngine<FrameEventsTrack.Dat
 
     public Slices(QueryEngine.Row row, ArgSet args, String layerName, String eventName) {
       add(row.getLong(0), row.getLong(1), row.getLong(2), row.getString(3), args,
-          row.getLong(8), layerName, eventName, row.getLong(9), row.getLong(10), row.getLong(11));
-    }
-
-    public Slices(QueryEngine.Row row, String layerName, String eventName) {
-      add(row.getLong(0), row.getLong(1), row.getLong(2), row.getString(3), ArgSet.EMPTY,
           row.getLong(8), layerName, eventName, row.getLong(9), row.getLong(10), row.getLong(11));
     }
 

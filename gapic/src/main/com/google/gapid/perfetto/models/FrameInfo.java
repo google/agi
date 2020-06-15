@@ -114,8 +114,8 @@ public class FrameInfo {
         data.setFrame(FrameInfo.NONE);
         return Futures.immediateFuture(data);
       }
-      return transform(getLayers(data.qe, layers, layerNames), $ -> {
-        data.setFrame(new FrameInfo(layers));
+      return transform(getLayers(data.qe, layers, layerNames), resultLayers -> {
+        data.setFrame(new FrameInfo(resultLayers));
         return data;
       });
     });
@@ -186,27 +186,25 @@ public class FrameInfo {
         createView(gpuViewName, gpuQuery),
         createView(compositionViewName, compositionQuery),
         createView(displayViewName, displayQuery)), $ -> {
-          return transformAsync(getMaxDepth(qe, displayViewName), displayDepth -> {
-            currentLayerPhases.add(new Event("On Display",baseName + "_DISPLAY", displayDepth + 1,
-                DISPLAY_TOOLTIP));
-            return transformAsync(getMaxDepth(qe, appViewName), appDepth -> {
-              currentLayerPhases.add(new Event("Application", baseName + "_APP", appDepth + 1,
-                  APP_TOOLTIP));
-              return transformAsync(getMaxDepth(qe, gpuViewName), gpuDepth -> {
-                currentLayerPhases.add(new Event("Wait for GPU", baseName + "_GPU", gpuDepth + 1,
+          return transformAsync(Futures.allAsList(
+              getMaxDepth(qe, displayViewName),
+              getMaxDepth(qe, appViewName),
+              getMaxDepth(qe, gpuViewName),
+              getMaxDepth(qe, compositionViewName)), depthList -> {
+                currentLayerPhases.add(new Event("On Display",baseName + "_DISPLAY", depthList.get(0) + 1,
+                    DISPLAY_TOOLTIP));
+                currentLayerPhases.add(new Event("Application", baseName + "_APP", depthList.get(1) + 1,
+                    APP_TOOLTIP));
+                currentLayerPhases.add(new Event("Wait for GPU", baseName + "_GPU", depthList.get(2) + 1,
                     GPU_TOOLTIP));
-                return transformAsync(getMaxDepth(qe, compositionViewName), compositionDepth -> {
-                  currentLayerPhases.add(new Event("Composition", baseName + "_COMPOSITION",
-                      compositionDepth + 1, COMPOSITION_TOOLTIP));
-                  phases.add(currentLayerPhases);
-                  if (idx + 1 >= layerNames.size()) {
-                    return Futures.immediateFuture(phases);
-                  }
-                  return createPhases(qe, phases, layerNames, idx + 1);
-                });
+                currentLayerPhases.add(new Event("Composition", baseName + "_COMPOSITION",
+                    depthList.get(3) + 1, COMPOSITION_TOOLTIP));
+                phases.add(currentLayerPhases);
+                if (idx + 1 >= layerNames.size()) {
+                  return Futures.immediateFuture(phases);
+                }
+                return createPhases(qe, phases, layerNames, idx + 1);
               });
-            });
-          });
     });
   }
 
