@@ -1170,6 +1170,8 @@ func (a API) Replay(
 			if req.displayToSurface {
 				doDisplayToSurface = true
 			}
+		default:
+			return fmt.Errorf("Invalid Request Type; %v", req)
 		}
 	}
 

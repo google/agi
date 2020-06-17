@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package vulkan implementes the API interface for the Vulkan graphics library.
-
 package vulkan
 
 import (
@@ -33,6 +31,7 @@ import (
 
 var _ transform2.Transform = &waitForPerfetto{}
 
+// waitForPerfetto adds a fence to the trace to be able to wait perfetto
 type waitForPerfetto struct {
 	traceOptions  *service.TraceOptions
 	signalHandler *replay.SignalHandler
