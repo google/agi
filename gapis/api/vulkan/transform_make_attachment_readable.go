@@ -40,6 +40,14 @@ func (attachmentTransform *makeAttachmentReadable2) RequiresAccurateState() bool
 	return false
 }
 
+func (attachmentTransform *makeAttachmentReadable2) RequiresInnerStateMutation() bool {
+	return false
+}
+
+func (attachmentTransform *makeAttachmentReadable2) SetInnerStateMutationFunction(mutator transform2.StateMutator) {
+	// This transform do not require inner state mutation
+}
+
 func (attachmentTransform *makeAttachmentReadable2) BeginTransform(ctx context.Context, inputCommands []api.Cmd, inputState *api.GlobalState) ([]api.Cmd, error) {
 	attachmentTransform.allocations = NewAllocationTracker(inputState)
 	return inputCommands, nil
