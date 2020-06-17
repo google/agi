@@ -53,7 +53,7 @@ application using a desktop or laptop:
 ### Linux
 
 * Ubuntu 'Trusty Tahr' (14.04) or later recommended
-* Java 64-bit JDK or JRE 1.8 (or newer)
+* Java 64-bit JDK or JRE 11 (or newer)
 * [Vulkan] GPU drivers for desktop frame profiling
 
 
