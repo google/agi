@@ -63,8 +63,8 @@ func (perfettoTransform *waitForPerfetto) ClearTransformResources(ctx context.Co
 func (perfettoTransform *waitForPerfetto) EndTransform(ctx context.Context, inputCommands []api.Cmd, inputState *api.GlobalState) ([]api.Cmd, error) {
 	inputCommands = append(inputCommands, createVkDeviceWaitIdleCommandsForDevices(ctx, inputState)...)
 
-	// Melih TODO: We have to explain this magic id
-	waitForFenceCmd := createWaitForFence(ctx, api.CmdID(0x3ffffff), func(ctx context.Context, request *gapir.FenceReadyRequest) {
+	fenceID := uint32(0x3ffffff)
+	waitForFenceCmd := createWaitForFence(ctx, fenceID, func(ctx context.Context, request *gapir.FenceReadyRequest) {
 		perfettoTransform.endOfTransformCallback(ctx, request)
 	})
 	inputCommands = append(inputCommands, waitForFenceCmd)
@@ -77,7 +77,7 @@ func (perfettoTransform *waitForPerfetto) TransformCommand(ctx context.Context, 
 	}
 
 	inputCommands = append(inputCommands, createVkDeviceWaitIdleCommandsForDevices(ctx, inputState)...)
-	waitForFenceCmd := createWaitForFence(ctx, id, func(ctx context.Context, request *gapir.FenceReadyRequest) {
+	waitForFenceCmd := createWaitForFence(ctx, uint32(id), func(ctx context.Context, request *gapir.FenceReadyRequest) {
 		perfettoTransform.transformCallback(ctx, request)
 	})
 	inputCommands = append(inputCommands, waitForFenceCmd)
@@ -135,9 +135,9 @@ func createVkDeviceWaitIdleCommandsForDevices(ctx context.Context, inputState *a
 	return waitCmds
 }
 
-func createWaitForFence(ctx context.Context, id api.CmdID, callback FenceCallback) api.Cmd {
+func createWaitForFence(ctx context.Context, id uint32, callback FenceCallback) api.Cmd {
 	return replay.Custom{T: 0, F: func(ctx context.Context, s *api.GlobalState, b *builder.Builder) error {
-		fenceID := uint32(id)
+		fenceID := id
 		b.Wait(fenceID)
 		tcb := func(p *gapir.FenceReadyRequest) {
 			callback(ctx, p)
