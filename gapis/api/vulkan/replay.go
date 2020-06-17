@@ -850,7 +850,7 @@ func (a API) GetInitialPayload(ctx context.Context,
 	out.State().Allocator.ReserveRanges(im)
 	cmdGenerator := commandGenerator.NewLinearCommandGenerator(initialCmds, nil)
 
-	transforms := getCommonInitializationTransforms("GetInitialPayload")
+	transforms := getCommonInitializationTransforms("GetInitialPayload", false)
 
 	chain := transform2.CreateTransformChain(cmdGenerator, transforms, out)
 	controlFlow := controlFlowGenerator.NewLinearControlFlowGenerator(chain)
@@ -911,22 +911,20 @@ func replayProfile(ctx context.Context,
 	initialCmds := getInitialCmds(ctx, dependentPayload, intent, out)
 
 	transforms := make([]transform2.Transform, 0)
-	transforms = append(transforms, getCommonInitializationTransforms("ProfileReplay")...)
+	transforms = append(transforms, getCommonInitializationTransforms("ProfileReplay", true)...)
 
 	var request profileRequest
 	profileTransform := newEndOfReplay()
 
-	//Melih TODO: Remove this loop if we can guarantee if there is only one request
 	for _, rr := range rrs {
 		profileTransform.AddResult(rr.Result)
 		request = rr.Request.(profileRequest)
+		transforms = append(transforms, newWaitForPerfetto(request.traceOptions, request.handler, request.buffer))
+		transforms = append(transforms, newProfilingLayers(layerName))
+		transforms = append(transforms, newMappingExporter(ctx, request.handleMappings))
 	}
 
-	transforms = append(transforms, newWaitForPerfetto(request.traceOptions, request.handler, request.buffer))
-	transforms = append(transforms, newProfilingLayers(layerName))
-	transforms = append(transforms, newMappingExporter(ctx, request.handleMappings))
 	transforms = append(transforms, profileTransform)
-
 	transforms = append(transforms, newDestroyResourcesAtEOS2())
 	transforms = appendLogTransforms(ctx, "ProfileReplay", c, transforms)
 
@@ -952,7 +950,7 @@ func replayIssues(ctx context.Context,
 	initialCmds := getInitialCmds(ctx, dependentPayload, intent, out)
 
 	transforms := make([]transform2.Transform, 0)
-	transforms = append(transforms, getCommonInitializationTransforms("IssuesReplay")...)
+	transforms = append(transforms, getCommonInitializationTransforms("IssuesReplay", false)...)
 
 	issuesTransform := newFindIssues(ctx, c, api.CmdID(len(initialCmds)))
 	doDisplayToSurface := false
@@ -1361,9 +1359,9 @@ func (a API) Profile(
 	return d, err
 }
 
-func getCommonInitializationTransforms(tag string) []transform2.Transform {
+func getCommonInitializationTransforms(tag string, imagesOnly bool) []transform2.Transform {
 	return []transform2.Transform{
-		newMakeAttachmentReadable2(false),
+		newMakeAttachmentReadable2(imagesOnly),
 		newDropInvalidDestroy2(tag),
 	}
 }
