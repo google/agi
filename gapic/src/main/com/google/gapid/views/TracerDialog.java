@@ -228,7 +228,7 @@ public class TracerDialog {
 
     @Override
     public String getTitle() {
-      return Messages.CAPTURE_TRACE_PERFETTO;
+      return Messages.CAPTURE_TRACE_SELECT;
     }
 
     @Override
