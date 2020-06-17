@@ -87,13 +87,21 @@ func Convert(dst, src *Format, data []byte) ([]byte, error) {
 	// Some components can be implicitly added (alpha, Y, Z, W).
 	mappings = resolveImplicitMappings(count, mappings, src, data)
 
+	// Calculate min/max if floats
+	min, max := float64(math.MaxFloat64), -float64(math.MaxFloat64)
+	for _, m := range mappings {
+		if m.dst.component.DataType.IsInteger() && m.src.component.DataType.IsFloat() && !m.dst.component.DataType.Signed {
+			ftouMinMax(count, m.dst, m.src, &min, &max)
+		}
+	}
+
 	// Do the conversion work.
 	for _, m := range mappings {
 		if m.src.component == nil {
 			return nil, fmt.Errorf("Channel %v not found in source format: %v",
 				m.dst.component.Channel, src)
 		}
-		if err := m.conv(count); err != nil {
+		if err := m.conv(count, min, max); err != nil {
 			return nil, err
 		}
 
@@ -155,7 +163,7 @@ var (
 	buf1Norm = buf{[]byte{1}, &Component{DataType: &U1, Sampling: LinearNormalized}, 0, 0}
 )
 
-func (m *mapping) conv(count int) error {
+func (m *mapping) conv(count int, min, max float64) error {
 	d, s := m.dst.component, m.src.component
 	if d.GetSampling().GetCurve() != s.GetSampling().GetCurve() {
 		return fmt.Errorf("Cannot convert curve from %v to %v", s.GetSampling().GetCurve(), d.GetSampling().GetCurve())
@@ -187,7 +195,7 @@ func (m *mapping) conv(count int) error {
 		if d.DataType.Signed {
 			return ftos(count, m.dst, m.src)
 		}
-		return ftou(count, m.dst, m.src)
+		return ftou(count, m.dst, m.src, min, max)
 	}
 	return fmt.Errorf("Cannot convert from %v to %v", s, d)
 }
@@ -364,8 +372,69 @@ func writeUintClamped(bs *binary.BitStream, bits uint64, count uint32) {
 	bs.Write(u64.Min(bits, limit), count)
 }
 
+func ftouMinMax(count int, dst, src buf, min, max *float64) error {
+	srcTy := src.component.DataType
+	srcIsF16, srcIsF32, srcIsF64 := srcTy.Is(F16), srcTy.Is(F32), srcTy.Is(F64)
+	sourceStream := binary.BitStream{Data: src.bytes, ReadPos: src.offset}
+	switch {
+	case srcIsF16:
+		for i := 0; i < count; i++ {
+			f := f16.Number(sourceStream.Read(16)).Float32()
+			if !math.IsInf(float64(f), 0) {
+				if float64(f) < *min {
+					*min = float64(f)
+				}
+				if float64(f) > *max {
+					*max = float64(f)
+				}
+			}
+			sourceStream.ReadPos += src.stride - 16
+		}
+	case srcIsF32:
+		for i := 0; i < count; i++ {
+			f := math.Float32frombits(uint32(sourceStream.Read(32)))
+			if !math.IsInf(float64(f), 0) {
+				if float64(f) < *min {
+					*min = float64(f)
+				}
+				if float64(f) > *max {
+					*max = float64(f)
+				}
+			}
+			sourceStream.ReadPos += src.stride - 32
+		}
+	case srcIsF64:
+		for i := 0; i < count; i++ {
+			f := math.Float64frombits(sourceStream.Read(64))
+			if !math.IsInf(f, 0) {
+				if f < *min {
+					*min = f
+				}
+				if f > *max {
+					*max = f
+				}
+			}
+			sourceStream.ReadPos += src.stride - 64
+		}
+	default:
+		for i := 0; i < count; i++ {
+			f := math.Float64frombits(sourceStream.Read(64))
+			if !math.IsInf(f, 0) {
+				if f < *min {
+					*min = f
+				}
+				if f > *max {
+					*max = f
+				}
+			}
+			sourceStream.ReadPos += src.stride - 64
+		}
+	}
+	return nil
+}
+
 // float to unsigned int
-func ftou(count int, dst, src buf) error {
+func ftou(count int, dst, src buf, min, max float64) error {
 	dstTy, srcTy := dst.component.DataType, src.component.DataType
 	srcIsF16, srcIsF32, srcIsF64 := srcTy.Is(F16), srcTy.Is(F32), srcTy.Is(F64)
 	srcExpBits, srcManBits := srcTy.GetFloat().ExponentBits, srcTy.GetFloat().MantissaBits
@@ -377,34 +446,23 @@ func ftou(count int, dst, src buf) error {
 	switch {
 	case srcIsF16:
 		scale := float32(dstMask)
-		min, max := float32(math.MaxFloat32), -float32(math.MaxFloat32)
-		for i := 0; i < count; i++ {
-			f := f16.Number(sourceStream.Read(16)).Float32()
-			if !math.IsInf(float64(f), 0) {
-				if f < min {
-					min = f
-				}
-				if f > max {
-					max = f
-				}
-			}
-			sourceStream.ReadPos += src.stride - 16
-		}
 		sourceStream.ReadPos = src.offset
 		for i := 0; i < count; i++ {
 			f := f16.Number(sourceStream.Read(16)).Float32()
+			fMin := float32(min)
+			fMax := float32(max)
 			if norm {
 				if src.component.Channel == Channel_Depth {
-					if max != min {
-						f = (f - min) * (1 / (max - min))
+					if fMax != fMin {
+						f = (f - fMin) * (1 / (fMax - fMin))
 					} else {
 						f = 0
 					}
-				} else if min < 0 {
+				} else if fMin < 0 {
 					if f <= 0 {
-						f = (f - min) * (0.5 / -min)
+						f = (f - fMin) * (0.5 / -fMin)
 					} else {
-						f = f*(0.5/max) + 0.5
+						f = f*(0.5/fMax) + 0.5
 					}
 				}
 				f *= scale
@@ -415,34 +473,23 @@ func ftou(count int, dst, src buf) error {
 		}
 	case srcIsF32:
 		scale := float32(dstMask)
-		min, max := float32(math.MaxFloat32), -float32(math.MaxFloat32)
-		for i := 0; i < count; i++ {
-			f := math.Float32frombits(uint32(sourceStream.Read(32)))
-			if !math.IsInf(float64(f), 0) {
-				if f < min {
-					min = f
-				}
-				if f > max {
-					max = f
-				}
-			}
-			sourceStream.ReadPos += src.stride - 32
-		}
+		fMin := float32(min)
+		fMax := float32(max)
 		sourceStream.ReadPos = src.offset
 		for i := 0; i < count; i++ {
 			f := math.Float32frombits(uint32(sourceStream.Read(32)))
 			if norm {
 				if src.component.Channel == Channel_Depth {
-					if max != min {
-						f = (f - min) * (1 / (max - min))
+					if fMax != fMin {
+						f = (f - fMin) * (1 / (fMax - fMin))
 					} else {
 						f = 0
 					}
-				} else if min < 0 {
+				} else if fMin < 0 {
 					if f <= 0 {
-						f = (f - min) * (0.5 / -min)
+						f = (f - fMin) * (0.5 / -fMin)
 					} else {
-						f = f*(0.5/max) + 0.5
+						f = f*(0.5/fMax) + 0.5
 					}
 				}
 				f *= scale
@@ -453,19 +500,6 @@ func ftou(count int, dst, src buf) error {
 		}
 	case srcIsF64:
 		scale := float64(dstMask)
-		min, max := float64(math.MaxFloat64), -float64(math.MaxFloat64)
-		for i := 0; i < count; i++ {
-			f := math.Float64frombits(sourceStream.Read(64))
-			if !math.IsInf(f, 0) {
-				if f < min {
-					min = f
-				}
-				if f > max {
-					max = f
-				}
-			}
-			sourceStream.ReadPos += src.stride - 64
-		}
 		sourceStream.ReadPos = src.offset
 		for i := 0; i < count; i++ {
 			f := math.Float64frombits(sourceStream.Read(64))
@@ -491,19 +525,6 @@ func ftou(count int, dst, src buf) error {
 		}
 	default:
 		scale := float64(dstMask)
-		min, max := float64(math.MaxFloat64), -float64(math.MaxFloat64)
-		for i := 0; i < count; i++ {
-			f := math.Float64frombits(sourceStream.Read(64))
-			if !math.IsInf(f, 0) {
-				if f < min {
-					min = f
-				}
-				if f > max {
-					max = f
-				}
-			}
-			sourceStream.ReadPos += src.stride - 64
-		}
 		sourceStream.ReadPos = src.offset
 		for i := 0; i < count; i++ {
 			f := float64(f64.FromBits(sourceStream.Read(srcBits), srcExpBits, srcManBits))
