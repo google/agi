@@ -33,18 +33,20 @@ var _ transform2.Transform = &waitForPerfetto{}
 
 // waitForPerfetto adds a fence to the trace to be able to wait perfetto
 type waitForPerfetto struct {
-	traceOptions  *service.TraceOptions
-	signalHandler *replay.SignalHandler
-	buffer        *bytes.Buffer
+	traceOptions      *service.TraceOptions
+	signalHandler     *replay.SignalHandler
+	buffer            *bytes.Buffer
+	beginProfileCmdID api.CmdID
 }
 
 type FenceCallback = func(ctx context.Context, request *gapir.FenceReadyRequest)
 
-func newWaitForPerfetto(traceOptions *service.TraceOptions, signalHandler *replay.SignalHandler, buffer *bytes.Buffer) *waitForPerfetto {
+func newWaitForPerfetto(traceOptions *service.TraceOptions, signalHandler *replay.SignalHandler, buffer *bytes.Buffer, beginProfileCmdID api.CmdID) *waitForPerfetto {
 	return &waitForPerfetto{
-		traceOptions:  traceOptions,
-		signalHandler: signalHandler,
-		buffer:        buffer,
+		traceOptions:      traceOptions,
+		signalHandler:     signalHandler,
+		buffer:            buffer,
+		beginProfileCmdID: beginProfileCmdID,
 	}
 }
 
@@ -72,7 +74,7 @@ func (perfettoTransform *waitForPerfetto) EndTransform(ctx context.Context, inpu
 }
 
 func (perfettoTransform *waitForPerfetto) TransformCommand(ctx context.Context, id api.CmdID, inputCommands []api.Cmd, inputState *api.GlobalState) ([]api.Cmd, error) {
-	if id != 0 {
+	if id != perfettoTransform.beginProfileCmdID {
 		return inputCommands, nil
 	}
 

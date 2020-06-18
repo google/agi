@@ -913,13 +913,11 @@ func replayProfile(ctx context.Context,
 	transforms := make([]transform2.Transform, 0)
 	transforms = append(transforms, getCommonInitializationTransforms("ProfileReplay", true)...)
 
-	var request profileRequest
 	profileTransform := newEndOfReplay()
-
 	for _, rr := range rrs {
 		profileTransform.AddResult(rr.Result)
-		request = rr.Request.(profileRequest)
-		transforms = append(transforms, newWaitForPerfetto(request.traceOptions, request.handler, request.buffer))
+		request := rr.Request.(profileRequest)
+		transforms = append(transforms, newWaitForPerfetto(request.traceOptions, request.handler, request.buffer, api.CmdID(len(initialCmds))))
 		transforms = append(transforms, newProfilingLayers(layerName))
 		transforms = append(transforms, newMappingExporter(ctx, request.handleMappings))
 	}
