@@ -903,6 +903,10 @@ func replayProfile(ctx context.Context,
 	device *device.Instance,
 	out transform2.Writer) error {
 
+	if len(rrs) > 1 {
+		panic("Batched request is not supported for Profile")
+	}
+
 	var layerName string
 	if device.GetConfiguration().GetPerfettoCapability().GetGpuProfiling().GetHasRenderStageProducerLayer() {
 		layerName = "VkRenderStagesProducer"
@@ -914,15 +918,13 @@ func replayProfile(ctx context.Context,
 	transforms = append(transforms, getCommonInitializationTransforms("ProfileReplay", true)...)
 
 	profileTransform := newEndOfReplay()
-	for _, rr := range rrs {
-		profileTransform.AddResult(rr.Result)
-		request := rr.Request.(profileRequest)
-		transforms = append(transforms, newWaitForPerfetto(request.traceOptions, request.handler, request.buffer, api.CmdID(len(initialCmds))))
-		transforms = append(transforms, newProfilingLayers(layerName))
-		transforms = append(transforms, newMappingExporter(ctx, request.handleMappings))
-	}
-
+	profileTransform.AddResult(rrs[0].Result)
+	request := rrs[0].Request.(profileRequest)
+	transforms = append(transforms, newWaitForPerfetto(request.traceOptions, request.handler, request.buffer, api.CmdID(len(initialCmds))))
+	transforms = append(transforms, newProfilingLayers(layerName))
+	transforms = append(transforms, newMappingExporter(ctx, request.handleMappings))
 	transforms = append(transforms, profileTransform)
+
 	transforms = append(transforms, newDestroyResourcesAtEOS2())
 	transforms = appendLogTransforms(ctx, "ProfileReplay", c, transforms)
 
@@ -945,27 +947,21 @@ func replayIssues(ctx context.Context,
 	c *capture.GraphicsCapture,
 	out transform2.Writer) error {
 
+	if len(rrs) > 1 {
+		panic("Batched request is not supported for Profile")
+	}
+
 	initialCmds := getInitialCmds(ctx, dependentPayload, intent, out)
 
 	transforms := make([]transform2.Transform, 0)
 	transforms = append(transforms, getCommonInitializationTransforms("IssuesReplay", false)...)
 
 	issuesTransform := newFindIssues(ctx, c, api.CmdID(len(initialCmds)))
-	doDisplayToSurface := false
-
-	// Melih TODO: Can we get rid of this loop and typecast.
-	// b/158597615
-	for _, rr := range rrs {
-		issuesTransform.AddResult(rr.Result)
-		req := rr.Request.(issuesRequest)
-		if req.displayToSurface {
-			doDisplayToSurface = true
-		}
-	}
-
+	issuesTransform.AddResult(rrs[0].Result)
 	transforms = append(transforms, issuesTransform)
 
-	if doDisplayToSurface {
+	req := rrs[0].Request.(issuesRequest)
+	if req.displayToSurface {
 		transforms = append(transforms, newDisplayToSurface2())
 	}
 
