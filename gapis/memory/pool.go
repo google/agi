@@ -27,6 +27,7 @@ import (
 	"github.com/google/gapid/gapis/database"
 	"github.com/google/gapid/core/os/device"
 	// "github.com/pkg/errors"
+	"github.com/google/gapid/core/log"
 )
 
 // Pool represents an unbounded and isolated memory space. Pool can be used
@@ -102,13 +103,18 @@ func (m *Pool) Slice(rng Range) Data {
 		w := m.writes[i]
 		if rng == w.dst {
 			// Exact hit
-			//return w.src
+			//return w.src // ALAN
 			return poolSlice{rng: rng, writes: m.writes[i : i+1]}
 		}
 		if rng.First() >= w.dst.First() && rng.Last() <= w.dst.Last() {
 			// Subset of a write.
-			rng.Base -= w.dst.First()
-			//return w.src.Slice(rng)
+			//sliceRange := rng
+			//sliceRange.Base -= w.dst.First()
+			//slice := w.src.Slice(sliceRange)
+			//return slice
+			//slices := make(poolWriteList, 1)
+			//slices[0] = w //poolWrite{src: slice, dst: sliceRange}
+			//return poolSlice{rng: rng, writes: slices}
 			return poolSlice{rng: rng, writes: m.writes[i : i+1]}
 		}
 	}
@@ -336,12 +342,17 @@ func (m poolSlice) String() string {
 }
 
 func (m poolSlice) NewDecoder(ctx context.Context, memLayout *device.MemoryLayout) Decoder {
-	decode := &poolSliceDecoder{ctx: ctx, writes: m.writes, rng: m.rng}
+	// if m.rng.Base == 0 {
+	// 	panic("eeeeeeee")
+	// }
+	log.W(ctx, "WWWWWWW %v %v", m.rng, m.writes)
+	decode := &poolSliceDecoder{ctx: ctx, memLayout: memLayout, writes: m.writes, rng: m.rng}
 	return decode
 }
 
 type poolSliceDecoder struct {
 	ctx      context.Context
+	memLayout *device.MemoryLayout
 	writes   poolWriteList
 	rng      Range
 	simpleDecoder Decoder
@@ -351,24 +362,21 @@ func (r *poolSliceDecoder) alignAndOffset(l *device.DataTypeLayout) {
 	r.ensureDecoder()
 	r.simpleDecoder.alignAndOffset(l)
 	if r.simpleDecoder.Error() != nil {
-		panic("ALAN") //r.handleError()
+		r.handleError()
+		r.simpleDecoder.alignAndOffset(l)
 	}
 }
 
 func (r *poolSliceDecoder) MemoryLayout() *device.MemoryLayout {
-	r.ensureDecoder()
-	ret := r.simpleDecoder.MemoryLayout()
-	if r.simpleDecoder.Error() != nil {
-		panic("ALAN") //r.handleError()
-	}
-	return ret
+	return r.memLayout
 }
 
 func (r *poolSliceDecoder) Offset() uint64 {
 	r.ensureDecoder()
 	ret := r.simpleDecoder.Offset()
 	if r.simpleDecoder.Error() != nil {
-		panic("ALAN") //r.handleError()
+		r.handleError()
+		ret = r.simpleDecoder.Offset()
 	}
 	return ret
 }
@@ -377,7 +385,8 @@ func (r *poolSliceDecoder) Align(to uint64) {
 	r.ensureDecoder()
 	r.simpleDecoder.Align(to)
 	if r.simpleDecoder.Error() != nil {
-		panic("ALAN") //r.handleError()
+		r.handleError()
+		r.simpleDecoder.Align(to)
 	}
 }
 
@@ -385,7 +394,8 @@ func (r *poolSliceDecoder) Skip(n uint64) {
 	r.ensureDecoder()
 	r.simpleDecoder.Skip(n)
 	if r.simpleDecoder.Error() != nil {
-		panic("ALAN") //r.handleError()
+		r.handleError()
+		r.simpleDecoder.Skip(n)
 	}
 }
 
@@ -393,7 +403,8 @@ func (r *poolSliceDecoder) Pointer() uint64 {
 	r.ensureDecoder()
 	ret := r.simpleDecoder.Pointer()
 	if r.simpleDecoder.Error() != nil {
-		panic("ALAN") //r.handleError()
+		r.handleError()
+		ret = r.simpleDecoder.Pointer()
 	}
 	return ret
 }
@@ -402,7 +413,8 @@ func (r *poolSliceDecoder) F32() float32 {
 	r.ensureDecoder()
 	ret := r.simpleDecoder.F32()
 	if r.simpleDecoder.Error() != nil {
-		panic("ALAN") //r.handleError()
+		r.handleError()
+		ret = r.simpleDecoder.F32()
 	}
 	return ret
 }
@@ -411,7 +423,8 @@ func (r *poolSliceDecoder) F64() float64 {
 	r.ensureDecoder()
 	ret := r.simpleDecoder.F64()
 	if r.simpleDecoder.Error() != nil {
-		panic("ALAN") //r.handleError()
+		r.handleError()
+		ret = r.simpleDecoder.F64()
 	}
 	return ret
 }
@@ -420,7 +433,8 @@ func (r *poolSliceDecoder) I8() int8 {
 	r.ensureDecoder()
 	ret := r.simpleDecoder.I8()
 	if r.simpleDecoder.Error() != nil {
-		panic("ALAN") //r.handleError()
+		r.handleError()
+		ret = r.simpleDecoder.I8()
 	}
 	return ret
 }
@@ -429,7 +443,8 @@ func (r *poolSliceDecoder) I16() int16 {
 	r.ensureDecoder()
 	ret := r.simpleDecoder.I16()
 	if r.simpleDecoder.Error() != nil {
-		panic("ALAN") //r.handleError()
+		r.handleError()
+		ret = r.simpleDecoder.I16()
 	}
 	return ret
 }
@@ -438,7 +453,8 @@ func (r *poolSliceDecoder) I32() int32 {
 	r.ensureDecoder()
 	ret := r.simpleDecoder.I32()
 	if r.simpleDecoder.Error() != nil {
-		panic("ALAN") //r.handleError()
+		r.handleError()
+		ret = r.simpleDecoder.I32()
 	}
 	return ret
 }
@@ -447,7 +463,8 @@ func (r *poolSliceDecoder) I64() int64 {
 	r.ensureDecoder()
 	ret := r.simpleDecoder.I64()
 	if r.simpleDecoder.Error() != nil {
-		panic("ALAN") //r.handleError()
+		r.handleError()
+		ret = r.simpleDecoder.I64()
 	}
 	return ret
 }
@@ -456,7 +473,8 @@ func (r *poolSliceDecoder) U8() uint8 {
 	r.ensureDecoder()
 	ret := r.simpleDecoder.U8()
 	if r.simpleDecoder.Error() != nil {
-		panic("ALAN") //r.handleError()
+		r.handleError()
+		ret = r.simpleDecoder.U8()
 	}
 	return ret
 }
@@ -465,7 +483,8 @@ func (r *poolSliceDecoder) U16() uint16 {
 	r.ensureDecoder()
 	ret := r.simpleDecoder.U16()
 	if r.simpleDecoder.Error() != nil {
-		panic("ALAN") //r.handleError()
+		r.handleError()
+		ret = r.simpleDecoder.U16()
 	}
 	return ret
 }
@@ -474,7 +493,8 @@ func (r *poolSliceDecoder) U32() uint32 {
 	r.ensureDecoder()
 	ret := r.simpleDecoder.U32()
 	if r.simpleDecoder.Error() != nil {
-		panic("ALAN") //r.handleError()
+		r.handleError()
+		ret = r.simpleDecoder.U32()
 	}
 	return ret
 }
@@ -483,7 +503,8 @@ func (r *poolSliceDecoder) U64() uint64 {
 	r.ensureDecoder()
 	ret := r.simpleDecoder.U64()
 	if r.simpleDecoder.Error() != nil {
-		panic("ALAN") //r.handleError()
+		r.handleError()
+		ret = r.simpleDecoder.U64()
 	}
 	return ret
 }
@@ -492,7 +513,8 @@ func (r *poolSliceDecoder) Char() Char {
 	r.ensureDecoder()
 	ret := r.simpleDecoder.Char()
 	if r.simpleDecoder.Error() != nil {
-		panic("ALAN") //r.handleError()
+		r.handleError()
+		ret = r.simpleDecoder.Char()
 	}
 	return ret
 }
@@ -501,7 +523,8 @@ func (r *poolSliceDecoder) Int() Int {
 	r.ensureDecoder()
 	ret := r.simpleDecoder.Int()
 	if r.simpleDecoder.Error() != nil {
-		panic("ALAN") //r.handleError()
+		r.handleError()
+		ret = r.simpleDecoder.Int()
 	}
 	return ret
 }
@@ -510,7 +533,8 @@ func (r *poolSliceDecoder) Uint() Uint {
 	r.ensureDecoder()
 	ret := r.simpleDecoder.Uint()
 	if r.simpleDecoder.Error() != nil {
-		panic("ALAN") //r.handleError()
+		r.handleError()
+		ret = r.simpleDecoder.Uint()
 	}
 	return ret
 }
@@ -519,7 +543,8 @@ func (r *poolSliceDecoder) Size() Size {
 	r.ensureDecoder()
 	ret := r.simpleDecoder.Size()
 	if r.simpleDecoder.Error() != nil {
-		panic("ALAN") //r.handleError()
+		r.handleError()
+		ret = r.simpleDecoder.Size()
 	}
 	return ret
 }
@@ -528,7 +553,8 @@ func (r *poolSliceDecoder) String() string {
 	r.ensureDecoder()
 	ret := r.simpleDecoder.String()
 	if r.simpleDecoder.Error() != nil {
-		panic("ALAN") //r.handleError()
+		r.handleError()
+		ret = r.simpleDecoder.String()
 	}
 	return ret
 }
@@ -537,17 +563,19 @@ func (r *poolSliceDecoder) Bool() bool {
 	r.ensureDecoder()
 	ret := r.simpleDecoder.Bool()
 	if r.simpleDecoder.Error() != nil {
-		panic("ALAN") //r.handleError()
+		r.handleError()
+		ret = r.simpleDecoder.Bool()
 	}
 	return ret
 }
 
 func (r *poolSliceDecoder) Data(buf []byte) {
 	r.ensureDecoder()
-	if r.simpleDecoder.Error() != nil {
-		panic("ALAN") //r.handleError()
-	}
 	r.simpleDecoder.Data(buf)
+	if r.simpleDecoder.Error() != nil {
+		r.handleError()
+		r.simpleDecoder.Data(buf)
+	}
 }
 
 func (r *poolSliceDecoder) Error() error {
@@ -587,7 +615,7 @@ func (r *poolSliceDecoder) handleError() {
 			r.simpleDecoder = slice.NewDecoder(r.ctx, r.MemoryLayout()) // intersection.Size
 		}
 	} else {
-		r.simpleDecoder = &zeroReadDecoder{size: r.rng.Size}
+		r.simpleDecoder = &zeroReadDecoder{memLayout: r.MemoryLayout(), size: r.rng.Size}
 	}
 }
 
@@ -684,11 +712,12 @@ func (r *poolSliceDecoder) SetError(err error) {
 }
 
 type zeroReadDecoder struct {
+	memLayout *device.MemoryLayout
 	size uint64
 }
 
 func (r *zeroReadDecoder) alignAndOffset(l *device.DataTypeLayout) {}
-func (r *zeroReadDecoder) MemoryLayout() *device.MemoryLayout { return nil }
+func (r *zeroReadDecoder) MemoryLayout() *device.MemoryLayout { return r.memLayout }
 func (r *zeroReadDecoder) Offset() uint64  { return 0 }
 func (r *zeroReadDecoder) Align(to uint64) {}
 func (r *zeroReadDecoder) Skip(n uint64) {}

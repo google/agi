@@ -105,12 +105,10 @@ func (r resource) NewReader(ctx context.Context) io.Reader {
 }
 
 func (r resource) NewDecoder(ctx context.Context, memLayout *device.MemoryLayout) Decoder {
-	//panic(fmt.Errorf("XXXXXXX %v", r))
-	data, _ := r.getData(ctx)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	panic(fmt.Errorf("DDDDDDDD %v", memLayout))
+	data, err := r.getData(ctx)
+	if err != nil {
+		panic(err)
+	}
 	reader := endian.ReaderForBytes(data, memLayout.Endian)
 	decode := NewDecoder(reader, memLayout)
 	return decode
@@ -134,6 +132,7 @@ func (s resourceSlice) Get(ctx context.Context, offset uint64, out []byte) error
 }
 
 func (r resourceSlice) NewReader(ctx context.Context) io.Reader {
+	panic("DO NOT CALL")
 	data, err := r.src.getData(ctx)
 	if err != nil {
 		return failedReader{err}
