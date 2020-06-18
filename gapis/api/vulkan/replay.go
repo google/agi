@@ -904,7 +904,11 @@ func replayProfile(ctx context.Context,
 	out transform2.Writer) error {
 
 	if len(rrs) > 1 {
-		panic("Batched request is not supported for Profile")
+		panic("Batched request is not supported for profile")
+	}
+
+	if len(rrs) == 0 {
+		return fmt.Errorf("No request has been found for profile")
 	}
 
 	var layerName string
@@ -948,7 +952,11 @@ func replayIssues(ctx context.Context,
 	out transform2.Writer) error {
 
 	if len(rrs) > 1 {
-		panic("Batched request is not supported for Profile")
+		panic("Batched request is not supported for issues")
+	}
+
+	if len(rrs) == 0 {
+		return fmt.Errorf("No request has been found for issues")
 	}
 
 	initialCmds := getInitialCmds(ctx, dependentPayload, intent, out)
