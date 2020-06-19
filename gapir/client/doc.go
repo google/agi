@@ -16,7 +16,7 @@
 // instances and communicating with them. The actual interaction is
 // achieved via the gRPC service defined in:
 // gapir/replay_service/service.proto
-// The client package abstracts the RPC handling details an offers a
+// The client package abstracts the RPC handling details and offers a
 // higher-level interface, in particular it can manage several live
 // GAPIR instances at the same time.
 package client
