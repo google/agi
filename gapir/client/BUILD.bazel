@@ -21,6 +21,7 @@ go_library(
         "device_connection.go",
         "doc.go",
         "host_log_parser.go",
+        "replayer.go",
     ],
     importpath = "github.com/google/gapid/gapir/client",
     visibility = ["//visibility:public"],
