@@ -223,6 +223,9 @@ func (client *Client) getActiveReplayer(ctx context.Context, key *ReplayerKey) (
 
 // BeginReplay sends a replay request to the replayer identified by key.
 func (client *Client) BeginReplay(ctx context.Context, key *ReplayerKey, payload string, dependent string) error {
+	client.mutex.Lock()
+	defer client.mutex.Unlock()
+
 	ctx = log.Enter(ctx, "Starting replay on gapir device")
 	replayerInfo, err := client.getActiveReplayer(ctx, key)
 	if err != nil {
@@ -249,6 +252,9 @@ func (client *Client) BeginReplay(ctx context.Context, key *ReplayerKey, payload
 // key. It returns a cleanup function to remove the executor once the replay
 // is finished.
 func (client *Client) SetReplayExecutor(ctx context.Context, key *ReplayerKey, executor ReplayExecutor) (func(), error) {
+	client.mutex.Lock()
+	defer client.mutex.Unlock()
+
 	replayerInfo, err := client.getActiveReplayer(ctx, key)
 	if err != nil {
 		return nil, err
@@ -263,6 +269,9 @@ func (client *Client) SetReplayExecutor(ctx context.Context, key *ReplayerKey, e
 
 // PrewarmReplay requests the GAPIR device to get itself into the given state
 func (client *Client) PrewarmReplay(ctx context.Context, key *ReplayerKey, payload string, cleanup string) error {
+	client.mutex.Lock()
+	defer client.mutex.Unlock()
+
 	replayerInfo, err := client.getActiveReplayer(ctx, key)
 	if err != nil {
 		return log.Err(ctx, err, "Getting replayer replayerInfo")
