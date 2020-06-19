@@ -343,7 +343,7 @@ to generate Go, C++ and Java code.
 
 APIC is a gapil compiler, its wrapper command is defined in `cmd/apic/`, but the
 actual compiler logic is defined in `gapil/`. In a nutshell, APIC parses the
-`.api` files to gather information about the graphics API, and then instanciate
+`.api` files to gather information about the graphics API, and then instanciates
 the templates in the `.tmpl` files to generate code.
 
 ### Where does the generated code ends up?
