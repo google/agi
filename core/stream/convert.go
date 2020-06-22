@@ -433,6 +433,32 @@ func ftouMinMax(count int, dst, src buf, min, max *float64) error {
 	return nil
 }
 
+func remapFloat(f, min, max float64, c Channel) float64 {
+	if c == Channel_Depth {
+		if max != min {
+			return (f - min) * (1 / (max - min))
+		} else {
+			return 0
+		}
+	} else if min < 0 && max > 0 {
+		if f <= 0 {
+			return (f - min) * (0.5 / -min)
+		} else {
+			return f*(0.5/max) + 0.5
+		}
+	} else if max <= 0 {
+		if min == 0 {
+			return 0
+		} else {
+			return (f - min) / -min
+		}
+	} else if max > 1 {
+		return f / max
+	}
+
+	return f
+}
+
 // float to unsigned int
 func ftou(count int, dst, src buf, min, max float64) error {
 	dstTy, srcTy := dst.component.DataType, src.component.DataType
@@ -446,25 +472,10 @@ func ftou(count int, dst, src buf, min, max float64) error {
 	switch {
 	case srcIsF16:
 		scale := float32(dstMask)
-		sourceStream.ReadPos = src.offset
 		for i := 0; i < count; i++ {
 			f := f16.Number(sourceStream.Read(16)).Float32()
-			fMin := float32(min)
-			fMax := float32(max)
 			if norm {
-				if src.component.Channel == Channel_Depth {
-					if fMax != fMin {
-						f = (f - fMin) * (1 / (fMax - fMin))
-					} else {
-						f = 0
-					}
-				} else if fMin < 0 {
-					if f <= 0 {
-						f = (f - fMin) * (0.5 / -fMin)
-					} else {
-						f = f*(0.5/fMax) + 0.5
-					}
-				}
+				f = float32(remapFloat(float64(f), min, max, src.component.Channel))
 				f *= scale
 			}
 			writeUintClamped(&destStream, uint64(f), dstBits)
@@ -473,25 +484,10 @@ func ftou(count int, dst, src buf, min, max float64) error {
 		}
 	case srcIsF32:
 		scale := float32(dstMask)
-		fMin := float32(min)
-		fMax := float32(max)
-		sourceStream.ReadPos = src.offset
 		for i := 0; i < count; i++ {
 			f := math.Float32frombits(uint32(sourceStream.Read(32)))
 			if norm {
-				if src.component.Channel == Channel_Depth {
-					if fMax != fMin {
-						f = (f - fMin) * (1 / (fMax - fMin))
-					} else {
-						f = 0
-					}
-				} else if fMin < 0 {
-					if f <= 0 {
-						f = (f - fMin) * (0.5 / -fMin)
-					} else {
-						f = f*(0.5/fMax) + 0.5
-					}
-				}
+				f = float32(remapFloat(float64(f), min, max, src.component.Channel))
 				f *= scale
 			}
 			writeUintClamped(&destStream, uint64(f), dstBits)
@@ -500,23 +496,10 @@ func ftou(count int, dst, src buf, min, max float64) error {
 		}
 	case srcIsF64:
 		scale := float64(dstMask)
-		sourceStream.ReadPos = src.offset
 		for i := 0; i < count; i++ {
 			f := math.Float64frombits(sourceStream.Read(64))
 			if norm {
-				if src.component.Channel == Channel_Depth {
-					if max != min {
-						f = (f - min) * (1 / (max - min))
-					} else {
-						f = 0
-					}
-				} else if min < 0 {
-					if f <= 0 {
-						f = (f - min) * (0.5 / -min)
-					} else {
-						f = f*(0.5/max) + 0.5
-					}
-				}
+				f = remapFloat(f, min, max, src.component.Channel)
 				f *= scale
 			}
 			writeUintClamped(&destStream, uint64(f), dstBits)
@@ -525,23 +508,10 @@ func ftou(count int, dst, src buf, min, max float64) error {
 		}
 	default:
 		scale := float64(dstMask)
-		sourceStream.ReadPos = src.offset
 		for i := 0; i < count; i++ {
 			f := float64(f64.FromBits(sourceStream.Read(srcBits), srcExpBits, srcManBits))
 			if norm {
-				if src.component.Channel == Channel_Depth {
-					if max != min {
-						f = (f - min) * (1 / (max - min))
-					} else {
-						f = 0
-					}
-				} else if min < 0 {
-					if f <= 0 {
-						f = (f - min) * (0.5 / -min)
-					} else {
-						f = f*(0.5/max) + 0.5
-					}
-				}
+				f = remapFloat(f, min, max, src.component.Channel)
 				f *= scale
 			}
 			writeUintClamped(&destStream, uint64(f), dstBits)
