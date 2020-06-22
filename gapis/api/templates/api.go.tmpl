@@ -1071,7 +1071,7 @@ import (
     func (s {{$slice_ty}}) MustReadʷ(ϟctx context.Context, ϟc ϟapi.Cmd, ϟg *ϟapi.GlobalState, ϟb *builder.Builder, ϟw ϟapi.StateWatcher) []{{$el_ty}} {
       vals, err := s.Readʷ(ϟctx, ϟc, ϟg, ϟb, ϟw)
       // ALAN
-      log.W(ϟctx , "{{$slice_ty}} ERR IS: %v", err)
+      //log.W(ϟctx , "{{$slice_ty}} ERR IS: %v", err)
       panicOnError(err)
       return vals
     }
@@ -2210,6 +2210,18 @@ import (
   {{if $.Watch}}
     func (c {{if $.PtrMethod}}*{{end}}{{$.Struct}}) {{$get}}ʷ(§
           ϟctx context.Context, ϟw ϟapi.StateWatcher, ϟtrack bool) {{$g}} {
+      {{if eq $g "VkDescriptorSetːDescriptorSetObjectʳᵐ"}}
+        {{if eq $field "c.data.descriptorSets"}}
+          {{if eq $get "DescriptorSets"}}
+            //if c == nil {
+            //  panic("tttt")
+            //}
+            if c.data == nil {
+              panic(fmt.Errorf("PANIC %v", c.refID))
+            }
+          {{end}}
+        {{end}}
+      {{end}}
       v := {{$field}}
       if ϟw != nil {
         ϟw.OnReadFrag(ϟctx, c, ϟapi.FieldFragment{§

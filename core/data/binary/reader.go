@@ -54,6 +54,8 @@ type Reader interface {
 	String() string
 	// Decode a collection count from the stream.
 	Count() uint32
+	// Skip some bytes
+	Skip(bytes uint64)
 	// If there is an error reading any input, all further reading returns the
 	// zero value of the type read. Error() returns the error which stopped
 	// reading from the stream. If reading has not stopped it returns nil.

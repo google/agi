@@ -169,7 +169,7 @@ func (r *bytesReader) Uint8() uint8 {
 	}
 	if r.head +1 > len(r.data) {
 		//panic("AAAA")
-		r.err = fmt.Errorf("error after reading 1 byte type")
+		r.err = fmt.Errorf("error after reading 1 byte type. len(r.data) = %v, r.head +1 = %v", len(r.data), r.head +1)
 		return 0
 	}
 	ret := r.data[r.head]
@@ -419,6 +419,16 @@ func (r *reader) Count() uint32 {
 
 func (r *bytesReader) Count() uint32 {
 	return r.Uint32()
+}
+
+func (r *reader) Skip(bytes uint64) {
+	for i := uint64(0); i < bytes; i += 1 {
+		r.Uint8()
+	}
+}
+
+func (r *bytesReader) Skip(bytes uint64) {
+	r.head += int(bytes)
 }
 
 func (r *reader) Error() error {

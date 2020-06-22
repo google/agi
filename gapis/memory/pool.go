@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	//golog "log"
 
 	"github.com/google/gapid/core/data/id"
 	// "github.com/google/gapid/core/data/endian"
@@ -27,7 +28,7 @@ import (
 	"github.com/google/gapid/gapis/database"
 	"github.com/google/gapid/core/os/device"
 	// "github.com/pkg/errors"
-	"github.com/google/gapid/core/log"
+	//"github.com/google/gapid/core/log"
 )
 
 // Pool represents an unbounded and isolated memory space. Pool can be used
@@ -103,23 +104,26 @@ func (m *Pool) Slice(rng Range) Data {
 		w := m.writes[i]
 		if rng == w.dst {
 			// Exact hit
-			//return w.src // ALAN
-			return poolSlice{rng: rng, writes: m.writes[i : i+1]}
+			//golog.Printf("111111111111111 %v:%v", rng.Base, rng.Size)
+			return w.src // ALAN
+			//return poolSlice{rng: rng, writes: m.writes[i : i+1]}
 		}
 		if rng.First() >= w.dst.First() && rng.Last() <= w.dst.Last() {
 			// Subset of a write.
-			//sliceRange := rng
-			//sliceRange.Base -= w.dst.First()
-			//slice := w.src.Slice(sliceRange)
-			//return slice
+			//golog.Printf("22222222222222222222 %v:%v -> %v:%v", w.dst.Base, w.dst.Size, rng.Base, rng.Size)
+			sliceRange := rng
+			sliceRange.Base -= w.dst.First()
+			slice := w.src.Slice(sliceRange)
+			return slice
 			//slices := make(poolWriteList, 1)
 			//slices[0] = w //poolWrite{src: slice, dst: sliceRange}
 			//return poolSlice{rng: rng, writes: slices}
-			return poolSlice{rng: rng, writes: m.writes[i : i+1]}
+			//return poolSlice{rng: rng, writes: m.writes[i : i+1]}
 		}
 	}
 	writes := make(poolWriteList, c)
 	copy(writes, m.writes[i:i+c])
+	//golog.Print("33333333333333333")
 	return poolSlice{rng: rng, writes: writes}
 }
 
@@ -345,7 +349,7 @@ func (m poolSlice) NewDecoder(ctx context.Context, memLayout *device.MemoryLayou
 	// if m.rng.Base == 0 {
 	// 	panic("eeeeeeee")
 	// }
-	log.W(ctx, "WWWWWWW %v %v", m.rng, m.writes)
+	//log.W(ctx, "WWWWWWW %v %v", m.rng, m.writes)
 	decode := &poolSliceDecoder{ctx: ctx, memLayout: memLayout, writes: m.writes, rng: m.rng}
 	return decode
 }

@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	//golog "log"
 
 	"github.com/google/gapid/core/data/id"
 	"github.com/google/gapid/core/data/endian"
@@ -72,6 +73,10 @@ func (r resource) Size() uint64 {
 }
 
 func (r resource) Slice(rng Range) Data {
+	//golog.Printf("Slicing Resource %v %v:%v into slice %v:%v", r.resID, 0, r.size, rng.Base, rng.Size)
+	// if r.size == 32 && rng.Base == 8 && rng.Size == 24 {
+	// 	panic(fmt.Errorf("PANIC Slicing Resource %v %v:%v into slice %v:%v", r.resID, 0, r.size, rng.Base, rng.Size))
+	// }
 	return newResourceSlice(r, rng)
 }
 
@@ -141,6 +146,7 @@ func (r resourceSlice) NewReader(ctx context.Context) io.Reader {
 }
 
 func (r resourceSlice) NewDecoder(ctx context.Context, memLayout *device.MemoryLayout) Decoder {
+	//golog.Printf("resourceSlice.NewDecoder: %v, %v", r.rng.First(), r.rng.Last()+1)
 	data, err := r.src.getData(ctx)
 	if err != nil {
 		panic("ALAN")
@@ -162,6 +168,7 @@ func (s resourceSlice) Size() uint64 {
 }
 
 func (s resourceSlice) Slice(rng Range) Data {
+	//golog.Print("Slicing ResourceSlice")
 	return newResourceSlice(s.src, Range{Base: s.rng.Base + rng.Base, Size: rng.Size})
 }
 

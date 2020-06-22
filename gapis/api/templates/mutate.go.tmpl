@@ -161,7 +161,7 @@
 
       {{if not $r}}ϟb = nil // @no_replay{{end}}
 
-      log.W(ϟctx, "MUTATE {{$name}} START")
+      //log.W(ϟctx, "MUTATE {{$name}} START")
       ϟs, ϟt := GetState(ϟg), ϟc.Thread()
       ϟl, ϟa := ϟg.MemoryLayout, ϟg.Arena; _, _ = ϟl, ϟa
       ϟo := ϟc.Extras().Observations()

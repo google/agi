@@ -15,6 +15,8 @@
 package memory
 
 import (
+	//golog "log"
+	
 	"github.com/google/gapid/core/data/binary"
 	"github.com/google/gapid/core/math/u64"
 	"github.com/google/gapid/core/os/device"
@@ -54,159 +56,201 @@ type Decoder interface {
 type SimpleDecoder struct {
 	reader binary.Reader
 	memLayout *device.MemoryLayout
-	offset uint64
+	o uint64
 }
 
 // NewDecoder constructs and returns a new SimpleDecoder that reads from reader using
 // the memory layout memLayout.
 func NewDecoder(reader binary.Reader, memLayout *device.MemoryLayout) Decoder {
-	return SimpleDecoder{reader, memLayout, 0}
+	return &SimpleDecoder{reader, memLayout, 0}
 }
 
-func (d SimpleDecoder) alignAndOffset(l *device.DataTypeLayout) {
+func (d *SimpleDecoder) alignAndOffset(l *device.DataTypeLayout) {
+	//panic("zzzzzzzzzzzzzzzzzzzzzzzz2")
 	d.Align(uint64(l.Alignment))
-	d.offset += uint64(l.Size)
+	d.o += uint64(l.Size)
+	//golog.Printf("OFFSET %v > %v", l.Size, d.o)
 }
 
 // MemoryLayout returns the MemoryLayout used by the decoder.
-func (d SimpleDecoder) MemoryLayout() *device.MemoryLayout {
+func (d *SimpleDecoder) MemoryLayout() *device.MemoryLayout {
 	return d.memLayout
 }
 
 // Offset returns the byte offset of the reader from the initial SimpleDecoder
 // creation.
-func (d SimpleDecoder) Offset() uint64 {
-	return d.offset
+func (d *SimpleDecoder) Offset() uint64 {
+	return d.o
 }
 
 // Align skips bytes until the read position is a multiple of to.
-func (d SimpleDecoder) Align(to uint64) {
-	alignment := u64.AlignUp(d.offset, uint64(to))
-	if pad := alignment - d.offset; pad != 0 {
+func (d *SimpleDecoder) Align(to uint64) {
+	alignment := u64.AlignUp(d.o, uint64(to))
+	pad := alignment - d.o
+	if pad != 0 {
 		d.Skip(pad)
 	}
+	//golog.Printf("ALIGN %v > %v", pad, d.o)
 }
 
 // Skip skips n bytes from the reader.
-func (d SimpleDecoder) Skip(n uint64) {
-	binary.ConsumeBytes(d.reader, n)
-	d.offset += n
+func (d *SimpleDecoder) Skip(n uint64) {
+	//binary.ConsumeBytes(d.reader, n)
+	d.reader.Skip(n)
+	d.o += n
+	//golog.Printf("SKIP %v > %v", n, d.o)
+	//panic("zzzzzzzzzzzzzzzzzzzzzzzz")
 }
 
 // Pointer loads and returns a pointer address.
-func (d SimpleDecoder) Pointer() uint64 {
+func (d *SimpleDecoder) Pointer() uint64 {
 	d.alignAndOffset(d.memLayout.Pointer)
-	return binary.ReadUint(d.reader, 8*d.memLayout.Pointer.Size)
+	val := binary.ReadUint(d.reader, 8*d.memLayout.Pointer.Size)
+	//golog.Printf("Pointer %v, %v", d.o, val)
+	return val
 }
 
 // F32 loads and returns a float32.
-func (d SimpleDecoder) F32() float32 {
+func (d *SimpleDecoder) F32() float32 {
 	d.alignAndOffset(d.memLayout.F32)
-	return d.reader.Float32()
+	val := d.reader.Float32()
+	//golog.Printf("F32 %v, %v", d.o, val)
+	return val
 }
 
 // F64 loads and returns a float64.
-func (d SimpleDecoder) F64() float64 {
+func (d *SimpleDecoder) F64() float64 {
 	d.alignAndOffset(d.memLayout.F64)
-	return d.reader.Float64()
+	val := d.reader.Float64()
+	//golog.Printf("F64 %v, %v", d.o, val)
+	return val
 }
 
 // I8 loads and returns a int8.
-func (d SimpleDecoder) I8() int8 {
+func (d *SimpleDecoder) I8() int8 {
 	d.alignAndOffset(d.memLayout.I8)
-	return d.reader.Int8()
+	val := d.reader.Int8()
+	//golog.Printf("I8 %v, %v", d.o, val)
+	return val
 }
 
 // I16 loads and returns a int16.
-func (d SimpleDecoder) I16() int16 {
+func (d *SimpleDecoder) I16() int16 {
 	d.alignAndOffset(d.memLayout.I16)
-	return d.reader.Int16()
+	val := d.reader.Int16()
+	//golog.Printf("I16 %v, %v", d.o, val)
+	return val
 }
 
 // I32 loads and returns a int32.
-func (d SimpleDecoder) I32() int32 {
+func (d *SimpleDecoder) I32() int32 {
 	d.alignAndOffset(d.memLayout.I32)
-	return d.reader.Int32()
+	val := d.reader.Int32()
+	//golog.Printf("I32 %v, %v", d.o, val)
+	return val
 }
 
 // I64 loads and returns a int64.
-func (d SimpleDecoder) I64() int64 {
+func (d *SimpleDecoder) I64() int64 {
 	d.alignAndOffset(d.memLayout.I64)
-	return d.reader.Int64()
+	val := d.reader.Int64()
+	//golog.Printf("I64 %v, %v", d.o, val)
+	return val
 }
 
 // U8 loads and returns a uint8.
-func (d SimpleDecoder) U8() uint8 {
+func (d *SimpleDecoder) U8() uint8 {
 	d.alignAndOffset(d.memLayout.I8)
-	return d.reader.Uint8()
+	val := d.reader.Uint8()
+	//golog.Printf("U8 %v, %v", d.o, val)
+	return val
 }
 
 // U16 loads and returns a uint16.
-func (d SimpleDecoder) U16() uint16 {
+func (d *SimpleDecoder) U16() uint16 {
 	d.alignAndOffset(d.memLayout.I16)
-	return d.reader.Uint16()
+	val := d.reader.Uint16()
+	//golog.Printf("U16 %v, %v", d.o, val)
+	return val
 }
 
 // U32 loads and returns a uint32.
-func (d SimpleDecoder) U32() uint32 {
+func (d *SimpleDecoder) U32() uint32 {
 	d.alignAndOffset(d.memLayout.I32)
-	return d.reader.Uint32()
+	val := d.reader.Uint32()
+	//golog.Printf("U32 %v, %v", d.o, val)
+	return val
 }
 
 // U64 loads and returns a uint64.
-func (d SimpleDecoder) U64() uint64 {
+func (d *SimpleDecoder) U64() uint64 {
 	d.alignAndOffset(d.memLayout.I64)
-	return d.reader.Uint64()
+	val := d.reader.Uint64()
+	//golog.Printf("U64 %v, %v", d.o, val)
+	return val
 }
 
 // Char loads and returns an char.
-func (d SimpleDecoder) Char() Char {
+func (d *SimpleDecoder) Char() Char {
 	d.alignAndOffset(d.memLayout.Char)
-	return Char(binary.ReadInt(d.reader, 8*d.memLayout.Char.Size))
+	val := Char(binary.ReadInt(d.reader, 8*d.memLayout.Char.Size))
+	//golog.Printf("Char %v, %v", d.o, val)
+	return val
 }
 
 // Int loads and returns an int.
-func (d SimpleDecoder) Int() Int {
+func (d *SimpleDecoder) Int() Int {
 	d.alignAndOffset(d.memLayout.Integer)
-	return Int(binary.ReadInt(d.reader, 8*d.memLayout.Integer.Size))
+	val := Int(binary.ReadInt(d.reader, 8*d.memLayout.Integer.Size))
+	//golog.Printf("Int %v, %v", d.o, val)
+	return val
 }
 
 // Uint loads and returns a uint.
-func (d SimpleDecoder) Uint() Uint {
+func (d *SimpleDecoder) Uint() Uint {
 	d.alignAndOffset(d.memLayout.Integer)
-	return Uint(binary.ReadUint(d.reader, 8*d.memLayout.Integer.Size))
+	val := Uint(binary.ReadUint(d.reader, 8*d.memLayout.Integer.Size))
+	//golog.Printf("Uint %v, %v", d.o, val)
+	return val
 }
 
 // Size loads and returns a size_t.
-func (d SimpleDecoder) Size() Size {
+func (d *SimpleDecoder) Size() Size {
 	d.alignAndOffset(d.memLayout.Size)
-	return Size(binary.ReadUint(d.reader, 8*d.memLayout.Size.Size))
+	val := Size(binary.ReadUint(d.reader, 8*d.memLayout.Size.Size))
+	//golog.Printf("Size %v, %v", d.o, val)
+	return val
 }
 
 // String loads and returns a null-terminated string.
-func (d SimpleDecoder) String() string {
+func (d *SimpleDecoder) String() string {
 	out := d.reader.String()
-	d.offset += uint64(len(out) + 1)
-	return out
+	d.o += uint64(len(out) + 1)
+	val := out
+	//golog.Printf("String %v, %v", d.o, val)
+	return val
 }
 
 // Bool loads and returns a boolean value.
-func (d SimpleDecoder) Bool() bool {
-	d.offset++
-	return d.reader.Uint8() != 0
+func (d *SimpleDecoder) Bool() bool {
+	d.o++
+	val := d.reader.Uint8() != 0
+	//golog.Printf("Bool %v, %v", d.o, val)
+	return val
 }
 
 // Data reads raw bytes into buf.
-func (d SimpleDecoder) Data(buf []byte) {
+func (d *SimpleDecoder) Data(buf []byte) {
 	d.reader.Data(buf)
-	d.offset += uint64(len(buf))
+	d.o += uint64(len(buf))
+	//golog.Printf("Data %v", buf)
 }
 
 // Error returns the error state of the underlying reader.
-func (d SimpleDecoder) Error() error {
+func (d *SimpleDecoder) Error() error {
 	return d.reader.Error()
 }
 
-func (d SimpleDecoder) SetError(err error) {
+func (d *SimpleDecoder) SetError(err error) {
 	d.reader.SetError(err)
 }
