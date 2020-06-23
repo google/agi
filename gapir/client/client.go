@@ -66,8 +66,12 @@ type ReplayerKey struct {
 
 // Client handles multiple GAPIR instances identified by ReplayerKey.
 type Client struct {
-	// mutex prevents data races when restarting replayers.
-	mutex     sync.Mutex
+	// mutex prevents data races when restarting replayers. All exported
+	// functions must acquire this mutex upon start, to guard the lookup
+	// in the replayers map which might be concurrently updated by a
+	// replayer reconnection.
+	mutex sync.Mutex
+	// replayers stores the informations relater to GAPIR instances.
 	replayers map[ReplayerKey]*replayerInfo
 }
 
