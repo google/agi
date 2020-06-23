@@ -316,44 +316,43 @@ A few useful homemade packages:
 
 ## Code generated at compile time
 
-A big amount of code is generated at compile time. Code is typically generated
+A large amount of code is generated at compile time. Code is typically generated
 via APIC (API Compiler, `cmd/apic/`). APIC takes as input `.api` and `.tmpl`
-files, and it generates code in another language like Go, C++ or Java.
+files, and it generates code in another language.
 
 ```
 
-               +----------+
-  foo.api  --->|          |
-               |   APIC   |---> foo.go (or foo.cpp, or foo.java, ...)
-  foo.tmpl --->|          |
-               +----------+
+                    +----------+
+  <.api files>  --->|          |
+                    |   APIC   |---> <generated files>
+  <.tmpl files> --->|          |
+                    +----------+
 
 ```
 
-`.api` files are gapil ("graphics API language") sources. Gapil is a
+`.api` files are GAPIL ("graphics API language") sources. GAPIL is a
 domain-specific language to specify a graphics API, it is documented in
 `gapil/README.md`. AGI currently supports only Vulkan, but its ancestor GAPID
-was designed to support arbitrary graphics API. Vulkan is described by API files
+was designed to support arbitrary graphics APIs. Vulkan is described by API files
 located under `gapis/api/vulkan/`, the top-level file is
 `gapis/api/vulkan/vulkan.api`.
 
 `.tmpl` files are template files. The templating language is documented in
 `gapis/api/templates/README.md`. There are various template files in the project
-to generate Go, C++ and Java code.
+to generate code for the interceptor, server, replayer, Vulkan layers, etc.
 
-APIC is a gapil compiler, its wrapper command is defined in `cmd/apic/`, but the
+APIC is a GAPIL compiler, its entry-point is defined in `cmd/apic/` and the
 actual compiler logic is defined in `gapil/`. In a nutshell, APIC parses the
-`.api` files to gather information about the graphics API, and then instanciates
+`.api` files to gather information about the graphics API, and then instantiates
 the templates in the `.tmpl` files to generate code.
 
-### Where does the generated code ends up?
+### Where does the generated code end up?
 
 The generated code is not checked under version control. It is generated at
 compilation time by Bazel rules calling APIC, resulting in files that can be
 seen under e.g. `bazel-bin/`.
 
-For instance, generated C++ code related to the interceptor spy layer can be
-found in:
+For instance, generated C++ code for the interceptor can be found in:
 
 ```
 user@machine:~/work/agi$ find -L bazel-bin -name '*_spy_*.cpp'
@@ -366,7 +365,6 @@ bazel-bin/gapii/cc/vulkan_spy_helpers.cpp
 bazel-bin/gapii/cc/vulkan_spy_1.cpp
 ```
 
-This is one of the reason why it's good to use the `cmd-gofuse` setup: it
-enables developers to see generated code where it would logically reside for
-compilation, under the `<agi-gofuse>` directory, alongside the code that is
-under version control.
+To get a unified file tree view, interleaving source files with generated files,
+you can use the `cmd/gofuse` setup. `cmd/gofuse` links the generated source
+files in the same directories as their siblings in the same packages/namespaces.
