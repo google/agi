@@ -72,12 +72,12 @@ type Client struct {
 	// replayer reconnection.
 	mutex sync.Mutex
 	// replayers stores the informations relater to GAPIR instances.
-	replayers map[ReplayerKey]*replayerInfo
+	replayers map[ReplayerKey]*replayer
 }
 
 // New returns a new Client with no replayers.
 func New(ctx context.Context) *Client {
-	client := &Client{replayers: map[ReplayerKey]*replayerInfo{}}
+	client := &Client{replayers: map[ReplayerKey]*replayer{}}
 	app.AddCleanup(ctx, func() {
 		client.shutdown(ctx)
 	})
@@ -132,7 +132,7 @@ func (client *Client) Connect(ctx context.Context, device bind.Device, abi *devi
 	}
 	rpcClient := replaysrv.NewGapirClient(conn)
 
-	replayerInfo := &replayerInfo{
+	replayer := &replayer{
 		deviceConnectionInfo: *newDeviceConnectionInfo,
 		device:               device,
 		abi:                  abi,
@@ -140,15 +140,15 @@ func (client *Client) Connect(ctx context.Context, device bind.Device, abi *devi
 		rpcClient:            rpcClient,
 	}
 
-	crash.Go(func() { client.heartbeat(ctx, replayerInfo) })
+	crash.Go(func() { client.heartbeat(ctx, replayer) })
 	log.I(ctx, "Heartbeat connection setup done")
 
-	err = replayerInfo.startReplayCommunicationHandler(ctx)
+	err = replayer.startReplayCommunicationHandler(ctx)
 	if err != nil {
 		return nil, log.Err(ctx, err, "Error in startReplayCommunicationHandler")
 	}
 
-	client.replayers[key] = replayerInfo
+	client.replayers[key] = replayer
 	return &key, nil
 }
 
@@ -164,14 +164,14 @@ func (client *Client) removeConnection(ctx context.Context, key ReplayerKey) {
 }
 
 // reconnect removes the replayer before re-creating it.
-func (client *Client) reconnect(ctx context.Context, replayer *replayerInfo) {
+func (client *Client) reconnect(ctx context.Context, replayer *replayer) {
 	key := ReplayerKey{device: replayer.device, arch: replayer.abi.GetArchitecture()}
 	client.removeConnection(ctx, key)
 	client.Connect(ctx, replayer.device, replayer.abi)
 }
 
 // heartbeat regularly sends a ping to a replayer, and restarts it when it fails to reply.
-func (client *Client) heartbeat(ctx context.Context, replayer *replayerInfo) {
+func (client *Client) heartbeat(ctx context.Context, replayer *replayer) {
 	for {
 		select {
 		case <-task.ShouldStop(ctx):
@@ -189,7 +189,7 @@ func (client *Client) heartbeat(ctx context.Context, replayer *replayerInfo) {
 
 // getActiveReplayer returns the replayer identified by key only if this
 // replayer has an active connection to a GAPIR instance.
-func (client *Client) getActiveReplayer(ctx context.Context, key *ReplayerKey) (*replayerInfo, error) {
+func (client *Client) getActiveReplayer(ctx context.Context, key *ReplayerKey) (*replayer, error) {
 	replayer, found := client.replayers[*key]
 	if !found {
 		return nil, log.Errf(ctx, nil, "Cannot find replayer for this key: %v", key)
@@ -208,7 +208,7 @@ func (client *Client) BeginReplay(ctx context.Context, key *ReplayerKey, payload
 	defer client.mutex.Unlock()
 
 	ctx = log.Enter(ctx, "Starting replay on gapir device")
-	replayerInfo, err := client.getActiveReplayer(ctx, key)
+	replayer, err := client.getActiveReplayer(ctx, key)
 	if err != nil {
 		return err
 	}
@@ -221,7 +221,7 @@ func (client *Client) BeginReplay(ctx context.Context, key *ReplayerKey, payload
 			},
 		},
 	}
-	err = replayerInfo.rpcStream.Send(&idReq)
+	err = replayer.rpcStream.Send(&idReq)
 	if err != nil {
 		return log.Err(ctx, err, "Sending replay id")
 	}
@@ -236,16 +236,16 @@ func (client *Client) SetReplayExecutor(ctx context.Context, key *ReplayerKey, e
 	client.mutex.Lock()
 	defer client.mutex.Unlock()
 
-	replayerInfo, err := client.getActiveReplayer(ctx, key)
+	replayer, err := client.getActiveReplayer(ctx, key)
 	if err != nil {
 		return nil, err
 	}
 
-	if replayerInfo.executor != nil {
+	if replayer.executor != nil {
 		return nil, log.Err(ctx, nil, "Cannot set an executor while one is already present")
 	}
-	replayerInfo.executor = executor
-	return func() { replayerInfo.executor = nil }, nil
+	replayer.executor = executor
+	return func() { replayer.executor = nil }, nil
 }
 
 // PrewarmReplay requests the GAPIR device to get itself into the given state
@@ -253,9 +253,9 @@ func (client *Client) PrewarmReplay(ctx context.Context, key *ReplayerKey, paylo
 	client.mutex.Lock()
 	defer client.mutex.Unlock()
 
-	replayerInfo, err := client.getActiveReplayer(ctx, key)
+	replayer, err := client.getActiveReplayer(ctx, key)
 	if err != nil {
-		return log.Err(ctx, err, "Getting replayer replayerInfo")
+		return log.Err(ctx, err, "Getting replayer replayer")
 	}
 
 	PrerunReq := replaysrv.ReplayRequest{
@@ -266,7 +266,7 @@ func (client *Client) PrewarmReplay(ctx context.Context, key *ReplayerKey, paylo
 			},
 		},
 	}
-	err = replayerInfo.rpcStream.Send(&PrerunReq)
+	err = replayer.rpcStream.Send(&PrerunReq)
 	if err != nil {
 		return log.Err(ctx, err, "Sending replay payload")
 	}

@@ -44,8 +44,8 @@ const (
 	gapirAuthTokenMetaDataName = "gapir-auth-token"
 )
 
-// replayerInfo stores data related to a single GAPIR instance.
-type replayerInfo struct {
+// replayer stores data related to a single GAPIR instance.
+type replayer struct {
 	device               bind.Device
 	abi                  *device.ABI
 	deviceConnectionInfo deviceConnectionInfo
@@ -56,7 +56,7 @@ type replayerInfo struct {
 }
 
 // closeConnection properly terminates the replayer
-func (replayer *replayerInfo) closeConnection(ctx context.Context) {
+func (replayer *replayer) closeConnection(ctx context.Context) {
 	// Call Shutdown RCP on the replayer
 	if replayer.rpcClient != nil {
 		// Use a clean context, since ctx is most likely already cancelled.
@@ -82,7 +82,7 @@ func (replayer *replayerInfo) closeConnection(ctx context.Context) {
 }
 
 // ping uses the Ping RPC to make sure a GAPIR instance is alive.
-func (replayer *replayerInfo) ping(ctx context.Context) error {
+func (replayer *replayer) ping(ctx context.Context) error {
 	if replayer.rpcClient == nil {
 		return log.Errf(ctx, nil, "cannot ping without gapir connection")
 	}
@@ -101,7 +101,7 @@ func (replayer *replayerInfo) ping(ctx context.Context) error {
 
 // startReplayCommunicationHandler launches a background task which creates
 // the Replay RPC stream and starts to listen to it.
-func (replayer *replayerInfo) startReplayCommunicationHandler(ctx context.Context) error {
+func (replayer *replayer) startReplayCommunicationHandler(ctx context.Context) error {
 	connected := make(chan error)
 	cctx := keys.Clone(context.Background(), ctx)
 	crash.Go(func() {
@@ -133,7 +133,7 @@ func (replayer *replayerInfo) startReplayCommunicationHandler(ctx context.Contex
 // a replay stream connection. It creates the replay connection stream and then
 // enters a loop where it listens to messages from GAPIR and dispatches them to
 // the relevant handlers.
-func (replayer *replayerInfo) handleReplayCommunication(
+func (replayer *replayer) handleReplayCommunication(
 	ctx context.Context,
 	connected chan error) error {
 	ctx = log.Enter(ctx, "HandleReplayCommunication")
@@ -217,7 +217,7 @@ func (replayer *replayerInfo) handleReplayCommunication(
 }
 
 // sendFenceReady signals the device to continue a replay.
-func (replayer *replayerInfo) sendFenceReady(ctx context.Context, id uint32) error {
+func (replayer *replayer) sendFenceReady(ctx context.Context, id uint32) error {
 	fenceReadyReq := replaysrv.ReplayRequest{
 		Req: &replaysrv.ReplayRequest_FenceReady{
 			FenceReady: &replaysrv.FenceReady{
@@ -233,7 +233,7 @@ func (replayer *replayerInfo) sendFenceReady(ctx context.Context, id uint32) err
 }
 
 // handleResourceRequest sends back the requested resources.
-func (replayer *replayerInfo) handleResourceRequest(ctx context.Context, req *gapir.ResourceRequest) error {
+func (replayer *replayer) handleResourceRequest(ctx context.Context, req *gapir.ResourceRequest) error {
 	ctx = status.Start(ctx, "Resources Request (count: %d)", len(req.GetIds()))
 	defer status.Finish(ctx)
 
@@ -278,7 +278,7 @@ func (replayer *replayerInfo) handleResourceRequest(ctx context.Context, req *ga
 }
 
 // handleCrashDump uploads the received crash dump the crash tracking service.
-func (replayer *replayerInfo) handleCrashDump(ctx context.Context, dump *gapir.CrashDump) error {
+func (replayer *replayer) handleCrashDump(ctx context.Context, dump *gapir.CrashDump) error {
 	if dump == nil {
 		return log.Err(ctx, nil, "Nil crash dump")
 	}
@@ -301,7 +301,7 @@ func (replayer *replayerInfo) handleCrashDump(ctx context.Context, dump *gapir.C
 }
 
 // handlePayloadRequest sends back the requested payload.
-func (replayer *replayerInfo) handlePayloadRequest(ctx context.Context, payloadID string) error {
+func (replayer *replayer) handlePayloadRequest(ctx context.Context, payloadID string) error {
 	ctx = status.Start(ctx, "Payload Request")
 	defer status.Finish(ctx)
 
