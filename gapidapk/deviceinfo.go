@@ -118,16 +118,8 @@ func fetchDeviceInfo(ctx context.Context, d adb.Device) error {
 
 	var cleanup app.Cleanup
 
-	// Set up device info service to use prerelease driver.
-	nextCleanup, err := adb.SetupPrereleaseDriver(ctx, d, apk.InstalledPackage)
-	cleanup = cleanup.Then(nextCleanup)
-	if err != nil {
-		cleanup.Invoke(ctx)
-		return err
-	}
-
 	// Set driver package
-	nextCleanup, err = android.SetupLayers(ctx, d, apk.Name, []string{driver.Package}, []string{})
+	nextCleanup, err := android.SetupLayers(ctx, d, apk.Name, []string{driver.Package}, []string{})
 	cleanup = cleanup.Then(nextCleanup)
 	if err != nil {
 		cleanup.Invoke(ctx)
@@ -197,11 +189,6 @@ func preparePerfettoProducerLauncherFromApk(ctx context.Context, d adb.Device) e
 }
 
 func launchPerfettoProducerFromApk(ctx context.Context, d adb.Device, startFunc task.Task) error {
-	driver, err := d.GraphicsDriver(ctx)
-	if err != nil {
-		return err
-	}
-
 	// Extract the producer launcher from the APK.
 	if err := preparePerfettoProducerLauncherFromApk(ctx, d); err != nil {
 		return err
@@ -233,10 +220,6 @@ func launchPerfettoProducerFromApk(ctx context.Context, d adb.Device, startFunc 
 
 	// Start the shell command to launch producer
 	script := fmt.Sprintf(launcherScript, launcherPath)
-	if driver.Package != "" {
-		abi := d.Instance().GetConfiguration().PreferredABI(nil)
-		script = "export LD_LIBRARY_PATH=\"" + driver.Path + "!/lib/" + abi.Name + "/\";" + script
-	}
 	process, err := d.Shell(script).
 		Capture(stdout, stdout).
 		Start(ctx)

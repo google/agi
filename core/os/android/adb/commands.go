@@ -49,7 +49,7 @@ const (
 	perfettoPort = NamedFileSystemSocket("/dev/socket/traced_consumer")
 
 	driverOverride = "agi.driver_package_override"
-	driverProperty = "ro.gfx.driver.1"
+	driverProperty = "graphics.gpu.profiler.vulkan_layer_apk"
 )
 
 func isRootSuccessful(line string) bool {

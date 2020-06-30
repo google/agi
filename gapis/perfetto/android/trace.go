@@ -140,11 +140,6 @@ func Start(ctx context.Context, d adb.Device, a *android.ActivityAction, opts *s
 		hasRenderStages := false
 		if driver.Package != "" {
 			// Setup the application to use the prerelease driver.
-			nextCleanup, err := adb.SetupPrereleaseDriver(ctx, d, a.Package)
-			cleanup = cleanup.Then(nextCleanup)
-			if err != nil {
-				return nil, cleanup.Invoke(ctx), err
-			}
 			hasRenderStages = hasDataSourceEnabled(opts.PerfettoConfig, gpuRenderStagesDataSourceName)
 		}
 
