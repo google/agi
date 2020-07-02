@@ -55,9 +55,9 @@ Using the msys64 shell (installed by choco at `C:\tools\msys64\mingw64`):
 1. Update MSYS with: `pacman -Syu`.
 2. If the update ends with “close the window and run it again”, close and reopen the window and repeat 1.
 3. Fetch required tools with: `pacman -S curl git zip unzip patch`
-4. Download gcc with: `curl -O http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-9.2.0-2-any.pkg.tar.xz`
-5. Download gcc-libs with: `curl -O http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-libs-9.2.0-2-any.pkg.tar.xz`
-6. Install gcc with: `pacman -U mingw-w64-x86_64-gcc*-9.2.0-2-any.pkg.tar.xz`
+4. Download gcc with: `curl -O http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-8.3.0-2-any.pkg.tar.xz`
+5. Download gcc-libs with: `curl -O http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-libs-8.3.0-2-any.pkg.tar.xz`
+6. Install gcc with: `pacman -U mingw-w64-x86_64-gcc*-8.3.0-2-any.pkg.tar.xz`
 7. Close the MSYS terminal
 
 ### Install Java Development Kit 11
@@ -153,6 +153,8 @@ tools/bin/sdkmanager platform-tools
 
 ### Install the XCode command line tools
 
+> AGI is known to compile with Xcode 11.3, which is the version used in our continuous integration.
+
 After installing, ensure the XCode license is signed with:
 
 ```
@@ -226,6 +228,8 @@ tools/bin/sdkmanager platform-tools
 sudo apt-get update
 sudo apt-get install mesa-common-dev libncurses5-dev libgl1-mesa-dev zlib1g-dev
 ```
+
+> C++ compiler: AGI is known to compile with gcc-8, which is the version used in our continuous integration.
 
 ### Configure the environment
 

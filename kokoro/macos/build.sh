@@ -51,6 +51,7 @@ mkdir bazel
 sh bazel-${BAZEL_VERSION}-installer-darwin-x86_64.sh --prefix=$PWD/bazel
 
 # Specify the version of XCode
+# Make sure to reflect changes here in BUILDING.md documentation.
 export DEVELOPER_DIR=/Applications/Xcode_11.3.app/Contents/Developer
 
 cd $SRC
