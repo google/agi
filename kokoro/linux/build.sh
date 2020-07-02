@@ -27,7 +27,7 @@ bash bazel-${BAZEL_VERSION}-installer-linux-x86_64.sh --prefix=$PWD/bazel
 
 # Get GCC 8
 # We stick with GCC version 8 for now, as later version triggers a dependency on
-# a more recent GLIBC that is not present on e.g. Swarming bots.
+# GLIBCXX_3.4.26 or higher, which are not available on not-too-recent Linux (e.g. Swarming bots).
 # Make sure to reflect changes here in BUILDING.md documentation.
 sudo rm /etc/apt/sources.list.d/cuda.list*
 sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
