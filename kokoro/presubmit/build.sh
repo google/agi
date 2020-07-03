@@ -38,18 +38,8 @@ curl -L -k -s https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
 sudo apt-get update
 sudo apt-get install -y clang-format-6.0
 
-# Fake NDK with the expected version.
-# Our Bazel scripts check that a specific NDK version is installed: rather
-# than downloading the 1GB+ NDK just to have a matching version, we manually
-# create a fake NDK with only a version file.
-export ANDROID_NDK_HOME=${PWD}/android-ndk-fake
-mkdir -p ${ANDROID_NDK_HOME}
-cat > ${ANDROID_NDK_HOME}/source.properties <<EOF
-Pkg.Desc = Android NDK
-Pkg.Revision = 21.0.6113669
-EOF
-
 # Setup environment.
+export ANDROID_NDK_HOME=/opt/android-ndk-r16b
 export BAZEL=$BUILD_ROOT/bazel/bin/bazel
 export BUILDIFIER=$BUILD_ROOT/tools/bin/buildifier
 export BUILDOZER=$BUILD_ROOT/tools/bin/buildozer
