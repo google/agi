@@ -29,6 +29,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gapid.proto.SettingsProto;
 import com.google.gapid.proto.device.Device;
 import com.google.gapid.proto.device.Device.Instance;
+import com.google.gapid.proto.device.Device.VulkanDriver;
 import com.google.gapid.proto.service.Service;
 import com.google.gapid.proto.service.Service.Value;
 import com.google.gapid.proto.service.path.Path;
@@ -244,6 +245,15 @@ public class Devices {
 
   public void removeListener(Listener listener) {
     listeners.removeListener(listener);
+  }
+
+  public static String getVulkanDriverVersion(Device.Instance dev) {
+    String version = "N/A";
+    VulkanDriver vkDriver = dev.getConfiguration().getDrivers().getVulkan();
+    if (vkDriver.getPhysicalDevicesCount() > 0) {
+      version = Integer.toUnsignedString(vkDriver.getPhysicalDevices(0).getDriverVersion());
+    }
+    return version;
   }
 
   public static String getLabel(Device.Instance dev) {
