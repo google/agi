@@ -33,7 +33,7 @@ def main():
     args = parser.parse_args()
 
     #### Check LUCI is installed
-    assert 'LUCI_CLIENT_ROOT' in os.environ.keys()
+    assert 'LUCI_ROOT' in os.environ.keys()
 
     #### Collect swarming result
     summary = 'summary.json'
@@ -41,12 +41,13 @@ def main():
     if os.path.exists(summary):
         os.remove(summary)
     cmd = [
-        os.path.join(os.environ['LUCI_CLIENT_ROOT'], 'swarming.py'),
+        os.path.join(os.environ['LUCI_ROOT'], 'swarming'),
         'collect',
-        '--swarming=https://chrome-swarming.appspot.com',
+        '--server=https://chrome-swarming.appspot.com',
         '--task-output-stdout=none',
+        '--task-summary-python',
         '--task-summary-json', summary,
-        '--json', args.task_json,
+        '--requests-json', args.task_json,
     ]
     if ('SWARMING_AUTH_FLAG' in os.environ.keys()) and (os.environ['SWARMING_AUTH_FLAG'] != ''):
         cmd += [ os.environ['SWARMING_AUTH_FLAG'] ]
@@ -77,14 +78,12 @@ def main():
     # pedantic to setup the 'pass' status. Warning: an expired task have less
     # fields, e.g. it doesn't have the 'exit_code' field.
     status = 'fail'
-    if ('exit_code' in task_result.keys()) and (task_result['exit_code'] == '0') and (task_result['state'] == 'COMPLETED') and (task_result['failure'] == False) and (task_result['internal_failure'] == False):
+    if ('exit_code' in task_result.keys()) and (task_result['exit_code'] == '0') and (task_result['state'] == 'COMPLETED') and (task_result['failure'] == False):
         status = 'pass'
     elif task_result['state'] == 'TIMED_OUT':
         status = 'timeout'
     elif task_result['state'] == 'EXPIRED':
         status = 'expired'
-    elif task_result['internal_failure']:
-        status = 'internal_failure'
 
     #### Add result to result file
     # Results are stored in JSON with the following format:
@@ -132,10 +131,8 @@ def main():
         f.write(json.dumps(results, sort_keys=True, indent=2))
 
     #### Exit code
-    # Return non-zero if the task failed, but silence failures due to expiration
-    # of an internal failure, because we do not want Swarming infrastructure
-    # failures to be reported as build failures.
-    if status == 'pass' or status == 'expired' or status == 'internal_failure':
+    # Return non-zero if the task failed, but silence failures due to expiration:
+    if status == 'pass' or status == 'expired':
         return 0
     else:
         return 1
