@@ -24,7 +24,6 @@ import (
 	"github.com/google/gapid/gapis/memory"
 )
 
-// Melih TODO: it seems like those are never freed
 func (splitTransform *commandSplitter) MustAllocReadDataForSubmit(ctx context.Context, g *api.GlobalState, v ...interface{}) api.AllocResult {
 	allocateResult := splitTransform.allocations.AllocDataOrPanic(ctx, v...)
 	splitTransform.readMemoriesForSubmit = append(splitTransform.readMemoriesForSubmit, &allocateResult)

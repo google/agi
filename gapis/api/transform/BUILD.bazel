@@ -17,10 +17,8 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "go_default_library",
     srcs = [
-        "capture_log.go",
         "doc.go",
         "early_terminator.go",
-        "file_log.go",
         "injector.go",
         "recorder.go",
         "tasks.go",
