@@ -175,7 +175,7 @@ public class DeviceDialog implements Devices.Listener, Capture.Listener {
       createLabel(composite, "Capture name: " + models.capture.getName());
       Instance dev = models.capture.getData().capture.getDevice();
       createLabel(composite,
-          "Capture device: " + Devices.getLabel(dev) + " (Vulkan driver version: " + Devices.getVulkanDriverVersion(dev) + ")");
+          "Capture device: " + Devices.getLabel(dev) + " (Vulkan driver version: " + Devices.getVulkanDriverVersions(dev) + ")");
 
       // Warning when no compatible device found
       noCompatibleDeviceFound = createLabel(composite, Messages.SELECT_DEVICE_NO_COMPATIBLE_FOUND);

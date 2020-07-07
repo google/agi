@@ -247,13 +247,20 @@ public class Devices {
     listeners.removeListener(listener);
   }
 
-  public static String getVulkanDriverVersion(Device.Instance dev) {
-    String version = "N/A";
+  public static String getVulkanDriverVersions(Device.Instance dev) {
+    StringBuilder version = new StringBuilder("N/A");
     VulkanDriver vkDriver = dev.getConfiguration().getDrivers().getVulkan();
-    if (vkDriver.getPhysicalDevicesCount() > 0) {
-      version = Integer.toUnsignedString(vkDriver.getPhysicalDevices(0).getDriverVersion());
+    Boolean first = true;
+    for (int i = 0; i < vkDriver.getPhysicalDevicesCount(); i++) {
+      if (first) {
+        version.setLength(0);
+        first = false;
+      } else {
+        version.append(", ");
+      }
+      version.append(Integer.toUnsignedString(vkDriver.getPhysicalDevices(0).getDriverVersion()));
     }
-    return version;
+    return version.toString();
   }
 
   public static String getLabel(Device.Instance dev) {
