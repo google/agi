@@ -250,7 +250,7 @@ public class Devices {
   public static String getVulkanDriverVersions(Device.Instance dev) {
     StringBuilder version = new StringBuilder("N/A");
     VulkanDriver vkDriver = dev.getConfiguration().getDrivers().getVulkan();
-    Boolean first = true;
+    boolean first = true;
     for (int i = 0; i < vkDriver.getPhysicalDevicesCount(); i++) {
       if (first) {
         version.setLength(0);
