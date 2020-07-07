@@ -114,8 +114,8 @@ export PATH="`pwd`/depot_tools:$PATH"
 # Note that the '${platform}' must appear as-is in the ensure file,
 # hence the single quotes.
 (
-  echo 'infra/tools/luci/isolate/${platform} git_revision:227ed2302d4b77f5a9823c223d5c1571b45dafd4'
-  echo 'infra/tools/luci/swarming/${platform} git_revision:227ed2302d4b77f5a9823c223d5c1571b45dafd4'
+  echo 'infra/tools/luci/isolate/${platform} git_revision:fe882fb29f1eaa8d1a4cfc77af4d11bcf7d59318'
+  echo 'infra/tools/luci/swarming/${platform} git_revision:fe882fb29f1eaa8d1a4cfc77af4d11bcf7d59318'
 ) > ${LUCI_ROOT}/ensure_file.txt
 cipd ensure -ensure-file ${LUCI_ROOT}/ensure_file.txt -root ${LUCI_ROOT}
 
