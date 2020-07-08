@@ -123,7 +123,7 @@ func (chain *TransformChain) endChain(ctx context.Context) error {
 	return nil
 }
 
-func (chain *TransformChain) transformCommand(ctx context.Context, id api.CmdID, inputCmds []api.Cmd, beginTransformIndex int) error {
+func (chain *TransformChain) transformCommands(ctx context.Context, id api.CmdID, inputCmds []api.Cmd, beginTransformIndex int) error {
 	for i, transform := range chain.transforms {
 		if i < beginTransformIndex {
 			continue
@@ -183,7 +183,7 @@ func (chain *TransformChain) GetNextTransformedCommands(ctx context.Context) err
 
 	inputCmds := make([]api.Cmd, 0)
 	inputCmds = append(inputCmds, currentCommand)
-	err := chain.transformCommand(ctx, chain.currentCommandID, inputCmds, 0)
+	err := chain.transformCommands(ctx, chain.currentCommandID, inputCmds, 0)
 	if err != nil {
 		log.E(ctx, "Replay error (%v:%v): %v", chain.currentCommandID, currentCommand, err)
 	}
@@ -195,7 +195,7 @@ func (chain *TransformChain) GetNextTransformedCommands(ctx context.Context) err
 func (chain *TransformChain) stateMutator(ctx context.Context, id api.CmdID, cmds []api.Cmd) error {
 	beginTransformIndex := chain.currentTransformIndex + 1
 
-	if err := chain.transformCommand(ctx, id, cmds, beginTransformIndex); err != nil {
+	if err := chain.transformCommands(ctx, id, cmds, beginTransformIndex); err != nil {
 		log.E(ctx, "state mutator error (%v:%v): %v", id, cmds, err)
 		return err
 	}

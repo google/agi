@@ -24,7 +24,7 @@ import (
 )
 
 // StateMutator is a function that allows transformation to mutate state during transformation
-// TODO: Refactor the transforms that uses this to remove this behaviour
+// TODO: Refactor the transforms that use this to remove this behaviour
 type StateMutator func(id api.CmdID, cmds []api.Cmd) error
 
 // Transform is the interface that wraps the basic Transform functionality.
@@ -49,13 +49,14 @@ type Transform interface {
 	// Resources are needed for the state mutation, therefore this should be called after mutation.
 	ClearTransformResources(ctx context.Context)
 
-	// RequiresAccurateState returns true if the transform needs the observe the accurate state.
+	// RequiresAccurateState returns true if the transform needs to observe the accurate state.
 	RequiresAccurateState() bool
 
 	// RequiresInnerStateMutation returns true if the transform needs to mutate state during the transformation
 	RequiresInnerStateMutation() bool
 
-	// RequiresInnerStateMutation returns true if the transform needs to mutate state during the transformation
+	// SetInnerStateMutationFunction sets a mutator function for making a branch in the transform
+	// to transform and mutate pending commands to be able to continue transform.
 	SetInnerStateMutationFunction(stateMutator StateMutator)
 }
 

@@ -54,6 +54,8 @@ type injection struct {
 	fn  func(context.Context, api.CmdID, *InsertionCommand, replay.Result, *api.GlobalState) error
 }
 
+// readFramebuffer implements a transform that adds the necessary
+// Vulkan commands to retrieve a framebuffer attachement.
 type readFramebuffer struct {
 	injections   map[string][]injection
 	pendingReads []pendingRead

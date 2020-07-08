@@ -21,6 +21,8 @@ import (
 	"github.com/google/gapid/gapis/api/transform2"
 )
 
+// wireframeTransform implements a transform that sets each graphics pipeline
+// to be created with rasterization polygon mode == VK_POLYGON_MODE_LINE
 type wireframeTransform struct {
 	allocations *allocationTracker
 }
