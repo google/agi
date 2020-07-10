@@ -22,7 +22,9 @@ import (
 	"github.com/google/gapid/core/stream"
 	"github.com/google/gapid/core/stream/fmts"
 	"github.com/google/gapid/gapis/api"
+	"github.com/google/gapid/gapis/messages"
 	"github.com/google/gapid/gapis/resolve"
+	"github.com/google/gapid/gapis/service"
 	"github.com/google/gapid/gapis/service/path"
 	"github.com/google/gapid/gapis/vertex"
 )
@@ -41,6 +43,15 @@ func drawCallMesh(ctx context.Context, dc *VkQueueSubmit, p *path.Mesh, r *path.
 	}
 
 	c := getStateObject(s)
+
+	cmd, err := resolve.Cmd(ctx, cmdPath, r)
+	if err != nil {
+		return nil, err
+	}
+
+	if !cmd.CmdFlags().IsExecutedDraw() || len(cmdPath.Indices) == 1 {
+		return nil, &service.ErrDataUnavailable{Reason: messages.ErrMessage("Please select a draw call")}
+	}
 
 	lastQueue := c.LastBoundQueue()
 	if lastQueue.IsNil() {
