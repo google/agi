@@ -218,6 +218,8 @@ func (splitTransform *commandSplitter) appendInsertionCommand(ctx context.Contex
 	}
 
 	if isEndOfFrame {
+		// We want to add insertion command before the vkQueuePresentKHR so that
+		// the images are still valid.
 		if err := splitTransform.writeCommand(id, insertionCommand); err != nil {
 			log.E(ctx, "Failed during writing insertion command : %v", err)
 			return err
