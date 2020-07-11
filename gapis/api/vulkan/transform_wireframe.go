@@ -55,9 +55,7 @@ func (wireframe *wireframeTransform) EndTransform(ctx context.Context, inputComm
 }
 
 func (wireframe *wireframeTransform) ClearTransformResources(ctx context.Context) {
-	// Melih TODO: This memory never been released.
-	// Check if it's intentional
-	// wireframe.allocations.FreeAllocations()
+	wireframe.allocations.FreeAllocations()
 }
 
 func (wireframe *wireframeTransform) TransformCommand(ctx context.Context, id api.CmdID, inputCommands []api.Cmd, inputState *api.GlobalState) ([]api.Cmd, error) {

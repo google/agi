@@ -25,25 +25,25 @@ import (
 )
 
 // Melih TODO: it seems like those are never freed
-func (s *commandSplitter) MustAllocReadDataForSubmit(ctx context.Context, g *api.GlobalState, v ...interface{}) api.AllocResult {
-	allocateResult := g.AllocDataOrPanic(ctx, v...)
-	s.readMemoriesForSubmit = append(s.readMemoriesForSubmit, &allocateResult)
+func (splitterTransform *commandSplitter) MustAllocReadDataForSubmit(ctx context.Context, g *api.GlobalState, v ...interface{}) api.AllocResult {
+	allocateResult := splitterTransform.allocations.AllocDataOrPanic(ctx, v...)
+	splitterTransform.readMemoriesForSubmit = append(splitterTransform.readMemoriesForSubmit, &allocateResult)
 	rng, id := allocateResult.Data()
 	g.Memory.ApplicationPool().Write(rng.Base, memory.Resource(id, rng.Size))
 	return allocateResult
 }
 
-func (s *commandSplitter) MustAllocReadDataForCmd(ctx context.Context, g *api.GlobalState, v ...interface{}) api.AllocResult {
-	allocateResult := g.AllocDataOrPanic(ctx, v...)
-	s.readMemoriesForCmd = append(s.readMemoriesForCmd, &allocateResult)
+func (splitterTransform *commandSplitter) MustAllocReadDataForCmd(ctx context.Context, g *api.GlobalState, v ...interface{}) api.AllocResult {
+	allocateResult := splitterTransform.allocations.AllocDataOrPanic(ctx, v...)
+	splitterTransform.readMemoriesForCmd = append(splitterTransform.readMemoriesForCmd, &allocateResult)
 	rng, id := allocateResult.Data()
 	g.Memory.ApplicationPool().Write(rng.Base, memory.Resource(id, rng.Size))
 	return allocateResult
 }
 
-func (s *commandSplitter) MustAllocWriteDataForCmd(ctx context.Context, g *api.GlobalState, v ...interface{}) api.AllocResult {
-	allocateResult := g.AllocDataOrPanic(ctx, v...)
-	s.writeMemoriesForCmd = append(s.writeMemoriesForCmd, &allocateResult)
+func (splitterTransform *commandSplitter) MustAllocWriteDataForCmd(ctx context.Context, g *api.GlobalState, v ...interface{}) api.AllocResult {
+	allocateResult := splitterTransform.allocations.AllocDataOrPanic(ctx, v...)
+	splitterTransform.writeMemoriesForCmd = append(splitterTransform.writeMemoriesForCmd, &allocateResult)
 	return allocateResult
 }
 
@@ -97,6 +97,7 @@ type commandSplitter struct {
 
 	pendingCommandBuffers []VkCommandBuffer
 	stateMutator          transform2.StateMutator
+	allocations           *allocationTracker
 }
 
 func NewCommandSplitter(ctx context.Context) *commandSplitter {
@@ -130,6 +131,7 @@ func (splitTransform *commandSplitter) SetInnerStateMutationFunction(mutator tra
 }
 
 func (splitTransform *commandSplitter) BeginTransform(ctx context.Context, inputCommands []api.Cmd, inputState *api.GlobalState) ([]api.Cmd, error) {
+	splitTransform.allocations = NewAllocationTracker(inputState)
 	return inputCommands, nil
 }
 
@@ -138,7 +140,7 @@ func (splitTransform *commandSplitter) EndTransform(ctx context.Context, inputCo
 }
 
 func (splitTransform *commandSplitter) ClearTransformResources(ctx context.Context) {
-	// No resource to clear
+	splitTransform.allocations.FreeAllocations()
 }
 
 func (splitTransform *commandSplitter) TransformCommand(ctx context.Context, id api.CmdID, inputCommands []api.Cmd, inputState *api.GlobalState) ([]api.Cmd, error) {
@@ -174,8 +176,14 @@ func (splitTransform *commandSplitter) TransformCommand(ctx context.Context, id 
 		return []api.Cmd{}, nil
 	}
 
+	queueSubmitProcessed := false
 	for _, cmd := range inputCommands {
 		if queueSubmitCmd, ok := cmd.(*VkQueueSubmit); ok {
+			if queueSubmitProcessed {
+				panic("We should not have more than one vkQueueSubmit for a single command")
+			}
+
+			queueSubmitProcessed = true
 			if err := splitTransform.modifyCommand(ctx, id, queueSubmitCmd, inputState, topCut, cuts); err != nil {
 				log.E(ctx, "Failed during modifying VkQueueSubmit : %v", err)
 				return nil, err

@@ -58,10 +58,7 @@ func (attachmentTransform *makeAttachmentReadable2) EndTransform(ctx context.Con
 }
 
 func (attachmentTransform *makeAttachmentReadable2) ClearTransformResources(ctx context.Context) {
-	// Melih TODO: This transform seems to be never releasing the allocations
-	// Check if it's intended
-	// b/158597615
-	// attachmentTransform.allocations.FreeAllocations()
+	attachmentTransform.allocations.FreeAllocations()
 }
 
 func (attachmentTransform *makeAttachmentReadable2) TransformCommand(ctx context.Context, id api.CmdID, inputCommands []api.Cmd, inputState *api.GlobalState) ([]api.Cmd, error) {
