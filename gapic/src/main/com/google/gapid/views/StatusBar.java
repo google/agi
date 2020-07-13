@@ -44,9 +44,11 @@ import org.eclipse.swt.widgets.Link;
  */
 public class StatusBar extends Composite {
   private final Composite memoryStatus;
+  private final Composite perfettoStatus;
   private final Composite replayStatus;
   private final Composite serverStatus;
   private final HeapStatus heap;
+  private final Label perfettoStatusText;
   private final Label serverPrefix;
   private final Label server;
   private final Label replay;
@@ -56,10 +58,16 @@ public class StatusBar extends Composite {
   public StatusBar(Composite parent, Theme theme) {
     super(parent, SWT.NONE);
 
+    parent.setToolTipText("StatusBar tooltip");
+    this.setToolTipText("StatusBar tooltip");
+
     setLayout(withSpacing(withMargin(new GridLayout(5, false), 0, 0), 5, 0));
     withLayoutData(new Label(this, SWT.SEPARATOR | SWT.HORIZONTAL),
         withSpans(new GridData(SWT.FILL, SWT.TOP, true, false), 5, 1));
 
+    perfettoStatus = withLayoutData(
+        createComposite(this, filling(new RowLayout(SWT.HORIZONTAL), true, false)),
+        new GridData(SWT.LEFT, SWT.FILL, false, false));
     memoryStatus = withLayoutData(
         createComposite(this, filling(new RowLayout(SWT.HORIZONTAL), true, false)),
         new GridData(SWT.LEFT, SWT.FILL, false, false));
@@ -74,6 +82,10 @@ public class StatusBar extends Composite {
         onNotificationClick.run();
       }
     }), new GridData(SWT.RIGHT, SWT.FILL, false, false));
+
+    perfettoStatusText = createLabel(perfettoStatus, "", theme.error());
+
+    perfettoStatusText.setToolTipText("Bar");
 
     createLabel(memoryStatus, "Server:");
     heap = new HeapStatus(memoryStatus, theme);
@@ -98,6 +110,19 @@ public class StatusBar extends Composite {
   public void setNotification(String text, Runnable onClick) {
     notification.setText((onClick != null) ? "<a>" + text + "</a>" : text);
     onNotificationClick = onClick;
+    layout();
+  }
+
+  public void setPerfettoStatus(String errorMsg) {
+    System.out.println("setPerfettoStatus");
+    System.out.println("errorMsg: " + errorMsg);
+    if (errorMsg == null) {
+      perfettoStatus.setVisible(false);
+    } else {
+      perfettoStatus.setVisible(true);
+      perfettoStatusText.setToolTipText(errorMsg);
+      perfettoStatusText.setEnabled(true);
+    }
     layout();
   }
 

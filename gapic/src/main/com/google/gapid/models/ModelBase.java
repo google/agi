@@ -108,6 +108,7 @@ abstract class ModelBase<T, S, E, L extends Events.Listener> {
   }
 
   protected void updateSuccess(T result) {
+    System.out.println("updateSuccess");
     data = result;
     fireLoadedEvent();
   }
@@ -116,6 +117,7 @@ abstract class ModelBase<T, S, E, L extends Events.Listener> {
    * @param error the error as returned by {@link #processResult(Rpc.Result)}.
    */
   protected void updateError(E error) {
+    System.out.println("updateError");
     data = null;
     fireLoadedEvent();
   }

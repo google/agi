@@ -35,6 +35,7 @@ import com.google.gapid.perfetto.models.CounterInfo;
 import com.google.gapid.perfetto.models.CpuInfo;
 import com.google.gapid.perfetto.models.FrameInfo;
 import com.google.gapid.perfetto.models.GpuInfo;
+import com.google.gapid.perfetto.models.PerfettoStats;
 import com.google.gapid.perfetto.models.ProcessInfo;
 import com.google.gapid.perfetto.models.QueryEngine;
 import com.google.gapid.perfetto.models.ThreadInfo;
@@ -95,8 +96,9 @@ public class Perfetto extends ModelBase<Perfetto.Data, Path.Capture, Loadable.Me
             transformAsync(withStatus("Querying GPU info...", queryGpu(data)), $3 ->
               transformAsync(withStatus("Querying Frame info...", queryFrame(data)), $4 ->
                 transformAsync(withStatus("Querying counters...", queryCounters(data)), $5 ->
-                  transform(withStatus("Enumerating tracks...", enumerateTracks(data)), $6 ->
-                    data.build()))))));
+                  transformAsync(withStatus("Querying stats...", queryStats(data, status)), $6 ->
+                    transform(withStatus("Enumerating tracks...", enumerateTracks(data)), $7 ->
+                      data.build())))))));
   }
 
   private static ListenableFuture<Data.Builder> examineTrace(Data.Builder data) {
@@ -120,6 +122,14 @@ public class Perfetto extends ModelBase<Perfetto.Data, Path.Capture, Loadable.Me
 
   private static ListenableFuture<Data.Builder> queryCounters(Data.Builder data) {
     return CounterInfo.listCounters(data);
+  }
+
+  private static ListenableFuture<Data.Builder> queryStats(Data.Builder data, StatusBar status) {
+    return PerfettoStats.listStats(data);
+    //ListenableFuture<Data.Builder> res = PerfettoStats.listStats(data);
+    //PerfettoStats stats = data.getStats();
+    //status.setPerfettoStatus(stats.getMessage());
+    //return res;
   }
 
   private static ListenableFuture<Data.Builder> enumerateTracks(Data.Builder data) {
@@ -166,6 +176,8 @@ public class Perfetto extends ModelBase<Perfetto.Data, Path.Capture, Loadable.Me
   @Override
   protected void fireLoadedEvent() {
     listeners.fire().onPerfettoLoaded(null);
+    PerfettoStats stats = getData().stats;
+    status.setPerfettoStatus(stats.getMessage());
   }
 
   public ListenableFuture<com.google.gapid.proto.perfetto.Perfetto.QueryResult> query(String sql) {
@@ -185,12 +197,13 @@ public class Perfetto extends ModelBase<Perfetto.Data, Path.Capture, Loadable.Me
     public final FrameInfo frame;
     public final ImmutableMap<Long, CounterInfo> counters;
     public final VSync vsync;
+    public final PerfettoStats stats;
     public final TrackConfig tracks;
 
     public Data(QueryEngine queries, TimeSpan traceTime, CpuInfo cpu,
         ImmutableMap<Long, ProcessInfo> processes, ImmutableMap<Long, ThreadInfo> threads,
         GpuInfo gpu, FrameInfo frame, ImmutableMap<Long, CounterInfo> counters, VSync vsync,
-        TrackConfig tracks) {
+        PerfettoStats stats, TrackConfig tracks) {
       this.qe = queries;
       this.traceTime = traceTime;
       this.cpu = cpu;
@@ -200,6 +213,7 @@ public class Perfetto extends ModelBase<Perfetto.Data, Path.Capture, Loadable.Me
       this.frame = frame;
       this.counters = counters;
       this.vsync = vsync;
+      this.stats = stats;
       this.tracks = tracks;
     }
 
@@ -214,6 +228,7 @@ public class Perfetto extends ModelBase<Perfetto.Data, Path.Capture, Loadable.Me
       private ImmutableMap<Long, CounterInfo> counters;
       private Map<CounterInfo.Type, ImmutableListMultimap<String, CounterInfo>> countersByName;
       private VSync vsync = VSync.EMPTY;
+      private PerfettoStats stats = PerfettoStats.NONE;
       public final TrackConfig.Builder tracks = new TrackConfig.Builder();
 
       public Builder(QueryEngine qe) {
@@ -299,9 +314,18 @@ public class Perfetto extends ModelBase<Perfetto.Data, Path.Capture, Loadable.Me
         return this;
       }
 
+      public PerfettoStats getStats() {
+        return stats;
+      }
+
+      public Builder setStats(PerfettoStats stats) {
+        this.stats = stats;
+        return this;
+      }
+
       public Data build() {
         return new Data(
-            qe, traceTime, cpu, processes, threads, gpu, frame, counters, vsync, tracks.build());
+            qe, traceTime, cpu, processes, threads, gpu, frame, counters, vsync, stats, tracks.build());
       }
     }
   }
