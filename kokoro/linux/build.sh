@@ -59,6 +59,8 @@ function build {
     build -c opt --config symbols \
     --define AGI_BUILD_NUMBER="$KOKORO_BUILD_NUMBER" \
     --define AGI_BUILD_SHA="$BUILD_SHA" \
+    --remote_http_cache=https://storage.googleapis.com/agi-bazel-cache/linux \
+    --google_credentials=${KOKORO_KEYSTORE_DIR}/74894_bazel_remote_cache \
     $@
   echo $(date): Build completed.
 }
