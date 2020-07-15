@@ -292,9 +292,8 @@ public class GeometryView extends Composite
     }
 
     Geometries.Data meshes = models.geos.getData();
-    if (!meshes.hasFaceted()) {
-      loading.showMessage(Info, Messages.SELECT_DRAW_CALL);
-      // ?? saveItem.setEnabled(false);
+    if (!meshes.hasOriginal() && !meshes.hasFaceted()) {
+      loading.showMessage(Info, Messages.NO_MESH_DATA);
       return;
     }
 

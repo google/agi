@@ -141,8 +141,7 @@ public class Geometries
       return success(result.get());
     } catch (DataUnavailableException e) {
       DeviceDependentModel.Source<Source> s = getSource();
-      // TODO: don't assume that it's because of not selecting a draw call.
-      return success(new Data(s.device, s.source.semantics, null, null));
+      return error(Loadable.Message.error(e));
     } catch (RpcException e) {
       LOG.log(WARNING, "Failed to load the geometry", e);
       return error(Loadable.Message.error(e));
