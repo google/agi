@@ -81,6 +81,7 @@ public class MainWindow extends ApplicationWindow {
   private final Settings settings;
   private final Theme theme;
   private Composite mainArea;
+  private LoadablePanel<MainViewContainer> mainUi;
   private LoadingScreen loadingScreen;
   protected StatusBar statusBar;
 
@@ -105,13 +106,14 @@ public class MainWindow extends ApplicationWindow {
     loadingScreen.showOptions(client, models, widgets);
   }
 
+
   public void initMainUi(Client client, Models models, Widgets widgets) {
     Shell shell = getShell();
 
     showLoadingMessage("Setting up UI...");
     initMenus(client, models, widgets);
 
-    LoadablePanel<MainViewContainer> mainUi = new LoadablePanel<MainViewContainer>(
+    mainUi = new LoadablePanel<MainViewContainer>(
         mainArea, widgets, parent -> new MainViewContainer(parent, models, widgets));
     models.capture.addListener(new Capture.Listener() {
       @Override
@@ -181,6 +183,7 @@ public class MainWindow extends ApplicationWindow {
       }
     });
   }
+
 
   private void watchForUpdates(Client client, Models models) {
     new UpdateWatcher(models.settings, client, (release) -> {
@@ -267,6 +270,62 @@ public class MainWindow extends ApplicationWindow {
         Math.max(0, bounds.height - size.y) / 3);
   }
 
+  public void restartMainUi(Client client, Models models, Widgets widgets) {
+    Shell shell = getShell();
+
+    restartLoadingScreen(client, models, widgets);
+
+    showLoadingMessage("Restart UI...");
+    restartMenus(client, models, widgets);
+
+    mainUi = new LoadablePanel<MainViewContainer>(
+        mainArea, widgets, parent -> new MainViewContainer(parent, models, widgets));
+    models.capture.addListener(new Capture.Listener() {
+      @Override
+      public void onCaptureLoadingStart(boolean maintainState) {
+        shell.setText(Messages.WINDOW_TITLE + " - " + models.capture.getName());
+        setTopControl(mainUi);
+        mainUi.startLoading();
+      }
+
+      @Override
+      public void onCaptureLoaded(Message error) {
+        if (error != null) {
+          mainUi.showMessage(error);
+        } else {
+          // Let all other handlers of this event get a chance to process before we start disposing
+          // UI components underneath everybody.
+          scheduleIfNotDisposed(mainUi, () -> {
+            MainView view = mainUi.getContents().updateAndGet(
+                models.capture.getData().capture.getType());
+            view.updateViewMenu(findMenu(MenuItems.VIEW_ID));
+            getMenuBarManager().updateAll(true);
+            mainUi.stopLoading();
+          });
+        }
+      }
+    });
+
+    if (OS.isMac) {
+      MacApplication.init(shell.getDisplay(),
+          () -> showAbout(shell, models.analytics, widgets),
+          () -> showSettingsDialog(shell, models, widgets.theme),
+          file -> models.capture.loadCapture(new File(file)));
+    }
+
+    showLoadingMessage("Tracking server status...");
+    trackServerStatus(client);
+
+    showLoadingMessage("Ready! Please open or capture a trace file.");
+  }
+
+  public void restartLoadingScreen(Client client, Models models, Widgets widgets) {
+    if (loadingScreen != null) {
+      updateLoadingScreen(client, models, widgets);
+      setTopControl(loadingScreen);
+    }
+  }
+
   @Override
   protected MenuManager createMenuManager() {
     MenuManager manager = new MenuManager();
@@ -282,6 +341,20 @@ public class MainWindow extends ApplicationWindow {
   private void initMenus(Client client, Models models, Widgets widgets) {
     updateFileMenu(client, models, widgets);
     MenuManager manager = getMenuBarManager();
+    manager.add(createEditMenu(models, widgets));
+    manager.add(createGotoMenu(models));
+    manager.add(createViewMenu());
+    manager.add(createHelpMenu(models, widgets));
+    manager.updateAll(true);
+  }
+
+  private void restartMenus(Client client, Models models, Widgets widgets) {
+    updateFileMenu(client, models, widgets);
+    MenuManager manager = getMenuBarManager();
+    manager.remove(MenuItems.EDIT_ID);
+    manager.remove(MenuItems.GOTO_ID);
+    manager.remove(MenuItems.VIEW_ID);
+    manager.remove(MenuItems.HELP_ID);
     manager.add(createEditMenu(models, widgets));
     manager.add(createGotoMenu(models));
     manager.add(createViewMenu());
@@ -340,7 +413,7 @@ public class MainWindow extends ApplicationWindow {
   }
 
   private MenuManager createEditMenu(Models models, Widgets widgets) {
-    MenuManager manager = new MenuManager("&Edit");
+    MenuManager manager = new MenuManager("&Edit", MenuItems.EDIT_ID);
     Action editCopy = MenuItems.EditCopy.create(() -> {
       models.analytics.postInteraction(View.Main, ClientAction.Copy);
       widgets.copypaste.doCopy();
@@ -362,7 +435,7 @@ public class MainWindow extends ApplicationWindow {
   }
 
   private MenuManager createGotoMenu(Models models) {
-    MenuManager manager = new MenuManager("&Goto");
+    MenuManager manager = new MenuManager("&Goto", MenuItems.GOTO_ID);
     Action gotoCommand = MenuItems.GotoCommand.create(() -> showGotoCommandDialog(getShell(), models));
     Action gotoMemory = MenuItems.GotoMemory.create(() -> showGotoMemoryDialog(getShell(), models));
 
@@ -400,7 +473,7 @@ public class MainWindow extends ApplicationWindow {
   }
 
   private MenuManager createHelpMenu(Models models, Widgets widgets) {
-    MenuManager manager = new MenuManager("&Help");
+    MenuManager manager = new MenuManager("&Help", MenuItems.HELP_ID);
     manager.add(MenuItems.HelpOnlineHelp.create(() -> showHelp(models.analytics)));
     manager.add(MenuItems.HelpAbout.create(
         () -> showAbout(getShell(), models.analytics, widgets)));
@@ -488,7 +561,10 @@ public class MainWindow extends ApplicationWindow {
     HelpFileBug("File a &Bug");
 
     public static final String FILE_ID = "file";
+    public static final String EDIT_ID = "edit";
+    public static final String GOTO_ID = "goto";
     public static final String VIEW_ID = "view";
+    public static final String HELP_ID = "help";
 
     private final String label;
     private final int accelerator;

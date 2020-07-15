@@ -17,6 +17,7 @@ package com.google.gapid;
 
 import static com.google.gapid.util.GapidVersion.GAPID_VERSION;
 import static com.google.gapid.views.ErrorDialog.showErrorDialog;
+import static com.google.gapid.views.ErrorDialog.showErrorDialogWithTwoButtons;
 import static com.google.gapid.views.WelcomeDialog.showFirstTimeDialog;
 import static com.google.gapid.widgets.Widgets.scheduleIfNotDisposed;
 
@@ -44,7 +45,9 @@ import com.google.gapid.views.TracerDialog;
 import com.google.gapid.widgets.Theme;
 import com.google.gapid.widgets.Widgets;
 
+import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.window.Window;
+import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 
@@ -89,8 +92,8 @@ public class Main {
     private final ExceptionHandler handler;
     private final String[] args;
     protected final MainWindow window;
-    private final Server server;
 
+    private Server server;
     private Models models;
     private Widgets widgets;
 
@@ -165,9 +168,13 @@ public class Main {
         shell.getDisplay().asyncExec(() -> showFirstTimeDialog(shell, models, widgets, onStart));
       }
 
+      // TODO: Only for easy gapis crash testing, will delete before check in.
+      window.statusBar.addListener(SWT.MouseDown, $ -> server.disconnect());
+
       // Add the links on Loading Screen after the server set up.
       window.updateLoadingScreen(server.getClient(), models, widgets);
     }
+
 
     @Override
     public void onStatus(String message) {
@@ -176,11 +183,27 @@ public class Main {
 
     @Override
     public void onServerExit(int code, String panic) {
-      scheduleIfStillOpen(shell ->
-        // TODO: try to restart the server?
-        showErrorDialog(shell, getAnalytics(),
-            "The gapis server has exited with an error code of: " + code, panic)
+      scheduleIfStillOpen(shell -> showErrorDialogWithTwoButtons(
+          shell, getAnalytics(), "The gapis server has exited with an error code of: " + code, panic,
+          IDialogConstants.RETRY_ID, "Restart Server", this::restartServer,
+          IDialogConstants.CLOSE_ID, IDialogConstants.CLOSE_LABEL, window::close)
       );
+    }
+
+    private void restartServer() {
+      try {
+        server = new Server(settings);
+        server.connect(this);
+        scheduleIfStillOpen(this::restartUi);
+      } catch (GapisInitException e) {
+        onServerExit(-42, Throwables.getStackTraceAsString(e));
+      }
+    }
+
+    private void restartUi(Shell shell) {
+      models = Models.create(shell, settings, handler, server.getClient(), window.getStatusBar());
+      widgets = Widgets.create(shell.getDisplay(), theme, server.getClient(), models);
+      window.restartMainUi(server.getClient(), models, widgets);
     }
 
     private void scheduleIfStillOpen(ShellRunnable run) {
