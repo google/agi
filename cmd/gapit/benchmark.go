@@ -171,7 +171,7 @@ func (verb *benchmarkVerb) Run(ctx context.Context, flags flag.FlagSet) error {
 		return err
 	}
 
-	devices, err := client.GetDevicesForReplay(ctx, c)
+	devices, _, err := client.GetDevicesForReplay(ctx, c)
 	if err != nil {
 		panic(err)
 	}

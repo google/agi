@@ -56,6 +56,21 @@ enum OSKind {
   Stadia = 5;
 }
 
+// Incompatibility list possible reasons why a device is not compatible to
+// replay a given trace.
+enum Incompatibility {
+  Compatible = 0;  // Default, for compatible devices
+  ABIOS = 1;
+  ABIArchitecture = 2;
+  ABIMemoryLayout = 3;
+  GPUVendorID = 4;
+  GPUDeviceID = 5;
+  VkDriverVersion = 6;
+  VkAPIVersion = 7;
+  NoTraceVkDriver = 8;
+  NoVkSupport = 9;
+}
+
 // MemoryLayout holds information about how memory is fundamentally laid out for
 // a device.
 message MemoryLayout {
@@ -106,7 +121,7 @@ message ABI {
   // and feature set available.
   Architecture architecture = 3;
   // MemoryLayout specifies things like size and alignment of types used
-  // directly buy the ABI.
+  // directly by the ABI.
   MemoryLayout memory_layout = 4;
 }
 

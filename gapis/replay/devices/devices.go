@@ -27,15 +27,17 @@ import (
 	"github.com/google/gapid/gapis/api"
 	"github.com/google/gapid/gapis/capture"
 	"github.com/google/gapid/gapis/replay"
+	"github.com/google/gapid/gapis/service"
 	"github.com/google/gapid/gapis/service/path"
 )
 
 // ForReplay returns a priority-sorted path list of devices that are capable of
-// replaying the capture c.
-func ForReplay(ctx context.Context, p *path.Capture) ([]*path.Device, error) {
+// replaying the capture c, along with the list of devices which are not capable
+// of replaying the capture c and the reason why they are not.
+func ForReplay(ctx context.Context, p *path.Capture) ([]*path.Device, []*service.IncompatibleDevice, error) {
 	c, err := capture.ResolveGraphicsFromPath(ctx, p)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	apis := make([]replay.Support, 0, len(c.APIs))
@@ -48,6 +50,7 @@ func ForReplay(ctx context.Context, p *path.Capture) ([]*path.Device, error) {
 
 	all := Sorted(ctx)
 	filtered := make([]prioritizedDevice, 0, len(all))
+	incompatibleDevices := []*service.IncompatibleDevice{}
 	for _, device := range all {
 		instance := device.Instance()
 		p := uint32(1)
@@ -57,12 +60,17 @@ func ForReplay(ctx context.Context, p *path.Capture) ([]*path.Device, error) {
 				"api":    fmt.Sprintf("%T", api),
 				"device": instance.Name,
 			}.Bind(ctx)
-			priority := api.GetReplayPriority(ctx, instance, c.Header)
+			priority, incompatibility := api.GetReplayPriority(ctx, instance, c.Header)
 			p = p * priority
 			if priority != 0 {
 				log.D(ctx, "Compatible %d", priority)
 			} else {
 				log.D(ctx, "Incompatible")
+				incompatibleDevices = append(incompatibleDevices,
+					&service.IncompatibleDevice{
+						Device:          path.NewDevice(instance.ID.ID()),
+						Incompatibility: incompatibility,
+					})
 			}
 		}
 		if p > 0 {
@@ -76,11 +84,11 @@ func ForReplay(ctx context.Context, p *path.Capture) ([]*path.Device, error) {
 
 	sort.Sort(prioritizedDevices(filtered))
 
-	paths := make([]*path.Device, len(filtered))
+	compatibleDevices := make([]*path.Device, len(filtered))
 	for i, d := range filtered {
-		paths[i] = path.NewDevice(d.device.Instance().ID.ID())
+		compatibleDevices[i] = path.NewDevice(d.device.Instance().ID.ID())
 	}
-	return paths, nil
+	return compatibleDevices, incompatibleDevices, nil
 }
 
 // Sorted returns all devices, sorted by Android first, and then Host.

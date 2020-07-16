@@ -50,6 +50,7 @@ message Commands {
 }
 message Devices {
   repeated path.Device list = 1;
+  repeated IncompatibleDevice incompatibleList = 2;
 }
 message Events {
   repeated Event list = 1;
@@ -100,6 +101,13 @@ message Value {
 
     memory_box.Value memory_box = 70;
   }
+}
+
+// IncompatibleDevice encapsultes a device and the reason why it is not fit to
+// replay a given capture
+message IncompatibleDevice {
+  path.Device device = 1;
+  device.Incompatibility incompatibility = 2;
 }
 
 message PingRequest {

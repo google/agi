@@ -364,17 +364,17 @@ func (c *client) GetDevices(ctx context.Context) ([]*path.Device, error) {
 	return res.GetDevices().List, nil
 }
 
-func (c *client) GetDevicesForReplay(ctx context.Context, p *path.Capture) ([]*path.Device, error) {
+func (c *client) GetDevicesForReplay(ctx context.Context, p *path.Capture) ([]*path.Device, []*service.IncompatibleDevice, error) {
 	res, err := c.client.GetDevicesForReplay(ctx, &service.GetDevicesForReplayRequest{
 		Capture: p,
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if err := res.GetError(); err != nil {
-		return nil, err.Get()
+		return nil, nil, err.Get()
 	}
-	return res.GetDevices().List, nil
+	return res.GetDevices().List, nil, nil
 }
 
 func (c *client) GetLogStream(ctx context.Context, handler log.Handler) error {

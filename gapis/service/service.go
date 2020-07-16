@@ -103,7 +103,7 @@ type Service interface {
 	// This list may change over time, as devices are connected and disconnected.
 	// If both connected Android and Local replay devices are found,
 	// the local Android devices will be returned first.
-	GetDevicesForReplay(ctx context.Context, p *path.Capture) ([]*path.Device, error)
+	GetDevicesForReplay(ctx context.Context, p *path.Capture) ([]*path.Device, []*IncompatibleDevice, error)
 
 	// Get resolves and returns the object, value or memory at the path p.
 	Get(ctx context.Context, p *path.Any, c *path.ResolveConfig) (interface{}, error)
