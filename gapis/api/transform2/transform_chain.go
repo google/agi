@@ -68,6 +68,7 @@ func CreateTransformChain(ctx context.Context, generator commandGenerator.Comman
 }
 
 func (chain *TransformChain) beginChain(ctx context.Context) error {
+	chain.handleInitialState(chain.out.State())
 	var err error
 	cmds := make([]api.Cmd, 0)
 
@@ -124,20 +125,16 @@ func (chain *TransformChain) endChain(ctx context.Context) error {
 }
 
 func (chain *TransformChain) transformCommands(ctx context.Context, id api.CmdID, inputCmds []api.Cmd, beginTransformIndex int) error {
-	for i, transform := range chain.transforms {
-		if i < beginTransformIndex {
-			continue
-		}
-
+	for i := beginTransformIndex; i < len(chain.transforms); i++ {
 		chain.currentTransformIndex = i
 		var err error
-		inputCmds, err = transform.TransformCommand(ctx, id, inputCmds, chain.out.State())
+		inputCmds, err = chain.transforms[i].TransformCommand(ctx, id, inputCmds, chain.out.State())
 		if err != nil {
-			log.W(ctx, "Error on Transform on cmd [%v:%v] with transform [:v:%v] : %v", id, inputCmds, i, transform, err)
+			log.W(ctx, "Error on Transform on cmd [%v:%v] with transform [:v:%v] : %v", id, inputCmds, i, chain.transforms[i], err)
 			return err
 		}
 
-		if transform.RequiresAccurateState() {
+		if chain.transforms[i].RequiresAccurateState() {
 			// Melih TODO: Temporary check until we implement accurate state
 			panic("Implement accurate state")
 		}
@@ -193,6 +190,8 @@ func (chain *TransformChain) GetNextTransformedCommands(ctx context.Context) err
 }
 
 func (chain *TransformChain) stateMutator(ctx context.Context, id api.CmdID, cmds []api.Cmd) error {
+	// When we are mutating the state in the middle of the transform
+	// we want to transform the rest of the transforms first
 	beginTransformIndex := chain.currentTransformIndex + 1
 
 	if err := chain.transformCommands(ctx, id, cmds, beginTransformIndex); err != nil {
@@ -200,8 +199,22 @@ func (chain *TransformChain) stateMutator(ctx context.Context, id api.CmdID, cmd
 		return err
 	}
 
+	// After we finish state mutation we have to restore the value of the currentTransformIndex
+	// that has modified during the state mutation, so that we can continue the current transform
+	// properly.
 	chain.currentTransformIndex = beginTransformIndex - 1
 	return nil
+}
+
+func (chain *TransformChain) handleInitialState(state *api.GlobalState) (*api.GlobalState, error) {
+	for _, t := range chain.transforms {
+		if t.RequiresAccurateState() {
+			// Melih TODO: Temporary check until we implement accurate state
+			panic("Implement accurate state")
+		}
+	}
+
+	return state, nil
 }
 
 func mutateAndWrite(ctx context.Context, id api.CmdID, cmds []api.Cmd, out Writer) error {
