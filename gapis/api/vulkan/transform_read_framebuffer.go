@@ -91,7 +91,7 @@ func (framebufferTransform *readFramebuffer) BeginTransform(ctx context.Context,
 
 func (framebufferTransform *readFramebuffer) EndTransform(ctx context.Context, inputCommands []api.Cmd, inputState *api.GlobalState) ([]api.Cmd, error) {
 	// TODO: Do we need a cmdID here?
-	if err := framebufferTransform.FlushPending(ctx, 0, inputState); err != nil {
+	if err := framebufferTransform.FlushPending(ctx, inputState); err != nil {
 		return inputCommands, err
 	}
 	return inputCommands, nil
@@ -125,13 +125,13 @@ func (framebufferTransform *readFramebuffer) TransformCommand(ctx context.Contex
 			}
 		}
 
-		if err := framebufferTransform.writeCommands(id, cmd); err != nil {
+		if err := framebufferTransform.writeCommands(cmd); err != nil {
 			return nil, err
 		}
 
 		if _, ok := cmd.(*VkQueueSubmit); ok {
 			if len(framebufferTransform.pendingReads) > 0 {
-				if err := framebufferTransform.FlushPending(ctx, id, inputState); err != nil {
+				if err := framebufferTransform.FlushPending(ctx, inputState); err != nil {
 					return nil, err
 				}
 			}
@@ -184,7 +184,7 @@ func (t *readFramebuffer) Depth(ctx context.Context, requestId api.SubCmdIdx, re
 			// TODO: support multi-layer rendering.
 			layer := imageViewDepth.SubresourceRange().BaseArrayLayer()
 			cb := CommandBuilder{Thread: cmd.Thread(), Arena: inputState.Arena}
-			return t.postImageData(ctx, cb, cmdID, inputState, cmd.cmdBuffer, cmd.pendingCommandBuffers, depthImageObject, imageViewDepth.Fmt(), VkImageAspectFlagBits_VK_IMAGE_ASPECT_DEPTH_BIT, layer, level, w, h, requestWidth, requestHeight, res)
+			return t.postImageData(ctx, cb, inputState, cmd.cmdBuffer, cmd.pendingCommandBuffers, depthImageObject, imageViewDepth.Fmt(), VkImageAspectFlagBits_VK_IMAGE_ASPECT_DEPTH_BIT, layer, level, w, h, requestWidth, requestHeight, res)
 		}})
 }
 
@@ -237,7 +237,7 @@ func (t *readFramebuffer) Color(ctx context.Context, requestId api.SubCmdIdx, wi
 					return nil
 				}
 				w, h, form := fb.Width(), fb.Height(), imageView.Fmt()
-				return t.postImageData(ctx, cb, cmdID, inputState, cmd.cmdBuffer, cmd.pendingCommandBuffers, imageObject, form, VkImageAspectFlagBits_VK_IMAGE_ASPECT_COLOR_BIT, layer, level, w, h, width, height, res)
+				return t.postImageData(ctx, cb, inputState, cmd.cmdBuffer, cmd.pendingCommandBuffers, imageObject, form, VkImageAspectFlagBits_VK_IMAGE_ASPECT_COLOR_BIT, layer, level, w, h, width, height, res)
 			}
 
 			imageObject := GetState(inputState).LastPresentInfo().PresentImages().Get(bufferIdx)
@@ -249,7 +249,7 @@ func (t *readFramebuffer) Color(ctx context.Context, requestId api.SubCmdIdx, wi
 			// There might be multiple layers for an image created by swapchain
 			// but currently we only support layer 0.
 			// TODO: support multi-layer swapchain images.
-			return t.postImageData(ctx, cb, cmdID, inputState, VkCommandBuffer(0), []VkCommandBuffer{}, imageObject, form, VkImageAspectFlagBits_VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, w, h, width, height, res)
+			return t.postImageData(ctx, cb, inputState, VkCommandBuffer(0), []VkCommandBuffer{}, imageObject, form, VkImageAspectFlagBits_VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, w, h, width, height, res)
 		}})
 }
 
@@ -307,7 +307,6 @@ func (t *readFramebuffer) getLayout(ctx context.Context,
 
 func (t *readFramebuffer) postImageData(ctx context.Context,
 	cb CommandBuilder,
-	cmdID api.CmdID,
 	inputState *api.GlobalState,
 	cmdBuff VkCommandBuffer,
 	pendingCommandBuffers []VkCommandBuffer,
@@ -575,7 +574,7 @@ func (t *readFramebuffer) postImageData(ctx context.Context,
 		beginCommandBufferInfoData := t.allocations.AllocDataOrPanic(ctx, beginCommandBufferInfo)
 
 		// Create command pool, allocate command buffer, and begin it
-		if err := t.writeCommands(cmdID,
+		if err := t.writeCommands(
 			cb.VkCreateCommandPool(
 				vkDevice,
 				commandPoolCreateInfoData.Ptr(),
@@ -817,7 +816,7 @@ func (t *readFramebuffer) postImageData(ctx context.Context,
 
 	// Write commands to writer
 	// Create staging image, allocate and bind memory
-	if err = t.writeCommands(cmdID,
+	if err = t.writeCommands(
 		cb.VkCreateImage(
 			vkDevice,
 			stagingImageCreateInfoData.Ptr(),
@@ -852,7 +851,7 @@ func (t *readFramebuffer) postImageData(ctx context.Context,
 	}
 
 	// Create buffer, allocate and bind memory
-	if err = t.writeCommands(cmdID,
+	if err = t.writeCommands(
 		cb.VkCreateBuffer(
 			vkDevice,
 			bufferCreateInfoData.Ptr(),
@@ -889,7 +888,7 @@ func (t *readFramebuffer) postImageData(ctx context.Context,
 	// If the attachment image is multi-sampled, an resolve image is required
 	// Create resolve image, allocate and bind memory
 	if imageObject.Info().Samples() != VkSampleCountFlagBits_VK_SAMPLE_COUNT_1_BIT {
-		if err = t.writeCommands(cmdID,
+		if err = t.writeCommands(
 			cb.VkCreateImage(
 				vkDevice,
 				resolveImageCreateInfoData.Ptr(),
@@ -928,7 +927,7 @@ func (t *readFramebuffer) postImageData(ctx context.Context,
 	}
 
 	// Change attachment image and staging image layout
-	if err = t.writeCommands(cmdID,
+	if err = t.writeCommands(
 		cb.VkCmdPipelineBarrier(
 			commandBufferID,
 			VkPipelineStageFlags(VkPipelineStageFlagBits_VK_PIPELINE_STAGE_ALL_COMMANDS_BIT),
@@ -965,7 +964,7 @@ func (t *readFramebuffer) postImageData(ctx context.Context,
 	// blit the image. Change the resolve image layout, call vkCmdResolveImage, change the resolve
 	// image layout again.fmt
 	if imageObject.Info().Samples() != VkSampleCountFlagBits_VK_SAMPLE_COUNT_1_BIT {
-		if err = t.writeCommands(cmdID,
+		if err = t.writeCommands(
 			cb.VkCmdPipelineBarrier(
 				commandBufferID,
 				VkPipelineStageFlags(VkPipelineStageFlagBits_VK_PIPELINE_STAGE_ALL_COMMANDS_BIT),
@@ -1024,7 +1023,7 @@ func (t *readFramebuffer) postImageData(ctx context.Context,
 
 	if doBlit {
 		copySrc = stagingImageID
-		if err = t.writeCommands(cmdID,
+		if err = t.writeCommands(
 			cb.VkCmdBlitImage(
 				commandBufferID,
 				blitSrcImage,
@@ -1055,7 +1054,7 @@ func (t *readFramebuffer) postImageData(ctx context.Context,
 		}
 	}
 
-	if err = t.writeCommands(cmdID,
+	if err = t.writeCommands(
 		cb.VkCmdCopyImageToBuffer(
 			commandBufferID,
 			copySrc,
@@ -1070,7 +1069,7 @@ func (t *readFramebuffer) postImageData(ctx context.Context,
 		return err
 	}
 
-	if err = t.writeCommands(cmdID,
+	if err = t.writeCommands(
 		// Reset the image, and end the command buffer.
 		cb.VkCmdPipelineBarrier(
 			commandBufferID,
@@ -1091,7 +1090,7 @@ func (t *readFramebuffer) postImageData(ctx context.Context,
 	}
 
 	if cmdBuff == VkCommandBuffer(0) {
-		if err = t.writeCommands(cmdID,
+		if err = t.writeCommands(
 			cb.VkEndCommandBuffer(
 				commandBufferID,
 				VkResult_VK_SUCCESS,
@@ -1116,7 +1115,7 @@ func (t *readFramebuffer) postImageData(ctx context.Context,
 			0, // pSignalSemaphores
 		)
 		submitInfoData := t.allocations.AllocDataOrPanic(ctx, submitInfo)
-		if err = t.writeCommands(cmdID,
+		if err = t.writeCommands(
 			cb.VkQueueSubmit(
 				vkQueue,
 				1,
@@ -1216,7 +1215,7 @@ func (w *pendingReadWrapper) customPost(ctx context.Context, s *api.GlobalState,
 	return nil
 }
 
-func (t *readFramebuffer) FlushPending(ctx context.Context, id api.CmdID, inputState *api.GlobalState) error {
+func (t *readFramebuffer) FlushPending(ctx context.Context, inputState *api.GlobalState) error {
 	cb := CommandBuilder{Thread: 0, Arena: inputState.Arena}
 
 	for i := range t.pendingReads {
@@ -1227,7 +1226,7 @@ func (t *readFramebuffer) FlushPending(ctx context.Context, id api.CmdID, inputS
 		// you expect.
 		r := t.pendingReads[i]
 
-		if err := t.writeCommands(id, cb.VkDeviceWaitIdle(r.device, VkResult_VK_SUCCESS)); err != nil {
+		if err := t.writeCommands(cb.VkDeviceWaitIdle(r.device, VkResult_VK_SUCCESS)); err != nil {
 			return err
 		}
 
@@ -1246,7 +1245,7 @@ func (t *readFramebuffer) FlushPending(ctx context.Context, id api.CmdID, inputS
 
 		mappedPointer := t.allocations.AllocDataOrPanic(ctx, at.Address())
 
-		if err := t.writeCommands(id,
+		if err := t.writeCommands(
 			cb.VkMapMemory(
 				r.device,
 				r.bufferMemory,
@@ -1268,12 +1267,12 @@ func (t *readFramebuffer) FlushPending(ctx context.Context, id api.CmdID, inputS
 		wrap := &pendingReadWrapper{&r, at}
 
 		// Add post command
-		if err := t.writeCommands(id, cb.Custom(wrap.customPost)); err != nil {
+		if err := t.writeCommands(cb.Custom(wrap.customPost)); err != nil {
 			return err
 		}
 
 		// Free the device resources used for reading framebuffer
-		if err := t.writeCommands(id,
+		if err := t.writeCommands(
 			cb.VkUnmapMemory(r.device, r.bufferMemory),
 			cb.VkDestroyBuffer(r.device, r.buffer, memory.Nullptr),
 			cb.VkDestroyCommandPool(r.device, r.commandPool, memory.Nullptr),
@@ -1294,9 +1293,9 @@ func keyFromIndex(idx api.SubCmdIdx) string {
 	return fmt.Sprintf("%v", idx)
 }
 
-func (t *readFramebuffer) writeCommands(id api.CmdID, cmds ...api.Cmd) error {
+func (t *readFramebuffer) writeCommands(cmds ...api.Cmd) error {
 	for _, cmd := range cmds {
-		if err := t.stateMutator(id, []api.Cmd{cmd}); err != nil {
+		if err := t.stateMutator([]api.Cmd{cmd}); err != nil {
 			return err
 		}
 	}

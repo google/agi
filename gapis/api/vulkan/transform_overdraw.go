@@ -37,7 +37,6 @@ import (
 type stencilOverdraw struct {
 	rewrite          map[api.CmdID]replay.Result
 	lastSubIdx       map[api.CmdID]api.SubCmdIdx
-	realCmdOffset    api.CmdID
 	cmdBuilder       *CommandBuilder
 	allocations      *allocationTracker
 	cleanupCmds      []api.Cmd
@@ -89,9 +88,9 @@ func (overdrawTransform *stencilOverdraw) SetInnerStateMutationFunction(mutator 
 	overdrawTransform.stateMutator = mutator
 }
 
-func (overdrawTransform *stencilOverdraw) writeCommands(id api.CmdID, cmds ...api.Cmd) error {
+func (overdrawTransform *stencilOverdraw) writeCommands(cmds ...api.Cmd) error {
 	for _, cmd := range cmds {
-		if err := overdrawTransform.stateMutator(id, []api.Cmd{cmd}); err != nil {
+		if err := overdrawTransform.stateMutator([]api.Cmd{cmd}); err != nil {
 			return err
 		}
 	}
@@ -125,7 +124,7 @@ func (overdrawTransform *stencilOverdraw) TransformCommand(ctx context.Context, 
 		overdrawTransform.cmdBuilder = &CommandBuilder{Thread: cmd.Thread(), Arena: inputState.Arena}
 
 		if createImageCmd, ok := cmd.(*VkCreateImage); ok {
-			if err := overdrawTransform.rewriteImageCreate(ctx, id, createImageCmd, inputState); err != nil {
+			if err := overdrawTransform.rewriteImageCreate(ctx, createImageCmd, inputState); err != nil {
 				return nil, err
 			}
 
@@ -135,7 +134,7 @@ func (overdrawTransform *stencilOverdraw) TransformCommand(ctx context.Context, 
 		ok := false
 		res, ok = overdrawTransform.rewrite[id]
 		if !ok {
-			if err := overdrawTransform.writeCommands(id, cmd); err != nil {
+			if err := overdrawTransform.writeCommands(cmd); err != nil {
 				return nil, err
 			}
 
@@ -151,7 +150,7 @@ func (overdrawTransform *stencilOverdraw) TransformCommand(ctx context.Context, 
 			continue
 		}
 
-		if err := overdrawTransform.writeCommands(id, cmd); err != nil {
+		if err := overdrawTransform.writeCommands(cmd); err != nil {
 			return nil, err
 		}
 	}
@@ -167,27 +166,27 @@ func (overdrawTransform *stencilOverdraw) modifyStencilOverdraw(ctx context.Cont
 	lastRenderPassArgs, lastRenderPassIdx, err := getLastRenderPass(ctx, inputState, queueSubmitCmd, overdrawTransform.lastSubIdx[id])
 	if err != nil {
 		res(nil, &service.ErrDataUnavailable{Reason: messages.ErrMessage(fmt.Sprintf("Could not get overdraw: %v", err))})
-		return overdrawTransform.writeCommands(id, queueSubmitCmd)
+		return overdrawTransform.writeCommands(queueSubmitCmd)
 	}
 
 	if lastRenderPassArgs.IsNil() {
 		res(nil, &service.ErrDataUnavailable{Reason: messages.ErrMessage("No render pass in queue submit")})
-		return overdrawTransform.writeCommands(id, queueSubmitCmd)
+		return overdrawTransform.writeCommands(queueSubmitCmd)
 	}
 
-	img, err := overdrawTransform.rewriteQueueSubmit(ctx, inputState, id, queueSubmitCmd, lastRenderPassArgs, lastRenderPassIdx)
+	img, err := overdrawTransform.rewriteQueueSubmit(ctx, inputState, queueSubmitCmd, lastRenderPassArgs, lastRenderPassIdx)
 	if err != nil {
 		res(nil, &service.ErrDataUnavailable{Reason: messages.ErrMessage(fmt.Sprintf("Could not get overdraw: %v", err))})
-		return overdrawTransform.writeCommands(id, queueSubmitCmd)
+		return overdrawTransform.writeCommands(queueSubmitCmd)
 	}
 
-	if err := overdrawTransform.postStencilImageData(ctx, inputState, id, img, res); err != nil {
+	if err := overdrawTransform.postStencilImageData(ctx, inputState, img, res); err != nil {
 		return err
 	}
 
 	// Don't defer this because we don't want these to execute if something panics
 	for i := len(overdrawTransform.cleanupCmds) - 1; i >= 0; i-- {
-		if err := overdrawTransform.writeCommands(id, overdrawTransform.cleanupCmds[i]); err != nil {
+		if err := overdrawTransform.writeCommands(overdrawTransform.cleanupCmds[i]); err != nil {
 			return err
 		}
 	}
@@ -195,7 +194,7 @@ func (overdrawTransform *stencilOverdraw) modifyStencilOverdraw(ctx context.Cont
 	return nil
 }
 
-func (overdrawTransform *stencilOverdraw) rewriteImageCreate(ctx context.Context, id api.CmdID, cmd *VkCreateImage, inputState *api.GlobalState) error {
+func (overdrawTransform *stencilOverdraw) rewriteImageCreate(ctx context.Context, cmd *VkCreateImage, inputState *api.GlobalState) error {
 	allReads := []api.AllocResult{}
 	allocAndRead := func(v ...interface{}) api.AllocResult {
 		res := overdrawTransform.allocations.AllocDataOrPanic(ctx, v)
@@ -241,7 +240,7 @@ func (overdrawTransform *stencilOverdraw) rewriteImageCreate(ctx context.Context
 		newCmd.AddRead(read.Data())
 	}
 
-	return overdrawTransform.writeCommands(id, newCmd)
+	return overdrawTransform.writeCommands(newCmd)
 }
 
 type stencilImage struct {
@@ -261,7 +260,6 @@ type renderInfo struct {
 
 func (overdrawTransform *stencilOverdraw) createNewRenderPassFramebuffer(ctx context.Context,
 	inputState *api.GlobalState,
-	id api.CmdID,
 	oldRenderPass VkRenderPass,
 	oldFramebuffer VkFramebuffer) (renderInfo, error) {
 
@@ -291,22 +289,22 @@ func (overdrawTransform *stencilOverdraw) createNewRenderPassFramebuffer(ctx con
 	}
 	device := oldFbInfo.Device()
 
-	image, err := overdrawTransform.createImage(ctx, inputState, id, device, attachDesc.Fmt(), width, height)
+	image, err := overdrawTransform.createImage(ctx, inputState, device, attachDesc.Fmt(), width, height)
 	if err != nil {
 		return renderInfo{}, err
 	}
 
-	imageView, err := overdrawTransform.createImageView(ctx, inputState, id, device, image.handle)
+	imageView, err := overdrawTransform.createImageView(ctx, inputState, device, image.handle)
 	if err != nil {
 		return renderInfo{}, err
 	}
 
-	renderPass, err := overdrawTransform.createRenderPass(ctx, inputState, id, device, oldRpInfo, attachDesc)
+	renderPass, err := overdrawTransform.createRenderPass(ctx, inputState, device, oldRpInfo, attachDesc)
 	if err != nil {
 		return renderInfo{}, err
 	}
 
-	framebuffer, err := overdrawTransform.createFramebuffer(ctx, inputState, id, device, oldFbInfo, renderPass, imageView)
+	framebuffer, err := overdrawTransform.createFramebuffer(ctx, inputState, device, oldFbInfo, renderPass, imageView)
 	if err != nil {
 		return renderInfo{}, err
 	}
@@ -316,7 +314,6 @@ func (overdrawTransform *stencilOverdraw) createNewRenderPassFramebuffer(ctx con
 
 func (overdrawTransform *stencilOverdraw) createImage(ctx context.Context,
 	inputState *api.GlobalState,
-	id api.CmdID,
 	device VkDevice,
 	format VkFormat,
 	width uint32,
@@ -363,7 +360,7 @@ func (overdrawTransform *stencilOverdraw) createImage(ctx context.Context,
 	}))
 	imageData := overdrawTransform.allocations.AllocDataOrPanic(ctx, image)
 
-	if err := overdrawTransform.writeCommands(id,
+	if err := overdrawTransform.writeCommands(
 		overdrawTransform.cmdBuilder.VkCreateImage(device,
 			imageCreateInfoData.Ptr(),
 			memory.Nullptr,
@@ -380,7 +377,7 @@ func (overdrawTransform *stencilOverdraw) createImage(ctx context.Context,
 
 	physicalDeviceMemoryPropertiesData := overdrawTransform.allocations.AllocDataOrPanic(ctx, physicalDeviceInfo.MemoryProperties())
 
-	if err := overdrawTransform.writeCommands(id,
+	if err := overdrawTransform.writeCommands(
 		overdrawTransform.cmdBuilder.ReplayAllocateImageMemory(
 			device,
 			physicalDeviceMemoryPropertiesData.Ptr(),
@@ -407,7 +404,6 @@ func (overdrawTransform *stencilOverdraw) createImage(ctx context.Context,
 
 func (overdrawTransform *stencilOverdraw) createImageView(ctx context.Context,
 	inputState *api.GlobalState,
-	id api.CmdID,
 	device VkDevice,
 	image VkImage) (VkImageView, error) {
 
@@ -452,7 +448,7 @@ func (overdrawTransform *stencilOverdraw) createImageView(ctx context.Context,
 		imageViewData.Data(),
 	)
 
-	if err := overdrawTransform.writeCommands(id, newCmd); err != nil {
+	if err := overdrawTransform.writeCommands(newCmd); err != nil {
 		return VkImageView(0), err
 	}
 
@@ -464,7 +460,6 @@ func (overdrawTransform *stencilOverdraw) createImageView(ctx context.Context,
 
 func (overdrawTransform *stencilOverdraw) createRenderPass(ctx context.Context,
 	inputState *api.GlobalState,
-	id api.CmdID,
 	device VkDevice,
 	rpInfo RenderPassObjectʳ,
 	stencilAttachment VkAttachmentDescription) (VkRenderPass, error) {
@@ -529,7 +524,7 @@ func (overdrawTransform *stencilOverdraw) createRenderPass(ctx context.Context,
 		newCmd.AddRead(read.Data())
 	}
 
-	if err := overdrawTransform.writeCommands(id, newCmd); err != nil {
+	if err := overdrawTransform.writeCommands(newCmd); err != nil {
 		return VkRenderPass(0), err
 	}
 
@@ -541,7 +536,6 @@ func (overdrawTransform *stencilOverdraw) createRenderPass(ctx context.Context,
 
 func (overdrawTransform *stencilOverdraw) createFramebuffer(ctx context.Context,
 	inputState *api.GlobalState,
-	id api.CmdID,
 	device VkDevice,
 	fbInfo FramebufferObjectʳ,
 	renderPass VkRenderPass,
@@ -587,7 +581,7 @@ func (overdrawTransform *stencilOverdraw) createFramebuffer(ctx context.Context,
 		newFramebufferData.Data(),
 	)
 
-	if err := overdrawTransform.writeCommands(id, newCmd); err != nil {
+	if err := overdrawTransform.writeCommands(newCmd); err != nil {
 		return VkFramebuffer(0), err
 	}
 
@@ -599,7 +593,6 @@ func (overdrawTransform *stencilOverdraw) createFramebuffer(ctx context.Context,
 
 func (overdrawTransform *stencilOverdraw) createGraphicsPipeline(ctx context.Context,
 	inputState *api.GlobalState,
-	id api.CmdID,
 	device VkDevice,
 	pipeline VkPipeline,
 	renderPass VkRenderPass) (VkPipeline, error) {
@@ -612,7 +605,7 @@ func (overdrawTransform *stencilOverdraw) createGraphicsPipeline(ctx context.Con
 	}
 
 	createInfo, err := overdrawTransform.createGraphicsPipelineCreateInfo(
-		ctx, inputState, id, pipeline, renderPass, allocAndRead)
+		ctx, inputState, pipeline, renderPass, allocAndRead)
 	if err != nil {
 		return VkPipeline(0), err
 	}
@@ -641,7 +634,7 @@ func (overdrawTransform *stencilOverdraw) createGraphicsPipeline(ctx context.Con
 		newCmd.AddRead(read.Data())
 	}
 
-	if err := overdrawTransform.writeCommands(id, newCmd); err != nil {
+	if err := overdrawTransform.writeCommands(newCmd); err != nil {
 		return VkPipeline(0), err
 	}
 
@@ -653,7 +646,6 @@ func (overdrawTransform *stencilOverdraw) createGraphicsPipeline(ctx context.Con
 
 func (overdrawTransform *stencilOverdraw) createGraphicsPipelineCreateInfo(ctx context.Context,
 	inputState *api.GlobalState,
-	id api.CmdID,
 	pipeline VkPipeline,
 	renderPass VkRenderPass,
 	allocAndRead func(v ...interface{}) api.AllocResult) (VkGraphicsPipelineCreateInfo, error) {
@@ -684,7 +676,7 @@ func (overdrawTransform *stencilOverdraw) createGraphicsPipelineCreateInfo(ctx c
 		for idx, stage := range stages {
 			module := stage.Module().VulkanHandle()
 			if !GetState(inputState).ShaderModules().Contains(module) {
-				m, err := overdrawTransform.createShaderModule(ctx, inputState, id, stage.Module())
+				m, err := overdrawTransform.createShaderModule(ctx, inputState, stage.Module())
 				if err != nil {
 					return NilVkGraphicsPipelineCreateInfo, err
 				}
@@ -905,7 +897,6 @@ func (overdrawTransform *stencilOverdraw) createGraphicsPipelineCreateInfo(ctx c
 
 func (overdrawTransform *stencilOverdraw) createShaderModule(ctx context.Context,
 	inputState *api.GlobalState,
-	id api.CmdID,
 	info ShaderModuleObjectʳ) (VkShaderModule, error) {
 
 	module := VkShaderModule(newUnusedID(false, func(id uint64) bool {
@@ -938,7 +929,7 @@ func (overdrawTransform *stencilOverdraw) createShaderModule(ctx context.Context
 		moduleData.Data(),
 	)
 
-	if err := overdrawTransform.writeCommands(id, newCmd); err != nil {
+	if err := overdrawTransform.writeCommands(newCmd); err != nil {
 		return VkShaderModule(0), err
 	}
 
@@ -954,7 +945,6 @@ func (overdrawTransform *stencilOverdraw) createShaderModule(ctx context.Context
 
 func (overdrawTransform *stencilOverdraw) createDepthCopyBuffer(ctx context.Context,
 	inputState *api.GlobalState,
-	id api.CmdID,
 	device VkDevice,
 	format VkFormat,
 	width uint32,
@@ -1013,7 +1003,7 @@ func (overdrawTransform *stencilOverdraw) createDepthCopyBuffer(ctx context.Cont
 	)
 	memoryAllocateInfoData := overdrawTransform.allocations.AllocDataOrPanic(ctx, memoryAllocateInfo)
 
-	if err := overdrawTransform.writeCommands(id,
+	if err := overdrawTransform.writeCommands(
 		overdrawTransform.cmdBuilder.VkCreateBuffer(
 			device,
 			bufferInfoData.Ptr(),
@@ -1077,7 +1067,6 @@ type imageDesc struct {
 // or copying back the new depth buffer to the original depth buffer.
 func (overdrawTransform *stencilOverdraw) copyImageAspect(ctx context.Context,
 	inputState *api.GlobalState,
-	id api.CmdID,
 	device VkDevice,
 	cmdBuffer VkCommandBuffer,
 	srcImgDesc imageDesc,
@@ -1088,7 +1077,7 @@ func (overdrawTransform *stencilOverdraw) copyImageAspect(ctx context.Context,
 	dstImg := dstImgDesc.image
 
 	copyBuffer, err := overdrawTransform.createDepthCopyBuffer(ctx, inputState,
-		id, device, srcImg.Info().Fmt(), extent.Width(), extent.Height())
+		device, srcImg.Info().Fmt(), extent.Width(), extent.Height())
 	if err != nil {
 		return err
 	}
@@ -1210,7 +1199,7 @@ func (overdrawTransform *stencilOverdraw) copyImageAspect(ctx context.Context,
 	biCopyData := overdrawTransform.allocations.AllocDataOrPanic(ctx, biCopy)
 	imgBarriers1Data := overdrawTransform.allocations.AllocDataOrPanic(ctx, imgBarriers1)
 
-	return overdrawTransform.writeCommands(id,
+	return overdrawTransform.writeCommands(
 		overdrawTransform.cmdBuilder.VkCmdPipelineBarrier(cmdBuffer,
 			allCommandsStage, // srcStageMask
 			VkPipelineStageFlags(VkPipelineStageFlagBits_VK_PIPELINE_STAGE_TRANSFER_BIT), // dstStageMask
@@ -1278,7 +1267,7 @@ func (writer *overdrawTransformWriter) State() *api.GlobalState {
 }
 
 func (writer *overdrawTransformWriter) MutateAndWrite(ctx context.Context, id api.CmdID, cmd api.Cmd) error {
-	if err := writer.overdraw.writeCommands(id, cmd); err != nil {
+	if err := writer.overdraw.writeCommands(cmd); err != nil {
 		log.E(ctx, "Failed during state rebuilding in overdraw : %v", err)
 		return err
 	}
@@ -1288,7 +1277,6 @@ func (writer *overdrawTransformWriter) MutateAndWrite(ctx context.Context, id ap
 func (overdrawTransform *stencilOverdraw) renderAspect(
 	ctx context.Context,
 	inputState *api.GlobalState,
-	id api.CmdID,
 	device VkDevice,
 	queue VkQueue,
 	cmdBuffer VkCommandBuffer,
@@ -1403,7 +1391,6 @@ func (overdrawTransform *stencilOverdraw) renderAspect(
 
 func (overdrawTransform *stencilOverdraw) transferDepthValues(ctx context.Context,
 	inputState *api.GlobalState,
-	id api.CmdID,
 	device VkDevice,
 	queue VkQueue,
 	cmdBuffer VkCommandBuffer,
@@ -1415,14 +1402,14 @@ func (overdrawTransform *stencilOverdraw) transferDepthValues(ctx context.Contex
 	srcFmt := srcImgDesc.image.Info().Fmt()
 	dstFmt := dstImgDesc.image.Info().Fmt()
 	if depthBits(srcFmt) == depthBits(dstFmt) {
-		return overdrawTransform.copyImageAspect(ctx, inputState, id, device, cmdBuffer,
+		return overdrawTransform.copyImageAspect(ctx, inputState, device, cmdBuffer,
 			srcImgDesc, dstImgDesc, NewVkExtent3D(inputState.Arena, width, height, 1))
 	}
 
 	// This would have errored previously if it was going to error now
 	depthFmt, _ := depthStencilToDepthFormat(srcFmt)
 	stageFmt, _ := depthToStageFormat(depthFmt)
-	stageImgInfo, err := overdrawTransform.createImage(ctx, inputState, id, device, stageFmt, width, height)
+	stageImgInfo, err := overdrawTransform.createImage(ctx, inputState, device, stageFmt, width, height)
 	if err != nil {
 		return err
 	}
@@ -1441,14 +1428,14 @@ func (overdrawTransform *stencilOverdraw) transferDepthValues(ctx context.Contex
 		VkImageAspectFlagBits_VK_IMAGE_ASPECT_COLOR_BIT,
 	}
 	if err := overdrawTransform.copyImageAspect(ctx,
-		inputState, id, device, cmdBuffer, srcImgDesc, stageImgDesc,
+		inputState, device, cmdBuffer, srcImgDesc, stageImgDesc,
 		NewVkExtent3D(inputState.Arena, width, height, 1)); err != nil {
 		return err
 	}
 
 	stageImgDesc.layout = VkImageLayout_VK_IMAGE_LAYOUT_GENERAL
 
-	return overdrawTransform.renderAspect(ctx, inputState, id, device, queue,
+	return overdrawTransform.renderAspect(ctx, inputState, device, queue,
 		cmdBuffer, stageImgDesc, dstImgDesc, srcFmt)
 }
 
@@ -1456,7 +1443,6 @@ func (overdrawTransform *stencilOverdraw) transferDepthValues(ctx context.Contex
 // over to the depth aspect of our new depth/stencil buffer.
 func (overdrawTransform *stencilOverdraw) loadExistingDepthValues(ctx context.Context,
 	inputState *api.GlobalState,
-	id api.CmdID,
 	device VkDevice,
 	queue VkQueue,
 	cmdBuffer VkCommandBuffer,
@@ -1489,7 +1475,7 @@ func (overdrawTransform *stencilOverdraw) loadExistingDepthValues(ctx context.Co
 		VkImageAspectFlagBits_VK_IMAGE_ASPECT_DEPTH_BIT,
 	}
 
-	return overdrawTransform.transferDepthValues(ctx, inputState, id, device, queue,
+	return overdrawTransform.transferDepthValues(ctx, inputState, device, queue,
 		cmdBuffer, fbInfo.Width(), fbInfo.Height(), oldImageDesc, newImageDesc)
 }
 
@@ -1497,7 +1483,6 @@ func (overdrawTransform *stencilOverdraw) loadExistingDepthValues(ctx context.Co
 // over from the depth aspect of our new depth/stencil buffer.
 func (overdrawTransform *stencilOverdraw) storeNewDepthValues(ctx context.Context,
 	inputState *api.GlobalState,
-	id api.CmdID,
 	device VkDevice,
 	queue VkQueue,
 	cmdBuffer VkCommandBuffer,
@@ -1530,13 +1515,12 @@ func (overdrawTransform *stencilOverdraw) storeNewDepthValues(ctx context.Contex
 		daInfo.FinalLayout(),
 		VkImageAspectFlagBits_VK_IMAGE_ASPECT_DEPTH_BIT,
 	}
-	return overdrawTransform.transferDepthValues(ctx, inputState, id, device, queue,
+	return overdrawTransform.transferDepthValues(ctx, inputState, device, queue,
 		cmdBuffer, fbInfo.Width(), fbInfo.Height(), oldImageDesc, newImageDesc)
 }
 
 func (overdrawTransform *stencilOverdraw) transitionStencilImage(ctx context.Context,
 	inputState *api.GlobalState,
-	id api.CmdID,
 	cmdBuffer VkCommandBuffer,
 	renderInfo renderInfo) error {
 
@@ -1558,7 +1542,7 @@ func (overdrawTransform *stencilOverdraw) transitionStencilImage(ctx context.Con
 
 	imgBarrierData := overdrawTransform.allocations.AllocDataOrPanic(ctx, imgBarrier)
 
-	return overdrawTransform.writeCommands(id,
+	return overdrawTransform.writeCommands(
 		overdrawTransform.cmdBuilder.VkCmdPipelineBarrier(cmdBuffer,
 			VkPipelineStageFlags(
 				VkPipelineStageFlagBits_VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT), // srcStageMask
@@ -1577,7 +1561,6 @@ func (overdrawTransform *stencilOverdraw) transitionStencilImage(ctx context.Con
 
 func (overdrawTransform *stencilOverdraw) createCommandBuffer(ctx context.Context,
 	inputState *api.GlobalState,
-	id api.CmdID,
 	queue VkQueue,
 	cmdBuffer VkCommandBuffer,
 	renderInfo renderInfo,
@@ -1591,7 +1574,7 @@ func (overdrawTransform *stencilOverdraw) createCommandBuffer(ctx context.Contex
 	newCmdBuffer, cmdBufferCmds, cleanup := allocateNewCmdBufFromExistingOneAndBegin(ctx,
 		*overdrawTransform.cmdBuilder, cmdBuffer, inputState)
 
-	if err := overdrawTransform.writeCommands(id, cmdBufferCmds...); err != nil {
+	if err := overdrawTransform.writeCommands(cmdBufferCmds...); err != nil {
 		return VkCommandBuffer(0), err
 	}
 
@@ -1610,12 +1593,12 @@ func (overdrawTransform *stencilOverdraw) createCommandBuffer(ctx context.Contex
 			switch ar := args.(type) {
 			case VkCmdBeginRenderPassArgsʳ:
 				// Transition the stencil image to the right layout
-				if err := overdrawTransform.transitionStencilImage(ctx, inputState, id, newCmdBuffer, renderInfo); err != nil {
+				if err := overdrawTransform.transitionStencilImage(ctx, inputState, newCmdBuffer, renderInfo); err != nil {
 					return VkCommandBuffer(0), err
 				}
 				// Add commands to handle copying the old depth
 				// values if necessary
-				if err := overdrawTransform.loadExistingDepthValues(ctx, inputState, id, device, queue, newCmdBuffer, renderInfo); err != nil {
+				if err := overdrawTransform.loadExistingDepthValues(ctx, inputState, device, queue, newCmdBuffer, renderInfo); err != nil {
 					return VkCommandBuffer(0), err
 				}
 
@@ -1660,7 +1643,7 @@ func (overdrawTransform *stencilOverdraw) createCommandBuffer(ctx context.Contex
 					newPipe, ok := pipelines[pipe]
 					if !ok {
 						createdPipe, err := overdrawTransform.createGraphicsPipeline(
-							ctx, inputState, id, device, pipe, renderInfo.renderPass)
+							ctx, inputState, device, pipe, renderInfo.renderPass)
 						if err != nil {
 							return VkCommandBuffer(0), err
 						}
@@ -1678,7 +1661,7 @@ func (overdrawTransform *stencilOverdraw) createCommandBuffer(ctx context.Contex
 					if !ok {
 						var err error
 						newCmdbuf, err = overdrawTransform.createCommandBuffer(
-							ctx, inputState, id, queue, cmdbuf, renderInfo, 0)
+							ctx, inputState, queue, cmdbuf, renderInfo, 0)
 						if err != nil {
 							return VkCommandBuffer(0), err
 						}
@@ -1694,7 +1677,7 @@ func (overdrawTransform *stencilOverdraw) createCommandBuffer(ctx context.Contex
 			return VkCommandBuffer(0), err
 		}
 
-		if err := overdrawTransform.writeCommands(id, cmd); err != nil {
+		if err := overdrawTransform.writeCommands(cmd); err != nil {
 			return VkCommandBuffer(0), err
 		}
 
@@ -1703,13 +1686,13 @@ func (overdrawTransform *stencilOverdraw) createCommandBuffer(ctx context.Contex
 		if _, ok := args.(VkCmdEndRenderPassArgsʳ); ok {
 			// Add commands to handle storing the new depth values if necessary
 			if err := overdrawTransform.storeNewDepthValues(ctx, inputState,
-				id, device, queue, newCmdBuffer, renderInfo); err != nil {
+				device, queue, newCmdBuffer, renderInfo); err != nil {
 				return VkCommandBuffer(0), err
 			}
 		}
 	}
 
-	if err := overdrawTransform.writeCommands(id, overdrawTransform.cmdBuilder.VkEndCommandBuffer(
+	if err := overdrawTransform.writeCommands(overdrawTransform.cmdBuilder.VkEndCommandBuffer(
 		newCmdBuffer, VkResult_VK_SUCCESS)); err != nil {
 		return VkCommandBuffer(0), err
 	}
@@ -1719,7 +1702,6 @@ func (overdrawTransform *stencilOverdraw) createCommandBuffer(ctx context.Contex
 
 func (overdrawTransform *stencilOverdraw) rewriteQueueSubmit(ctx context.Context,
 	inputState *api.GlobalState,
-	id api.CmdID,
 	queueSubmitCmd *VkQueueSubmit,
 	rpBeginArgs VkCmdBeginRenderPassArgsʳ,
 	rpBeginIdx api.SubCmdIdx) (stencilImage, error) {
@@ -1736,7 +1718,7 @@ func (overdrawTransform *stencilOverdraw) rewriteQueueSubmit(ctx context.Context
 	}
 
 	renderInfo, err := overdrawTransform.createNewRenderPassFramebuffer(
-		ctx, inputState, id, rpBeginArgs.RenderPass(), rpBeginArgs.Framebuffer())
+		ctx, inputState, rpBeginArgs.RenderPass(), rpBeginArgs.Framebuffer())
 	if err != nil {
 		return stencilImage{}, err
 	}
@@ -1775,7 +1757,7 @@ func (overdrawTransform *stencilOverdraw) rewriteQueueSubmit(ctx context.Context
 				Slice(0, count, layout).
 				MustRead(ctx, queueSubmitCmd, inputState, nil)
 			if uint64(i) == rpBeginIdx[0] {
-				newCommandBuffer, err := overdrawTransform.createCommandBuffer(ctx, inputState, id,
+				newCommandBuffer, err := overdrawTransform.createCommandBuffer(ctx, inputState,
 					queueSubmitCmd.Queue(), cmdBuffers[rpBeginIdx[1]], renderInfo, rpBeginIdx[2])
 				if err != nil {
 					return stencilImage{}, err
@@ -1811,7 +1793,7 @@ func (overdrawTransform *stencilOverdraw) rewriteQueueSubmit(ctx context.Context
 		cmd.AddRead(read.Data())
 	}
 
-	if err := overdrawTransform.writeCommands(id, cmd); err != nil {
+	if err := overdrawTransform.writeCommands(cmd); err != nil {
 		return stencilImage{}, err
 	}
 
@@ -1820,7 +1802,6 @@ func (overdrawTransform *stencilOverdraw) rewriteQueueSubmit(ctx context.Context
 
 func (overdrawTransform *stencilOverdraw) postStencilImageData(ctx context.Context,
 	inputState *api.GlobalState,
-	id api.CmdID,
 	img stencilImage,
 	res replay.Result) error {
 	imageObject := GetState(inputState).Images().Get(img.handle)
@@ -2318,7 +2299,7 @@ func (overdrawTransform *stencilOverdraw) postStencilImageData(ctx context.Conte
 	)
 	imageResolveData := overdrawTransform.allocations.AllocDataOrPanic(ctx, imageResolve)
 
-	if err := overdrawTransform.writeCommands(id,
+	if err := overdrawTransform.writeCommands(
 		overdrawTransform.cmdBuilder.VkCreateImage(
 			vkDevice,
 			stagingImageCreateInfoData.Ptr(),
@@ -2352,7 +2333,7 @@ func (overdrawTransform *stencilOverdraw) postStencilImageData(ctx context.Conte
 		return err
 	}
 
-	if err := overdrawTransform.writeCommands(id,
+	if err := overdrawTransform.writeCommands(
 		overdrawTransform.cmdBuilder.VkCreateBuffer(
 			vkDevice,
 			bufferCreateInfoData.Ptr(),
@@ -2388,7 +2369,7 @@ func (overdrawTransform *stencilOverdraw) postStencilImageData(ctx context.Conte
 
 	// If the attachment image is multi-sampled, an resolve image is required
 	if imageObject.Info().Samples() != VkSampleCountFlagBits_VK_SAMPLE_COUNT_1_BIT {
-		if err := overdrawTransform.writeCommands(id,
+		if err := overdrawTransform.writeCommands(
 			overdrawTransform.cmdBuilder.VkCreateImage(
 				vkDevice,
 				resolveImageCreateInfoData.Ptr(),
@@ -2423,7 +2404,7 @@ func (overdrawTransform *stencilOverdraw) postStencilImageData(ctx context.Conte
 		}
 	}
 
-	if err := overdrawTransform.writeCommands(id,
+	if err := overdrawTransform.writeCommands(
 		overdrawTransform.cmdBuilder.VkCreateCommandPool(
 			vkDevice,
 			commandPoolCreateInfoData.Ptr(),
@@ -2449,7 +2430,7 @@ func (overdrawTransform *stencilOverdraw) postStencilImageData(ctx context.Conte
 		return err
 	}
 
-	if err := overdrawTransform.writeCommands(id,
+	if err := overdrawTransform.writeCommands(
 		overdrawTransform.cmdBuilder.VkCreateFence(
 			vkDevice,
 			fenceCreateData.Ptr(),
@@ -2465,7 +2446,7 @@ func (overdrawTransform *stencilOverdraw) postStencilImageData(ctx context.Conte
 		return err
 	}
 
-	if err := overdrawTransform.writeCommands(id,
+	if err := overdrawTransform.writeCommands(
 		overdrawTransform.cmdBuilder.VkBeginCommandBuffer(
 			commandBufferID,
 			beginCommandBufferInfoData.Ptr(),
@@ -2508,7 +2489,7 @@ func (overdrawTransform *stencilOverdraw) postStencilImageData(ctx context.Conte
 	// If the attachment image is multi-sampled, resolve the attchment image to resolve image before
 	// blit the image.
 	if imageObject.Info().Samples() != VkSampleCountFlagBits_VK_SAMPLE_COUNT_1_BIT {
-		if err := overdrawTransform.writeCommands(id,
+		if err := overdrawTransform.writeCommands(
 			overdrawTransform.cmdBuilder.VkCmdPipelineBarrier(
 				commandBufferID,
 				VkPipelineStageFlags(VkPipelineStageFlagBits_VK_PIPELINE_STAGE_ALL_COMMANDS_BIT),
@@ -2567,7 +2548,7 @@ func (overdrawTransform *stencilOverdraw) postStencilImageData(ctx context.Conte
 
 	if doBlit {
 		copySrc = stagingImageID
-		if err := overdrawTransform.writeCommands(id,
+		if err := overdrawTransform.writeCommands(
 			overdrawTransform.cmdBuilder.VkCmdBlitImage(
 				commandBufferID,
 				blitSrcImage,
@@ -2597,7 +2578,7 @@ func (overdrawTransform *stencilOverdraw) postStencilImageData(ctx context.Conte
 		}
 	}
 
-	if err := overdrawTransform.writeCommands(id,
+	if err := overdrawTransform.writeCommands(
 		overdrawTransform.cmdBuilder.VkCmdCopyImageToBuffer(
 			commandBufferID,
 			copySrc,
@@ -2612,7 +2593,7 @@ func (overdrawTransform *stencilOverdraw) postStencilImageData(ctx context.Conte
 		return err
 	}
 
-	if err := overdrawTransform.writeCommands(id,
+	if err := overdrawTransform.writeCommands(
 		overdrawTransform.cmdBuilder.VkCmdPipelineBarrier(
 			commandBufferID,
 			VkPipelineStageFlags(VkPipelineStageFlagBits_VK_PIPELINE_STAGE_ALL_COMMANDS_BIT),
@@ -2635,7 +2616,7 @@ func (overdrawTransform *stencilOverdraw) postStencilImageData(ctx context.Conte
 		return err
 	}
 
-	if err := overdrawTransform.writeCommands(id,
+	if err := overdrawTransform.writeCommands(
 		overdrawTransform.cmdBuilder.VkDeviceWaitIdle(vkDevice, VkResult_VK_SUCCESS),
 		overdrawTransform.cmdBuilder.VkQueueSubmit(
 			vkQueue,
@@ -2663,7 +2644,7 @@ func (overdrawTransform *stencilOverdraw) postStencilImageData(ctx context.Conte
 		return err
 	}
 
-	if err := overdrawTransform.writeCommands(id,
+	if err := overdrawTransform.writeCommands(
 		overdrawTransform.cmdBuilder.VkMapMemory(
 			vkDevice,
 			bufferMemoryID,
@@ -2683,7 +2664,7 @@ func (overdrawTransform *stencilOverdraw) postStencilImageData(ctx context.Conte
 		return err
 	}
 
-	if err := overdrawTransform.writeCommands(id,
+	if err := overdrawTransform.writeCommands(
 		overdrawTransform.cmdBuilder.Custom(func(ctx context.Context, s *api.GlobalState, b *builder.Builder) error {
 			b.Post(value.ObservedPointer(at.Address()), uint64(bufferSize), func(r binary.Reader, err error) {
 				var bytes []byte
@@ -2744,7 +2725,7 @@ func (overdrawTransform *stencilOverdraw) postStencilImageData(ctx context.Conte
 		return err
 	}
 
-	if err := overdrawTransform.writeCommands(id,
+	if err := overdrawTransform.writeCommands(
 		overdrawTransform.cmdBuilder.VkUnmapMemory(vkDevice, bufferMemoryID),
 		overdrawTransform.cmdBuilder.VkDestroyBuffer(vkDevice, bufferID, memory.Nullptr),
 		overdrawTransform.cmdBuilder.VkDestroyCommandPool(vkDevice, commandPoolID, memory.Nullptr),
@@ -2754,13 +2735,13 @@ func (overdrawTransform *stencilOverdraw) postStencilImageData(ctx context.Conte
 		return err
 	}
 	if imageObject.Info().Samples() != VkSampleCountFlagBits_VK_SAMPLE_COUNT_1_BIT {
-		if err := overdrawTransform.writeCommands(id,
+		if err := overdrawTransform.writeCommands(
 			overdrawTransform.cmdBuilder.VkDestroyImage(vkDevice, resolveImageID, memory.Nullptr),
 			overdrawTransform.cmdBuilder.VkFreeMemory(vkDevice, resolveImageMemoryID, memory.Nullptr)); err != nil {
 			return err
 		}
 	}
-	if err := overdrawTransform.writeCommands(id,
+	if err := overdrawTransform.writeCommands(
 		overdrawTransform.cmdBuilder.VkDestroyFence(vkDevice, fenceID, memory.Nullptr)); err != nil {
 		return err
 	}

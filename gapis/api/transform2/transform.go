@@ -25,7 +25,7 @@ import (
 
 // StateMutator is a function that allows transformation to mutate state during transformation
 // TODO: Refactor the transforms that use this to remove this behaviour
-type StateMutator func(id api.CmdID, cmds []api.Cmd) error
+type StateMutator func(cmds []api.Cmd) error
 
 // Transform is the interface that wraps the basic Transform functionality.
 // Implementers of this interface, should take a list of commands and a state

@@ -49,8 +49,8 @@ func CreateTransformChain(ctx context.Context, generator commandGenerator.Comman
 		mutator:          nil,
 	}
 
-	chain.mutator = func(id api.CmdID, cmds []api.Cmd) error {
-		return chain.stateMutator(ctx, id, cmds)
+	chain.mutator = func(cmds []api.Cmd) error {
+		return chain.stateMutator(ctx, cmds)
 	}
 
 	for _, t := range chain.transforms {
@@ -189,13 +189,13 @@ func (chain *TransformChain) GetNextTransformedCommands(ctx context.Context) err
 	return err
 }
 
-func (chain *TransformChain) stateMutator(ctx context.Context, id api.CmdID, cmds []api.Cmd) error {
+func (chain *TransformChain) stateMutator(ctx context.Context, cmds []api.Cmd) error {
 	// When we are mutating the state in the middle of the transform
 	// we want to transform the rest of the transforms first
 	beginTransformIndex := chain.currentTransformIndex + 1
 
-	if err := chain.transformCommands(ctx, id, cmds, beginTransformIndex); err != nil {
-		log.E(ctx, "state mutator error (%v:%v): %v", id, cmds, err)
+	if err := chain.transformCommands(ctx, chain.currentCommandID, cmds, beginTransformIndex); err != nil {
+		log.E(ctx, "state mutator error (%v:%v): %v", chain.currentCommandID, cmds, err)
 		return err
 	}
 

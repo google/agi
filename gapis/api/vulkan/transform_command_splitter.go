@@ -47,13 +47,13 @@ func (splitTransform *commandSplitter) MustAllocWriteDataForCmd(ctx context.Cont
 	return allocateResult
 }
 
-func (splitter *commandSplitter) writeCommand(id api.CmdID, cmd api.Cmd) error {
-	return splitter.stateMutator(id, []api.Cmd{cmd})
+func (splitter *commandSplitter) writeCommand(cmd api.Cmd) error {
+	return splitter.stateMutator([]api.Cmd{cmd})
 }
 
-func (splitter *commandSplitter) writeCommands(id api.CmdID, cmds []api.Cmd) error {
+func (splitter *commandSplitter) writeCommands(cmds []api.Cmd) error {
 	for _, cmd := range cmds {
-		if err := splitter.writeCommand(id, cmd); err != nil {
+		if err := splitter.writeCommand(cmd); err != nil {
 			return err
 		}
 	}
@@ -61,7 +61,7 @@ func (splitter *commandSplitter) writeCommands(id api.CmdID, cmds []api.Cmd) err
 	return nil
 }
 
-func (s *commandSplitter) observeAndWriteCommand(id api.CmdID, cmd api.Cmd) error {
+func (s *commandSplitter) observeAndWriteCommand(cmd api.Cmd) error {
 	for i := range s.readMemoriesForCmd {
 		cmd.Extras().GetOrAppendObservations().AddRead(s.readMemoriesForCmd[i].Data())
 	}
@@ -71,7 +71,7 @@ func (s *commandSplitter) observeAndWriteCommand(id api.CmdID, cmd api.Cmd) erro
 	s.readMemoriesForCmd = []*api.AllocResult{}
 	s.writeMemoriesForCmd = []*api.AllocResult{}
 
-	return s.writeCommand(id, cmd)
+	return s.writeCommand(cmd)
 }
 
 // commandSplitter is a transform that will re-write command-buffers and insert replacement
@@ -168,7 +168,7 @@ func (splitTransform *commandSplitter) TransformCommand(ctx context.Context, id 
 	}
 
 	if len(cuts) == 0 {
-		if err := splitTransform.appendInsertionCommand(ctx, id, inputCommands, topCut); err != nil {
+		if err := splitTransform.appendInsertionCommand(ctx, inputCommands, topCut); err != nil {
 			log.E(ctx, "Failed during appending insertion command : %v", err)
 			return []api.Cmd{}, err
 		}
@@ -189,7 +189,7 @@ func (splitTransform *commandSplitter) TransformCommand(ctx context.Context, id 
 				return nil, err
 			}
 		} else {
-			if err := splitTransform.writeCommand(id, cmd); err != nil {
+			if err := splitTransform.writeCommand(cmd); err != nil {
 				log.E(ctx, "Failed during processing input commands : %v", err)
 				return nil, err
 			}
@@ -199,7 +199,7 @@ func (splitTransform *commandSplitter) TransformCommand(ctx context.Context, id 
 	return nil, nil
 }
 
-func (splitTransform *commandSplitter) appendInsertionCommand(ctx context.Context, id api.CmdID, inputCommands []api.Cmd, topCut api.SubCmdIdx) error {
+func (splitTransform *commandSplitter) appendInsertionCommand(ctx context.Context, inputCommands []api.Cmd, topCut api.SubCmdIdx) error {
 	isEndOfFrame := false
 	endOfFrameCmdID := 0
 	for i, cmd := range inputCommands {
@@ -220,21 +220,21 @@ func (splitTransform *commandSplitter) appendInsertionCommand(ctx context.Contex
 	if isEndOfFrame {
 		// We want to add insertion command before the vkQueuePresentKHR so that
 		// the images are still valid.
-		if err := splitTransform.writeCommand(id, insertionCommand); err != nil {
+		if err := splitTransform.writeCommand(insertionCommand); err != nil {
 			log.E(ctx, "Failed during writing insertion command : %v", err)
 			return err
 		}
 
-		if err := splitTransform.writeCommands(id, inputCommands); err != nil {
+		if err := splitTransform.writeCommands(inputCommands); err != nil {
 			log.E(ctx, "Failed during processing input commands : %v", err)
 			return err
 		}
 	} else {
-		if err := splitTransform.writeCommands(id, inputCommands); err != nil {
+		if err := splitTransform.writeCommands(inputCommands); err != nil {
 			log.E(ctx, "Failed during processing input commands : %v", err)
 			return err
 		}
-		if err := splitTransform.writeCommand(id, insertionCommand); err != nil {
+		if err := splitTransform.writeCommand(insertionCommand); err != nil {
 			log.E(ctx, "Failed during writing insertion command : %v", err)
 			return err
 		}
@@ -256,7 +256,7 @@ func (splitTransform *commandSplitter) modifyVkQueueSubmit(
 		return err
 	}
 
-	if err = splitTransform.writeCommand(id, newSubmit); err != nil {
+	if err = splitTransform.writeCommand(newSubmit); err != nil {
 		log.E(ctx, "Failed during writing VkQueueSubmit : %v", err)
 		return err
 	}
@@ -265,7 +265,7 @@ func (splitTransform *commandSplitter) modifyVkQueueSubmit(
 		return nil
 	}
 
-	if err := splitTransform.writeCommand(id, &InsertionCommand{
+	if err := splitTransform.writeCommand(&InsertionCommand{
 		VkCommandBuffer(0),
 		append([]VkCommandBuffer{}, splitTransform.pendingCommandBuffers...),
 		topCut,
@@ -306,7 +306,7 @@ func (splitTransform *commandSplitter) rewriteQueueSubmit(ctx context.Context, i
 		}
 		newSubmitInfo := submitInfos[i]
 		if len(newCuts) != 0 {
-			newSubmitInfo, err = splitTransform.splitSubmit(ctx, id, submitInfos[i], subIdx, newCuts, queueSubmit, inputState)
+			newSubmitInfo, err = splitTransform.splitSubmit(ctx, submitInfos[i], subIdx, newCuts, queueSubmit, inputState)
 			if err != nil {
 				log.E(ctx, "Failed during splitting submit : %v", err)
 				return nil, err
@@ -317,7 +317,7 @@ func (splitTransform *commandSplitter) rewriteQueueSubmit(ctx context.Context, i
 		}
 		newSubmitInfos = append(newSubmitInfos, newSubmitInfo)
 		if addAfterSubmit {
-			submitInfo, err := splitTransform.splitAfterSubmit(ctx, id, subIdx, queueSubmit, inputState)
+			submitInfo, err := splitTransform.splitAfterSubmit(ctx, subIdx, queueSubmit, inputState)
 			if err != nil {
 				log.E(ctx, "Failed during splitting after Submit : %v", err)
 				return nil, err
@@ -335,7 +335,7 @@ func (splitTransform *commandSplitter) rewriteQueueSubmit(ctx context.Context, i
 	return newSubmit, nil
 }
 
-func (splitTransform *commandSplitter) splitSubmit(ctx context.Context, cmdID api.CmdID, submit VkSubmitInfo, idx api.SubCmdIdx, cuts []api.SubCmdIdx, queueSubmit *VkQueueSubmit, inputState *api.GlobalState) (VkSubmitInfo, error) {
+func (splitTransform *commandSplitter) splitSubmit(ctx context.Context, submit VkSubmitInfo, idx api.SubCmdIdx, cuts []api.SubCmdIdx, queueSubmit *VkQueueSubmit, inputState *api.GlobalState) (VkSubmitInfo, error) {
 	newSubmitInfo := MakeVkSubmitInfo(inputState.Arena)
 	newSubmitInfo.SetSType(submit.SType())
 	newSubmitInfo.SetPNext(submit.PNext())
@@ -367,19 +367,19 @@ func (splitTransform *commandSplitter) splitSubmit(ctx context.Context, cmdID ap
 		if len(newCuts) > 0 {
 			cbuff := commandBuffers[i]
 			cbo := GetState(inputState).CommandBuffers().Get(cbuff)
-			commandBuffer, err := splitTransform.getStartedCommandBuffer(ctx, cmdID, queueSubmit, inputState)
+			commandBuffer, err := splitTransform.getStartedCommandBuffer(ctx, queueSubmit, inputState)
 			if err != nil {
 				log.E(ctx, "Failed during getting started command buffer : %v", err)
 				return VkSubmitInfo{}, err
 			}
 
-			splitCommandBuffers, err := splitTransform.splitCommandBuffer(ctx, cmdID, commandBuffer, cbo, queueSubmit, append(idx, uint64(i)), newCuts, inputState)
+			splitCommandBuffers, err := splitTransform.splitCommandBuffer(ctx, commandBuffer, cbo, queueSubmit, append(idx, uint64(i)), newCuts, inputState)
 			if err != nil {
 				log.E(ctx, "Failed during splitting command buffer : %v", err)
 				return VkSubmitInfo{}, err
 			}
 			newCommandBuffers = append(newCommandBuffers, splitCommandBuffers)
-			if err := splitTransform.observeAndWriteCommand(cmdID, cb.VkEndCommandBuffer(commandBuffer, VkResult_VK_SUCCESS)); err != nil {
+			if err := splitTransform.observeAndWriteCommand(cb.VkEndCommandBuffer(commandBuffer, VkResult_VK_SUCCESS)); err != nil {
 				log.E(ctx, "Failed during writing EndCommandBuffer : %v", err)
 				return VkSubmitInfo{}, err
 			}
@@ -387,13 +387,13 @@ func (splitTransform *commandSplitter) splitSubmit(ctx context.Context, cmdID ap
 			newCommandBuffers = append(newCommandBuffers, commandBuffers[i])
 		}
 		if splitAfterCommandBuffer {
-			commandBuffer, err := splitTransform.getStartedCommandBuffer(ctx, cmdID, queueSubmit, inputState)
+			commandBuffer, err := splitTransform.getStartedCommandBuffer(ctx, queueSubmit, inputState)
 			if err != nil {
 				log.E(ctx, "Failed during getting started command buffer : %v", err)
 				return VkSubmitInfo{}, err
 			}
 
-			if err := splitTransform.writeCommand(cmdID, &InsertionCommand{
+			if err := splitTransform.writeCommand(&InsertionCommand{
 				commandBuffer,
 				append([]VkCommandBuffer{}, splitTransform.pendingCommandBuffers...),
 				append(idx, uint64(i)),
@@ -403,7 +403,7 @@ func (splitTransform *commandSplitter) splitSubmit(ctx context.Context, cmdID ap
 				return VkSubmitInfo{}, err
 			}
 
-			if err := splitTransform.observeAndWriteCommand(cmdID, cb.VkEndCommandBuffer(commandBuffer, VkResult_VK_SUCCESS)); err != nil {
+			if err := splitTransform.observeAndWriteCommand(cb.VkEndCommandBuffer(commandBuffer, VkResult_VK_SUCCESS)); err != nil {
 				log.E(ctx, "Failed during writing EndCommandBuffer : %v", err)
 				return VkSubmitInfo{}, err
 			}
@@ -420,9 +420,9 @@ func (splitTransform *commandSplitter) splitSubmit(ctx context.Context, cmdID ap
 	return newSubmitInfo, nil
 }
 
-func (splitTransform *commandSplitter) splitAfterSubmit(ctx context.Context, cmdID api.CmdID, id api.SubCmdIdx, queueSubmit *VkQueueSubmit, inputState *api.GlobalState) (VkSubmitInfo, error) {
+func (splitTransform *commandSplitter) splitAfterSubmit(ctx context.Context, id api.SubCmdIdx, queueSubmit *VkQueueSubmit, inputState *api.GlobalState) (VkSubmitInfo, error) {
 	cb := CommandBuilder{Thread: queueSubmit.Thread(), Arena: inputState.Arena}
-	commandBuffer, err := splitTransform.getStartedCommandBuffer(ctx, cmdID, queueSubmit, inputState)
+	commandBuffer, err := splitTransform.getStartedCommandBuffer(ctx, queueSubmit, inputState)
 	if err != nil {
 		log.E(ctx, "Failed during getting started command buffer : %v", err)
 		return VkSubmitInfo{}, err
@@ -430,7 +430,7 @@ func (splitTransform *commandSplitter) splitAfterSubmit(ctx context.Context, cmd
 
 	splitTransform.pendingCommandBuffers = append(splitTransform.pendingCommandBuffers, commandBuffer)
 
-	if err = splitTransform.writeCommand(cmdID, &InsertionCommand{
+	if err = splitTransform.writeCommand(&InsertionCommand{
 		commandBuffer,
 		append([]VkCommandBuffer{}, splitTransform.pendingCommandBuffers...),
 		id,
@@ -440,7 +440,7 @@ func (splitTransform *commandSplitter) splitAfterSubmit(ctx context.Context, cmd
 		return VkSubmitInfo{}, err
 	}
 
-	if err = splitTransform.observeAndWriteCommand(cmdID, cb.VkEndCommandBuffer(commandBuffer, VkResult_VK_SUCCESS)); err != nil {
+	if err = splitTransform.observeAndWriteCommand(cb.VkEndCommandBuffer(commandBuffer, VkResult_VK_SUCCESS)); err != nil {
 		log.E(ctx, "Failed during writing end command buffer : %v", err)
 		return VkSubmitInfo{}, err
 	}
@@ -643,7 +643,7 @@ func (splitTransform *commandSplitter) rewriteGraphicsPipeline(ctx context.Conte
 	return newGp.VulkanHandle(), nil
 }
 
-func (splitTransform *commandSplitter) splitCommandBuffer(ctx context.Context, cmdID api.CmdID, embedBuffer VkCommandBuffer, commandBuffer CommandBufferObjectʳ, queueSubmit *VkQueueSubmit, id api.SubCmdIdx, cuts []api.SubCmdIdx, inputState *api.GlobalState) (VkCommandBuffer, error) {
+func (splitTransform *commandSplitter) splitCommandBuffer(ctx context.Context, embedBuffer VkCommandBuffer, commandBuffer CommandBufferObjectʳ, queueSubmit *VkQueueSubmit, id api.SubCmdIdx, cuts []api.SubCmdIdx, inputState *api.GlobalState) (VkCommandBuffer, error) {
 	cb := CommandBuilder{Thread: queueSubmit.Thread(), Arena: inputState.Arena}
 	st := GetState(inputState)
 
@@ -737,7 +737,7 @@ func (splitTransform *commandSplitter) splitCommandBuffer(ctx context.Context, c
 				cbo := st.CommandBuffers().Get(ar.CommandBuffers().Get(uint32(j)))
 
 				// Melih TODO: This is VERY suspicious
-				if _, err := splitTransform.splitCommandBuffer(ctx, cmdID, embedBuffer, cbo, queueSubmit, append(id, uint64(i), uint64(j)), newSubCuts, inputState); err != nil {
+				if _, err := splitTransform.splitCommandBuffer(ctx, embedBuffer, cbo, queueSubmit, append(id, uint64(i), uint64(j)), newSubCuts, inputState); err != nil {
 					log.E(ctx, "Failed during splitting command buffer : %v", err)
 					return VkCommandBuffer(0), err
 				}
@@ -749,7 +749,7 @@ func (splitTransform *commandSplitter) splitCommandBuffer(ctx context.Context, c
 						append(id, uint64(i), uint64(j)),
 						queueSubmit,
 					}
-					if err := splitTransform.observeAndWriteCommand(cmdID, insertionCmd); err != nil {
+					if err := splitTransform.observeAndWriteCommand(insertionCmd); err != nil {
 						log.E(ctx, "Failed during inserting insertion command : %v", err)
 						return VkCommandBuffer(0), err
 					}
@@ -784,7 +784,7 @@ func (splitTransform *commandSplitter) splitCommandBuffer(ctx context.Context, c
 			if err != nil {
 				panic(fmt.Errorf("Invalid command-buffer detected %+v", err))
 			}
-			if err := splitTransform.observeAndWriteCommand(cmdID, cmd); err != nil {
+			if err := splitTransform.observeAndWriteCommand(cmd); err != nil {
 				log.E(ctx, "Failed during adding command : [%v]%v", cmd, err)
 				return VkCommandBuffer(0), err
 			}
@@ -792,7 +792,7 @@ func (splitTransform *commandSplitter) splitCommandBuffer(ctx context.Context, c
 		}
 		for _, ea := range extraArgs {
 			if ins, ok := ea.(api.Cmd); ok {
-				if err := splitTransform.observeAndWriteCommand(cmdID, ins); err != nil {
+				if err := splitTransform.observeAndWriteCommand(ins); err != nil {
 					log.E(ctx, "Failed during inserting insertion command : %v", err)
 					return VkCommandBuffer(0), err
 				}
@@ -801,7 +801,7 @@ func (splitTransform *commandSplitter) splitCommandBuffer(ctx context.Context, c
 				if err != nil {
 					panic(fmt.Errorf("Invalid command-buffer detected %+v", err))
 				}
-				if err := splitTransform.observeAndWriteCommand(cmdID, cmd); err != nil {
+				if err := splitTransform.observeAndWriteCommand(cmd); err != nil {
 					log.E(ctx, "Failed during adding command : [%v]%v", cmd, err)
 					return VkCommandBuffer(0), err
 				}
@@ -813,11 +813,11 @@ func (splitTransform *commandSplitter) splitCommandBuffer(ctx context.Context, c
 	return embedBuffer, nil
 }
 
-func (splitTransform *commandSplitter) getStartedCommandBuffer(ctx context.Context, cmdID api.CmdID, queueSubmit *VkQueueSubmit, inputState *api.GlobalState) (VkCommandBuffer, error) {
+func (splitTransform *commandSplitter) getStartedCommandBuffer(ctx context.Context, queueSubmit *VkQueueSubmit, inputState *api.GlobalState) (VkCommandBuffer, error) {
 	cb := CommandBuilder{Thread: queueSubmit.Thread(), Arena: inputState.Arena}
 	queue := GetState(inputState).Queues().Get(queueSubmit.Queue())
 
-	commandPoolID, err := splitTransform.getCommandPool(ctx, cmdID, queueSubmit, inputState)
+	commandPoolID, err := splitTransform.getCommandPool(ctx, queueSubmit, inputState)
 	if err != nil {
 		log.E(ctx, "Failed during getting command pool : %v", err)
 		return VkCommandBuffer(0), err
@@ -841,7 +841,7 @@ func (splitTransform *commandSplitter) getStartedCommandBuffer(ctx context.Conte
 		VkResult_VK_SUCCESS,
 	)
 
-	if err = splitTransform.observeAndWriteCommand(cmdID, allocateCmd); err != nil {
+	if err = splitTransform.observeAndWriteCommand(allocateCmd); err != nil {
 		log.E(ctx, "Failed during allocating command buffer : %v", err)
 		return VkCommandBuffer(0), err
 	}
@@ -858,14 +858,14 @@ func (splitTransform *commandSplitter) getStartedCommandBuffer(ctx context.Conte
 		VkResult_VK_SUCCESS,
 	)
 
-	if err = splitTransform.observeAndWriteCommand(cmdID, beginCommandBufferCmd); err != nil {
+	if err = splitTransform.observeAndWriteCommand(beginCommandBufferCmd); err != nil {
 		log.E(ctx, "Failed during begin command buffer : %v", err)
 		return VkCommandBuffer(0), err
 	}
 	return commandBufferID, nil
 }
 
-func (splitTransform *commandSplitter) getCommandPool(ctx context.Context, cmdID api.CmdID, queueSubmit *VkQueueSubmit, inputState *api.GlobalState) (VkCommandPool, error) {
+func (splitTransform *commandSplitter) getCommandPool(ctx context.Context, queueSubmit *VkQueueSubmit, inputState *api.GlobalState) (VkCommandPool, error) {
 	if splitTransform.pool != 0 {
 		return splitTransform.pool, nil
 	}
@@ -892,7 +892,7 @@ func (splitTransform *commandSplitter) getCommandPool(ctx context.Context, cmdID
 		VkResult_VK_SUCCESS,
 	)
 
-	if err := splitTransform.observeAndWriteCommand(cmdID, newCmd); err != nil {
+	if err := splitTransform.observeAndWriteCommand(newCmd); err != nil {
 		log.E(ctx, "Failed during creating command pool : %v", err)
 		return VkCommandPool(0), err
 	}
@@ -926,7 +926,7 @@ func (writer *commandsplitTransformWriter) State() *api.GlobalState {
 }
 
 func (writer *commandsplitTransformWriter) MutateAndWrite(ctx context.Context, id api.CmdID, cmd api.Cmd) error {
-	if err := writer.splitter.writeCommand(id, cmd); err != nil {
+	if err := writer.splitter.writeCommand(cmd); err != nil {
 		log.E(ctx, "Failed during state rebuilding in command splitter : %v", err)
 		return err
 	}
