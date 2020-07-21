@@ -172,9 +172,6 @@ public class Main {
         shell.getDisplay().asyncExec(() -> showFirstTimeDialog(shell, models, widgets, onStart));
       }
 
-      // TODO: Only for easy gapis crash testing, will delete before check in.
-      window.statusBar.addListener(SWT.MouseDown, $ -> server.disconnect());
-
       // Add the links on Loading Screen after the server set up.
       window.updateLoadingScreen(client, models, widgets);
     }
