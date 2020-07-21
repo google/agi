@@ -187,9 +187,9 @@ public class Main {
     @Override
     public void onServerExit(int code, String panic) {
       scheduleIfStillOpen(shell -> showErrorDialogWithTwoButtons(
-          shell, getAnalytics(), "The gapis server has exited with an error code of: " + code, panic,
+          shell, getAnalytics(), String.format(Messages.SERVER_ERROR_MESSAGE, code), panic,
           IDialogConstants.RETRY_ID, "Restart Server", this::restartServer,
-          IDialogConstants.CLOSE_ID, IDialogConstants.CLOSE_LABEL, window::close)
+          IDialogConstants.CLOSE_ID, "Exit", window::close)
       );
     }
 
