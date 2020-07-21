@@ -204,6 +204,7 @@ public class Main {
     }
 
     private void restartUi(Shell shell) {
+      models.reset();
       window.showWelcomeScreen();
     }
 
