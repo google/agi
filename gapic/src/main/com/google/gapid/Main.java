@@ -29,6 +29,7 @@ import com.google.gapid.models.Follower;
 import com.google.gapid.models.Models;
 import com.google.gapid.models.Settings;
 import com.google.gapid.perfetto.canvas.PanelCanvas;
+import com.google.gapid.server.Client;
 import com.google.gapid.server.GapiPaths;
 import com.google.gapid.server.GapisProcess;
 import com.google.gapid.util.Crash2ExceptionHandler;
@@ -93,6 +94,8 @@ public class Main {
     private final String[] args;
     protected final MainWindow window;
 
+    // Client is an immutable wrapper keeping track of inner server-dependent GapidClient instance.
+    private final Client client;
     private Server server;
     private Models models;
     private Widgets widgets;
@@ -109,7 +112,8 @@ public class Main {
           scheduleIfNotDisposed(getShell(), () -> Scheduler.EXECUTOR.execute(UI.this::startup));
         }
       };
-      server = new Server(settings);
+      this.client = new Client();
+      server = new Server(settings, client);
 
       registerWindowExceptionHandler();
     }
@@ -152,8 +156,8 @@ public class Main {
     }
 
     private void uiStartup(Shell shell) {
-      models = Models.create(shell, settings, handler, server.getClient(), window.getStatusBar());
-      widgets = Widgets.create(shell.getDisplay(), theme, server.getClient(), models);
+      models = Models.create(shell, settings, handler, client, window.getStatusBar());
+      widgets = Widgets.create(shell.getDisplay(), theme, client, models);
 
       Runnable onStart = () -> {
         if (args.length == 1) {
@@ -161,7 +165,7 @@ public class Main {
         }
       };
 
-      window.initMainUi(server.getClient(), models, widgets);
+      window.initMainUi(client, models, widgets);
       if (models.settings.preferences().getSkipFirstRunDialog()) {
         shell.getDisplay().asyncExec(onStart);
       } else {
@@ -172,9 +176,8 @@ public class Main {
       window.statusBar.addListener(SWT.MouseDown, $ -> server.disconnect());
 
       // Add the links on Loading Screen after the server set up.
-      window.updateLoadingScreen(server.getClient(), models, widgets);
+      window.updateLoadingScreen(client, models, widgets);
     }
-
 
     @Override
     public void onStatus(String message) {
@@ -192,7 +195,7 @@ public class Main {
 
     private void restartServer() {
       try {
-        server = new Server(settings);
+        server = new Server(settings, client);
         server.connect(this);
         scheduleIfStillOpen(this::restartUi);
       } catch (GapisInitException e) {
@@ -201,9 +204,7 @@ public class Main {
     }
 
     private void restartUi(Shell shell) {
-      models = Models.create(shell, settings, handler, server.getClient(), window.getStatusBar());
-      widgets = Widgets.create(shell.getDisplay(), theme, server.getClient(), models);
-      window.restartMainUi(server.getClient(), models, widgets);
+      window.showWelcomeScreen();
     }
 
     private void scheduleIfStillOpen(ShellRunnable run) {

@@ -270,58 +270,8 @@ public class MainWindow extends ApplicationWindow {
         Math.max(0, bounds.height - size.y) / 3);
   }
 
-  public void restartMainUi(Client client, Models models, Widgets widgets) {
-    Shell shell = getShell();
-
-    restartLoadingScreen(client, models, widgets);
-
-    showLoadingMessage("Restart UI...");
-    restartMenus(client, models, widgets);
-
-    mainUi = new LoadablePanel<MainViewContainer>(
-        mainArea, widgets, parent -> new MainViewContainer(parent, models, widgets));
-    models.capture.addListener(new Capture.Listener() {
-      @Override
-      public void onCaptureLoadingStart(boolean maintainState) {
-        shell.setText(Messages.WINDOW_TITLE + " - " + models.capture.getName());
-        setTopControl(mainUi);
-        mainUi.startLoading();
-      }
-
-      @Override
-      public void onCaptureLoaded(Message error) {
-        if (error != null) {
-          mainUi.showMessage(error);
-        } else {
-          // Let all other handlers of this event get a chance to process before we start disposing
-          // UI components underneath everybody.
-          scheduleIfNotDisposed(mainUi, () -> {
-            MainView view = mainUi.getContents().updateAndGet(
-                models.capture.getData().capture.getType());
-            view.updateViewMenu(findMenu(MenuItems.VIEW_ID));
-            getMenuBarManager().updateAll(true);
-            mainUi.stopLoading();
-          });
-        }
-      }
-    });
-
-    if (OS.isMac) {
-      MacApplication.init(shell.getDisplay(),
-          () -> showAbout(shell, models.analytics, widgets),
-          () -> showSettingsDialog(shell, models, widgets.theme),
-          file -> models.capture.loadCapture(new File(file)));
-    }
-
-    showLoadingMessage("Tracking server status...");
-    trackServerStatus(client);
-
-    showLoadingMessage("Ready! Please open or capture a trace file.");
-  }
-
-  public void restartLoadingScreen(Client client, Models models, Widgets widgets) {
+  public void showWelcomeScreen() {
     if (loadingScreen != null) {
-      updateLoadingScreen(client, models, widgets);
       setTopControl(loadingScreen);
     }
   }
@@ -341,20 +291,6 @@ public class MainWindow extends ApplicationWindow {
   private void initMenus(Client client, Models models, Widgets widgets) {
     updateFileMenu(client, models, widgets);
     MenuManager manager = getMenuBarManager();
-    manager.add(createEditMenu(models, widgets));
-    manager.add(createGotoMenu(models));
-    manager.add(createViewMenu());
-    manager.add(createHelpMenu(models, widgets));
-    manager.updateAll(true);
-  }
-
-  private void restartMenus(Client client, Models models, Widgets widgets) {
-    updateFileMenu(client, models, widgets);
-    MenuManager manager = getMenuBarManager();
-    manager.remove(MenuItems.EDIT_ID);
-    manager.remove(MenuItems.GOTO_ID);
-    manager.remove(MenuItems.VIEW_ID);
-    manager.remove(MenuItems.HELP_ID);
     manager.add(createEditMenu(models, widgets));
     manager.add(createGotoMenu(models));
     manager.add(createViewMenu());
