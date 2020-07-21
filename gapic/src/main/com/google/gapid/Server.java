@@ -104,7 +104,7 @@ public class Server {
       if (!useCache.get()) {
         LOG.log(WARNING, "** Not using caching in the UI, this is only meant for testing. **");
       }
-      client.initializeGapidClient(connection.createGapidClient(useCache.get()));
+      client.setGapidClient(connection.createGapidClient(useCache.get()));
     } catch (IOException e) {
       throw new GapisInitException(
           GapisInitException.MESSAGE_FAILED_CONNECT, "unable to create client", e);

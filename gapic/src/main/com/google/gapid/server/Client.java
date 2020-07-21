@@ -72,7 +72,7 @@ public class Client {
     this.client = client;
   }
 
-  public void initializeGapidClient(GapidClient client) {
+  public void setGapidClient(GapidClient client) {
     this.client = client;
   }
 

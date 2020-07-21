@@ -77,8 +77,8 @@ public interface Messages {
       "The application encountered an error:\n%s\n\nPlease check the logs for details.";
   public static final String SERVER_ERROR_MESSAGE =
       "\nThe server has exited with an error code of: %s \n" +
-      "Most functions in AGI are unavailable without an server. \n" +
-      "You can restart server, exit, or close the dialog to save your unfinished work.";
+      "Most functions in AGI are unavailable without a server. \n" +
+      "You can restart the server, exit AGI, or close the dialog to continue without a server.";
   public static final String BUG_BODY =
       "AGI Version: " + GAPID_VERSION.toString() + "\n" +
       "OS: " + OS.name + " " + OS.arch + "\n\n" +
