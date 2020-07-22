@@ -117,27 +117,11 @@ public class PerformanceView extends Composite
 
     public PerfTree(Composite parent, Models models, Widgets widgets) {
       super(parent, models, widgets);
-      addColumn("GPU Time", this::formatGpuTime);
-      addColumn("Wall Time", this::formatWallTime);
     }
 
     @Override
     protected boolean shouldShowImage(CommandStream.Node node) {
       return false;
-    }
-
-    private void addColumn(String title, Function<Service.CommandTreeNode, String> formatter) {
-      TreeViewerColumn column = addColumn(title, node -> {
-        Service.CommandTreeNode data = node.getData();
-        if (data == null) {
-          return "";
-        } else if (!models.profile.isLoaded()) {
-          return "Profiling...";
-        } else {
-          return formatter.apply(data);
-        }
-      }, DURATION_WIDTH);
-      column.getColumn().setAlignment(SWT.RIGHT);
     }
 
     private void addColumnForCounter(Service.ProfilingData.Counter counter) {
@@ -157,16 +141,6 @@ public class PerformanceView extends Composite
 
     public void refresh() {
       refresher.refresh();
-    }
-
-    private String formatGpuTime(Service.CommandTreeNode node) {
-      Profile.Duration duration = models.profile.getData().getDuration(node.getCommands());
-      return duration == Duration.NONE ? "" : String.format("%.3fms", duration.gpuTime / 1e6);
-    }
-
-    private String formatWallTime(Service.CommandTreeNode node) {
-      Profile.Duration duration = models.profile.getData().getDuration(node.getCommands());
-      return duration == Duration.NONE ? "" : String.format("%.3fms", duration.wallTime / 1e6);
     }
   }
 }

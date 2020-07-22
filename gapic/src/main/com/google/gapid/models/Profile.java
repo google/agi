@@ -287,7 +287,17 @@ public class Profile
   }
 
   public static class Duration {
-    public static final Duration NONE = new Duration(0, 0, TimeSpan.ZERO);
+    public static final Duration NONE = new Duration(0, 0, TimeSpan.ZERO) {
+      @Override
+      public String formatGpuTime() {
+        return "";
+      }
+
+      @Override
+      public String formatWallTime() {
+        return "";
+      }
+    };
 
     public final long gpuTime;
     public final long wallTime;
@@ -297,6 +307,14 @@ public class Profile
       this.gpuTime = gpuTime;
       this.wallTime = wallTime;
       this.timeSpan = timeSpan;
+    }
+
+    public String formatGpuTime() {
+      return String.format("%.3fms", gpuTime / 1e6);
+    }
+
+    public String formatWallTime() {
+      return String.format("%.3fms", wallTime / 1e6);
     }
   }
 
