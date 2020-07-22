@@ -29,10 +29,7 @@ go_library(
     importpath = "github.com/google/gapid/gapis/api/transform",
     visibility = ["//visibility:public"],
     deps = [
-        "//core/log:go_default_library",
-        "//core/memory/arena:go_default_library",
         "//gapis/api:go_default_library",
-        "//gapis/capture:go_default_library",
         "//gapis/config:go_default_library",
     ],
 )
