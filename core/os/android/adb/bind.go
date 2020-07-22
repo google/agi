@@ -17,6 +17,7 @@ package adb
 import (
 	"context"
 
+	"github.com/google/gapid/core/app"
 	"github.com/google/gapid/core/os/android"
 	"github.com/google/gapid/core/os/device/bind"
 	"github.com/google/gapid/core/os/shell"
@@ -38,11 +39,11 @@ type Device interface {
 	RemoveForward(ctx context.Context, local Port) error
 	// GraphicsDriver queries and returns info about the prerelease graphics driver.
 	GraphicsDriver(ctx context.Context) (Driver, error)
-	// HasGpuProfilingSupportInSystemImage returns whether system image has GPU profiling support.
-	HasGpuProfilingSupportInSystemImage(ctx context.Context) (bool, error)
-	// GetGpuProfilingLayerPackageName queries and returns the package name of the apk that contains
-	// the GPU profiling Vulkan layer.
-	GetGpuProfilingLayerPackageName(ctx context.Context) (string, error)
+	// PrepareGpuProfiling queries GPU profiling support, and when supported it sets
+	// up the device for profiling of installedPackage. It returns a bool to indicate
+	// if GPU profiling is supported and setup is done, and when that's the case it
+	// also returns the package where to find profiling layers, and a cleanup.
+	PrepareGpuProfiling(ctx context.Context, installedPackage *android.InstalledPackage) (bool, string, app.Cleanup, error)
 }
 
 // Driver contains the information about a graphics driver.
