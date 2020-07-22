@@ -85,9 +85,11 @@ func NewWithListener(ctx context.Context, l net.Listener, cfg Config, srvChan ch
 	case err := <-done:
 		return err
 	case <-task.ShouldStop(ctx):
+		s.mutex.Lock()
 		for _, f := range s.interrupters {
 			f()
 		}
+		s.mutex.Unlock()
 		return <-done
 	}
 }
@@ -99,6 +101,7 @@ type grpcServer struct {
 	inFlightRPCs    int64
 	interrupters    map[int]func()
 	lastInterrupter int
+	mutex           sync.Mutex
 }
 
 // inRPC should be called at the start of an RPC call. The returned function
@@ -179,10 +182,16 @@ func (s *grpcServer) stopOnInterrupt(ctx context.Context, server *grpc.Server, s
 }
 
 func (s *grpcServer) addInterrupter(f func()) (remove func()) {
+	s.mutex.Lock()
 	li := s.lastInterrupter
 	s.lastInterrupter++
 	s.interrupters[li] = f
-	return func() { delete(s.interrupters, li) }
+	s.mutex.Unlock()
+	return func() {
+		s.mutex.Lock()
+		delete(s.interrupters, li)
+		s.mutex.Unlock()
+	}
 }
 
 func (s *grpcServer) Ping(ctx xctx.Context, req *service.PingRequest) (*service.PingResponse, error) {
