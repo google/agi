@@ -17,12 +17,10 @@ package com.google.gapid.views;
 
 import static com.google.gapid.util.Loadable.MessageType.Error;
 
-import com.google.common.base.Function;
 import com.google.gapid.models.Capture;
 import com.google.gapid.models.CommandStream;
 import com.google.gapid.models.Models;
 import com.google.gapid.models.Profile;
-import com.google.gapid.models.Profile.Duration;
 import com.google.gapid.proto.service.Service;
 import com.google.gapid.util.Loadable;
 import com.google.gapid.util.Messages;
@@ -35,6 +33,7 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Menu;
 
 public class PerformanceView extends Composite
     implements Tab, Capture.Listener, CommandStream.Listener, Profile.Listener {
@@ -51,6 +50,15 @@ public class PerformanceView extends Composite
     setLayout(new GridLayout(1, false));
     loading = LoadablePanel.create(this, widgets, p -> new PerfTree(p, models, widgets));
     tree = loading.getContents();
+
+    Menu popup = new Menu(tree.getControl());
+    Widgets.createMenuItem(popup, "Select in Command Tab", e -> {
+      CommandStream.Node node = tree.getSelection();
+      if (node != null && node.getIndex() != null && models.resources.isLoaded()) {
+        models.commands.selectCommands(node.getIndex(), true);
+      }
+    });
+    tree.setPopupMenu(popup, node -> node != null && node.getIndex() != null && models.resources.isLoaded());
 
     loading.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
