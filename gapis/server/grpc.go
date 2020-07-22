@@ -86,10 +86,10 @@ func NewWithListener(ctx context.Context, l net.Listener, cfg Config, srvChan ch
 		return err
 	case <-task.ShouldStop(ctx):
 		s.mutex.Lock()
+		defer s.mutex.Unlock()
 		for _, f := range s.interrupters {
 			f()
 		}
-		s.mutex.Unlock()
 		return <-done
 	}
 }
@@ -183,14 +183,14 @@ func (s *grpcServer) stopOnInterrupt(ctx context.Context, server *grpc.Server, s
 
 func (s *grpcServer) addInterrupter(f func()) (remove func()) {
 	s.mutex.Lock()
+	defer s.mutex.Unlock()
 	li := s.lastInterrupter
 	s.lastInterrupter++
 	s.interrupters[li] = f
-	s.mutex.Unlock()
 	return func() {
 		s.mutex.Lock()
+		defer s.mutex.Unlock()
 		delete(s.interrupters, li)
-		s.mutex.Unlock()
 	}
 }
 
