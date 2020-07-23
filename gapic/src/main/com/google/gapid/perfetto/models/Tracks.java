@@ -58,7 +58,7 @@ import java.util.stream.Collectors;
  * Determines what tracks to show for a trace.
  */
 public class Tracks {
-  private static final Logger LOG = Logger.getLogger(CounterInfo.class.getName());
+  private static final Logger LOG = Logger.getLogger(Tracks.class.getName());
 
   // CPU usage percentage at which a process/thread is considered idle.
   private static final double IDLE_PERCENT_CUTOFF = 0.001; // 0.1%.
