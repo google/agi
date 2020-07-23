@@ -30,6 +30,7 @@ import com.google.gapid.proto.SettingsProto;
 import com.google.gapid.proto.service.Service;
 import com.google.gapid.proto.service.Service.ClientAction;
 import com.google.gapid.proto.service.path.Path;
+import com.google.gapid.util.Experimental;
 import com.google.gapid.views.CommandTree;
 import com.google.gapid.views.DeviceDialog;
 import com.google.gapid.views.FramebufferView;
@@ -143,6 +144,9 @@ public class GraphicsTraceView extends Composite implements MainWindow.MainView,
   private MenuManager createViewTabsMenu() {
     MenuManager manager = new MenuManager("&Tabs");
     for (MainTab.Type type : MainTab.Type.values()) {
+      if (type == MainTab.Type.Performance && !Experimental.enablePerfTab(models.settings)) {
+        continue;
+      }
       Action action = type.createAction(shown -> {
         models.analytics.postInteraction(
             type.view, shown ? ClientAction.Enable : ClientAction.Disable);
@@ -193,6 +197,9 @@ public class GraphicsTraceView extends Composite implements MainWindow.MainView,
       SettingsProto.TabsOrBuilder sTabs = models.settings.tabs();
       Set<Type> allTabs = Sets.newLinkedHashSet(Arrays.asList(Type.values()));
       allTabs.removeAll(hidden);
+      if (!Experimental.enablePerfTab(models.settings)) {
+        allTabs.remove(MainTab.Type.Performance);
+      }
       Iterator<String> structs = Splitter.on(';')
           .trimResults()
           .omitEmptyStrings()
@@ -363,7 +370,7 @@ public class GraphicsTraceView extends Composite implements MainWindow.MainView,
       Textures(View.Textures, "Textures", DefaultPosition.Center, TextureView::new),
       Geometry(View.Geometry, "Geometry", DefaultPosition.Center, GeometryView::new),
       Shaders(View.Shaders, "Shaders", DefaultPosition.Center, ShaderView::new),
-      Performance(View.Performance, "Performance", DefaultPosition.Center, PerformanceView::new),
+      Performance(View.Performance, "Performance(Experimental)", DefaultPosition.Center, PerformanceView::new),
       Report(View.Report, "Report", DefaultPosition.Center, ReportView::new),
       Log(View.Log, "Log", DefaultPosition.Center, (p, m, w) -> new LogView(p, w)),
 
