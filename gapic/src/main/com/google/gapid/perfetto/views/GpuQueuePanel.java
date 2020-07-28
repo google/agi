@@ -206,7 +206,7 @@ public class GpuQueuePanel extends TrackPanel<GpuQueuePanel> implements Selectab
           hoveredCategory = "";
         }
         hoveredTitle = buildSliceTitle(hoveredTitle, data.args[i]);
-        hoveredTitle += " (" + TimeSpan.timeToShortString(tEnd -tStart) + ")";
+        hoveredTitle += " (" + TimeSpan.timeToString(tEnd - tStart) + ")";
 
         hoveredSize = Size.vertCombine(HOVER_PADDING, HOVER_PADDING / 2,
             m.measure(Fonts.Style.Normal, hoveredTitle),
