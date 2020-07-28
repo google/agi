@@ -106,15 +106,20 @@ func fetchDeviceInfo(ctx context.Context, d adb.Device) error {
 
 	var cleanup app.Cleanup
 
+	packages := []string{}
 	supported, packageName, nextCleanup, err := d.PrepareGpuProfiling(ctx, apk.InstalledPackage)
 	cleanup = cleanup.Then(nextCleanup)
 	if err != nil {
 		cleanup.Invoke(ctx)
 		return err
 	}
+	if packageName != "" {
+		packages = append(packages, packageName)
+	}
+
 	if supported {
 		// Set driver package
-		nextCleanup, err := android.SetupLayers(ctx, d, apk.Name, []string{packageName}, []string{})
+		nextCleanup, err := android.SetupLayers(ctx, d, apk.Name, packages, []string{})
 		cleanup = cleanup.Then(nextCleanup)
 		defer cleanup.Invoke(ctx)
 		if err != nil {

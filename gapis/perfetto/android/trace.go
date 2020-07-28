@@ -73,11 +73,14 @@ func SetupProfileLayersSource(ctx context.Context, d adb.Device, apk *android.In
 	if err != nil {
 		return cleanup.Invoke(ctx), err
 	}
+	packages := []string{}
 	driver, err := d.GraphicsDriver(ctx)
 	if err != nil {
 		return nil, err
 	}
-	packages := []string{driver.Package}
+	if driver.Package != "" {
+		packages = append(packages, driver.Package)
+	}
 	if abi != nil {
 		packages = append(packages, gapidapk.PackageName(abi))
 	}
@@ -132,15 +135,19 @@ func Start(ctx context.Context, d adb.Device, a *android.ActivityAction, opts *s
 			"activity": a.Activity,
 		}.Bind(ctx)
 
+		packages := []string{}
 		supported, packageName, nextCleanup, err := d.PrepareGpuProfiling(ctx, a.Package)
 		cleanup = cleanup.Then(nextCleanup)
 		if err != nil || !supported {
 			return nil, cleanup.Invoke(ctx), log.Err(ctx, err, "GPU profiling is not supported")
 		}
+		if packageName != "" {
+			packages = append(packages, packageName)
+		}
 
 		// Setup the profiling layers.
 		hasRenderStages := hasDataSourceEnabled(opts.PerfettoConfig, gpuRenderStagesDataSourceName)
-		nextCleanup, err = setupProfileLayers(ctx, d, a.Package.Name, hasRenderStages, abi, []string{packageName}, layers)
+		nextCleanup, err = setupProfileLayers(ctx, d, a.Package.Name, hasRenderStages, abi, packages, layers)
 		cleanup = cleanup.Then(nextCleanup)
 		if err != nil {
 			return nil, cleanup.Invoke(ctx), err

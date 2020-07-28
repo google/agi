@@ -44,31 +44,17 @@ func SetupLayers(ctx context.Context, d Device, appPkg string, layerPkgs []strin
 		return d.SetSystemSetting(ctx, ns, key, val)
 	}
 
-	// Filter out empty package or layer names
-	filteredLayerPkgs := []string{}
-	for _, p := range layerPkgs {
-		if p != "" {
-			filteredLayerPkgs = append(filteredLayerPkgs, p)
-		}
-	}
-	filteredLayers := []string{}
-	for _, l := range layers {
-		if l != "" {
-			filteredLayers = append(filteredLayers, l)
-		}
-	}
-
 	if err := pushSetting("global", "enable_gpu_debug_layers", "1"); err != nil {
 		return cleanup.Invoke(ctx), err
 	}
 	if err := pushSetting("global", "gpu_debug_app", appPkg); err != nil {
 		return cleanup.Invoke(ctx), err
 	}
-	if err := pushSetting("global", "gpu_debug_layer_app", "\""+strings.Join(filteredLayerPkgs, ":")+"\""); err != nil {
+	if err := pushSetting("global", "gpu_debug_layer_app", "\""+strings.Join(layerPkgs, ":")+"\""); err != nil {
 		return cleanup.Invoke(ctx), err
 	}
 	if len(layers) > 0 {
-		if err := pushSetting("global", "gpu_debug_layers", "\""+strings.Join(filteredLayers, ":")+"\""); err != nil {
+		if err := pushSetting("global", "gpu_debug_layers", "\""+strings.Join(layers, ":")+"\""); err != nil {
 			return cleanup.Invoke(ctx), err
 		}
 	} else {
