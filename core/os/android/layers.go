@@ -30,7 +30,7 @@ func SupportsVulkanLayersViaSystemSettings(d Device) bool {
 	return apiVersion >= 28
 }
 
-// SetupLayer initializes d to use Vulkan layers from layerPkgs
+// SetupLayers initializes d to use Vulkan layers from layerPkgs
 // limited to the app with package appPkg using the system settings and returns
 // a cleanup to remove the layer settings.
 func SetupLayers(ctx context.Context, d Device, appPkg string, layerPkgs []string, layers []string) (app.Cleanup, error) {
@@ -44,17 +44,31 @@ func SetupLayers(ctx context.Context, d Device, appPkg string, layerPkgs []strin
 		return d.SetSystemSetting(ctx, ns, key, val)
 	}
 
+	// Filter out empty package or layer names
+	filteredLayerPkgs := []string{}
+	for _, p := range layerPkgs {
+		if p != "" {
+			filteredLayerPkgs = append(filteredLayerPkgs, p)
+		}
+	}
+	filteredLayers := []string{}
+	for _, l := range layers {
+		if l != "" {
+			filteredLayers = append(filteredLayers, l)
+		}
+	}
+
 	if err := pushSetting("global", "enable_gpu_debug_layers", "1"); err != nil {
 		return cleanup.Invoke(ctx), err
 	}
 	if err := pushSetting("global", "gpu_debug_app", appPkg); err != nil {
 		return cleanup.Invoke(ctx), err
 	}
-	if err := pushSetting("global", "gpu_debug_layer_app", "\""+strings.Join(layerPkgs, ":")+"\""); err != nil {
+	if err := pushSetting("global", "gpu_debug_layer_app", "\""+strings.Join(filteredLayerPkgs, ":")+"\""); err != nil {
 		return cleanup.Invoke(ctx), err
 	}
 	if len(layers) > 0 {
-		if err := pushSetting("global", "gpu_debug_layers", "\""+strings.Join(layers, ":")+"\""); err != nil {
+		if err := pushSetting("global", "gpu_debug_layers", "\""+strings.Join(filteredLayers, ":")+"\""); err != nil {
 			return cleanup.Invoke(ctx), err
 		}
 	} else {

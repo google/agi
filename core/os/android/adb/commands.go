@@ -499,7 +499,8 @@ func (b *binding) DriverVersionCode(ctx context.Context) (int, error) {
 // PrepareGpuProfiling queries GPU profiling support, and when profiling is supported it sets up
 // the device for profiling of installedPackage app. It returns:
 // - a bool which is true when GPU profiling is supported and the setup is done without errors
-// - a string that contains the name of the package where to find profiling layers
+// - a string that contains the name of the package where to find profiling layers, if profiling
+//   is supported by the system image, then this string is empty
 // - a cleanup function to revert the device settings after profiling is done
 // - an error to indicate if anything went wrong
 // The returned bool disambiguates between "an error happened" and "profiling is not supported".
