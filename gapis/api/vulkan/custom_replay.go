@@ -904,3 +904,37 @@ func (i AllocationCallbacks) value(b *builder.Builder, cmd api.Cmd, s *api.Globa
 	// allocator.
 	return value.AbsolutePointer(0)
 }
+
+func (cmd *VkWaitForFences) Mutate(ctx context.Context, id api.CmdID, inputState *api.GlobalState, builder *builder.Builder, watcher api.StateWatcher) error {
+	fenceState := findFenceState(cmd.Extras())
+	if builder == nil || fenceState == nil {
+		return cmd.mutate(ctx, id, inputState, builder, watcher)
+	}
+
+	if err := cmd.mutate(ctx, id, inputState, builder, watcher); err != nil {
+		return err
+	}
+
+	cb := CommandBuilder{Thread: cmd.Thread(), Arena: inputState.Arena}
+
+	allocated := []*api.AllocResult{}
+	defer func() {
+		for _, d := range allocated {
+			d.Free()
+		}
+	}()
+
+	fencesData := inputState.AllocDataOrPanic(ctx, fenceState.fences)
+	allocated = append(allocated, &fencesData)
+	valuesData := inputState.AllocDataOrPanic(ctx, fenceState.values)
+	allocated = append(allocated, &valuesData)
+	hijack := cb.ReplayWaitForFences(cmd.Device(),
+		uint64(len(fenceState.fences)),
+		NewVkSemaphoreᵖ(fencesData.Ptr()),
+		NewU64ᵖ(valuesData.Ptr()), cmd.Result())
+
+	for _, d := range allocated {
+		hijack.AddRead(d.Data())
+	}
+	return hijack.Mutate(ctx, id, inputState, builder, nil)
+}

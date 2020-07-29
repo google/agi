@@ -133,17 +133,7 @@ cmd VkResult vkGetFenceStatus(
   return res
 }
 
-@threadSafety("system")
-@indirect("VkDevice")
-@threadsafe
-@alive
-cmd VkResult vkWaitForFences(
-    VkDevice       device,
-    u32            fenceCount,
-    const VkFence* pFences,
-    VkBool32       waitAll,
-    u64            timeout) { /// timeout in nanoseconds
-  if !(device in Devices) { vkErrorInvalidDevice(device) }
+sub void WaitFences(VkDevice device, u32 fenceCount, const VkFence* pFences) {
   fences := pFences[0:fenceCount]
   for i in (0 .. fenceCount) {
     f := fences[i]
@@ -155,6 +145,23 @@ cmd VkResult vkWaitForFences(
       vkErrorInvalidFence(f)
     }
   }
+  fence
+  recordWaitedFences(device, fenceCount, pFences)
+}
+
+@threadSafety("system")
+@indirect("VkDevice")
+@threadsafe
+@alive
+@custom
+cmd VkResult vkWaitForFences(
+    VkDevice       device,
+    u32            fenceCount,
+    const VkFence* pFences,
+    VkBool32       waitAll,
+    u64            timeout) { /// timeout in nanoseconds
+  if !(device in Devices) { vkErrorInvalidDevice(device) }
+  WaitFences(device, fenceCount, pFences)
   return ?
 }
 
@@ -631,6 +638,7 @@ extern void recordEventSet(VkEvent event)
 extern void recordFenceSignal(VkFence fence)
 extern void recordFenceWait(VkFence fence)
 extern void recordFenceReset(VkFence fence)
+extern void recordWaitedFences(VkDevice device, u32 fenceCount, const VkFence* pFences)
 
 sub void processBarriers(VkPipelineStageFlags             srcStageMask,
                          VkPipelineStageFlags             dstStageMask,

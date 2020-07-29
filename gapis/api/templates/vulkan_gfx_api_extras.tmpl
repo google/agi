@@ -667,6 +667,45 @@ bool Vulkan::replayCreateVkDebugReportCallback(Stack* stack, bool pushReturn) {
     }
 }
 ¶
+bool Vulkan::replayWaitForFences(Stack* stack, bool pushReturn) {
+   auto expecteds = stack->pop<uint64_t*>();
+   auto fences = stack->pop<uint64_t*>();
+   auto count = stack->pop<uint64_t>();
+   auto device = static_cast<size_val>(stack->pop<size_val>());
+   if (stack->isValid()) {
+        GAPID_DEBUG("vkWaitForFences(%zu)", device);
+        uint32_t fence_status = VK_TIMEOUT;
+        for (uint64_t i = 0; i < count; ++i) {
+          auto expected = expecteds[i];
+          if (expected == VK_NOT_READY) {
+            continue;
+          }
+
+          if (expected == VK_ERROR_DEVICE_LOST) {
+            fence_status = VK_ERROR_DEVICE_LOST;
+            continue;
+          }
+
+          do {
+            fence_status = mVkDeviceFunctionStubs[device].vkGetFenceStatus(device, fences[i]);
+          } while (fence_status == VK_NOT_READY);
+
+          if (fence_status == VK_ERROR_DEVICE_LOST) {
+            break;
+          }
+        }
+
+        if (pushReturn) {
+            stack->push(fence_status);
+        }
+        return true;
+   }
+   else {
+        GAPID_WARNING("Error during calling function vkWaitForFences");
+        return false;
+   }
+}
+¶
 bool Vulkan::replayDestroyVkDebugReportCallback(Stack* stack) {
     uint32_t cmdLabel = ~0;
     auto callback = stack->pop<uint64_t>();
