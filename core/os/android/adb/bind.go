@@ -39,10 +39,14 @@ type Device interface {
 	RemoveForward(ctx context.Context, local Port) error
 	// GraphicsDriver queries and returns info about the prerelease graphics driver.
 	GraphicsDriver(ctx context.Context) (Driver, error)
-	// PrepareGpuProfiling queries GPU profiling support, and when supported it sets
-	// up the device for profiling of installedPackage. It returns a bool to indicate
-	// if GPU profiling is supported and setup is done, and when that's the case it
-	// also returns the package where to find profiling layers, and a cleanup.
+	// PrepareGpuProfiling queries GPU profiling support, and when profiling is supported it sets up
+	// the device for profiling of installedPackage app. It returns:
+	// - a bool which is true when GPU profiling is supported and the setup is done without errors
+	// - a string that contains the name of the package where to find profiling layers, this string
+	//   is empty if there is no profiling layer required
+	// - a cleanup function to revert the device settings after profiling is done
+	// - an error to indicate if anything went wrong
+	// The returned bool disambiguates between "an error happened" and "profiling is not supported".
 	PrepareGpuProfiling(ctx context.Context, installedPackage *android.InstalledPackage) (bool, string, app.Cleanup, error)
 }
 
