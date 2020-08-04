@@ -172,6 +172,16 @@ func Start(ctx context.Context, d adb.Device, a *android.ActivityAction, opts *s
 		}
 	}
 
+	// Enforce the AGI to launch the perfetto data producer, this will kill the
+	// running perfetto data producer and re-launch it if it's already running.
+	// And hence, any sequential update of the perfetto data producer or driver
+	// after device info is queried will likely lead to undefined behaviour due
+	// to potential driver behaviour change or counters set difference.
+	if err := gapidapk.EnsurePerfettoProducerLaunched(ctx, d); err != nil {
+		log.E(ctx, "Failed to start perfetto data producer: %v", err)
+		return nil, cleanup.Invoke(ctx), log.Err(ctx, err, "Failed to startperfetto data producer.")
+	}
+
 	// With the comsumer protocol, in Android 10 it causes a stall when
 	// traced_pros writes into file. In this case, don't create perfetto client,
 	// instead fall back to CLI.
