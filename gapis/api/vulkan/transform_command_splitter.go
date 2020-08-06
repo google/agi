@@ -134,15 +134,15 @@ func (splitTransform *commandSplitter) BeginTransform(ctx context.Context, input
 	return inputCommands, nil
 }
 
-func (splitTransform *commandSplitter) EndTransform(ctx context.Context, inputCommands []api.Cmd, inputState *api.GlobalState) ([]api.Cmd, error) {
-	return inputCommands, nil
+func (splitTransform *commandSplitter) EndTransform(ctx context.Context, inputState *api.GlobalState) ([]api.Cmd, error) {
+	return nil, nil
 }
 
 func (splitTransform *commandSplitter) ClearTransformResources(ctx context.Context) {
 	splitTransform.allocations.FreeAllocations()
 }
 
-func (splitTransform *commandSplitter) TransformCommand(ctx context.Context, id api.CmdID, inputCommands []api.Cmd, inputState *api.GlobalState) ([]api.Cmd, error) {
+func (splitTransform *commandSplitter) TransformCommand(ctx context.Context, id transform2.CommandID, inputCommands []api.Cmd, inputState *api.GlobalState) ([]api.Cmd, error) {
 	if len(inputCommands) == 0 {
 		return inputCommands, nil
 	}
@@ -150,7 +150,7 @@ func (splitTransform *commandSplitter) TransformCommand(ctx context.Context, id 
 	inRange := false
 	var topCut api.SubCmdIdx
 	cuts := []api.SubCmdIdx{}
-	thisID := api.SubCmdIdx{uint64(id)}
+	thisID := api.SubCmdIdx{uint64(id.GetID())}
 	for _, r := range splitTransform.requestsSubIndex {
 		if thisID.Contains(r) {
 			inRange = true
@@ -183,7 +183,7 @@ func (splitTransform *commandSplitter) TransformCommand(ctx context.Context, id 
 			}
 
 			queueSubmitProcessed = true
-			if err := splitTransform.modifyVkQueueSubmit(ctx, id, queueSubmitCmd, inputState, topCut, cuts); err != nil {
+			if err := splitTransform.modifyVkQueueSubmit(ctx, id.GetID(), queueSubmitCmd, inputState, topCut, cuts); err != nil {
 				log.E(ctx, "Failed during modifying VkQueueSubmit : %v", err)
 				return nil, err
 			}

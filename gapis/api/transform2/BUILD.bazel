@@ -19,6 +19,7 @@ go_library(
     srcs = [
         "transform.go",
         "transform_chain.go",
+        "command_id.go",
     ],
     importpath = "github.com/google/gapid/gapis/api/transform2",
     visibility = ["//visibility:public"],

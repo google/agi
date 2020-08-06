@@ -53,15 +53,15 @@ func (attachmentTransform *makeAttachmentReadable) BeginTransform(ctx context.Co
 	return inputCommands, nil
 }
 
-func (attachmentTransform *makeAttachmentReadable) EndTransform(ctx context.Context, inputCommands []api.Cmd, inputState *api.GlobalState) ([]api.Cmd, error) {
-	return inputCommands, nil
+func (attachmentTransform *makeAttachmentReadable) EndTransform(ctx context.Context, inputState *api.GlobalState) ([]api.Cmd, error) {
+	return nil, nil
 }
 
 func (attachmentTransform *makeAttachmentReadable) ClearTransformResources(ctx context.Context) {
 	attachmentTransform.allocations.FreeAllocations()
 }
 
-func (attachmentTransform *makeAttachmentReadable) TransformCommand(ctx context.Context, id api.CmdID, inputCommands []api.Cmd, inputState *api.GlobalState) ([]api.Cmd, error) {
+func (attachmentTransform *makeAttachmentReadable) TransformCommand(ctx context.Context, id transform2.CommandID, inputCommands []api.Cmd, inputState *api.GlobalState) ([]api.Cmd, error) {
 	for i, cmd := range inputCommands {
 		cmd.Extras().Observations().ApplyReads(inputState.Memory.ApplicationPool())
 
@@ -75,7 +75,7 @@ func (attachmentTransform *makeAttachmentReadable) TransformCommand(ctx context.
 		} else if createRenderPassCmd, ok := cmd.(*VkCreateRenderPass); ok && !attachmentTransform.imagesOnly {
 			modifiedCmd = attachmentTransform.makeRenderPassReadable(ctx, inputState, createRenderPassCmd)
 		} else if enumeratePhysicalDevicesCmd, ok := cmd.(*VkEnumeratePhysicalDevices); ok && !attachmentTransform.imagesOnly {
-			modifiedCmd = attachmentTransform.makePhysicalDevicesReadable(ctx, inputState, id, enumeratePhysicalDevicesCmd)
+			modifiedCmd = attachmentTransform.makePhysicalDevicesReadable(ctx, inputState, id.GetID(), enumeratePhysicalDevicesCmd)
 		} else if createBufferCmd, ok := cmd.(*VkCreateBuffer); ok {
 			modifiedCmd = attachmentTransform.makeBufferReadable(ctx, inputState, createBufferCmd)
 		}

@@ -53,19 +53,19 @@ func (dropTransform *dropInvalidDestroy) BeginTransform(ctx context.Context, inp
 	return inputCommands, nil
 }
 
-func (dropTransform *dropInvalidDestroy) EndTransform(ctx context.Context, inputCommands []api.Cmd, inputState *api.GlobalState) ([]api.Cmd, error) {
-	return inputCommands, nil
+func (dropTransform *dropInvalidDestroy) EndTransform(ctx context.Context, inputState *api.GlobalState) ([]api.Cmd, error) {
+	return nil, nil
 }
 
 func (dropTransform *dropInvalidDestroy) ClearTransformResources(ctx context.Context) {
 	dropTransform.allocations.FreeAllocations()
 }
 
-func (dropTransform *dropInvalidDestroy) TransformCommand(ctx context.Context, id api.CmdID, inputCommands []api.Cmd, inputState *api.GlobalState) ([]api.Cmd, error) {
+func (dropTransform *dropInvalidDestroy) TransformCommand(ctx context.Context, id transform2.CommandID, inputCommands []api.Cmd, inputState *api.GlobalState) ([]api.Cmd, error) {
 	outputCmds := make([]api.Cmd, 0)
 
 	for i, cmd := range inputCommands {
-		if newCmd := dropTransform.dropOrModifyCommand(ctx, inputState, id, i, cmd); newCmd != nil {
+		if newCmd := dropTransform.dropOrModifyCommand(ctx, inputState, id.GetID(), i, cmd); newCmd != nil {
 			outputCmds = append(outputCmds, newCmd)
 		}
 	}

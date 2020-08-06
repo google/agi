@@ -24,6 +24,7 @@ import (
 	"github.com/google/gapid/core/log"
 	"github.com/google/gapid/gapir"
 	"github.com/google/gapid/gapis/api"
+	"github.com/google/gapid/gapis/api/transform2"
 	"github.com/google/gapid/gapis/memory"
 	"github.com/google/gapid/gapis/replay"
 	"github.com/google/gapid/gapis/replay/builder"
@@ -87,30 +88,31 @@ func (timestampTransform *queryTimestamps) BeginTransform(ctx context.Context, i
 	return inputCommands, nil
 }
 
-func (timestampTransform *queryTimestamps) EndTransform(ctx context.Context, inputCommands []api.Cmd, inputState *api.GlobalState) ([]api.Cmd, error) {
+func (timestampTransform *queryTimestamps) EndTransform(ctx context.Context, inputState *api.GlobalState) ([]api.Cmd, error) {
+	cmds := make([]api.Cmd, 0)
 	cb := CommandBuilder{Thread: 0, Arena: inputState.Arena}
 
 	for _, queryPoolInfo := range timestampTransform.queryPools {
 		queryCommands := timestampTransform.getQueryResults(ctx, cb, inputState, queryPoolInfo)
-		inputCommands = append(inputCommands, queryCommands...)
+		cmds = append(cmds, queryCommands...)
 	}
 
 	cleanupCmds := timestampTransform.cleanup(ctx, inputState)
-	inputCommands = append(inputCommands, cleanupCmds...)
+	cmds = append(cmds, cleanupCmds...)
 
 	notifyCmd := timestampTransform.CreateNotifyInstruction(ctx, func() interface{} {
 		return timestampTransform.replayResult
 	})
-	inputCommands = append(inputCommands, notifyCmd)
+	cmds = append(cmds, notifyCmd)
 
-	return inputCommands, nil
+	return cmds, nil
 }
 
 func (timestampTransform *queryTimestamps) ClearTransformResources(ctx context.Context) {
 	timestampTransform.allocations.FreeAllocations()
 }
 
-func (timestampTransform *queryTimestamps) TransformCommand(ctx context.Context, id api.CmdID, inputCommands []api.Cmd, inputState *api.GlobalState) ([]api.Cmd, error) {
+func (timestampTransform *queryTimestamps) TransformCommand(ctx context.Context, id transform2.CommandID, inputCommands []api.Cmd, inputState *api.GlobalState) ([]api.Cmd, error) {
 	outputCmds := make([]api.Cmd, 0, len(inputCommands))
 
 	for i, cmd := range inputCommands {
@@ -120,7 +122,7 @@ func (timestampTransform *queryTimestamps) TransformCommand(ctx context.Context,
 			continue
 		}
 
-		newCommands := timestampTransform.modifyQueueSubmit(ctx, id, vkQueueSubmitCmd, inputState)
+		newCommands := timestampTransform.modifyQueueSubmit(ctx, id.GetID(), vkQueueSubmitCmd, inputState)
 		outputCmds = append(outputCmds, newCommands...)
 	}
 
@@ -609,14 +611,14 @@ func (timestampTransform *queryTimestamps) cleanup(ctx context.Context, inputSta
 	}
 
 	// Melih TODO: ask about this
-	// for commandPoolkey, commandPool := range timestampTransform.commandPools {
-	// 	cmd := cb.VkDestroyCommandPool(
-	// 		commandPoolkey.device,
-	// 		commandPool,
-	// 		memory.Nullptr,
-	// 	)
-	// 	outputCmds = append(outputCmds, cmd)
-	// }
+	for commandPoolkey, commandPool := range timestampTransform.commandPools {
+		cmd := cb.VkDestroyCommandPool(
+			commandPoolkey.device,
+			commandPool,
+			memory.Nullptr,
+		)
+		outputCmds = append(outputCmds, cmd)
+	}
 
 	timestampTransform.queryPools = make(map[VkQueue]*queryPoolInfo)
 	timestampTransform.commandPools = make(map[commandPoolKey]VkCommandPool)

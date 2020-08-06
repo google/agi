@@ -47,7 +47,7 @@ func (dropTransform *destroyResourcesAtEOS) BeginTransform(ctx context.Context, 
 	return inputCommands, nil
 }
 
-func (dropTransform *destroyResourcesAtEOS) EndTransform(ctx context.Context, inputCommands []api.Cmd, inputState *api.GlobalState) ([]api.Cmd, error) {
+func (dropTransform *destroyResourcesAtEOS) EndTransform(ctx context.Context, inputState *api.GlobalState) ([]api.Cmd, error) {
 	vulkanState := GetState(inputState)
 
 	cb := CommandBuilder{Thread: 0, Arena: inputState.Arena} // TODO: Check that using any old thread is okay.
@@ -181,10 +181,10 @@ func (dropTransform *destroyResourcesAtEOS) EndTransform(ctx context.Context, in
 		cleanupCommands = append(cleanupCommands, cb.VkDestroyInstance(handle, p))
 	}
 
-	return append(inputCommands, cleanupCommands...), nil
+	return cleanupCommands, nil
 }
 
-func (dropTransform *destroyResourcesAtEOS) TransformCommand(ctx context.Context, id api.CmdID, inputCommands []api.Cmd, inputState *api.GlobalState) ([]api.Cmd, error) {
+func (dropTransform *destroyResourcesAtEOS) TransformCommand(ctx context.Context, id transform2.CommandID, inputCommands []api.Cmd, inputState *api.GlobalState) ([]api.Cmd, error) {
 	return inputCommands, nil
 }
 

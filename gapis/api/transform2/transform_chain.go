@@ -31,7 +31,7 @@ type TransformChain struct {
 	generator             commandGenerator.CommandGenerator
 	hasBegun              bool
 	hasEnded              bool
-	currentCommandID      api.CmdID
+	currentCommandID      CommandID
 	currentTransformIndex int
 	mutator               StateMutator
 }
@@ -45,7 +45,7 @@ func CreateTransformChain(ctx context.Context, generator commandGenerator.Comman
 		out:              out,
 		hasBegun:         false,
 		hasEnded:         false,
-		currentCommandID: 0,
+		currentCommandID: NewCommandID(0, BeginCommand),
 		mutator:          nil,
 	}
 
@@ -72,6 +72,8 @@ func (chain *TransformChain) beginChain(ctx context.Context) error {
 	var err error
 	cmds := make([]api.Cmd, 0)
 
+	chain.currentCommandID.id = 0
+	chain.currentCommandID.commandType = BeginCommand
 	for _, transform := range chain.transforms {
 		cmds, err = transform.BeginTransform(ctx, cmds, chain.out.State())
 		if err != nil {
@@ -97,24 +99,23 @@ func (chain *TransformChain) beginChain(ctx context.Context) error {
 }
 
 func (chain *TransformChain) endChain(ctx context.Context) error {
-	var err error
-	cmds := make([]api.Cmd, 0)
-
-	for _, transform := range chain.transforms {
-		cmds, err = transform.EndTransform(ctx, cmds, chain.out.State())
+	chain.currentCommandID.id = 0
+	chain.currentCommandID.commandType = EndCommand
+	for i, transform := range chain.transforms {
+		cmds, err := transform.EndTransform(ctx, chain.out.State())
 		if err != nil {
-			log.W(ctx, "End Transform Error [%v] : %v", transform, err)
+			log.W(ctx, "End Transform Command Generation Error [%v] : %v", transform, err)
 			return err
 		}
 
-		if transform.RequiresAccurateState() {
-			// Melih TODO: Temporary check until we implement accurate state
-			panic("Implement accurate state")
+		if cmds == nil {
+			continue
 		}
-	}
 
-	if err = mutateAndWrite(ctx, 0, cmds, chain.out); err != nil {
-		return err
+		if err = chain.transformCommands(ctx, chain.currentCommandID, cmds, i+1); err != nil {
+			log.W(ctx, "End Transform Error [%v] : %v", transform, err)
+			return err
+		}
 	}
 
 	for _, transform := range chain.transforms {
@@ -124,7 +125,7 @@ func (chain *TransformChain) endChain(ctx context.Context) error {
 	return nil
 }
 
-func (chain *TransformChain) transformCommands(ctx context.Context, id api.CmdID, inputCmds []api.Cmd, beginTransformIndex int) error {
+func (chain *TransformChain) transformCommands(ctx context.Context, id CommandID, inputCmds []api.Cmd, beginTransformIndex int) error {
 	for i := beginTransformIndex; i < len(chain.transforms); i++ {
 		chain.currentTransformIndex = i
 		var err error
@@ -141,7 +142,7 @@ func (chain *TransformChain) transformCommands(ctx context.Context, id api.CmdID
 
 	}
 
-	if err := mutateAndWrite(ctx, id, inputCmds, chain.out); err != nil {
+	if err := mutateAndWrite(ctx, id.id, inputCmds, chain.out); err != nil {
 		return err
 	}
 
@@ -173,6 +174,7 @@ func (chain *TransformChain) GetNextTransformedCommands(ctx context.Context) err
 		return nil
 	}
 
+	chain.currentCommandID.commandType = TransformCommand
 	currentCommand := chain.generator.GetNextCommand(ctx)
 	if config.DebugReplay {
 		log.I(ctx, "Transforming... (%v:%v)", chain.currentCommandID, currentCommand)
@@ -185,7 +187,7 @@ func (chain *TransformChain) GetNextTransformedCommands(ctx context.Context) err
 		log.E(ctx, "Replay error (%v:%v): %v", chain.currentCommandID, currentCommand, err)
 	}
 
-	chain.currentCommandID++
+	chain.currentCommandID.id++
 	return err
 }
 
