@@ -144,12 +144,10 @@ public class ProfileView extends Composite implements Tab, Capture.Listener, Pro
   public void onSelectionChanged(Selection.MultiSelection selection) {
     Selection<?> selected = traceUi.getState().getSelection(Selection.Kind.Gpu);
 
-    for (Service.ProfilingData.GpuSlices.Slice slice : models.profile.getData().getSlices().getSlicesList()) {
-      if (selected.contains((long)slice.getId())) {
-        for (Service.ProfilingData.GpuSlices.Group group : models.profile.getData().getSlices().getGroupsList()) {
-          if (slice.getGroupId() == group.getId()) {
-            models.commands.selectCommands(CommandIndex.forCommand(group.getLink()), false);
-          }
+    if (selected instanceof TraceUi.GpuSliceTrack.GpuSlices) {
+      for (Service.ProfilingData.GpuSlices.Group group : models.profile.getData().getSlices().getGroupsList()) {
+        if (((TraceUi.GpuSliceTrack.GpuSlices)selected).groupIds.get(0) == group.getId()) {
+          models.commands.selectCommands(CommandIndex.forCommand(group.getLink()), false);
         }
       }
     }
@@ -361,12 +359,28 @@ public class ProfileView extends Composite implements Tab, Capture.Listener, Pro
         });
       }
 
-      private static Slices toSlices(Service.ProfilingData.GpuSlices.Slice serverSlice) {
-        return new Slices(Lists.newArrayList(serverSlice), "GPU Queue Events");
+      private static GpuSlices toSlices(Service.ProfilingData.GpuSlices.Slice serverSlice) {
+        return new GpuSlices(Lists.newArrayList(serverSlice), "GPU Queue Events");
       }
 
-      private static Slices toSlices(List<Service.ProfilingData.GpuSlices.Slice> serverSlices) {
-        return new Slices(serverSlices, "GPU Queue Events");
+      private static GpuSlices toSlices(List<Service.ProfilingData.GpuSlices.Slice> serverSlices) {
+        return new GpuSlices(serverSlices, "GPU Queue Events");
+      }
+
+      private static class GpuSlices extends Slices {
+        public final List<Long> groupIds = Lists.newArrayList();
+
+        public GpuSlices(List<Service.ProfilingData.GpuSlices.Slice> serverSlices, String title) {
+          super(serverSlices, title);
+
+          for (Service.ProfilingData.GpuSlices.Slice s : serverSlices) {
+            this.add(s.getGroupId());
+          }
+        }
+
+        private void add(long groupId) {
+          this.groupIds.add(groupId);
+        }
       }
     }
   }

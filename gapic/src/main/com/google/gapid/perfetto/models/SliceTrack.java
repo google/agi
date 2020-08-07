@@ -232,7 +232,7 @@ public abstract class SliceTrack extends Track<SliceTrack.Data> {/*extends Track
   }
 
   public static class Slices implements Selection<Slices> {
-    private int count = 0;
+    protected int count = 0;
     public final List<Long> ids = Lists.newArrayList();
     public final List<Long> times = Lists.newArrayList();
     public final List<Long> durs = Lists.newArrayList();
@@ -243,7 +243,7 @@ public abstract class SliceTrack extends Track<SliceTrack.Data> {/*extends Track
     public final List<Long> parentIds = Lists.newArrayList();
     public final List<ArgSet> argsets = Lists.newArrayList();   // So far only store non-empty argset when there's only 1 slice.
     public final Set<Long> sliceKeys = Sets.newHashSet();
-    private final String title;
+    protected final String title;
 
     public Slices(QueryEngine.Row row, ArgSet argset, String title) {
       this.title = title;
