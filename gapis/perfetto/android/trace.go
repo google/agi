@@ -172,11 +172,12 @@ func Start(ctx context.Context, d adb.Device, a *android.ActivityAction, opts *s
 		}
 	}
 
-	// Enforce the AGI to launch the perfetto data producer, this will kill the
-	// running perfetto data producer and re-launch it if it's already running.
-	// And hence, any sequential update of the perfetto data producer or driver
-	// after device info is queried will likely lead to undefined behaviour due
-	// to potential driver behaviour change or counters set difference.
+	// Forcefully re-launch the Perfetto data producer in case it has gotten into
+	// a bad state. This will kill any running producer and re-launch it.
+	// Note that this could lead to undefined behavior due to driver behavior
+	// changes or counters set differences (both are rare), if the driver was updated
+	// since the producer was last started (e.g. at device discovery time). This should
+	// be a very rare circumstance and can be fixed by restarting AGI.
 	if err := gapidapk.EnsurePerfettoProducerLaunched(ctx, d); err != nil {
 		log.E(ctx, "Failed to start perfetto data producer: %v", err)
 		return nil, cleanup.Invoke(ctx), log.Err(ctx, err, "Failed to startperfetto data producer.")
