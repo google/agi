@@ -253,6 +253,8 @@ func NewValue(v interface{}) *Value {
 		return &Value{Val: &Value_Event{v}}
 	case *Events:
 		return &Value{Val: &Value_Events{v}}
+	case *GpuPerformance:
+		return &Value{Val: &Value_GpuPerformance{v}}
 	case *Memory:
 		return &Value{Val: &Value_Memory{v}}
 	case *memory_box.Value:

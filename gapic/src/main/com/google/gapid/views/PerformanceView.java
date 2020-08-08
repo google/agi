@@ -19,9 +19,11 @@ import static com.google.gapid.util.Loadable.MessageType.Error;
 
 import com.google.gapid.models.Capture;
 import com.google.gapid.models.CommandStream;
+import com.google.gapid.models.CommandStream.Node;
 import com.google.gapid.models.Models;
 import com.google.gapid.models.Profile;
 import com.google.gapid.proto.service.Service;
+import com.google.gapid.proto.service.path.Path;
 import com.google.gapid.util.Loadable;
 import com.google.gapid.util.Messages;
 import com.google.gapid.widgets.LoadablePanel;
@@ -42,6 +44,7 @@ public class PerformanceView extends Composite
   private final Models models;
   private final LoadablePanel<PerfTree> loading;
   protected final PerfTree tree;
+  private Service.GpuPerformanceMetadata metadata;
 
   public PerformanceView(Composite parent, Models models, Widgets widgets) {
     super(parent, SWT.NONE);
@@ -105,9 +108,12 @@ public class PerformanceView extends Composite
       loading.showMessage(error);
       return;
     }
-    // Create columns for counters after profile get loaded, because we need to know counter numbers.
-    for (Service.ProfilingData.Counter counter : models.profile.getData().getCounters()) {
-      tree.addColumnForCounter(counter);
+    // Load all possible GPU performance data for the tree, now that profile is loaded.
+    models.commands.loadAllGpuPerfs(models.profile.getData().getGpuCrudePerfId());
+    // Create extra tree columns for all the performance metrics.
+    this.metadata = models.profile.getData().getGpuPerfMetadata();
+    for (Service.GpuPerformanceMetadata.Metric metric : metadata.getMetricsList()) {
+      tree.addColumnForMetric(metric);
     }
     tree.packColumn();
     tree.refresh();
@@ -134,6 +140,56 @@ public class PerformanceView extends Composite
     @Override
     protected boolean shouldShowImage(CommandStream.Node node) {
       return false;
+    }
+
+    @Override
+    protected ContentProvider<Node> createContentProvider() {
+      return new ContentProvider<CommandStream.Node>() {
+        @Override
+        protected boolean hasChildNodes(CommandStream.Node element) {
+          return element.getChildCount() > 0;
+        }
+
+        @Override
+        protected CommandStream.Node[] getChildNodes(CommandStream.Node node) {
+          return node.getChildren();
+        }
+
+        @Override
+        protected CommandStream.Node getParentNode(CommandStream.Node child) {
+          return child.getParent();
+        }
+
+        @Override
+        protected boolean isLoaded(CommandStream.Node element) {
+          return element.getData() != null;
+        }
+
+        @Override
+        protected void load(CommandStream.Node node, Runnable callback) {
+          Path.ID gpuPerformanceId = null;
+          if (models.profile.isLoaded() && models.profile.getData().profile.hasGpuCrudePerfId()) {
+            gpuPerformanceId = models.profile.getData().profile.getGpuCrudePerfId();
+          }
+          models.commands.load(node, gpuPerformanceId, callback);
+        }
+      };
+    }
+
+    private void addColumnForMetric(Service.GpuPerformanceMetadata.Metric metric) {
+      TreeViewerColumn column = addColumn(metric.getName(), node -> {
+        Service.CommandTreeNode data = node.getData();
+        if (data == null) {
+          return "";
+        } else if (!models.profile.isLoaded()) {
+          return "Profiling...";
+        } else if (node.getGpuPerf() != null && node.getGpuPerf().getResultMap().containsKey(metric.getId())){
+          return node.getGpuPerf().getResultMap().get(metric.getId()).toString() + metric.getUnit();
+        } else {
+          return "";
+        }
+      }, DURATION_WIDTH);
+      column.getColumn().setAlignment(SWT.RIGHT);
     }
 
     private void addColumnForCounter(Service.ProfilingData.Counter counter) {

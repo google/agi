@@ -126,6 +126,14 @@ public class Paths {
         .build();
   }
 
+  public static Path.Any gpuPerformance(Path.ID id, Path.Commands commands) {
+    return Path.Any.newBuilder()
+        .setGpuPerformance(Path.GpuPerformance.newBuilder()
+            .setID(id)
+            .setRange(commands))
+        .build();
+  }
+
   public static Path.State stateAfter(Path.Command command) {
     if (command == null) {
       return null;

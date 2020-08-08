@@ -17,11 +17,14 @@ package mali
 import (
 	"context"
 	"fmt"
+	"sort"
 
+	"github.com/google/gapid/core/data/id"
 	"github.com/google/gapid/core/log"
 	"github.com/google/gapid/core/os/device"
 	"github.com/google/gapid/gapis/api"
 	"github.com/google/gapid/gapis/api/sync"
+	"github.com/google/gapid/gapis/database"
 	"github.com/google/gapid/gapis/perfetto"
 	perfetto_service "github.com/google/gapid/gapis/perfetto/service"
 	"github.com/google/gapid/gapis/service"
@@ -52,7 +55,17 @@ func ProcessProfilingData(ctx context.Context, processor *perfetto.Processor, ca
 	if err != nil {
 		log.Err(ctx, err, "Failed to get GPU counters")
 	}
-	return &service.ProfilingData{Slices: slices, Counters: counters}, nil
+	perfMetadata, crudePerfId, err := processPerformances(ctx, slices, counters)
+	if err != nil {
+		log.Err(ctx, err, "Failed to calculate performance data based on GPU slices and counters")
+	}
+
+	return &service.ProfilingData{
+		Slices:          slices,
+		Counters:        counters,
+		GpuPerfMetadata: perfMetadata,
+		GpuCrudePerfId:  path.NewID(crudePerfId),
+	}, nil
 }
 
 func extractTraceHandles(ctx context.Context, replayHandles *[]int64, replayHandleType string, handleMapping *map[uint64][]service.VulkanHandleMappingItem) {
@@ -280,4 +293,105 @@ func processCounters(ctx context.Context, processor *perfetto.Processor, desc *d
 		}
 	}
 	return counters, nil
+}
+
+func processPerformances(ctx context.Context, slices *service.ProfilingData_GpuSlices, counters []*service.ProfilingData_Counter) (*service.GpuPerformanceMetadata, id.ID, error) {
+	// Filter out the slices that are at depth 0 and belong to a command,
+	// and then sort them based on the start time.
+	groupToCmd := make(map[int32]*path.Command)
+	for _, group := range slices.Groups {
+		groupToCmd[group.Id] = group.Link
+	}
+	filteredSlices := make([]*service.ProfilingData_GpuSlices_Slice, 0)
+	for i := 0; i < len(slices.Slices); i++ {
+		if slices.Slices[i].Depth == 0 && groupToCmd[slices.Slices[i].GroupId] != nil {
+			filteredSlices = append(filteredSlices, slices.Slices[i])
+		}
+	}
+	sort.Slice(filteredSlices, func(i, j int) bool {
+		return filteredSlices[i].Ts < filteredSlices[j].Ts
+	})
+
+	// Group slices based on their group id.
+	groupToSlices := make(map[int32][]*service.ProfilingData_GpuSlices_Slice)
+	for i := 0; i < len(filteredSlices); i++ {
+		groupId := filteredSlices[i].GroupId
+		groupToSlices[groupId] = append(groupToSlices[groupId], filteredSlices[i])
+	}
+
+	// Initialize the data structure for the returned result.
+	metadata := &service.GpuPerformanceMetadata{
+		// Allocate space for the returned result.
+		Metrics: make([]*service.GpuPerformanceMetadata_Metric, 0),
+	}
+	groupIds := make([]int32, 0)
+	commands := make([]*path.Command, 0)
+	perfs := make([]*service.GpuPerformance, 0)
+	for groupId := range groupToSlices {
+		groupIds = append(groupIds, groupId)
+		commands = append(commands, groupToCmd[groupId])
+		perfs = append(perfs, &service.GpuPerformance{
+			Result: make(map[uint32]float64),
+		})
+	}
+
+	// Calculate GPU Time Performance and GPU Wall Time Performance.
+	setTimeMetrics(metadata, groupIds, perfs, groupToSlices)
+
+	// Calculate GPU Counter Performances.
+
+	crudePerf := &service.GpuCrudePerformance{
+		Metadata: metadata,
+		GroupIds: groupIds,
+		Commands: commands,
+		Perfs:    perfs,
+	}
+
+	crudePerfId, err := database.Store(ctx, crudePerf)
+	if err != nil {
+		log.Err(ctx, err, "Failed to store crude gpu performance data into database.")
+	}
+
+	return metadata, crudePerfId, nil
+}
+
+func setTimeMetrics(metadata *service.GpuPerformanceMetadata, groupIds []int32, perfs []*service.GpuPerformance, groupToSlices map[int32][]*service.ProfilingData_GpuSlices_Slice) {
+	gpuTimeMetricId, gpuWallTimeMetricId := uint32(0), uint32(1)
+	metadata.Metrics = append(metadata.Metrics, &service.GpuPerformanceMetadata_Metric{
+		Id:   gpuTimeMetricId,
+		Name: "GPU Time",
+		Unit: "ns",
+		Op:   service.GpuPerformanceMetadata_Sum,
+	})
+	metadata.Metrics = append(metadata.Metrics, &service.GpuPerformanceMetadata_Metric{
+		Id:   gpuWallTimeMetricId,
+		Name: "GPU Wall Time",
+		Unit: "ns",
+		Op:   service.GpuPerformanceMetadata_Sum,
+	})
+	for i, groupId := range groupIds {
+		perf := perfs[i]
+		slices := groupToSlices[groupId]
+		gpuTime, wallTime := gpuTimeForGroup(slices)
+		perf.Result[gpuTimeMetricId] = float64(gpuTime)
+		perf.Result[gpuWallTimeMetricId] = float64(wallTime)
+	}
+}
+
+func gpuTimeForGroup(slices []*service.ProfilingData_GpuSlices_Slice) (uint64, uint64) {
+	gpuTime, wallTime := uint64(0), uint64(0)
+	lastEnd := uint64(0)
+	for _, slice := range slices {
+		duration := slice.Dur
+		gpuTime += duration
+		if slice.Ts < lastEnd {
+			if slice.Ts+slice.Dur <= lastEnd {
+				continue // completely contained within the other, can ignore it.
+			}
+			duration -= lastEnd - slice.Ts
+		}
+		wallTime += duration
+		lastEnd = slice.Ts + slice.Dur
+	}
+	return gpuTime, wallTime
 }

@@ -45,28 +45,29 @@ message Any {
     FramebufferAttachment framebuffer_attachment = 19;
     Field field = 20;
     GlobalState global_state = 21;
-    ImageInfo image_info = 22;
-    MapIndex map_index = 23;
-    Memory memory = 24;
-    MemoryAsType memoryAsType = 25;
-    Mesh mesh = 26;
-    Metrics metrics = 27;
-    Messages messages = 28;
-    MultiResourceData multi_resource_data = 29;
-    Parameter parameter = 30;
-    Pipelines pipelines = 31;
-    Report report = 32;
-    ResourceData resource_data = 33;
-    Resources resources = 34;
-    Result result = 35;
-    Slice slice = 36;
-    State state = 37;
-    StateTree state_tree = 38;
-    StateTreeNode state_tree_node = 39;
-    StateTreeNodeForPath state_tree_node_for_path = 40;
-    Stats stats = 41;
-    Thumbnail thumbnail = 42;
-    Type type = 43;
+    GpuPerformance gpu_performance = 22;
+    ImageInfo image_info = 23;
+    MapIndex map_index = 24;
+    Memory memory = 25;
+    MemoryAsType memoryAsType = 26;
+    Mesh mesh = 27;
+    Metrics metrics = 28;
+    Messages messages = 29;
+    MultiResourceData multi_resource_data = 30;
+    Parameter parameter = 31;
+    Pipelines pipelines = 32;
+    Report report = 33;
+    ResourceData resource_data = 34;
+    Resources resources = 35;
+    Result result = 36;
+    Slice slice = 37;
+    State state = 38;
+    StateTree state_tree = 39;
+    StateTreeNode state_tree_node = 40;
+    StateTreeNodeForPath state_tree_node_for_path = 41;
+    Stats stats = 42;
+    Thumbnail thumbnail = 43;
+    Type type = 44;
   }
 }
 
@@ -353,6 +354,15 @@ message CommandTreeNodeForCommand {
   ID tree = 1;
   // The command path.
   Command command = 2;
+}
+
+// GpuPerformance request a set of GPU performance data for a given range of
+// commands. Resolves to service.GpuPerformance.
+message GpuPerformance {
+  // The identifier to locate the pre-computed performance for command.
+  ID ID = 1;
+  // The command range for which to get the GPU performance data.
+  Commands range = 2;
 }
 
 // ImageInfo is a path that refers to a image.Info.

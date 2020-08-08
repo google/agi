@@ -173,6 +173,14 @@ public class Profile
       return profile.getCountersList();
     }
 
+    public Service.GpuPerformanceMetadata getGpuPerfMetadata() {
+      return profile.getGpuPerfMetadata();
+    }
+
+    public Path.ID getGpuCrudePerfId() {
+      return profile.getGpuCrudePerfId();
+    }
+
     public TimeSpan getSlicesTimeSpan() {
       if (!hasSlices()) {
         return TimeSpan.ZERO;
