@@ -423,14 +423,14 @@ func setGpuCounterMetrics(ctx context.Context, metadata *service.GpuPerformanceM
 	}
 }
 
-func counterPerfForGroup(slices []*service.ProfilingData_GpuSlices_Slice, counter *service.ProfilingData_Counter) (float64) {
+func counterPerfForGroup(slices []*service.ProfilingData_GpuSlices_Slice, counter *service.ProfilingData_Counter) float64 {
 	// Reduce overlapped counter samples size.
 	// Filter out the counter samples whose implicit range collides with `slices`'s gpu time.
 	rangeStart, rangeEnd := ^uint64(0), uint64(0)
 	ts, vs := make([]uint64, 0), make([]float64, 0)
 	for _, slice := range slices {
 		rangeStart = min(rangeStart, slice.Ts)
-		rangeEnd = max(rangeEnd, slice.Ts + slice.Dur)
+		rangeEnd = max(rangeEnd, slice.Ts+slice.Dur)
 	}
 	for i := range counter.Timestamps {
 		if i > 0 && counter.Timestamps[i-1] > rangeEnd {
@@ -446,10 +446,10 @@ func counterPerfForGroup(slices []*service.ProfilingData_GpuSlices_Slice, counte
 	}
 	// Aggregate counter samples.
 	// Contribution time is the overlapped time between a counter sample's implicit range and a gpu slice.
-	ctSum := uint64(0)      // Accumulation of contribution time.
-	weightedValuesum := float64(0)		// Accumulation of (counter value * counter's contribution time).
+	ctSum := uint64(0)             // Accumulation of contribution time.
+	weightedValuesum := float64(0) // Accumulation of (counter value * counter's contribution time).
 	for _, slice := range slices {
-		sStart, sEnd := slice.Ts, slice.Ts + slice.Dur
+		sStart, sEnd := slice.Ts, slice.Ts+slice.Dur
 		if ts[0] > sStart {
 			ct := min(ts[0], sEnd) - sStart
 			ctSum += ct
@@ -457,14 +457,14 @@ func counterPerfForGroup(slices []*service.ProfilingData_GpuSlices_Slice, counte
 		}
 		for i := 1; i < len(ts); i++ {
 			cStart, cEnd := ts[i-1], ts[i]
-			if cEnd < sStart {  // Sample earlier than GPU slice's span.
+			if cEnd < sStart { // Sample earlier than GPU slice's span.
 				continue
-			} else if cEnd < sEnd {  // Sample inside GPU slice's span.
+			} else if cEnd < sEnd { // Sample inside GPU slice's span.
 				ct := cEnd - max(cStart, sStart)
 				ctSum += ct
 				weightedValuesum += float64(ct) * vs[i]
-			} else {  // Sample later than GPU slice's span.
-				ct := max(0, sEnd - cStart)
+			} else { // Sample later than GPU slice's span.
+				ct := max(0, sEnd-cStart)
 				ctSum += ct
 				weightedValuesum += float64(ct) * vs[i]
 				break
