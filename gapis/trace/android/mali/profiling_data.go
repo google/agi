@@ -339,6 +339,7 @@ func processPerformances(ctx context.Context, slices *service.ProfilingData_GpuS
 	setTimeMetrics(metadata, groupIds, perfs, groupToSlices)
 
 	// Calculate GPU Counter Performances.
+	setGpuCounterMetrics(ctx, metadata, groupIds, perfs, groupToSlices, counters)
 
 	crudePerf := &service.GpuCrudePerformance{
 		Metadata: metadata,
@@ -394,4 +395,107 @@ func gpuTimeForGroup(slices []*service.ProfilingData_GpuSlices_Slice) (uint64, u
 		lastEnd = slice.Ts + slice.Dur
 	}
 	return gpuTime, wallTime
+}
+
+func setGpuCounterMetrics(ctx context.Context, metadata *service.GpuPerformanceMetadata, groupIds []int32, perfs []*service.GpuPerformance, groupToSlices map[int32][]*service.ProfilingData_GpuSlices_Slice, counters []*service.ProfilingData_Counter) {
+	// The metric ids 0 and 1 are assigned to GPU Time and GPU Wall Time correspondingly,
+	// The metric ids for counters start from 2.
+	counterMetricIdOffset := 2
+	for i, counter := range counters {
+		metricId := uint32(counterMetricIdOffset + i)
+		op := getCounterAggregationMethod(counter)
+		metadata.Metrics = append(metadata.Metrics, &service.GpuPerformanceMetadata_Metric{
+			Id:   metricId,
+			Name: counter.Name,
+			Unit: counter.Unit,
+			Op:   op,
+		})
+		if op != service.GpuPerformanceMetadata_TimeWeightedAvg {
+			log.E(ctx, "Counter aggregation method not implemented yet. Operation: %v", op)
+			continue
+		}
+		for i, groupId := range groupIds {
+			perf := perfs[i]
+			slices := groupToSlices[groupId]
+			counterPerf := counterPerfForGroup(slices, counter)
+			perf.Result[metricId] = counterPerf
+		}
+	}
+}
+
+func counterPerfForGroup(slices []*service.ProfilingData_GpuSlices_Slice, counter *service.ProfilingData_Counter) (float64) {
+	// Reduce overlapped counter samples size.
+	// Filter out the counter samples whose implicit range collides with `slices`'s gpu time.
+	rangeStart, rangeEnd := ^uint64(0), uint64(0)
+	ts, vs := make([]uint64, 0), make([]float64, 0)
+	for _, slice := range slices {
+		rangeStart = min(rangeStart, slice.Ts)
+		rangeEnd = max(rangeEnd, slice.Ts + slice.Dur)
+	}
+	for i := range counter.Timestamps {
+		if i > 0 && counter.Timestamps[i-1] > rangeEnd {
+			break
+		}
+		if counter.Timestamps[i] > rangeStart {
+			ts = append(ts, counter.Timestamps[i])
+			vs = append(vs, counter.Values[i])
+		}
+	}
+	if len(ts) == 0 {
+		return float64(-1)
+	}
+	// Aggregate counter samples.
+	// Contribution time is the overlapped time between a counter sample's implicit range and a gpu slice.
+	ctSum := uint64(0)      // Accumulation of contribution time.
+	weightedValuesum := float64(0)		// Accumulation of (counter value * counter's contribution time).
+	for _, slice := range slices {
+		sStart, sEnd := slice.Ts, slice.Ts + slice.Dur
+		if ts[0] > sStart {
+			ct := min(ts[0], sEnd) - sStart
+			ctSum += ct
+			weightedValuesum += float64(ct) * vs[0]
+		}
+		for i := 1; i < len(ts); i++ {
+			cStart, cEnd := ts[i-1], ts[i]
+			if cEnd < sStart {  // Sample earlier than GPU slice's span.
+				continue
+			} else if cEnd < sEnd {  // Sample inside GPU slice's span.
+				ct := cEnd - max(cStart, sStart)
+				ctSum += ct
+				weightedValuesum += float64(ct) * vs[i]
+			} else {  // Sample later than GPU slice's span.
+				ct := max(0, sEnd - cStart)
+				ctSum += ct
+				weightedValuesum += float64(ct) * vs[i]
+				break
+			}
+		}
+	}
+	// Return result.
+	if ctSum == 0 {
+		return float64(0)
+	} else {
+		return weightedValuesum / float64(ctSum)
+	}
+}
+
+func getCounterAggregationMethod(counter *service.ProfilingData_Counter) service.GpuPerformanceMetadata_AggregationOperator {
+	// TODO: Use time-weighted average to aggregate all counters for now. May need vendor's support. Bug tracked with b/158057709.
+	return service.GpuPerformanceMetadata_TimeWeightedAvg
+}
+
+func min(a, b uint64) uint64 {
+	if a < b {
+		return a
+	} else {
+		return b
+	}
+}
+
+func max(a, b uint64) uint64 {
+	if a > b {
+		return a
+	} else {
+		return b
+	}
 }

@@ -184,24 +184,10 @@ public class PerformanceView extends Composite
         } else if (!models.profile.isLoaded()) {
           return "Profiling...";
         } else if (node.getGpuPerf() != null && node.getGpuPerf().getResultMap().containsKey(metric.getId())){
-          return node.getGpuPerf().getResultMap().get(metric.getId()).toString() + metric.getUnit();
+          Double value = node.getGpuPerf().getResultMap().get(metric.getId());
+          return value.isNaN() || value.isInfinite() || value < 0 ? "" : value.toString() + metric.getUnit();
         } else {
           return "";
-        }
-      }, DURATION_WIDTH);
-      column.getColumn().setAlignment(SWT.RIGHT);
-    }
-
-    private void addColumnForCounter(Service.ProfilingData.Counter counter) {
-      TreeViewerColumn column = addColumn(counter.getName(), node -> {
-        Service.CommandTreeNode data = node.getData();
-        if (data == null) {
-          return "";
-        } else if (!models.profile.isLoaded()) {
-          return "Profiling...";
-        } else {
-          Double aggregation = models.profile.getData().getCounterAggregation(data.getCommands(), counter);
-          return aggregation.isNaN() ? "" : String.format("%.3f", aggregation);
         }
       }, DURATION_WIDTH);
       column.getColumn().setAlignment(SWT.RIGHT);
