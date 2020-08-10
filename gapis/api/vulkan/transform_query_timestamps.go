@@ -610,7 +610,6 @@ func (timestampTransform *queryTimestamps) cleanup(ctx context.Context, inputSta
 		outputCmds = append(outputCmds, cmd)
 	}
 
-	// Melih TODO: ask about this
 	for commandPoolkey, commandPool := range timestampTransform.commandPools {
 		cmd := cb.VkDestroyCommandPool(
 			commandPoolkey.device,
