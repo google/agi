@@ -995,18 +995,19 @@ void VulkanSpy::walkImageSubRng(
   }
 }
 
-void VulkanSpy::recordWaitedFences(
-  CallObserver* observer, VkDevice device, uint32_t fenceCount, VkFence const* pFences) {
-    auto it = mImports.mVkDeviceFunctions.find(device);
+void VulkanSpy::recordWaitedFences(CallObserver* observer, VkDevice device,
+                                   uint32_t fenceCount,
+                                   VkFence const* pFences) {
+  auto it = mImports.mVkDeviceFunctions.find(device);
 
-    vulkan_pb::FenceState state;
+  vulkan_pb::FenceState state;
 
-    for (size_t i = 0; i < fenceCount; ++i) {
-      state.add_fences(pFences[i]);
-      state.add_values(it->second.vkGetFenceStatus(device, pFences[i]));
-    }
+  for (size_t i = 0; i < fenceCount; ++i) {
+    state.add_fences(pFences[i]);
+    state.add_values(it->second.vkGetFenceStatus(device, pFences[i]));
+  }
 
-    observer->encode_message(&state);
+  observer->encode_message(&state);
 }
 
 }  // namespace gapii
