@@ -127,7 +127,6 @@ func (vtTransform *vulkanTerminator2) TransformCommand(ctx context.Context, id t
 		return nil, nil
 	}
 
-	// Melih TODO: Talk with Andrew for this(ref: early terminator).
 	outputCmds := make([]api.Cmd, 0)
 	for _, cmd := range inputCommands {
 		if vkQueueSubmitCmd, ok := cmd.(*VkQueueSubmit); ok {

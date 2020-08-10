@@ -735,7 +735,6 @@ func (splitTransform *commandSplitter) splitCommandBuffer(ctx context.Context, e
 
 				cbo := st.CommandBuffers().Get(ar.CommandBuffers().Get(uint32(j)))
 
-				// Melih TODO: This is VERY suspicious
 				if _, err := splitTransform.splitCommandBuffer(ctx, embedBuffer, cbo, queueSubmit, append(id, uint64(i), uint64(j)), newSubCuts, inputState); err != nil {
 					log.E(ctx, "Failed during splitting command buffer : %v", err)
 					return VkCommandBuffer(0), err

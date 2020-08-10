@@ -71,8 +71,7 @@ func (earlyTerminatorTransform *earlyTerminator) TransformCommand(ctx context.Co
 		return nil, nil
 	}
 
-	// Melih TODO: Talk with Andrew again. What happens with the cleanups.
-	if id.GetID() >= earlyTerminatorTransform.lastID {
+	if id.GetID() == earlyTerminatorTransform.lastID {
 		earlyTerminatorTransform.terminated = true
 	}
 
