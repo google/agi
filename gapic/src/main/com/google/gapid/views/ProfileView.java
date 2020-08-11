@@ -67,9 +67,12 @@ import org.eclipse.swt.widgets.Control;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 
 public class ProfileView extends Composite implements Tab, Capture.Listener, Profile.Listener, State.Listener {
   private final Models models;
+  protected static final Logger LOG = Logger.getLogger(ProfileView.class.getName());
 
   private final LoadablePanel<TraceUi> loading;
   private final TraceUi traceUi;
@@ -145,9 +148,20 @@ public class ProfileView extends Composite implements Tab, Capture.Listener, Pro
     Selection<?> selected = traceUi.getState().getSelection(Selection.Kind.Gpu);
 
     if (selected instanceof TraceUi.GpuSliceTrack.GpuSlices) {
-      for (Service.ProfilingData.GpuSlices.Group group : models.profile.getData().getSlices().getGroupsList()) {
-        if (((TraceUi.GpuSliceTrack.GpuSlices)selected).groupIds.get(0) == group.getId()) {
-          models.commands.selectCommands(CommandIndex.forCommand(group.getLink()), false);
+      long firstGroupId = -1;
+      for (int i = 0; i < ((TraceUi.GpuSliceTrack.GpuSlices)selected).groupIds.size(); i++) {
+        if (((TraceUi.GpuSliceTrack.GpuSlices)selected).groupIds.get(i) >= 0) {
+          firstGroupId = ((TraceUi.GpuSliceTrack.GpuSlices)selected).groupIds.get(i);
+          break;
+        }
+      }
+
+      if (firstGroupId != -1) {
+        for (Service.ProfilingData.GpuSlices.Group group : models.profile.getData().getSlices().getGroupsList()) {
+          if (firstGroupId == group.getId()) {
+            models.commands.selectCommands(CommandIndex.forCommand(group.getLink()), false);
+            break;
+          }
         }
       }
     }
@@ -374,12 +388,8 @@ public class ProfileView extends Composite implements Tab, Capture.Listener, Pro
           super(serverSlices, title);
 
           for (Service.ProfilingData.GpuSlices.Slice s : serverSlices) {
-            this.add(s.getGroupId());
+            groupIds.add((long)s.getGroupId());
           }
-        }
-
-        private void add(long groupId) {
-          this.groupIds.add(groupId);
         }
       }
     }
