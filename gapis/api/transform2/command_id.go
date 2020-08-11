@@ -34,15 +34,41 @@ type CommandID struct {
 	commandType CommandType
 }
 
-func NewCommandID(id api.CmdID, cmdType CommandType) CommandID {
+func NewTransformCommandID(id api.CmdID) CommandID {
 	return CommandID{
 		id:          id,
-		commandType: cmdType,
+		commandType: TransformCommand,
+	}
+}
+
+func NewBeginCommandID() CommandID {
+	return CommandID{
+		id:          0,
+		commandType: BeginCommand,
+	}
+}
+
+func NewEndCommandID() CommandID {
+	return CommandID{
+		id:          0,
+		commandType: EndCommand,
 	}
 }
 
 func (c *CommandID) GetID() api.CmdID {
+	if c.commandType != TransformCommand {
+		panic("cmdID should only exist for transform commands")
+	}
+
 	return c.id
+}
+
+func (c *CommandID) Increment() {
+	if c.commandType != TransformCommand {
+		panic("cmdID should only exist for transform commands")
+	}
+
+	c.id++
 }
 
 func (c *CommandID) GetCommandType() CommandType {

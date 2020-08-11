@@ -83,7 +83,11 @@ func (perfettoTransform *waitForPerfetto) EndTransform(ctx context.Context, inpu
 }
 
 func (perfettoTransform *waitForPerfetto) TransformCommand(ctx context.Context, id transform2.CommandID, inputCommands []api.Cmd, inputState *api.GlobalState) ([]api.Cmd, error) {
-	if id.GetCommandType() != transform2.TransformCommand || id.GetID() != perfettoTransform.beginProfileCmdID {
+	if id.GetCommandType() != transform2.TransformCommand {
+		return inputCommands, nil
+	}
+
+	if id.GetID() != perfettoTransform.beginProfileCmdID {
 		return inputCommands, nil
 	}
 

@@ -45,7 +45,7 @@ func CreateTransformChain(ctx context.Context, generator commandGenerator.Comman
 		out:              out,
 		hasBegun:         false,
 		hasEnded:         false,
-		currentCommandID: NewCommandID(0, BeginCommand),
+		currentCommandID: NewBeginCommandID(),
 		mutator:          nil,
 	}
 
@@ -72,8 +72,7 @@ func (chain *TransformChain) beginChain(ctx context.Context) error {
 	var err error
 	cmds := make([]api.Cmd, 0)
 
-	chain.currentCommandID.id = 0
-	chain.currentCommandID.commandType = BeginCommand
+	chain.currentCommandID = NewBeginCommandID()
 	for _, transform := range chain.transforms {
 		cmds, err = transform.BeginTransform(ctx, cmds, chain.out.State())
 		if err != nil {
@@ -99,8 +98,7 @@ func (chain *TransformChain) beginChain(ctx context.Context) error {
 }
 
 func (chain *TransformChain) endChain(ctx context.Context) error {
-	chain.currentCommandID.id = 0
-	chain.currentCommandID.commandType = EndCommand
+	chain.currentCommandID = NewEndCommandID()
 	for i, transform := range chain.transforms {
 		cmds, err := transform.EndTransform(ctx, chain.out.State())
 		if err != nil {
@@ -162,7 +160,9 @@ func (chain *TransformChain) IsEndOfCommands() bool {
 func (chain *TransformChain) GetNextTransformedCommands(ctx context.Context) error {
 	if !chain.hasBegun {
 		chain.hasBegun = true
-		return chain.beginChain(ctx)
+		err := chain.beginChain(ctx)
+		chain.currentCommandID = NewTransformCommandID(0)
+		return err
 	}
 
 	if chain.generator.IsEndOfCommands() {
@@ -174,7 +174,6 @@ func (chain *TransformChain) GetNextTransformedCommands(ctx context.Context) err
 		return nil
 	}
 
-	chain.currentCommandID.commandType = TransformCommand
 	currentCommand := chain.generator.GetNextCommand(ctx)
 	if config.DebugReplay {
 		log.I(ctx, "Transforming... (%v:%v)", chain.currentCommandID, currentCommand)
@@ -187,7 +186,7 @@ func (chain *TransformChain) GetNextTransformedCommands(ctx context.Context) err
 		log.E(ctx, "Replay error (%v:%v): %v", chain.currentCommandID, currentCommand, err)
 	}
 
-	chain.currentCommandID.id++
+	chain.currentCommandID.Increment()
 	return err
 }
 
