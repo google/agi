@@ -133,7 +133,18 @@ cmd VkResult vkGetFenceStatus(
   return res
 }
 
-sub void WaitFences(VkDevice device, u32 fenceCount, const VkFence* pFences) {
+@threadSafety("system")
+@indirect("VkDevice")
+@threadsafe
+@alive
+@custom
+cmd VkResult vkWaitForFences(
+    VkDevice       device,
+    u32            fenceCount,
+    const VkFence* pFences,
+    VkBool32       waitAll,
+    u64            timeout) { /// timeout in nanoseconds
+  if !(device in Devices) { vkErrorInvalidDevice(device) }
   fences := pFences[0:fenceCount]
   for i in (0 .. fenceCount) {
     f := fences[i]
@@ -147,21 +158,6 @@ sub void WaitFences(VkDevice device, u32 fenceCount, const VkFence* pFences) {
   }
   fence
   recordWaitedFences(device, fenceCount, pFences)
-}
-
-@threadSafety("system")
-@indirect("VkDevice")
-@threadsafe
-@alive
-@custom
-cmd VkResult vkWaitForFences(
-    VkDevice       device,
-    u32            fenceCount,
-    const VkFence* pFences,
-    VkBool32       waitAll,
-    u64            timeout) { /// timeout in nanoseconds
-  if !(device in Devices) { vkErrorInvalidDevice(device) }
-  WaitFences(device, fenceCount, pFences)
   return ?
 }
 

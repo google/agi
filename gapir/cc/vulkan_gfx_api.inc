@@ -122,9 +122,9 @@ bool replayEnumeratePhysicalDevices(Stack* stack, bool pushReturn);
 // during swapchain creation.
 bool replayCreateSwapchain(Stack* stack, bool pushReturn);
 
-// This will wait for fences, and block until all fences are
-// at the appropriate value. This is needed because the timeout may cause
-// replay behavior to diverge from trace behavior
+// Builtin function for waiting for fences, and block until all fences are
+// at the expected value. This is needed because the timeout may cause
+// replay behavior to diverge from trace behavior.
 bool replayWaitForFences(Stack* stack, bool pushReturn);
 
 // Builtin function for creating a debug report call back handle for pulling

@@ -930,7 +930,7 @@ func (cmd *VkWaitForFences) Mutate(ctx context.Context, id api.CmdID, inputState
 	allocated = append(allocated, &valuesData)
 	hijack := cb.ReplayWaitForFences(cmd.Device(),
 		uint64(len(fenceState.fences)),
-		NewVkSemaphoreᵖ(fencesData.Ptr()),
+		NewVkFenceᵖ(fencesData.Ptr()),
 		NewU64ᵖ(valuesData.Ptr()), cmd.Result())
 
 	for _, d := range allocated {
