@@ -24,7 +24,7 @@ import (
 
 type FenceState struct {
 	fences []VkFence
-	values []uint64
+	values []uint32
 }
 
 func init() {
@@ -32,7 +32,7 @@ func init() {
 		func(ctx context.Context, o *FenceState) (*vulkan_pb.FenceState, error) {
 			fs := &vulkan_pb.FenceState{
 				Fences: []uint64{},
-				Values: []uint64{},
+				Values: []uint32{},
 			}
 			for i := 0; i < len(o.fences); i++ {
 				fs.Fences = append(fs.Fences, uint64(o.fences[i]))
@@ -42,7 +42,7 @@ func init() {
 		}, func(ctx context.Context, p *vulkan_pb.FenceState) (*FenceState, error) {
 			fs := &FenceState{
 				[]VkFence{},
-				[]uint64{},
+				[]uint32{},
 			}
 			for i := 0; i < len(p.Fences); i++ {
 				fs.fences = append(fs.fences, VkFence(p.Fences[i]))

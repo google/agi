@@ -19,5 +19,5 @@ option go_package = "github.com/google/gapid/gapis/api/vulkan/vulkan_pb";
 
 message FenceState {
   repeated uint64 fences = 1;
-  repeated uint64 values = 2;
+  repeated uint32 values = 2;
 }
