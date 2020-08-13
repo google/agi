@@ -924,6 +924,13 @@ func (cmd *VkWaitForFences) Mutate(ctx context.Context, id api.CmdID, inputState
 		}
 	}()
 
+	var waitAll bool
+	if cmd.WaitAll() == 0 {
+		waitAll = false
+	} else {
+		waitAll = true
+	}
+
 	fencesData := inputState.AllocDataOrPanic(ctx, fenceState.fences)
 	allocated = append(allocated, &fencesData)
 	valuesData := inputState.AllocDataOrPanic(ctx, fenceState.values)
@@ -931,7 +938,10 @@ func (cmd *VkWaitForFences) Mutate(ctx context.Context, id api.CmdID, inputState
 	hijack := cb.ReplayWaitForFences(cmd.Device(),
 		uint64(len(fenceState.fences)),
 		NewVkFenceᵖ(fencesData.Ptr()),
-		NewU64ᵖ(valuesData.Ptr()), cmd.Result())
+		NewU64ᵖ(valuesData.Ptr()),
+		waitAll,
+		cmd.Timeout(),
+		cmd.Result())
 
 	for _, d := range allocated {
 		hijack.AddRead(d.Data())

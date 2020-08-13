@@ -262,8 +262,9 @@ cmd VkResult replayWaitForFences(
   VkDevice device,
   u64 count,
   VkFence* pFences,
-  u64* pExpected
-) {
+  u64* pExpected,
+  bool waitAll,
+  u64 timeout) {
   read(pExpected[0:count])
   read(pFences[0:count])
   return ?

@@ -668,31 +668,29 @@ bool Vulkan::replayCreateVkDebugReportCallback(Stack* stack, bool pushReturn) {
 }
 ¶
 bool Vulkan::replayWaitForFences(Stack* stack, bool pushReturn) {
+   auto timeout = stack->pop<uint64_t>();
+   auto waitAll = stack->pop<bool>();
    auto expecteds = stack->pop<uint64_t*>();
    auto fences = stack->pop<uint64_t*>();
    auto count = stack->pop<uint64_t>();
    auto device = static_cast<size_val>(stack->pop<size_val>());
    if (stack->isValid()) {
         GAPID_DEBUG("vkWaitForFences(%zu)", device);
-        uint32_t fence_status = VkResult::VK_TIMEOUT;
+
+        std::vector<uint64_t> newFences;
         for (uint64_t i = 0; i < count; ++i) {
-          auto expected = expecteds[i];
-          if (expected == VkResult::VK_NOT_READY) {
-            continue;
+          if (expecteds[i] == VkResult::VK_SUCCESS) {
+            newFences.push_back(fences[i]);
           }
+        }
 
-          if (expected == VkResult::VK_ERROR_DEVICE_LOST) {
-            fence_status = VkResult::VK_ERROR_DEVICE_LOST;
-            continue;
-          }
-
-          do {
-            fence_status = mVkDeviceFunctionStubs[device].vkGetFenceStatus(device, fences[i]);
-          } while (fence_status == VkResult::VK_NOT_READY);
-
-          if (fence_status == VkResult::VK_ERROR_DEVICE_LOST) {
-            break;
-          }
+        uint32_t fence_status = VkResult::VK_TIMEOUT;
+        if (newFences.empty()) {
+          fence_status = mVkDeviceFunctionStubs[device].vkWaitForFences(device,
+          count, fences, waitAll, timeout);
+        } else {
+          fence_status = mVkDeviceFunctionStubs[device].vkWaitForFences(device,
+            newFences.size(), newFences.data(), true, UINT64_MAX);
         }
 
         if (pushReturn) {
