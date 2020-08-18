@@ -23,21 +23,21 @@ import (
 )
 
 type FenceState struct {
-	fences []VkFence
-	values []uint32
+	fences   []VkFence
+	statuses []uint32
 }
 
 func init() {
 	protoconv.Register(
 		func(ctx context.Context, o *FenceState) (*vulkan_pb.FenceState, error) {
 			fs := &vulkan_pb.FenceState{
-				Fences: []uint64{},
-				Values: []uint32{},
+				Fences:   []uint64{},
+				Statuses: []uint32{},
 			}
 			for i := 0; i < len(o.fences); i++ {
 				fs.Fences = append(fs.Fences, uint64(o.fences[i]))
 			}
-			fs.Values = append(fs.Values, o.values...)
+			fs.Statuses = append(fs.Statuses, o.statuses...)
 			return fs, nil
 		}, func(ctx context.Context, p *vulkan_pb.FenceState) (*FenceState, error) {
 			fs := &FenceState{
@@ -47,7 +47,7 @@ func init() {
 			for i := 0; i < len(p.Fences); i++ {
 				fs.fences = append(fs.fences, VkFence(p.Fences[i]))
 			}
-			fs.values = append(fs.values, p.Values...)
+			fs.statuses = append(fs.statuses, p.Statuses...)
 			return fs, nil
 		})
 }

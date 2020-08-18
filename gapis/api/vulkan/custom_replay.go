@@ -906,13 +906,17 @@ func (i AllocationCallbacks) value(b *builder.Builder, cmd api.Cmd, s *api.Globa
 }
 
 func (cmd *VkWaitForFences) Mutate(ctx context.Context, id api.CmdID, inputState *api.GlobalState, builder *builder.Builder, watcher api.StateWatcher) error {
-	fenceState := findFenceState(cmd.Extras())
-	if builder == nil || fenceState == nil {
-		return cmd.mutate(ctx, id, inputState, builder, watcher)
-	}
-
 	if err := cmd.mutate(ctx, id, inputState, builder, watcher); err != nil {
 		return err
+	}
+
+	if builder == nil {
+		return nil
+	}
+
+	fenceState := findFenceState(cmd.Extras())
+	if fenceState == nil {
+		return nil
 	}
 
 	cb := CommandBuilder{Thread: cmd.Thread(), Arena: inputState.Arena}
@@ -933,12 +937,12 @@ func (cmd *VkWaitForFences) Mutate(ctx context.Context, id api.CmdID, inputState
 
 	fencesData := inputState.AllocDataOrPanic(ctx, fenceState.fences)
 	allocated = append(allocated, &fencesData)
-	valuesData := inputState.AllocDataOrPanic(ctx, fenceState.values)
-	allocated = append(allocated, &valuesData)
+	statusesData := inputState.AllocDataOrPanic(ctx, fenceState.statuses)
+	allocated = append(allocated, &statusesData)
 	hijack := cb.ReplayWaitForFences(cmd.Device(),
 		uint64(len(fenceState.fences)),
 		NewVkFenceᵖ(fencesData.Ptr()),
-		NewU64ᵖ(valuesData.Ptr()),
+		NewU64ᵖ(statusesData.Ptr()),
 		waitAll,
 		cmd.Timeout(),
 		cmd.Result())

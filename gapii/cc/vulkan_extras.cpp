@@ -1004,7 +1004,7 @@ void VulkanSpy::recordWaitedFences(CallObserver* observer, VkDevice device,
 
   for (size_t i = 0; i < fenceCount; ++i) {
     state.add_fences(pFences[i]);
-    state.add_values(it->second.vkGetFenceStatus(device, pFences[i]));
+    state.add_statuses(it->second.vkGetFenceStatus(device, pFences[i]));
   }
 
   observer->encode_message(&state);
