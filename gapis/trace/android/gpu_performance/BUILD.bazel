@@ -1,0 +1,15 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["gpu_performance.go"],
+    importpath = "github.com/google/gapid/gapis/trace/android/gpu_performance",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//core/data/id:go_default_library",
+        "//core/log:go_default_library",
+        "//gapis/database:go_default_library",
+        "//gapis/service:go_default_library",
+        "//gapis/service/path:go_default_library",
+    ],
+)

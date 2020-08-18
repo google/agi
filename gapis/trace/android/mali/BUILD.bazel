@@ -23,16 +23,15 @@ go_library(
     importpath = "github.com/google/gapid/gapis/trace/android/mali",
     visibility = ["//visibility:public"],
     deps = [
-        "//core/data/id:go_default_library",
         "//core/log:go_default_library",
         "//core/os/device:go_default_library",
         "//gapis/api:go_default_library",
         "//gapis/api/sync:go_default_library",
-        "//gapis/database:go_default_library",
         "//gapis/perfetto:go_default_library",
         "//gapis/perfetto/service:go_default_library",
         "//gapis/service:go_default_library",
         "//gapis/service/path:go_default_library",
+        "//gapis/trace/android/gpu_performance:go_default_library",
         "//gapis/trace/android/validate:go_default_library",
     ],
 )
