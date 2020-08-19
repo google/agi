@@ -27,6 +27,7 @@ import static java.util.stream.Collectors.toSet;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gapid.perfetto.TimeSpan;
 import com.google.gapid.proto.service.Service;
@@ -40,6 +41,7 @@ import com.google.gapid.util.Loadable;
 import com.google.gapid.util.Paths;
 import com.google.gapid.util.Ranges;
 
+import java.util.stream.Collectors;
 import org.eclipse.swt.widgets.Shell;
 
 import java.util.Collections;
@@ -133,12 +135,14 @@ public class Profile
     public final Service.ProfilingData profile;
     private final Map<Integer, List<TimeSpan>> spansByGroup;
     private final List<Service.ProfilingData.GpuSlices.Group> groups;
+    private final Map<String, Map<Integer, Double>> perfLookup; // commandIndex -> {metricId -> performanceValue}
 
     public Data(Path.Device device, Service.ProfilingData profile) {
       super(device);
       this.profile = profile;
       this.spansByGroup = aggregateSliceTimeByGroup(profile);
       this.groups = getSortedGroups(profile, spansByGroup.keySet());
+      this.perfLookup = organizeGpuPerformances(profile.getGpuPerf());
     }
 
     private static Map<Integer, List<TimeSpan>>
@@ -160,6 +164,14 @@ public class Profile
           .collect(toList());
     }
 
+    private Map<String, Map<Integer, Double>> organizeGpuPerformances(Service.ProfilingData.GpuPerformance perf) {
+      Map<String, Map<Integer, Double>> organized = Maps.newHashMap();
+      for (Service.ProfilingData.GpuPerformance.Entry entry : perf.getEntriesList()) {
+        organized.put(stringfy(entry.getCommandIndexList()), entry.getMetricToValueMap());
+      }
+      return organized;
+    }
+
     public boolean hasSlices() {
       return profile.getSlices().getSlicesCount() > 0 &&
           profile.getSlices().getTracksCount() > 0;
@@ -173,12 +185,8 @@ public class Profile
       return profile.getCountersList();
     }
 
-    public Service.GpuPerformanceMetadata getGpuPerfMetadata() {
-      return profile.getGpuPerfMetadata();
-    }
-
-    public Path.ID getGpuCrudePerfId() {
-      return profile.getGpuCrudePerfId();
+    public Service.ProfilingData.GpuPerformance getGpuPerformance() {
+      return profile.getGpuPerf();
     }
 
     public TimeSpan getSlicesTimeSpan() {
@@ -192,6 +200,13 @@ public class Profile
         end = Math.max(slice.getTs() + slice.getDur(), end);
       }
       return new TimeSpan(start, end);
+    }
+
+    public Double getGpuPerformance(List<Long> commandIndex, int metricId) {
+      if (!perfLookup.containsKey(stringfy(commandIndex))) {
+        return Double.NaN;
+      }
+      return perfLookup.get(stringfy(commandIndex)).get(metricId);
     }
 
     public Duration getDuration(Path.Commands range) {
@@ -235,6 +250,10 @@ public class Profile
       }
       Collections.sort(spans, (s1, s2) -> Long.compare(s1.start, s2.start));
       return spans;
+    }
+
+    private static String stringfy(List<Long> index) {
+      return index.stream().map(String::valueOf).collect(Collectors.joining(","));
     }
   }
 

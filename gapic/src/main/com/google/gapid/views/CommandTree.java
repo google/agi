@@ -135,7 +135,7 @@ public class CommandTree extends Composite
         if (node != null) {
           CommandIndex index = node.getIndex();
           if (index == null) {
-            models.commands.load(node, null, () -> models.commands.selectCommands(node.getIndex(), false));
+            models.commands.load(node, () -> models.commands.selectCommands(node.getIndex(), false));
           } else {
             commandIdx.setText(COMMAND_INDEX_DSCRP + node.getIndexString());
             models.commands.selectCommands(index, false);
@@ -319,6 +319,12 @@ public class CommandTree extends Composite
       this.models = models;
       this.widgets = widgets;
 
+      addGpuPerformanceColumn();
+    }
+
+    protected void addGpuPerformanceColumn() {
+      // The command tree's GPU performances are calculated from client's side.
+      setUpStateForColumnAdding();
       addColumn("GPU Time", false);
       addColumn("Wall Time", true);
     }
@@ -367,7 +373,7 @@ public class CommandTree extends Composite
 
         @Override
         protected void load(CommandStream.Node node, Runnable callback) {
-          models.commands.load(node, null, callback);
+          models.commands.load(node, callback);
         }
       };
     }

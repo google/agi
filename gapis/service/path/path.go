@@ -76,7 +76,6 @@ func (n *FramebufferAttachments) Path() *Any    { return &Any{Path: &Any_Framebu
 func (n *FramebufferAttachment) Path() *Any     { return &Any{Path: &Any_FramebufferAttachment{n}} }
 func (n *Field) Path() *Any                     { return &Any{Path: &Any_Field{n}} }
 func (n *GlobalState) Path() *Any               { return &Any{Path: &Any_GlobalState{n}} }
-func (n *GpuPerformance) Path() *Any            { return &Any{Path: &Any_GpuPerformance{n}} }
 func (n *ImageInfo) Path() *Any                 { return &Any{Path: &Any_ImageInfo{n}} }
 func (n *MapIndex) Path() *Any                  { return &Any{Path: &Any_MapIndex{n}} }
 func (n *Memory) Path() *Any                    { return &Any{Path: &Any_Memory{n}} }
@@ -119,7 +118,6 @@ func (n FramebufferAttachments) Parent() Node    { return n.After }
 func (n FramebufferAttachment) Parent() Node     { return n.After }
 func (n Field) Parent() Node                     { return oneOfNode(n.Struct) }
 func (n GlobalState) Parent() Node               { return n.After }
-func (n GpuPerformance) Parent() Node            { return n.Range }
 func (n ImageInfo) Parent() Node                 { return nil }
 func (n MapIndex) Parent() Node                  { return oneOfNode(n.Map) }
 func (n Memory) Parent() Node                    { return n.After }
@@ -159,7 +157,6 @@ func (n *FramebufferObservation) SetParent(p Node)    { n.Command, _ = p.(*Comma
 func (n *FramebufferAttachments) SetParent(p Node)    { n.After, _ = p.(*Command) }
 func (n *FramebufferAttachment) SetParent(p Node)     { n.After, _ = p.(*Command) }
 func (n *GlobalState) SetParent(p Node)               { n.After, _ = p.(*Command) }
-func (n *GpuPerformance) SetParent(p Node)            { n.Range, _ = p.(*Commands) }
 func (n *ImageInfo) SetParent(p Node)                 {}
 func (n *Memory) SetParent(p Node)                    { n.After, _ = p.(*Command) }
 func (n *MemoryAsType) SetParent(p Node)              { n.After, _ = p.(*Command) }
@@ -246,9 +243,6 @@ func (n FramebufferAttachment) Format(f fmt.State, c rune) {
 
 // Format implements fmt.Formatter to print the path.
 func (n GlobalState) Format(f fmt.State, c rune) { fmt.Fprintf(f, "%v.global-state", n.Parent()) }
-
-// Format implements fmt.Formatter to print the path.
-func (n GpuPerformance) Format(f fmt.State, c rune) { fmt.Fprintf(f, "%v.gpu-performance", n.Parent()) }
 
 // Format implements fmt.Formatter to print the path.
 func (n ImageInfo) Format(f fmt.State, c rune) { fmt.Fprintf(f, "image-info<%x>", n.ID) }

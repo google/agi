@@ -18,7 +18,6 @@ package com.google.gapid.models;
 import static com.google.gapid.proto.service.memory.Memory.PoolNames.Application_VALUE;
 import static com.google.gapid.util.Paths.command;
 import static com.google.gapid.util.Paths.commandTree;
-import static com.google.gapid.util.Paths.gpuPerformance;
 import static com.google.gapid.util.Paths.lastCommand;
 import static com.google.gapid.util.Paths.observationsAfter;
 import static com.google.gapid.widgets.Widgets.submitIfNotDisposed;
@@ -26,7 +25,6 @@ import static java.util.logging.Level.FINE;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
@@ -44,7 +42,6 @@ import com.google.gapid.util.MoreFutures;
 import com.google.gapid.util.Paths;
 
 import com.google.gapid.views.Formatter;
-import java.util.List;
 import org.eclipse.swt.widgets.Shell;
 
 import java.util.concurrent.ExecutionException;
@@ -127,11 +124,8 @@ public class CommandStream
             value.getCommand()));
   }
 
-  public void load(Node node, Path.ID gpuPerformanceId, Runnable callback) {
+  public void load(Node node, Runnable callback) {
     ListenableFuture<Node> future = load(node);
-    if (gpuPerformanceId != null && future != null) {
-      future = MoreFutures.transformAsync(future, n -> node.loadGpuPerf(client, gpuPerformanceId));
-    }
     if (future != null) {
       Rpc.listen(future, new UiCallback<Node, Node>(shell, LOG) {
         @Override
@@ -146,12 +140,6 @@ public class CommandStream
         }
       });
     }
-  }
-
-  // Load all possible GPU performance data for the whole tree, based on the current expanding state.
-  public void loadAllGpuPerfs(Path.ID id) {
-    CommandStream.Node root = this.getData();
-    root.loadAllGpuPerfs(client, id);
   }
 
   public ListenableFuture<Service.FindResponse> search(
@@ -326,7 +314,6 @@ public class CommandStream
     private Node[] children;
     private Service.CommandTreeNode data;
     private API.Command command;
-    private Service.GpuPerformance gpuPerf;
     private ListenableFuture<Node> loadFuture;
 
     public Node(Path.Device device, Service.CommandTreeNode data) {
@@ -381,10 +368,6 @@ public class CommandStream
       return command;
     }
 
-    public Service.GpuPerformance getGpuPerf() {
-      return gpuPerf;
-    }
-
     public Path.CommandTreeNode.Builder getPath(Path.CommandTreeNode.Builder path) {
       return parent.getPath(path).addIndices(index);
     }
@@ -419,33 +402,6 @@ public class CommandStream
           loadFuture = null; // Don't hang on to listeners.
           return Node.this;
         }));
-    }
-
-    // Load GPU performance data for the current node itself.
-    public ListenableFuture<Node> loadGpuPerf(Client client, Path.ID gpuPerformanceId) {
-      if (gpuPerf != null) {
-        // Already loaded.
-        return null;
-      }
-      if (data == null || gpuPerformanceId == null) {
-        // No prerequisite data for loading gpu performance.
-        return null;
-      }
-      return MoreFutures.transform(
-          client.get(gpuPerformance(gpuPerformanceId, data.getCommands()), device), value ->{
-            gpuPerf = value.getGpuPerformance();
-            return Node.this;
-          });
-    }
-
-    // Load GPU performance data for the current node's children and itself.
-    public void loadAllGpuPerfs(Client client, Path.ID gpuPerformanceId) {
-      List<ListenableFuture<Node>> childrenResults = Lists.newArrayList();
-      for (Node child : children) {
-        childrenResults.add(child.loadGpuPerf(client, gpuPerformanceId));
-      }
-      MoreFutures.transformAsync(Futures.allAsList(childrenResults), $ ->
-          loadGpuPerf(client, gpuPerformanceId));
     }
 
     @Override

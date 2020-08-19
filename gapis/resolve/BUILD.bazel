@@ -35,7 +35,6 @@ go_library(
         "framebuffer_changes.go",
         "framebuffer_observation.go",
         "get.go",
-        "gpu_performance.go",
         "index_limits.go",
         "memory.go",
         "mesh.go",

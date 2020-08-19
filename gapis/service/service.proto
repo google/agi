@@ -70,20 +70,19 @@ message Value {
     ConstantSet constant_set = 7;
     Event event = 8;
     Events events = 9;
-    GpuPerformance gpuPerformance = 10;
-    Memory memory = 11;
-    Messages messages = 12;
-    path.Any path = 13;
-    Report report = 14;
-    Resources resources = 15;
-    StateTree state_tree = 16;
-    StateTreeNode state_tree_node = 17;
-    Stats stats = 18;
-    Thread thread = 19;
-    Threads threads = 20;
+    Memory memory = 10;
+    Messages messages = 11;
+    path.Any path = 12;
+    Report report = 13;
+    Resources resources = 14;
+    StateTree state_tree = 15;
+    StateTreeNode state_tree_node = 16;
+    Stats stats = 17;
+    Thread thread = 18;
+    Threads threads = 19;
 
-    device.Instance device = 21;
-    DeviceTraceConfiguration traceConfig = 22;
+    device.Instance device = 20;
+    DeviceTraceConfiguration traceConfig = 21;
 
     api.Command command = 30;
     api.ResourceData resource_data = 31;
@@ -1272,46 +1271,35 @@ message ProfilingData {
     repeated double values = 7;
   }
 
+  // GpuPerformance contains aggregated GPU performance result, the aggregation
+  // happens inside each GPU slices groups, and on multiple metrics.
+  message GpuPerformance {
+    // Metric contains metadata describing an interested GPU performance
+    // dimension.
+    message Metric {
+      enum AggregationOperator {
+        Summation = 0;
+        TimeWeightedAvg = 1;
+      }
+      int32 id = 1;
+      string name = 2;
+      string unit = 3;
+      AggregationOperator op = 4;
+    }
+
+    // Entry contains performance data for a specific command.
+    message Entry {
+      repeated uint64 command_index = 1;
+      map<int32, double> metric_to_value = 2;  // Metric.id -> perf value.
+    }
+
+    repeated Metric metrics = 1;
+    repeated Entry entries = 2;
+  }
+
   GpuSlices slices = 1;
   repeated Counter counters = 2;
-  GpuPerformanceMetadata gpu_perf_metadata = 3;
-  path.ID gpu_crude_perf_id = 4;
-}
-
-// GpuPerformanceMetadata contains format information for the GPU Performance
-// metrics.
-message GpuPerformanceMetadata {
-  enum AggregationOperator {
-    Sum = 0;
-    TimeWeightedAvg = 1;
-  }
-
-  message Metric {
-    uint32 id = 1;
-    string name = 2;
-    string unit = 3;
-    AggregationOperator op = 4;
-  }
-
-  repeated Metric metrics = 1;
-}
-
-// GpuPerformance contains the actual performance values for a single command,
-// or a command node containing multiple commands.
-message GpuPerformance {
-  map<uint32, double> result = 1;  // mertricId -> performance result.
-}
-
-// GpuCrudePerformance records some crude performance result, the granularity of
-// which is performance for each single command.
-// This information will be stored into gapis database, which will help reduce
-// re-computation cost when a GPU performance request for a dynamic command
-// range comes to gapis.
-message GpuCrudePerformance {
-  GpuPerformanceMetadata metadata = 1;
-  repeated int32 groupIds = 2;
-  repeated path.Command commands = 3;
-  repeated GpuPerformance perfs = 4;
+  GpuPerformance gpu_perf = 3;
 }
 
 message VulkanHandleMappingItem {

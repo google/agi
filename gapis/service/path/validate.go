@@ -203,11 +203,6 @@ func (n *GlobalState) Validate() error {
 }
 
 // Validate checks the path is valid.
-func (n *GpuPerformance) Validate() error {
-	return checkNotNilAndValidate(n, n.Range, "range")
-}
-
-// Validate checks the path is valid.
 func (n *ImageInfo) Validate() error {
 	return checkNotNilAndValidate(n, n.ID, "id")
 }

@@ -17,24 +17,35 @@ package gpu_performance
 import (
 	"context"
 	"sort"
+	"strconv"
+	"strings"
 
-	"github.com/google/gapid/core/data/id"
 	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/gapis/database"
 	"github.com/google/gapid/gapis/service"
-	"github.com/google/gapid/gapis/service/path"
 )
 
-func ProcessPerformances(ctx context.Context, slices *service.ProfilingData_GpuSlices, counters []*service.ProfilingData_Counter) (*service.GpuPerformanceMetadata, id.ID, error) {
+const (
+	gpuTimeMetricId       int32 = 0
+	gpuWallTimeMetricId   int32 = 1
+	counterMetricIdOffset int32 = 2
+)
+
+// For CPU commands, calculate their summarized GPU performance.
+func ProcessPerformances(ctx context.Context, slices *service.ProfilingData_GpuSlices, counters []*service.ProfilingData_Counter) (*service.ProfilingData_GpuPerformance, error) {
+	metrics := make([]*service.ProfilingData_GpuPerformance_Metric, 0)
+
 	// Filter out the slices that are at depth 0 and belong to a command,
-	// and then sort them based on the start time.
-	groupToCmd := make(map[int32]*path.Command)
+	// then sort them based on the start time.
+	groupToEntry := make(map[int32]*service.ProfilingData_GpuPerformance_Entry)
 	for _, group := range slices.Groups {
-		groupToCmd[group.Id] = group.Link
+		groupToEntry[group.Id] = &service.ProfilingData_GpuPerformance_Entry{
+			CommandIndex:  group.Link.Indices,
+			MetricToValue: make(map[int32]float64),
+		}
 	}
 	filteredSlices := make([]*service.ProfilingData_GpuSlices_Slice, 0)
 	for i := 0; i < len(slices.Slices); i++ {
-		if slices.Slices[i].Depth == 0 && groupToCmd[slices.Slices[i].GroupId] != nil {
+		if slices.Slices[i].Depth == 0 && groupToEntry[slices.Slices[i].GroupId] != nil {
 			filteredSlices = append(filteredSlices, slices.Slices[i])
 		}
 	}
@@ -49,66 +60,51 @@ func ProcessPerformances(ctx context.Context, slices *service.ProfilingData_GpuS
 		groupToSlices[groupId] = append(groupToSlices[groupId], filteredSlices[i])
 	}
 
-	// Initialize the data structure for the returned result.
-	metadata := &service.GpuPerformanceMetadata{
-		// Allocate space for the returned result.
-		Metrics: make([]*service.GpuPerformanceMetadata_Metric, 0),
-	}
-	groupIds := make([]int32, 0)
-	commands := make([]*path.Command, 0)
-	perfs := make([]*service.GpuPerformance, 0)
-	for groupId := range groupToSlices {
-		groupIds = append(groupIds, groupId)
-		commands = append(commands, groupToCmd[groupId])
-		perfs = append(perfs, &service.GpuPerformance{
-			Result: make(map[uint32]float64),
-		})
+	// Calculate GPU Time Performance and GPU Wall Time Performance for all leaf groups/commands.
+	setTimeMetrics(groupToSlices, &metrics, &groupToEntry)
+
+	// Calculate GPU Counter Performances for all leaf groups/commands.
+	setGpuCounterMetrics(ctx, groupToSlices, counters, &metrics, &groupToEntry)
+
+	// Collect all leaf performance entries corresponding to leaf groups/commands.
+	leafEntries := make([]*service.ProfilingData_GpuPerformance_Entry, 0)
+	for _, val := range groupToEntry {
+		leafEntries = append(leafEntries, val)
 	}
 
-	// Calculate GPU Time Performance and GPU Wall Time Performance.
-	setTimeMetrics(metadata, groupIds, perfs, groupToSlices)
+	// Calculate Performances for all non-leaf command nodes upper in the tree.
+	parentEntries := deriveParentEntries(metrics, groupToEntry)
 
-	// Calculate GPU Counter Performances.
-	setGpuCounterMetrics(ctx, metadata, groupIds, perfs, groupToSlices, counters)
-
-	crudePerf := &service.GpuCrudePerformance{
-		Metadata: metadata,
-		GroupIds: groupIds,
-		Commands: commands,
-		Perfs:    perfs,
-	}
-
-	crudePerfId, err := database.Store(ctx, crudePerf)
-	if err != nil {
-		log.Err(ctx, err, "Failed to store crude gpu performance data into database.")
-	}
-
-	return metadata, crudePerfId, nil
+	return &service.ProfilingData_GpuPerformance{
+		Metrics: metrics,
+		Entries: append(leafEntries, parentEntries...),
+	}, nil
 }
 
-func setTimeMetrics(metadata *service.GpuPerformanceMetadata, groupIds []int32, perfs []*service.GpuPerformance, groupToSlices map[int32][]*service.ProfilingData_GpuSlices_Slice) {
-	gpuTimeMetricId, gpuWallTimeMetricId := uint32(0), uint32(1)
-	metadata.Metrics = append(metadata.Metrics, &service.GpuPerformanceMetadata_Metric{
+// Create GPU time metric metadata, calculate time performance for each GPU
+// slice group, and append the result to corresponding entries.
+func setTimeMetrics(groupToSlices map[int32][]*service.ProfilingData_GpuSlices_Slice, metrics *[]*service.ProfilingData_GpuPerformance_Metric, groupToEntry *map[int32]*service.ProfilingData_GpuPerformance_Entry) {
+	*metrics = append(*metrics, &service.ProfilingData_GpuPerformance_Metric{
 		Id:   gpuTimeMetricId,
 		Name: "GPU Time",
 		Unit: "ns",
-		Op:   service.GpuPerformanceMetadata_Sum,
+		Op:   service.ProfilingData_GpuPerformance_Metric_Summation,
 	})
-	metadata.Metrics = append(metadata.Metrics, &service.GpuPerformanceMetadata_Metric{
+	*metrics = append(*metrics, &service.ProfilingData_GpuPerformance_Metric{
 		Id:   gpuWallTimeMetricId,
 		Name: "GPU Wall Time",
 		Unit: "ns",
-		Op:   service.GpuPerformanceMetadata_Sum,
+		Op:   service.ProfilingData_GpuPerformance_Metric_Summation,
 	})
-	for i, groupId := range groupIds {
-		perf := perfs[i]
-		slices := groupToSlices[groupId]
+	for groupId, slices := range groupToSlices {
 		gpuTime, wallTime := gpuTimeForGroup(slices)
-		perf.Result[gpuTimeMetricId] = float64(gpuTime)
-		perf.Result[gpuWallTimeMetricId] = float64(wallTime)
+		entry := (*groupToEntry)[groupId]
+		entry.MetricToValue[gpuTimeMetricId] = float64(gpuTime)
+		entry.MetricToValue[gpuWallTimeMetricId] = float64(wallTime)
 	}
 }
 
+// Calculate GPU-time and wall-time for a specific GPU slice group.
 func gpuTimeForGroup(slices []*service.ProfilingData_GpuSlices_Slice) (uint64, uint64) {
 	gpuTime, wallTime := uint64(0), uint64(0)
 	lastEnd := uint64(0)
@@ -127,32 +123,32 @@ func gpuTimeForGroup(slices []*service.ProfilingData_GpuSlices_Slice) (uint64, u
 	return gpuTime, wallTime
 }
 
-func setGpuCounterMetrics(ctx context.Context, metadata *service.GpuPerformanceMetadata, groupIds []int32, perfs []*service.GpuPerformance, groupToSlices map[int32][]*service.ProfilingData_GpuSlices_Slice, counters []*service.ProfilingData_Counter) {
-	// The metric ids 0 and 1 are assigned to GPU Time and GPU Wall Time correspondingly,
-	// The metric ids for counters start from 2.
-	counterMetricIdOffset := 2
+// Create GPU counter metric metadata, calculate counter performance for each
+// GPU slice group, and append the result to corresponding entries.
+func setGpuCounterMetrics(ctx context.Context, groupToSlices map[int32][]*service.ProfilingData_GpuSlices_Slice, counters []*service.ProfilingData_Counter, metrics *[]*service.ProfilingData_GpuPerformance_Metric, groupToEntry *map[int32]*service.ProfilingData_GpuPerformance_Entry) {
 	for i, counter := range counters {
-		metricId := uint32(counterMetricIdOffset + i)
+		metricId := counterMetricIdOffset + int32(i)
 		op := getCounterAggregationMethod(counter)
-		metadata.Metrics = append(metadata.Metrics, &service.GpuPerformanceMetadata_Metric{
+		*metrics = append(*metrics, &service.ProfilingData_GpuPerformance_Metric{
 			Id:   metricId,
 			Name: counter.Name,
 			Unit: counter.Unit,
 			Op:   op,
 		})
-		if op != service.GpuPerformanceMetadata_TimeWeightedAvg {
+		if op != service.ProfilingData_GpuPerformance_Metric_TimeWeightedAvg {
 			log.E(ctx, "Counter aggregation method not implemented yet. Operation: %v", op)
 			continue
 		}
-		for i, groupId := range groupIds {
-			perf := perfs[i]
-			slices := groupToSlices[groupId]
+		for groupId, slices := range groupToSlices {
 			counterPerf := counterPerfForGroup(slices, counter)
-			perf.Result[metricId] = counterPerf
+			entry := (*groupToEntry)[groupId]
+			entry.MetricToValue[metricId] = counterPerf
 		}
 	}
 }
 
+// Calculate GPU counter performance for a specific GPU slice group, and a
+// specific GPU counter.
 func counterPerfForGroup(slices []*service.ProfilingData_GpuSlices_Slice, counter *service.ProfilingData_Counter) float64 {
 	// Reduce overlapped counter samples size.
 	// Filter out the counter samples whose implicit range collides with `slices`'s gpu time.
@@ -174,6 +170,7 @@ func counterPerfForGroup(slices []*service.ProfilingData_GpuSlices_Slice, counte
 	if len(ts) == 0 {
 		return float64(-1)
 	}
+
 	// Aggregate counter samples.
 	// Contribution time is the overlapped time between a counter sample's implicit range and a gpu slice.
 	ctSum := uint64(0)             // Accumulation of contribution time.
@@ -201,6 +198,7 @@ func counterPerfForGroup(slices []*service.ProfilingData_GpuSlices_Slice, counte
 			}
 		}
 	}
+
 	// Return result.
 	if ctSum == 0 {
 		return float64(0)
@@ -209,11 +207,58 @@ func counterPerfForGroup(slices []*service.ProfilingData_GpuSlices_Slice, counte
 	}
 }
 
-func getCounterAggregationMethod(counter *service.ProfilingData_Counter) service.GpuPerformanceMetadata_AggregationOperator {
-	// TODO: Use time-weighted average to aggregate all counters for now. May need vendor's support. Bug tracked with b/158057709.
-	return service.GpuPerformanceMetadata_TimeWeightedAvg
+// Based on the leaf commands' GPU performances, derive the parent nodes' GPU
+// performances.
+func deriveParentEntries(metrics []*service.ProfilingData_GpuPerformance_Metric, groupToEntry map[int32]*service.ProfilingData_GpuPerformance_Entry) []*service.ProfilingData_GpuPerformance_Entry {
+	parentEntries := make([]*service.ProfilingData_GpuPerformance_Entry, 0)
+
+	// Find out all the parent command nodes that need performance calculation.
+	indexToGroups := make(map[string][]int32) // string formatted command index -> a list of contained groups referenced by group id.
+	for groupId, entry := range groupToEntry {
+		// The performance of one leaf group/command contributes to all the ancesters up to the root command node.
+		leafIdx := entry.CommandIndex
+		for end := len(leafIdx) - 1; end > 0; end-- {
+			parentIdxStr := encodeIndex(leafIdx[0:end])
+			indexToGroups[parentIdxStr] = append(indexToGroups[parentIdxStr], groupId)
+		}
+	}
+
+	for parentIndex, leafGroupIds := range indexToGroups {
+		parentEntry := &service.ProfilingData_GpuPerformance_Entry{
+			CommandIndex:  decodeIndex(parentIndex),
+			MetricToValue: make(map[int32]float64),
+		}
+		for _, metric := range metrics {
+			perf := float64(0)
+			if metric.Op == service.ProfilingData_GpuPerformance_Metric_Summation {
+				for _, id := range leafGroupIds {
+					perf += groupToEntry[id].MetricToValue[metric.Id]
+				}
+			} else if metric.Op == service.ProfilingData_GpuPerformance_Metric_TimeWeightedAvg {
+				timeSum, valueSum := float64(0), float64(0)
+				for _, id := range leafGroupIds {
+					timeSum += groupToEntry[id].MetricToValue[gpuTimeMetricId]
+					valueSum += groupToEntry[id].MetricToValue[gpuTimeMetricId] * groupToEntry[id].MetricToValue[metric.Id]
+				}
+				if timeSum != 0 {
+					perf = valueSum / timeSum
+				}
+			}
+			parentEntry.MetricToValue[metric.Id] = perf
+		}
+		parentEntries = append(parentEntries, parentEntry)
+	}
+
+	return parentEntries
 }
 
+// Evaluate and return the appropriate aggregation method for a GPU counter.
+func getCounterAggregationMethod(counter *service.ProfilingData_Counter) service.ProfilingData_GpuPerformance_Metric_AggregationOperator {
+	// TODO: Use time-weighted average to aggregate all counters for now. May need vendor's support. Bug tracked with b/158057709.
+	return service.ProfilingData_GpuPerformance_Metric_TimeWeightedAvg
+}
+
+// Compare and return the smaller one for two uint64 numbers.
 func min(a, b uint64) uint64 {
 	if a < b {
 		return a
@@ -222,10 +267,30 @@ func min(a, b uint64) uint64 {
 	}
 }
 
+// Compare and return the larger one for two uint64 numbers.
 func max(a, b uint64) uint64 {
 	if a > b {
 		return a
 	} else {
 		return b
 	}
+}
+
+// Encode a command index, transform from array format to string format.
+func encodeIndex(array_index []uint64) string {
+	str := make([]string, len(array_index))
+	for i, v := range array_index {
+		str[i] = strconv.FormatUint(v, 10)
+	}
+	return strings.Join(str, ",")
+}
+
+// Decode a command index, transform from string format to array format.
+func decodeIndex(str_index string) []uint64 {
+	indexes := strings.Split(str_index, ",")
+	array := make([]uint64, len(indexes))
+	for i := range array {
+		array[i], _ = strconv.ParseUint(indexes[i], 10, 0)
+	}
+	return array
 }

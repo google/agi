@@ -53,16 +53,15 @@ func ProcessProfilingData(ctx context.Context, processor *perfetto.Processor, ca
 	if err != nil {
 		log.Err(ctx, err, "Failed to get GPU counters")
 	}
-	perfMetadata, crudePerfId, err := gpu_performance.ProcessPerformances(ctx, slices, counters)
+	gpuPerf, err := gpu_performance.ProcessPerformances(ctx, slices, counters)
 	if err != nil {
 		log.Err(ctx, err, "Failed to calculate performance data based on GPU slices and counters")
 	}
 
 	return &service.ProfilingData{
-		Slices:          slices,
-		Counters:        counters,
-		GpuPerfMetadata: perfMetadata,
-		GpuCrudePerfId:  path.NewID(crudePerfId),
+		Slices:   slices,
+		Counters: counters,
+		GpuPerf:  gpuPerf,
 	}, nil
 }
 

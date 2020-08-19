@@ -327,8 +327,6 @@ func ResolveInternal(ctx context.Context, p path.Node, r *path.ResolveConfig) (i
 		return Field(ctx, p, r)
 	case *path.GlobalState:
 		return GlobalState(ctx, p, r)
-	case *path.GpuPerformance:
-		return GpuPerformance(ctx, p, r)
 	case *path.ImageInfo:
 		return ImageInfo(ctx, p, r)
 	case *path.MapIndex:
