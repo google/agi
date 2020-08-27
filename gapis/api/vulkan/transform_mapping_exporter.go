@@ -84,7 +84,7 @@ func (mappingTransform *mappingExporter) SetInnerStateMutationFunction(mutator t
 }
 
 func (mappingTransform *mappingExporter) BeginTransform(ctx context.Context, inputState *api.GlobalState) error {
-    return nil
+	return nil
 }
 
 func (mappingTransform *mappingExporter) EndTransform(ctx context.Context, inputState *api.GlobalState) ([]api.Cmd, error) {

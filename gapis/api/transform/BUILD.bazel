@@ -24,7 +24,6 @@ go_library(
     importpath = "github.com/google/gapid/gapis/api/transform",
     visibility = ["//visibility:public"],
     deps = [
-        "//core/context/keys:go_default_library",
         "//core/log:go_default_library",
         "//gapis/api:go_default_library",
         "//gapis/api/commandGenerator:go_default_library",

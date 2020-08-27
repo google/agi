@@ -48,7 +48,7 @@ func (surfaceTransform *displayToSurface) SetInnerStateMutationFunction(mutator 
 }
 
 func (surfaceTransform *displayToSurface) BeginTransform(ctx context.Context, inputState *api.GlobalState) error {
-    return nil
+	return nil
 }
 
 func (surfaceTransform *displayToSurface) EndTransform(ctx context.Context, inputState *api.GlobalState) ([]api.Cmd, error) {

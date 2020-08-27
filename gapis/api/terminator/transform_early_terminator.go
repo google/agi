@@ -58,7 +58,7 @@ func (earlyTerminatorTransform *earlyTerminator) SetInnerStateMutationFunction(m
 }
 
 func (earlyTerminatorTransform *earlyTerminator) BeginTransform(ctx context.Context, inputState *api.GlobalState) error {
-    return nil
+	return nil
 }
 
 func (earlyTerminatorTransform *earlyTerminator) EndTransform(ctx context.Context, inputState *api.GlobalState) ([]api.Cmd, error) {

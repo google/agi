@@ -44,7 +44,7 @@ func (dropTransform *destroyResourcesAtEOS) SetInnerStateMutationFunction(mutato
 }
 
 func (dropTransform *destroyResourcesAtEOS) BeginTransform(ctx context.Context, inputState *api.GlobalState) error {
-    return nil
+	return nil
 }
 
 func (dropTransform *destroyResourcesAtEOS) EndTransform(ctx context.Context, inputState *api.GlobalState) ([]api.Cmd, error) {
