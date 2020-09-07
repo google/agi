@@ -396,4 +396,4 @@ func (b *DCEBuilder) Flush(ctx context.Context, out transform.Writer) error {
 
 func (b *DCEBuilder) PreLoop(ctx context.Context, out transform.Writer)  {}
 func (b *DCEBuilder) PostLoop(ctx context.Context, out transform.Writer) {}
-func (t *DCEBuilder) BuffersCommands() bool                               { return false }
+func (t *DCEBuilder) BuffersCommands() bool                              { return false }

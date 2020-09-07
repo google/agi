@@ -55,7 +55,7 @@ func (fileLog *fileLogTransform) SetInnerStateMutationFunction(mutator transform
 }
 
 func (fileLog *fileLogTransform) BeginTransform(ctx context.Context, inputState *api.GlobalState) error {
-    return nil
+	return nil
 }
 
 func (fileLog *fileLogTransform) ClearTransformResources(ctx context.Context) {

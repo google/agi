@@ -59,7 +59,7 @@ func (endTransform *endOfReplay) SetInnerStateMutationFunction(mutator transform
 }
 
 func (endTransform *endOfReplay) BeginTransform(ctx context.Context, inputState *api.GlobalState) error {
-    return nil
+	return nil
 }
 
 func (endTransform *endOfReplay) ClearTransformResources(ctx context.Context) {

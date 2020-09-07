@@ -63,7 +63,7 @@ func (perfettoTransform *waitForPerfetto) SetInnerStateMutationFunction(mutator 
 }
 
 func (perfettoTransform *waitForPerfetto) BeginTransform(ctx context.Context, inputState *api.GlobalState) error {
-    return nil
+	return nil
 }
 
 func (perfettoTransform *waitForPerfetto) ClearTransformResources(ctx context.Context) {

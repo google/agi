@@ -93,7 +93,7 @@ func (writer *testWriter) MutateAndWrite(ctx context.Context, id api.CmdID, cmd 
 type multiplier_transform struct{}
 
 func (t *multiplier_transform) BeginTransform(ctx context.Context, inputState *api.GlobalState) error {
-    return nil
+	return nil
 }
 
 func (t *multiplier_transform) EndTransform(ctx context.Context, inputState *api.GlobalState) ([]api.Cmd, error) {
