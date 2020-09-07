@@ -155,8 +155,8 @@ func (chain *TransformChain) GetCurrentCommandID() CommandID {
 	return chain.currentCommandID
 }
 
-func (chain *TransformChain) GetNumberOfCommands() uint64 {
-	return chain.generator.GetNumberOfCommands()
+func (chain *TransformChain) GetNumOfRemainingCommands() uint64 {
+	return chain.generator.GetNumOfRemainingCommands()
 }
 
 func (chain *TransformChain) GetNextTransformedCommands(ctx context.Context) error {

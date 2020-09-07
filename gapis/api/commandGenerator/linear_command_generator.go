@@ -49,6 +49,6 @@ func (generator *linearCommandGenerator) IsEndOfCommands() bool {
 	return generator.index >= len(generator.commands)
 }
 
-func (generator *linearCommandGenerator) GetNumberOfCommands() uint64 {
+func (generator *linearCommandGenerator) GetNumOfRemainingCommands() uint64 {
 	return uint64(len(generator.commands))
 }

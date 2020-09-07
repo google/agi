@@ -33,6 +33,6 @@ type CommandGenerator interface {
 	// to be produced.
 	IsEndOfCommands() bool
 
-	// GetNumberOfCommands should return total number of commands to be generated
-	GetNumberOfCommands() uint64
+	// GetNumOfRemainingCommands should return total number of commands to be generated
+	GetNumOfRemainingCommands() uint64
 }

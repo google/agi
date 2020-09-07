@@ -37,7 +37,7 @@ func NewLinearControlFlowGenerator(chain *transform.TransformChain) ControlFlowG
 }
 
 func (cf *linearControlFlowGenerator) TransformAll(ctx context.Context) error {
-	numberOfCmds := cf.chain.GetNumberOfCommands()
+	numberOfCmds := cf.chain.GetNumOfRemainingCommands()
 	ctx = status.Start(ctx, "Running LinearControlFlow <count:%v>", numberOfCmds)
 	defer status.Finish(ctx)
 
