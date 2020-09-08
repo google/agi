@@ -18,3 +18,31 @@ Please ensure that your setup meets all of the [requirements](../requirements).
 -   The target application must _not_ report any warning or error when run with
     [Vulkan validation layers](https://developer.android.com/ndk/guides/graphics/validation-layer)
     enabled.
+
+## Android Vulkan layers issues
+
+If a Vulkan capture on Android does not terminate properly, Android
+GPU Inspector may leave some Android settings related to Vulkan layers
+in a state that may pertubate subsequent runs of the app. These
+settings are:
+
+-   `enable_gpu_debug_layers`
+
+-   `gpu_debug_app`
+
+-   `gpu_debug_layers`
+
+-   `gpu_debug_layer_app`
+
+If your app has some Vulkan layer issues after you used Android GPU
+Inspector, you may try and clear these settings with the following
+`adb` commands:
+
+```sh
+adb shell settings delete global enable_gpu_debug_layers
+adb shell settings delete global gpu_debug_app
+adb shell settings delete global gpu_debug_layers
+adb shell settings delete global gpu_debug_layer_app
+```
+
+See also the [Android documentation on how to use settings to enable Vulkan layers](https://developer.android.com/ndk/guides/graphics/validation-layer?release=r21#enable-layers-outside-app).
