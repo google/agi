@@ -4,7 +4,7 @@ layout: default
 permalink: /docs/extensions
 ---
 
-Android GPU Inspector supports the following Vulkan extensions:
+AGI supports the following Vulkan extensions:
 
 Extension                                 | Support | Note
 ----------------------------------------- | ------- | --------------------
