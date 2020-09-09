@@ -284,7 +284,7 @@ public class TracerDialog {
           "NOTE: Mid-Execution capture for %s is experimental";
       private static final String PERFETTO_LABEL = "Profile Config: ";
       private static final String EMPTY_APP_WITH_RENDER_STAGE =
-          "Warning: Application needs to be specified for GPU profiling data.";
+          "Warning: cannot record GPU activity (render stages) when no application is selected";
 
       private final String date = TRACE_DATE_FORMAT.format(new Date());
 
