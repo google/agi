@@ -6,20 +6,24 @@ toc:
         url: docs/download
       - title: Getting Started
         url: docs/getting-started
+      - title: Tutorials
+        url: docs/tutorials
       - title: Supported Extensions
         url: docs/extensions
       - title: Troubleshooting
         url: docs/troubleshooting
-  - title: GPU counters
+  - title: GPU Counters
     url: docs/gpu-counters/
     subnav:
       - title: Arm® Mali™ Counters
         url: docs/gpu-counters/arm
       - title: Qualcomm® Adreno™ Counters
         url: docs/gpu-counters/qualcomm
-  - title: System requirements
+  - title: System Requirements
     url: docs/requirements
     subnav:
+      - title: Supported Devices
+        url: docs/devices
       - title: Device Validation
         url: validation
   - title: CLI documentation

@@ -1,5 +1,5 @@
 ---
-title: GPU counters
+title: GPU Counters
 layout: default
 permalink: /docs/gpu-counters/
 ---

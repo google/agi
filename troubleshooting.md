@@ -4,7 +4,11 @@ layout: default
 permalink: /docs/troubleshooting
 ---
 
-Please ensure that your setup meets all of the [requirements](../requirements).
+Please ensure that your setup meets all of the [requirements](requirements).
+
+## GPU activity is missing from my OpenGL ES trace
+
+Only GPU counters are supported if tracing an OpenGL ES application. GPU activity information for OpenGL ES applications is currently under development.
 
 ## Profiling on Android does not work
 
@@ -15,7 +19,7 @@ Please ensure that your setup meets all of the [requirements](../requirements).
     prevent issues that arise when the device screen turns off due to sleep
     mode.
 
--   The target application must _not_ report any warning or error when run with
+-   If a Vulkan application is being profiled, the target application must _not_ report any warning or error when run with
     [Vulkan validation layers](https://developer.android.com/ndk/guides/graphics/validation-layer)
     enabled.
 
