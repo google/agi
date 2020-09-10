@@ -67,7 +67,7 @@ such that it can be accessed via `adb`.
 
 8. Under "Start and Duration" section, set "Start at" to "Manual", and "Duration" to 2.
 
-9. In the "Trace Option" section, click on the "Configure" button to pop-up a configuration window where you can select which performance counters you want to be captured.
+9. In the "Trace Option" section, click on the "Configure" button to pop-up a configuration window where you can select which profiling data you want to be captured.
 
     <img src="../images/system_profiler/capture-config.png" width="500px">
 
@@ -90,7 +90,7 @@ the trace to terminate.
 
 The official Android documentation contains a section about [Vulkan Validation layers](https://developer.android.com/ndk/guides/graphics/validation-layer).
 
-If your app does not already have a setup to run with the validation layers, you can use the following commands to force it to run with the validation layers shipped in the GAPID apk:
+If your app does not already have a setup to run with the validation layers, you can use the following commands to force it to run with the validation layers shipped in the AGI apk (named `com.google.android.gapid.<abi>` for historical reasons):
 
 ```sh
 app_package=<YOUR APP PACKAGE NAME HERE>

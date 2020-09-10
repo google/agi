@@ -10,7 +10,7 @@ title: Home
 
   <div class="col2-l">
     <h1>Android GPU Inspector</h1>
-    <p>A single tool that will help you profile and debug graphics on Android across several GPUs: Qualcomm® Adreno™, Arm® Mali™, and Imagination® PowerVR™. Vulkan and OpenGL ES APIs are both supported.</p>
+    <p>A single tool that will help you profile graphics on Android across several GPUs: Qualcomm® Adreno™, Arm® Mali™, and Imagination® PowerVR™. Vulkan and OpenGL ES APIs are both supported.</p>
     <br/>
     <div style="text-align: center;">
       <a class="home-signup" href="https://github.com/google/agi/releases/latest">Download AGI Open Beta</a>

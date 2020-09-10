@@ -33,7 +33,6 @@ application using a desktop or laptop:
 ### Windows
 
 * Windows 7 or later.
-* [Vulkan] GPU drivers for desktop frame profiling.
 
 ### macOS
 
@@ -42,9 +41,7 @@ application using a desktop or laptop:
 ### Linux
 
 * Ubuntu 'Trusty Tahr' (14.04) or later recommended.
-* Java 64-bit JDK or JRE 11 (or newer).
-* [Vulkan] GPU drivers for desktop frame profiling.
-
+* Java 64-bit JDK or JRE 8 (or newer).
 
 [adb debugging enabled]: https://developer.android.com/studio/command-line/adb#Enabling
 [Vulkan]: https://en.wikipedia.org/wiki/Vulkan_(API)#Compatibility
