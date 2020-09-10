@@ -15,7 +15,7 @@ support validation by re-selecting the device.
 
 AGI needs a compatible GPU driver to run. To ensure the tool provides good and valid profiling data, we run a validation check when you first connect a new device.
 
-If your device is listed in the supported device page, you can expect AGI to pass validation.
+If your device is listed in the [supported devices](docs/devices) page, you can expect AGI to pass validation.
 
 If your device is not listed, then it is likely that your device does not have a compatible GPU driver.
 
@@ -27,7 +27,7 @@ Please [file an issue] in our GitHub repository to request support for a device.
 
 ## What should I expect? I use a supported device.
 
-Device validation takes about 10 seconds, during which you should see a spinning cube on the device screen. Once a device passes the validation process, it can be used to trace and profile Android applications. 
+Device validation takes about 10 seconds, during which you should see a spinning cube on the device screen. Once a device passes the validation process, it can be used to profile Android applications. 
 
 ## How often do I need to validate?
 
