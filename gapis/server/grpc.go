@@ -373,7 +373,12 @@ func (s *grpcServer) Status(req *service.ServerStatusRequest, stream service.Gap
 	ctx, cancel := task.WithCancel(stream.Context())
 	defer s.addInterrupter(cancel)()
 
-	c := make(chan error)
+	// This channel MUST be asynchronous to prevent deadlocks: upon
+	// termination, statusListener.OnTaskFinish() calls f() which may write
+	// to this channel. If this write is blocking, it prevents the
+	// s.handler.Status() call below to terminate, thus preventing also the
+	// read of channel `c`, effectively leading to a deadlock.
+	c := make(chan error, 1)
 	f := func(t *service.TaskUpdate) {
 		if err := stream.Send(&service.ServerStatusResponse{
 			Res: &service.ServerStatusResponse_Task{t},
