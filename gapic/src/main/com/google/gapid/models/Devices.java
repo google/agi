@@ -28,7 +28,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gapid.proto.SettingsProto;
 import com.google.gapid.proto.device.Device;
-import com.google.gapid.proto.device.Device.Incompatibility;
+import com.google.gapid.proto.device.Device.ReplayCompatibility;
 import com.google.gapid.proto.device.Device.Instance;
 import com.google.gapid.proto.device.Device.VulkanDriver;
 import com.google.gapid.proto.service.Service;
@@ -107,11 +107,11 @@ public class Devices {
 
   public class IncompatibleDeviceInfo {
     public Device.Instance device;
-    public Device.Incompatibility incompatibility;
+    public Device.ReplayCompatibility compatibility;
 
-    public IncompatibleDeviceInfo(Instance device, Incompatibility incompatibility) {
+    public IncompatibleDeviceInfo(Instance device, ReplayCompatibility compatibility) {
       this.device = device;
-      this.incompatibility = incompatibility;
+      this.compatibility = compatibility;
     }
   }
 
@@ -140,8 +140,8 @@ public class Devices {
                     .collect(toList())),
                 l -> l.stream().map(v -> v.getDevice()).collect(toList()));
 
-            List<Device.Incompatibility> incompatibilities = devs.getIncompatibleListList().stream()
-                .map(i -> i.getIncompatibility())
+            List<Device.ReplayCompatibility> incompatibilities = devs.getIncompatibleListList().stream()
+                .map(i -> i.getReplayCompatibility())
                 .collect(toList());
 
             return MoreFutures.combine(Arrays.asList(compatibleDevs, incompatibleDevs), both -> {

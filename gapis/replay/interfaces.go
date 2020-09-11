@@ -33,7 +33,7 @@ type Support interface {
 	// A lower number represents a higher priority, and Zero represents
 	// an inability for the trace to be replayed on the given device, and is
 	// accompanied by the reason for the incompatibility.
-	GetReplayPriority(context.Context, *device.Instance, *capture.Header) (uint32, device.Incompatibility)
+	GetReplayPriority(context.Context, *device.Instance, *capture.Header) (uint32, device.ReplayCompatibility)
 }
 
 // QueryIssues is the interface implemented by types that can verify the replay

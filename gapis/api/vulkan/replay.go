@@ -358,7 +358,7 @@ func getReplayTypeName(request replay.Request) string {
 }
 
 // GetReplayPriority implements the replay.Support interface
-func (a API) GetReplayPriority(ctx context.Context, i *device.Instance, h *capture.Header) (uint32, device.Incompatibility) {
+func (a API) GetReplayPriority(ctx context.Context, i *device.Instance, h *capture.Header) (uint32, device.ReplayCompatibility) {
 	devConf := i.GetConfiguration()
 	devAbis := devConf.GetABIs()
 	devVkDriver := devConf.GetDrivers().GetVulkan()
@@ -367,61 +367,61 @@ func (a API) GetReplayPriority(ctx context.Context, i *device.Instance, h *captu
 	// Trace has no Vulkan information
 	if traceVkDriver == nil {
 		log.E(ctx, "Vulkan trace does not contain VulkanDriver info")
-		return 0, device.Incompatibility_NoTraceVkDriver
+		return 0, device.ReplayCompatibility_IncompatibleAPI
 	}
 
 	// The device does not support Vulkan
 	if devVkDriver == nil {
-		return 0, device.Incompatibility_NoVkSupport
+		return 0, device.ReplayCompatibility_IncompatibleAPI
 	}
 
-	var incompatibility device.Incompatibility
+	var incompatibility device.ReplayCompatibility
 	for _, abi := range devAbis {
 		// OS must match
 		if h.GetABI().GetOS() != abi.GetOS() {
-			incompatibility = device.Incompatibility_ABIOS
+			incompatibility = device.ReplayCompatibility_IncompatibleOS
 			continue
 		}
 
 		// Architecture must match
 		if h.GetABI().GetArchitecture() != abi.GetArchitecture() {
-			incompatibility = device.Incompatibility_ABIArchitecture
+			incompatibility = device.ReplayCompatibility_IncompatibleArchitecture
 			continue
 		}
 
 		// Memory layout must match.
 		if !abi.GetMemoryLayout().SameAs(h.GetABI().GetMemoryLayout()) {
-			incompatibility = device.Incompatibility_ABIMemoryLayout
+			incompatibility = device.ReplayCompatibility_IncompatibleMemoryLayout
 			continue
 		}
 		// If there is no physical devices, the trace must not contain
 		// vkCreateInstance, any ABI compatible Vulkan device should be able to
 		// replay.
 		if len(traceVkDriver.GetPhysicalDevices()) == 0 {
-			return 1, device.Incompatibility_Compatible
+			return 1, device.ReplayCompatibility_Compatible
 		}
 		// Requires same GPU vendor, GPU device, Vulkan driver and Vulkan API version.
 		for _, devPhyInfo := range devVkDriver.GetPhysicalDevices() {
 			for _, tracePhyInfo := range traceVkDriver.GetPhysicalDevices() {
 				// TODO: More sophisticated rules
 				if devPhyInfo.GetVendorId() != tracePhyInfo.GetVendorId() {
-					incompatibility = device.Incompatibility_GPUVendorID
+					incompatibility = device.ReplayCompatibility_IncompatibleGPU
 					continue
 				}
 				if devPhyInfo.GetDeviceId() != tracePhyInfo.GetDeviceId() {
-					incompatibility = device.Incompatibility_GPUDeviceID
+					incompatibility = device.ReplayCompatibility_IncompatibleGPU
 					continue
 				}
 				if devPhyInfo.GetDriverVersion() != tracePhyInfo.GetDriverVersion() {
-					incompatibility = device.Incompatibility_VkDriverVersion
+					incompatibility = device.ReplayCompatibility_IncompatibleDriverVersion
 					continue
 				}
 				// Ignore the API patch level (bottom 12 bits) when comparing the API version.
 				if (devPhyInfo.GetApiVersion() & ^uint32(0xfff)) != (tracePhyInfo.GetApiVersion() & ^uint32(0xfff)) {
-					incompatibility = device.Incompatibility_VkAPIVersion
+					incompatibility = device.ReplayCompatibility_IncompatibleAPIVersion
 					continue
 				}
-				return 1, device.Incompatibility_Compatible
+				return 1, device.ReplayCompatibility_Compatible
 			}
 		}
 	}

@@ -107,7 +107,7 @@ message Value {
 // replay a given capture
 message IncompatibleDevice {
   path.Device device = 1;
-  device.Incompatibility incompatibility = 2;
+  device.ReplayCompatibility replayCompatibility = 2;
 }
 
 message PingRequest {

@@ -243,7 +243,7 @@ public class DeviceDialog implements Devices.Listener, Capture.Listener {
       Widgets.createTableColumn(incompatibleDeviceTable, "Serial", dev -> ((IncompatibleDeviceInfo)dev).device.getSerial());
       Widgets.createTableColumn(incompatibleDeviceTable, "GPU", dev -> ((IncompatibleDeviceInfo)dev).device.getConfiguration().getHardware().getGPU().getName());
       Widgets.createTableColumn(incompatibleDeviceTable, "Driver version", dev -> Integer.toUnsignedString(((IncompatibleDeviceInfo)dev).device.getConfiguration().getDrivers().getVulkan().getPhysicalDevices(0).getDriverVersion()));
-      Widgets.createTableColumn(incompatibleDeviceTable, "Incompatibility", dev -> IncompatibilityMessage(((IncompatibleDeviceInfo)dev).incompatibility));
+      Widgets.createTableColumn(incompatibleDeviceTable, "Incompatibility", dev -> IncompatibilityMessage(((IncompatibleDeviceInfo)dev).compatibility));
       Widgets.packColumns(incompatibleDeviceTable.getTable());
       incompatibleDeviceTable.getTable().setBackground(theme.invalidDeviceBackground());
 
@@ -358,28 +358,24 @@ public class DeviceDialog implements Devices.Listener, Capture.Listener {
       }
     }
 
-    static String IncompatibilityMessage(Device.Incompatibility incompatibility) {
-      switch (incompatibility.getNumber()) {
-        case Device.Incompatibility.Compatible_VALUE:
+    static String IncompatibilityMessage(Device.ReplayCompatibility replayCompatibility) {
+      switch (replayCompatibility.getNumber()) {
+        case Device.ReplayCompatibility.Compatible_VALUE:
           return "Compatible";
-        case Device.Incompatibility.ABIOS_VALUE:
+        case Device.ReplayCompatibility.IncompatibleOS_VALUE:
           return "Operating System";
-        case Device.Incompatibility.ABIArchitecture_VALUE:
+        case Device.ReplayCompatibility.IncompatibleArchitecture_VALUE:
           return "ABI architecture";
-        case Device.Incompatibility.ABIMemoryLayout_VALUE:
+        case Device.ReplayCompatibility.IncompatibleMemoryLayout_VALUE:
           return "ABI memory layout";
-        case Device.Incompatibility.GPUVendorID_VALUE:
-          return "GPU Vendor ID";
-        case Device.Incompatibility.GPUDeviceID_VALUE:
-          return "GPU Device ID";
-        case Device.Incompatibility.VkDriverVersion_VALUE:
+        case Device.ReplayCompatibility.IncompatibleGPU_VALUE:
+          return "GPU";
+        case Device.ReplayCompatibility.IncompatibleDriverVersion_VALUE:
           return "Vulkan driver version";
-        case Device.Incompatibility.VkAPIVersion_VALUE:
+        case Device.ReplayCompatibility.IncompatibleAPIVersion_VALUE:
           return "Vulkan API version";
-        case Device.Incompatibility.NoTraceVkDriver_VALUE:
-          return "Capture has no Vulkan driver info";
-        case Device.Incompatibility.NoVkSupport_VALUE:
-          return "Device has no Vulkan support";
+        case Device.ReplayCompatibility.IncompatibleAPI_VALUE:
+          return "Vulkan support";
         default:
           return "Unknown incompatibility";
       }

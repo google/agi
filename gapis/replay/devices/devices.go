@@ -60,7 +60,7 @@ func ForReplay(ctx context.Context, p *path.Capture) ([]*path.Device, []*service
 				"api":    fmt.Sprintf("%T", api),
 				"device": instance.Name,
 			}.Bind(ctx)
-			priority, incompatibility := api.GetReplayPriority(ctx, instance, c.Header)
+			priority, compatibility := api.GetReplayPriority(ctx, instance, c.Header)
 			p = p * priority
 			if priority != 0 {
 				log.D(ctx, "Compatible %d", priority)
@@ -68,8 +68,8 @@ func ForReplay(ctx context.Context, p *path.Capture) ([]*path.Device, []*service
 				log.D(ctx, "Incompatible")
 				incompatibleDevices = append(incompatibleDevices,
 					&service.IncompatibleDevice{
-						Device:          path.NewDevice(instance.ID.ID()),
-						Incompatibility: incompatibility,
+						Device:              path.NewDevice(instance.ID.ID()),
+						ReplayCompatibility: compatibility,
 					})
 			}
 		}
