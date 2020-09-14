@@ -28,7 +28,7 @@ import static java.util.logging.Level.WARNING;
 import com.google.gapid.models.Capture;
 import com.google.gapid.models.Devices;
 import com.google.gapid.models.Devices.DeviceValidationResult;
-import com.google.gapid.models.Devices.IncompatibleDeviceInfo;
+import com.google.gapid.models.Devices.ReplayDeviceInfo;
 import com.google.gapid.models.Models;
 import com.google.gapid.proto.device.Device;
 import com.google.gapid.proto.device.Device.Instance;
@@ -206,7 +206,7 @@ public class DeviceDialog implements Devices.Listener, Capture.Listener {
       Widgets.createTableColumn(compatibleDeviceTable,
           "GPU", dev -> ((Device.Instance)dev).getConfiguration().getHardware().getGPU().getName());
       Widgets.createTableColumn(compatibleDeviceTable,
-          "Driver version", dev -> Integer.toUnsignedString(((Device.Instance)dev).getConfiguration().getDrivers().getVulkan().getPhysicalDevices(0).getDriverVersion()));
+          "Driver version", dev -> Devices.GetDriverVersion((Device.Instance)dev));
       Widgets.packColumns(compatibleDeviceTable.getTable());
 
       compatibleDeviceTable.getTable().addListener(SWT.Selection, e -> {
@@ -236,14 +236,14 @@ public class DeviceDialog implements Devices.Listener, Capture.Listener {
       incompatibleDeviceTable.setLabelProvider(new LabelProvider() {
         @Override
         public String getText(Object element) {
-          return Devices.getLabel(((IncompatibleDeviceInfo) element).device);
+          return Devices.getLabel(((ReplayDeviceInfo) element).instance);
         }
       });
-      Widgets.createTableColumn(incompatibleDeviceTable, "Name", dev -> ((IncompatibleDeviceInfo)dev).device.getName());
-      Widgets.createTableColumn(incompatibleDeviceTable, "Serial", dev -> ((IncompatibleDeviceInfo)dev).device.getSerial());
-      Widgets.createTableColumn(incompatibleDeviceTable, "GPU", dev -> ((IncompatibleDeviceInfo)dev).device.getConfiguration().getHardware().getGPU().getName());
-      Widgets.createTableColumn(incompatibleDeviceTable, "Driver version", dev -> Integer.toUnsignedString(((IncompatibleDeviceInfo)dev).device.getConfiguration().getDrivers().getVulkan().getPhysicalDevices(0).getDriverVersion()));
-      Widgets.createTableColumn(incompatibleDeviceTable, "Incompatibility", dev -> IncompatibilityMessage(((IncompatibleDeviceInfo)dev).compatibility));
+      Widgets.createTableColumn(incompatibleDeviceTable, "Name", dev -> ((ReplayDeviceInfo)dev).instance.getName());
+      Widgets.createTableColumn(incompatibleDeviceTable, "Serial", dev -> ((ReplayDeviceInfo)dev).instance.getSerial());
+      Widgets.createTableColumn(incompatibleDeviceTable, "GPU", dev -> ((ReplayDeviceInfo)dev).instance.getConfiguration().getHardware().getGPU().getName());
+      Widgets.createTableColumn(incompatibleDeviceTable, "Driver version", dev -> Integer.toUnsignedString(((ReplayDeviceInfo)dev).instance.getConfiguration().getDrivers().getVulkan().getPhysicalDevices(0).getDriverVersion()));
+      Widgets.createTableColumn(incompatibleDeviceTable, "Incompatibility", dev -> IncompatibilityMessage(((ReplayDeviceInfo)dev).compatibility));
       Widgets.packColumns(incompatibleDeviceTable.getTable());
       incompatibleDeviceTable.getTable().setBackground(theme.invalidDeviceBackground());
 
@@ -253,6 +253,8 @@ public class DeviceDialog implements Devices.Listener, Capture.Listener {
             refreshDeviceButton.setText(Messages.SELECT_DEVICE_TABLE_REFRESHING);
             refreshDeviceButton.setEnabled(false);
             logFailure(LOG,
+                // Wait a tiny bit to have the button showing the "Refreshing devices" message,
+                // giving the user feedback that something is happening.
                 Scheduler.EXECUTOR.schedule(
                     () -> models.devices.loadReplayDevices(models.capture.getData().path),
                     300, TimeUnit.MILLISECONDS));
@@ -285,7 +287,7 @@ public class DeviceDialog implements Devices.Listener, Capture.Listener {
 
       List<Device.Instance> compatibleDevices = models.devices.getReplayDevices();
       compatibleDeviceTable.setInput(compatibleDevices);
-      List<IncompatibleDeviceInfo> incompatibleDevices = models.devices.getIncompatibleReplayDevices();
+      List<ReplayDeviceInfo> incompatibleDevices = models.devices.getIncompatibleReplayDevices();
       incompatibleDeviceTable.setInput(incompatibleDevices);
 
       refreshDeviceButton.setText(Messages.SELECT_DEVICE_REFRESH_TABLE);

@@ -28,8 +28,8 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gapid.proto.SettingsProto;
 import com.google.gapid.proto.device.Device;
-import com.google.gapid.proto.device.Device.ReplayCompatibility;
 import com.google.gapid.proto.device.Device.Instance;
+import com.google.gapid.proto.device.Device.ReplayCompatibility;
 import com.google.gapid.proto.device.Device.VulkanDriver;
 import com.google.gapid.proto.service.Service;
 import com.google.gapid.proto.service.path.Path;
@@ -68,7 +68,7 @@ public class Devices {
   private final Client client;
   private final DeviceValidationCache validationCache;
   private List<Device.Instance> replayDevices;
-  private List<IncompatibleDeviceInfo> incompatibleReplayDevices;
+  private List<ReplayDeviceInfo> incompatibleReplayDevices;
   private Device.Instance selectedReplayDevice;
   private List<DeviceCaptureInfo> devices;
 
@@ -105,64 +105,52 @@ public class Devices {
     incompatibleReplayDevices = null;
   }
 
-  public class IncompatibleDeviceInfo {
-    public Device.Instance device;
+  public class ReplayDeviceInfo {
+    public Device.Instance instance;
     public Device.ReplayCompatibility compatibility;
 
-    public IncompatibleDeviceInfo(Instance device, ReplayCompatibility compatibility) {
-      this.device = device;
+    public ReplayDeviceInfo(Instance instance, ReplayCompatibility compatibility) {
+      this.instance = instance;
       this.compatibility = compatibility;
     }
   }
 
-  // ReplayDeviceInfoContainer is a helper class used only to pass data around inside loadReplayDevices
-  private class ReplayDeviceInfoContainer {
-    public List<Device.Instance> compatibleDevices;
-    public List<IncompatibleDeviceInfo> incompatibleDevices;
-
-    public ReplayDeviceInfoContainer(List<Instance> compatibleDevices, List<IncompatibleDeviceInfo> incompatibleDevices) {
-      this.compatibleDevices = compatibleDevices;
-      this.incompatibleDevices = incompatibleDevices;
+  public static String GetDriverVersion(Device.Instance device) {
+    Device.VulkanDriver vkDriver = device.getConfiguration().getDrivers().getVulkan();
+    if (vkDriver.getPhysicalDevicesCount() <= 0) {
+      return "no physical device found";
     }
+    return Integer.toUnsignedString(vkDriver.getPhysicalDevices(0).getDriverVersion());
   }
 
   public void loadReplayDevices(Path.Capture capturePath) {
     rpcController.start().listen(MoreFutures.transformAsync(client.getDevicesForReplay(capturePath),
           devs -> {
-            ListenableFuture<List<Device.Instance>> compatibleDevs = MoreFutures.transform(
+            ListenableFuture<List<Device.Instance>> allDevices = MoreFutures.transform(
                 Futures.allAsList(devs.getListList().stream()
-                    .map(d -> client.get(Paths.device(d), d))
-                    .collect(toList())),
-                l -> l.stream().map(v -> v.getDevice()).collect(toList()));
-            ListenableFuture<List<Device.Instance>> incompatibleDevs = MoreFutures.transform(
-                Futures.allAsList(devs.getIncompatibleListList().stream()
-                    .map(i -> client.get(Paths.device(i.getDevice()), i.getDevice()))
-                    .collect(toList())),
-                l -> l.stream().map(v -> v.getDevice()).collect(toList()));
+                .map(d -> client.get(Paths.device(d), d))
+                .collect(toList())),
+            l -> l.stream().map(v -> v.getDevice()).collect(toList()));
 
-            List<Device.ReplayCompatibility> incompatibilities = devs.getIncompatibleListList().stream()
-                .map(i -> i.getReplayCompatibility())
-                .collect(toList());
+            List<Device.ReplayCompatibility> replayCompatilities =
+                devs.getReplayCompatibilityListList().stream().collect(toList());
+            return MoreFutures.combine(Arrays.asList(allDevices), both -> {
+              MoreFutures.Result<List<Device.Instance>> devRes = both.get(0);
+              if (devRes.hasFailed()) {
+                throw devRes.error;
+              }
+              List<ReplayDeviceInfo> replayDevs = Lists.newArrayList();
+              for (int i = 0; i < devRes.result.size(); ++i) {
 
-            return MoreFutures.combine(Arrays.asList(compatibleDevs, incompatibleDevs), both -> {
-              MoreFutures.Result<List<Device.Instance>> compatRes = both.get(0);
-              MoreFutures.Result<List<Device.Instance>> incompatRes = both.get(1);
-              if (compatRes.hasFailed()) {
-                throw compatRes.error;
+                replayDevs.add(new ReplayDeviceInfo(devRes.result.get(i), replayCompatilities.get(i)));
               }
-              if (incompatRes.hasFailed()) {
-                throw incompatRes.error;
-              }
-              List<IncompatibleDeviceInfo> containers = Lists.newArrayList();
-              for (int i = 0; i < incompatRes.result.size(); ++i) {
-                containers.add(new IncompatibleDeviceInfo(incompatRes.result.get(i), incompatibilities.get(i)));
-              }
-              return new ReplayDeviceInfoContainer(compatRes.result, containers);
+              return replayDevs;
             });
           }),
-        new UiErrorCallback<ReplayDeviceInfoContainer, ReplayDeviceInfoContainer, Void>(shell, LOG) {
+
+        new UiErrorCallback<List<ReplayDeviceInfo>, List<ReplayDeviceInfo>, Void>(shell, LOG) {
       @Override
-      protected ResultOrError<ReplayDeviceInfoContainer, Void> onRpcThread(Result<ReplayDeviceInfoContainer> result) {
+      protected ResultOrError<List<ReplayDeviceInfo>, Void> onRpcThread(Result<List<ReplayDeviceInfo>> result) {
         try {
           return success(result.get());
         } catch (RpcException | ExecutionException e) {
@@ -173,20 +161,33 @@ public class Devices {
       }
 
       @Override
-      protected void onUiThreadSuccess(ReplayDeviceInfoContainer container) {
-        updateReplayDevices(container.compatibleDevices, container.incompatibleDevices);
+      protected void onUiThreadSuccess(List<ReplayDeviceInfo> devs) {
+        updateReplayDevices(devs);
       }
 
       @Override
       protected void onUiThreadError(Void error) {
-        updateReplayDevices(null, null);
+        updateReplayDevices(null);
       }
+
     });
   }
 
-  protected void updateReplayDevices(List<Device.Instance> devs, List<IncompatibleDeviceInfo>  incompatibleDevices) {
-    replayDevices = devs;
-    incompatibleReplayDevices = incompatibleDevices;
+  protected void updateReplayDevices(List<ReplayDeviceInfo> devs) {
+    if (devs == null) {
+      replayDevices = null;
+      incompatibleReplayDevices = null;
+    } else {
+      replayDevices = Lists.newArrayList();
+      incompatibleReplayDevices = Lists.newArrayList();
+      for (ReplayDeviceInfo d: devs) {
+        if (d.compatibility == Device.ReplayCompatibility.Compatible) {
+          replayDevices.add(d.instance);
+        } else {
+          incompatibleReplayDevices.add(d);
+        }
+      }
+    }
     listeners.fire().onReplayDevicesLoaded();
   }
 
@@ -202,7 +203,7 @@ public class Devices {
     return selectedReplayDevice;
   }
 
-  public List<IncompatibleDeviceInfo> getIncompatibleReplayDevices() {
+  public List<ReplayDeviceInfo> getIncompatibleReplayDevices() {
     return incompatibleReplayDevices;
   }
 

@@ -40,6 +40,7 @@ go_library(
         "//core/memory/arena:go_default_library",
         "//core/net/grpcutil:go_default_library",
         "//core/os/android/adb:go_default_library",
+        "//core/os/device:go_default_library",
         "//core/os/device/bind:go_default_library",
         "//core/os/file:go_default_library",
         "//gapis/api/all:go_default_library",

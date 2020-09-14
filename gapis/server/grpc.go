@@ -529,13 +529,13 @@ func (s *grpcServer) GetDevices(ctx xctx.Context, req *service.GetDevicesRequest
 
 func (s *grpcServer) GetDevicesForReplay(ctx xctx.Context, req *service.GetDevicesForReplayRequest) (*service.GetDevicesForReplayResponse, error) {
 	defer s.inRPC()()
-	devices, incompatibleDevices, err := s.handler.GetDevicesForReplay(s.bindCtx(ctx), req.Capture)
+	devices, replayCompatibilities, err := s.handler.GetDevicesForReplay(s.bindCtx(ctx), req.Capture)
 	if err := service.NewError(err); err != nil {
 		return &service.GetDevicesForReplayResponse{Res: &service.GetDevicesForReplayResponse_Error{Error: err}}, nil
 	}
 	return &service.GetDevicesForReplayResponse{
 		Res: &service.GetDevicesForReplayResponse_Devices{
-			Devices: &service.Devices{List: devices, IncompatibleList: incompatibleDevices},
+			Devices: &service.Devices{List: devices, ReplayCompatibilityList: replayCompatibilities},
 		},
 	}, nil
 }

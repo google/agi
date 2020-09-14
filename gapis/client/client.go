@@ -24,6 +24,7 @@ import (
 	"github.com/google/gapid/core/log"
 	"github.com/google/gapid/core/log/log_pb"
 	"github.com/google/gapid/core/net/grpcutil"
+	"github.com/google/gapid/core/os/device"
 	perfetto "github.com/google/gapid/gapis/perfetto/service"
 	"github.com/google/gapid/gapis/service"
 	"github.com/google/gapid/gapis/service/path"
@@ -364,7 +365,7 @@ func (c *client) GetDevices(ctx context.Context) ([]*path.Device, error) {
 	return res.GetDevices().List, nil
 }
 
-func (c *client) GetDevicesForReplay(ctx context.Context, p *path.Capture) ([]*path.Device, []*service.IncompatibleDevice, error) {
+func (c *client) GetDevicesForReplay(ctx context.Context, p *path.Capture) ([]*path.Device, []device.ReplayCompatibility, error) {
 	res, err := c.client.GetDevicesForReplay(ctx, &service.GetDevicesForReplayRequest{
 		Capture: p,
 	})
@@ -374,7 +375,7 @@ func (c *client) GetDevicesForReplay(ctx context.Context, p *path.Capture) ([]*p
 	if err := res.GetError(); err != nil {
 		return nil, nil, err.Get()
 	}
-	return res.GetDevices().List, nil, nil
+	return res.GetDevices().List, res.GetDevices().ReplayCompatibilityList, nil
 }
 
 func (c *client) GetLogStream(ctx context.Context, handler log.Handler) error {
