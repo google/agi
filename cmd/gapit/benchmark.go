@@ -171,18 +171,21 @@ func (verb *benchmarkVerb) Run(ctx context.Context, flags flag.FlagSet) error {
 		return err
 	}
 
-	devices, _, err := client.GetDevicesForReplay(ctx, c)
+	devices, replayCompatibility, err := client.GetDevicesForReplay(ctx, c)
 	if err != nil {
 		panic(err)
 	}
 	if len(devices) == 0 {
 		panic("No devices")
 	}
-
-	resolveConfig := &path.ResolveConfig{
-		ReplayDevice: devices[0],
+	if len(replayCompatibility) == 0 || replayCompatibility[0] != device.ReplayCompatibility_Compatible {
+		panic("No compatible device")
 	}
+
 	device := devices[0]
+	resolveConfig := &path.ResolveConfig{
+		ReplayDevice: device,
+	}
 
 	wg := sync.WaitGroup{}
 

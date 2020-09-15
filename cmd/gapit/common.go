@@ -219,7 +219,7 @@ func getDevice(ctx context.Context, client client.Client, capture *path.Capture,
 		return nil, nil
 	}
 	ctx = log.V{"device": flags.Device}.Bind(ctx)
-	paths, _, err := client.GetDevicesForReplay(ctx, capture)
+	paths, replayCompatibilities, err := client.GetDevicesForReplay(ctx, capture)
 	if err != nil {
 		return nil, log.Err(ctx, err, "Failed query list of devices for replay")
 	}
@@ -233,6 +233,10 @@ func getDevice(ctx context.Context, client client.Client, capture *path.Capture,
 		return d.GetName()
 	}
 	for i := 0; i < len(paths); i++ {
+		if replayCompatibilities[i] != device.ReplayCompatibility_Compatible {
+			continue
+		}
+
 		p := paths[i]
 		o, err := client.Get(ctx, p.Path(), nil)
 		if err != nil {
