@@ -30,6 +30,7 @@ import com.google.gapid.models.Devices;
 import com.google.gapid.models.Devices.DeviceValidationResult;
 import com.google.gapid.models.Devices.ReplayDeviceInfo;
 import com.google.gapid.models.Models;
+import com.google.gapid.models.Strings;
 import com.google.gapid.proto.device.Device;
 import com.google.gapid.proto.device.Device.Instance;
 import com.google.gapid.rpc.Rpc;
@@ -243,7 +244,7 @@ public class DeviceDialog implements Devices.Listener, Capture.Listener {
       Widgets.createTableColumn(incompatibleDeviceTable, "Serial", dev -> ((ReplayDeviceInfo)dev).instance.getSerial());
       Widgets.createTableColumn(incompatibleDeviceTable, "GPU", dev -> ((ReplayDeviceInfo)dev).instance.getConfiguration().getHardware().getGPU().getName());
       Widgets.createTableColumn(incompatibleDeviceTable, "Driver version", dev -> Integer.toUnsignedString(((ReplayDeviceInfo)dev).instance.getConfiguration().getDrivers().getVulkan().getPhysicalDevices(0).getDriverVersion()));
-      Widgets.createTableColumn(incompatibleDeviceTable, "Incompatibility", dev -> IncompatibilityMessage(((ReplayDeviceInfo)dev).compatibility));
+      Widgets.createTableColumn(incompatibleDeviceTable, "Incompatibility", dev -> IncompatibilityMessage((ReplayDeviceInfo)dev));
       Widgets.packColumns(incompatibleDeviceTable.getTable());
       incompatibleDeviceTable.getTable().setBackground(theme.invalidDeviceBackground());
 
@@ -360,24 +361,24 @@ public class DeviceDialog implements Devices.Listener, Capture.Listener {
       }
     }
 
-    static String IncompatibilityMessage(Device.ReplayCompatibility replayCompatibility) {
-      switch (replayCompatibility.getNumber()) {
+    static String IncompatibilityMessage(ReplayDeviceInfo device) {
+      switch (device.compatibility.getNumber()) {
         case Device.ReplayCompatibility.Compatible_VALUE:
-          return "Compatible";
+          return Strings.getMessage("REPLAY_COMPATIBILITY_COMPATIBLE");
         case Device.ReplayCompatibility.IncompatibleOS_VALUE:
-          return "Operating System";
+          return Strings.getMessage("REPLAY_COMPATIBILITY_INCOMPATIBLE_OS");
         case Device.ReplayCompatibility.IncompatibleArchitecture_VALUE:
-          return "ABI architecture";
+          return Strings.getMessage("REPLAY_COMPATIBILITY_INCOMPATIBLE_ARCHITECTURE");
         case Device.ReplayCompatibility.IncompatibleMemoryLayout_VALUE:
-          return "ABI memory layout";
+          return Strings.getMessage("REPLAY_COMPATIBILITY_INCOMPATIBLE_MEMORY_LAYOUT");
         case Device.ReplayCompatibility.IncompatibleGPU_VALUE:
-          return "GPU";
+          return Strings.getMessage("REPLAY_COMPATIBILITY_INCOMPATIBLE_GPU");
         case Device.ReplayCompatibility.IncompatibleDriverVersion_VALUE:
-          return "Vulkan driver version";
+          return Strings.getMessage("REPLAY_COMPATIBILITY_INCOMPATIBLE_DRIVER_VERSION");
         case Device.ReplayCompatibility.IncompatibleAPIVersion_VALUE:
-          return "Vulkan API version";
+          return Strings.getMessage("REPLAY_COMPATIBILITY_INCOMPATIBLE_API_VERSION");
         case Device.ReplayCompatibility.IncompatibleAPI_VALUE:
-          return "Vulkan support";
+          return Strings.getMessage("REPLAY_COMPATIBILITY_INCOMPATIBLE_API");
         default:
           return "Unknown incompatibility";
       }
