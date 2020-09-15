@@ -137,7 +137,13 @@ Follow these steps to use the delve debugger for Go with VSCode to debug `gapis`
 
 2. Create a `launch.json` file under the workspace directory with `Ctrl + Shift + P` and `Debug: Open launch.json`
 
-3. Paste the following as one of the launch configurations. This will ensure that there is a launch configuration for attaching to Delve.
+3. There will be two settings file, one is for global the other one is local to the project.
+	- Add this line to your global settings to ensure you have a stable tools directory:
+	`"go.toolsGopath": "<path-to-go-plugin-tools-folder>",`
+	- Add this line to your local settings to be able to search source code in AGI:
+	`"go.gopath": "<path-to-agi-gofuse>"`,
+
+4. Paste the following as one of the launch configurations. This will ensure that there is a launch configuration for attaching to Delve.
 ```
 {
     ...
@@ -149,8 +155,8 @@ Follow these steps to use the delve debugger for Go with VSCode to debug `gapis`
             "request": "attach",
             "mode": "remote",
             "apiVersion": 2,
-            "remotePath": "gapis/",
-            "cwd": "${workspaceFolder}/src/github.com/google/agi/gapis",
+            "remotePath": "",
+            "cwd": "`<path-to-agi-gofuse>`",
             "dlvLoadConfig": {
                 "followPointers": true,
                 "maxVariableRecurse": 1,
@@ -180,6 +186,9 @@ dlv exec --headless --listen=127.0.0.1:1234 --api-version 2 ./bazel-bin/pkg/gapi
 5. Start debugging with `Debug->Start Debugging` (on Linux with `F5`) and make sure `Attach to Delve` is selected as the launch configuration.
 
 6. Now VSCode can interact with Delve and can be used for debugging `gapis` in VSCode UI instead of the command line. Enjoy your debugging :)
+
+This will allow you to put breakpoint in any lines in Go standard library, generated or handwritten AGI Go source code. For the generated file,
+you can put the breakpoints under the `bazel-bin/` or `bazel-out/` folder and the debugger will still find it under the fuse directory during debugging and open it. The only downside is you will have two version of the same file but this is the only working workaround until a support comes for bazel in Go Plugin.
 
 ## How to debug via printing message
 
