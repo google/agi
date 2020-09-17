@@ -92,11 +92,11 @@ func typeToString(t api.FramebufferAttachmentType) string {
 // specified point in a capture.
 func FramebufferAttachment(ctx context.Context, p *path.FramebufferAttachment, r *path.ResolveConfig) (interface{}, error) {
 	if r.ReplayDevice == nil {
-		devices, _, err := devices.ForReplay(ctx, p.After.Capture)
+		devices, compatibilities, _, err := devices.ForReplay(ctx, p.After.Capture)
 		if err != nil {
 			return nil, err
 		}
-		if len(devices) == 0 {
+		if len(compatibilities) == 0 || !compatibilities[0] {
 			return nil, fmt.Errorf("No compatible devices found")
 		}
 		r.ReplayDevice = devices[0]

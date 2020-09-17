@@ -23,6 +23,7 @@ import (
 	"github.com/google/gapid/gapis/capture"
 	"github.com/google/gapid/gapis/service"
 	"github.com/google/gapid/gapis/service/path"
+	"github.com/google/gapid/gapis/stringtable"
 )
 
 // Support is the optional interface implemented by APIs that can describe
@@ -33,7 +34,7 @@ type Support interface {
 	// A lower number represents a higher priority, and Zero represents
 	// an inability for the trace to be replayed on the given device, and is
 	// accompanied by the reason for the incompatibility.
-	GetReplayPriority(context.Context, *device.Instance, *capture.Header) (uint32, device.ReplayCompatibility)
+	GetReplayPriority(context.Context, *device.Instance, *capture.Header) (uint32, *stringtable.Msg)
 }
 
 // QueryIssues is the interface implemented by types that can verify the replay

@@ -41,7 +41,6 @@ import (
 	"github.com/google/gapid/core/log"
 	"github.com/google/gapid/core/memory/arena"
 	"github.com/google/gapid/core/os/android/adb"
-	"github.com/google/gapid/core/os/device"
 	"github.com/google/gapid/core/os/device/bind"
 	"github.com/google/gapid/core/os/file"
 	"github.com/google/gapid/gapis/capture"
@@ -416,7 +415,7 @@ func (p prioritizedDevices) Less(i, j int) bool {
 
 func (p prioritizedDevices) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
 
-func (s *server) GetDevicesForReplay(ctx context.Context, p *path.Capture) ([]*path.Device, []device.ReplayCompatibility, error) {
+func (s *server) GetDevicesForReplay(ctx context.Context, p *path.Capture) ([]*path.Device, []bool, []*stringtable.Msg, error) {
 	ctx = status.Start(ctx, "RPC GetDevicesForReplay")
 	defer status.Finish(ctx)
 	ctx = log.Enter(ctx, "GetDevicesForReplay")

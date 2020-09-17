@@ -27,9 +27,11 @@ import (
 	"github.com/google/gapid/gapis/api/transform"
 	"github.com/google/gapid/gapis/capture"
 	"github.com/google/gapid/gapis/config"
+	"github.com/google/gapid/gapis/messages"
 	"github.com/google/gapid/gapis/replay"
 	"github.com/google/gapid/gapis/resolve/initialcmds"
 	"github.com/google/gapid/gapis/service/path"
+	"github.com/google/gapid/gapis/stringtable"
 )
 
 // GetInitialPayload creates a replay that emits instructions for
@@ -358,72 +360,77 @@ func getReplayTypeName(request replay.Request) string {
 }
 
 // GetReplayPriority implements the replay.Support interface
-func (a API) GetReplayPriority(ctx context.Context, i *device.Instance, h *capture.Header) (uint32, device.ReplayCompatibility) {
+func (a API) GetReplayPriority(ctx context.Context, i *device.Instance, h *capture.Header) (uint32, *stringtable.Msg) {
 	devConf := i.GetConfiguration()
 	devAbis := devConf.GetABIs()
 	devVkDriver := devConf.GetDrivers().GetVulkan()
 	traceVkDriver := h.GetDevice().GetConfiguration().GetDrivers().GetVulkan()
 
+	// create a stringTable messages with the correct args to dynamic parameters
+	// use stringtable `ToValue` function
+	// gapis/messages  messages.replayCompatibilityBlaBlaBla() that is generated from the stb file.
+	m := messages.ReplayCompatibilityIncompatibleGpu()
+
 	// Trace has no Vulkan information
 	if traceVkDriver == nil {
 		log.E(ctx, "Vulkan trace does not contain VulkanDriver info")
-		return 0, device.ReplayCompatibility_IncompatibleAPI
+		return 0, m
 	}
 
 	// The device does not support Vulkan
 	if devVkDriver == nil {
-		return 0, device.ReplayCompatibility_IncompatibleAPI
+		return 0, m
 	}
 
-	var incompatibility device.ReplayCompatibility
+	//var incompatibility device.ReplayCompatibility
 	for _, abi := range devAbis {
 		// OS must match
 		if h.GetABI().GetOS() != abi.GetOS() {
-			incompatibility = device.ReplayCompatibility_IncompatibleOS
+			//incompatibility = device.ReplayCompatibility_IncompatibleOS
 			continue
 		}
 
 		// Architecture must match
 		if h.GetABI().GetArchitecture() != abi.GetArchitecture() {
-			incompatibility = device.ReplayCompatibility_IncompatibleArchitecture
+			//incompatibility = device.ReplayCompatibility_IncompatibleArchitecture
 			continue
 		}
 
 		// Memory layout must match.
 		if !abi.GetMemoryLayout().SameAs(h.GetABI().GetMemoryLayout()) {
-			incompatibility = device.ReplayCompatibility_IncompatibleMemoryLayout
+			//incompatibility = device.ReplayCompatibility_IncompatibleMemoryLayout
 			continue
 		}
 		// If there is no physical devices, the trace must not contain
 		// vkCreateInstance, any ABI compatible Vulkan device should be able to
 		// replay.
 		if len(traceVkDriver.GetPhysicalDevices()) == 0 {
-			return 1, device.ReplayCompatibility_Compatible
+			return 1, m //device.ReplayCompatibility_Compatible
 		}
 		// Requires same GPU vendor, GPU device, Vulkan driver and Vulkan API version.
 		for _, devPhyInfo := range devVkDriver.GetPhysicalDevices() {
 			for _, tracePhyInfo := range traceVkDriver.GetPhysicalDevices() {
 				// TODO: More sophisticated rules
 				if devPhyInfo.GetVendorId() != tracePhyInfo.GetVendorId() {
-					incompatibility = device.ReplayCompatibility_IncompatibleGPU
+					//incompatibility = device.ReplayCompatibility_IncompatibleGPU
 					continue
 				}
 				if devPhyInfo.GetDeviceId() != tracePhyInfo.GetDeviceId() {
-					incompatibility = device.ReplayCompatibility_IncompatibleGPU
+					//incompatibility = device.ReplayCompatibility_IncompatibleGPU
 					continue
 				}
 				if devPhyInfo.GetDriverVersion() != tracePhyInfo.GetDriverVersion() {
-					incompatibility = device.ReplayCompatibility_IncompatibleDriverVersion
+					//incompatibility = device.ReplayCompatibility_IncompatibleDriverVersion
 					continue
 				}
 				// Ignore the API patch level (bottom 12 bits) when comparing the API version.
 				if (devPhyInfo.GetApiVersion() & ^uint32(0xfff)) != (tracePhyInfo.GetApiVersion() & ^uint32(0xfff)) {
-					incompatibility = device.ReplayCompatibility_IncompatibleAPIVersion
+					//incompatibility = device.ReplayCompatibility_IncompatibleAPIVersion
 					continue
 				}
-				return 1, device.ReplayCompatibility_Compatible
+				return 1, m
 			}
 		}
 	}
-	return 0, incompatibility
+	return 0, m //incompatibility
 }

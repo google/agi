@@ -27,6 +27,7 @@ go_library(
     importpath = "github.com/google/gapid/gapis/stringtable",
     visibility = ["//visibility:public"],
     deps = [
+        "//core/os/device:go_default_library",
         "//gapis/service/box:go_default_library",
         "//gapis/service/path:go_default_library",
         "@com_github_golang_protobuf//proto:go_default_library",
@@ -38,6 +39,7 @@ proto_library(
     srcs = ["stringtable.proto"],
     visibility = ["//visibility:public"],
     deps = [
+        "//core/os/device:device_proto",
         "//gapis/service/box:box_proto",
         "//gapis/service/path:path_proto",
     ],
