@@ -237,11 +237,11 @@ Device can replay the capture.
 
 # REPLAY_COMPATIBILITY_INCOMPATIBLE_OS
 
-Device OS ({{replay_os}}) is different from the one of the capture device ({{capture_os}}).
+Device OS ({{device_os}}) is different from the one of the capture device ({{capture_os}}).
 
 # REPLAY_COMPATIBILITY_INCOMPATIBLE_ARCHITECTURE
 
-Device ABI architecture is different from the one of the capture device.
+Device ABI architecture ({{device_arch}}) is different from the one of the capture device ({{capture_arch}}).
 
 # REPLAY_COMPATIBILITY_INCOMPATIBLE_MEMORY_LAYOUT
 
@@ -249,15 +249,15 @@ Device ABI memory layout is different from the one of the capture device.
 
 # REPLAY_COMPATIBILITY_INCOMPATIBLE_GPU
 
-Device GPU is different from the one of the capture device.
+Device GPU ({{device_gpu}}) is different from the one of the capture device ({{capture_gpu}}).
 
 # REPLAY_COMPATIBILITY_INCOMPATIBLE_DRIVER_VERSION
 
-Device GPU driver version is different from the one of the capture device.
+Device GPU driver version ({{device_driver_version}}) is different from the one of the capture device ({{capture_driver_version}}).
 
 # REPLAY_COMPATIBILITY_INCOMPATIBLE_API_VERSION
 
-Device graphics API version is different from the one of the capture device.
+Device graphics API version ({{device_api_version}}) is different from the one of the capture device ({{capture_api_version}}).
 
 # REPLAY_COMPATIBILITY_INCOMPATIBLE_API
 

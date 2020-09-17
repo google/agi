@@ -366,71 +366,101 @@ func (a API) GetReplayPriority(ctx context.Context, i *device.Instance, h *captu
 	devVkDriver := devConf.GetDrivers().GetVulkan()
 	traceVkDriver := h.GetDevice().GetConfiguration().GetDrivers().GetVulkan()
 
-	// create a stringTable messages with the correct args to dynamic parameters
-	// use stringtable `ToValue` function
-	// gapis/messages  messages.replayCompatibilityBlaBlaBla() that is generated from the stb file.
-	m := messages.ReplayCompatibilityIncompatibleGpu()
-
 	// Trace has no Vulkan information
 	if traceVkDriver == nil {
 		log.E(ctx, "Vulkan trace does not contain VulkanDriver info")
-		return 0, m
+		return 0, messages.ReplayCompatibilityIncompatibleApi()
 	}
 
 	// The device does not support Vulkan
 	if devVkDriver == nil {
-		return 0, m
+		return 0, messages.ReplayCompatibilityIncompatibleApi()
 	}
 
-	//var incompatibility device.ReplayCompatibility
+	// As we iterate over several ABIs, remember the most detailed incompatibility reason
+	reasonDepth := 0
+	var reason *stringtable.Msg
+
 	for _, abi := range devAbis {
+
 		// OS must match
-		if h.GetABI().GetOS() != abi.GetOS() {
-			//incompatibility = device.ReplayCompatibility_IncompatibleOS
+		depth := 1
+		devOS := abi.GetOS()
+		traceOS := h.GetABI().GetOS()
+		if devOS != traceOS {
+			if reasonDepth < depth {
+				reasonDepth = depth
+				reason = messages.ReplayCompatibilityIncompatibleOs(devOS.String(), traceOS.String())
+			}
 			continue
 		}
 
 		// Architecture must match
-		if h.GetABI().GetArchitecture() != abi.GetArchitecture() {
-			//incompatibility = device.ReplayCompatibility_IncompatibleArchitecture
+		depth = 2
+		devArch := abi.GetArchitecture()
+		traceArch := h.GetABI().GetArchitecture()
+		if devArch != traceArch {
+			if reasonDepth < depth {
+				reasonDepth = depth
+				reason = messages.ReplayCompatibilityIncompatibleArchitecture(devArch.String(), traceArch.String())
+			}
 			continue
 		}
 
 		// Memory layout must match.
+		depth = 3
 		if !abi.GetMemoryLayout().SameAs(h.GetABI().GetMemoryLayout()) {
-			//incompatibility = device.ReplayCompatibility_IncompatibleMemoryLayout
+			if reasonDepth < depth {
+				reasonDepth = depth
+				reason = messages.ReplayCompatibilityIncompatibleMemoryLayout()
+			}
 			continue
 		}
 		// If there is no physical devices, the trace must not contain
 		// vkCreateInstance, any ABI compatible Vulkan device should be able to
 		// replay.
 		if len(traceVkDriver.GetPhysicalDevices()) == 0 {
-			return 1, m //device.ReplayCompatibility_Compatible
+			return 1, messages.ReplayCompatibilityCompatible()
 		}
 		// Requires same GPU vendor, GPU device, Vulkan driver and Vulkan API version.
 		for _, devPhyInfo := range devVkDriver.GetPhysicalDevices() {
 			for _, tracePhyInfo := range traceVkDriver.GetPhysicalDevices() {
-				// TODO: More sophisticated rules
+				depth = 4
 				if devPhyInfo.GetVendorId() != tracePhyInfo.GetVendorId() {
-					//incompatibility = device.ReplayCompatibility_IncompatibleGPU
+					if reasonDepth < depth {
+						reasonDepth = depth
+						reason = messages.ReplayCompatibilityIncompatibleGpu(devPhyInfo.GetDeviceName(), tracePhyInfo.GetDeviceName())
+					}
 					continue
 				}
+				depth = 5
 				if devPhyInfo.GetDeviceId() != tracePhyInfo.GetDeviceId() {
-					//incompatibility = device.ReplayCompatibility_IncompatibleGPU
+					if reasonDepth < depth {
+						reasonDepth = depth
+						reason = messages.ReplayCompatibilityIncompatibleGpu(devPhyInfo.GetDeviceName(), tracePhyInfo.GetDeviceName())
+					}
 					continue
 				}
+				depth = 6
 				if devPhyInfo.GetDriverVersion() != tracePhyInfo.GetDriverVersion() {
-					//incompatibility = device.ReplayCompatibility_IncompatibleDriverVersion
+					if reasonDepth < depth {
+						reasonDepth = depth
+						reason = messages.ReplayCompatibilityIncompatibleDriverVersion(devPhyInfo.GetDriverVersion(), tracePhyInfo.GetDriverVersion())
+					}
 					continue
 				}
 				// Ignore the API patch level (bottom 12 bits) when comparing the API version.
+				depth = 7
 				if (devPhyInfo.GetApiVersion() & ^uint32(0xfff)) != (tracePhyInfo.GetApiVersion() & ^uint32(0xfff)) {
-					//incompatibility = device.ReplayCompatibility_IncompatibleAPIVersion
+					if reasonDepth < depth {
+						reasonDepth = depth
+						reason = messages.ReplayCompatibilityIncompatibleApiVersion(devPhyInfo.GetApiVersion(), tracePhyInfo.GetApiVersion())
+					}
 					continue
 				}
-				return 1, m
+				return 1, messages.ReplayCompatibilityCompatible()
 			}
 		}
 	}
-	return 0, m //incompatibility
+	return 0, reason
 }

@@ -56,25 +56,6 @@ enum OSKind {
   Stadia = 5;
 }
 
-// Move this to service.proto, and change it to:
-//  struct: {
-//    compatible: bool
-//    stringTable: message
-//  }
-
-// ReplayCompatibility lists possible reasons why a device is not compatible
-// to replay a given trace.
-// enum ReplayCompatibility {
-//   Compatible = 0;  // Default, for compatible devices
-//   IncompatibleOS = 1;
-//   IncompatibleArchitecture = 2;
-//   IncompatibleMemoryLayout = 3;
-//   IncompatibleGPU = 4;
-//   IncompatibleDriverVersion = 5;
-//   IncompatibleAPIVersion = 6;
-//   IncompatibleAPI = 7;
-// }
-  
 // MemoryLayout holds information about how memory is fundamentally laid out for
 // a device.
 message MemoryLayout {
