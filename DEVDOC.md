@@ -189,7 +189,7 @@ dlv exec --headless --listen=127.0.0.1:1234 --api-version 2 ./bazel-bin/pkg/gapi
 
 7. Now VSCode can interact with Delve and can be used for debugging `gapis` in VSCode UI instead of the command line. Enjoy your debugging :)
 
-This allows you to put breakpoint at any line in AGI Go source code regardless if they are handwritten, generated or in Go Standard Library. For the generated file, you can put the breakpoints under the `bazel-bin/` or `bazel-out/` folder and the debugger will still find it under the fuse directory during debugging and open it. The only downside is you will have two version of the same file but this is the only working workaround until Go Plugin supports bazel-generated files.
+This allows you to put breakpoint at any line in AGI Go source code regardless if they are handwritten, generated or in Go Standard Library. For the generated file, you can put the breakpoints under the `bazel-bin/` or `bazel-out/` folder and the debugger will still find it under the fuse directory during debugging and open it. The only downside is you will have two versions of the same file but this is the only working workaround until Go Plugin supports bazel-generated files.
 
 ## How to debug via printing message
 
