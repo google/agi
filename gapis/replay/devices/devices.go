@@ -31,9 +31,12 @@ import (
 	"github.com/google/gapid/gapis/stringtable"
 )
 
-// ForReplay returns a priority-sorted path list of devices that are capable of
-// replaying the capture c, along with the list of devices which are not capable
-// of replaying the capture c and the reason why they are not.
+// ForReplay returns three lists of the same size, at each index:
+//  - path.Device references a device
+//  - a bool indicates if that device is compatible (can replay) the capture
+//  - a stringtable.Msg gives the reason for a device to not be compatible
+// These lists are sorted such that compatible devices are returned at the front
+// of the list, in the preferred device order.
 func ForReplay(ctx context.Context, p *path.Capture) ([]*path.Device, []bool, []*stringtable.Msg, error) {
 	c, err := capture.ResolveGraphicsFromPath(ctx, p)
 	if err != nil {

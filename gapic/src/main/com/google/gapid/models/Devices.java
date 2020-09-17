@@ -144,7 +144,6 @@ public class Devices {
               }
               List<ReplayDeviceInfo> replayDevs = Lists.newArrayList();
               for (int i = 0; i < devRes.result.size(); ++i) {
-
                 replayDevs.add(new ReplayDeviceInfo(devRes.result.get(i), compatibilities.get(i), reasons.get(i)));
               }
               return replayDevs;
@@ -172,7 +171,6 @@ public class Devices {
       protected void onUiThreadError(Void error) {
         updateReplayDevices(null);
       }
-
     });
   }
 
