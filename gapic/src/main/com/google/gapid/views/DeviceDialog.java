@@ -244,7 +244,7 @@ public class DeviceDialog implements Devices.Listener, Capture.Listener {
       Widgets.createTableColumn(incompatibleDeviceTable, "Serial", dev -> ((ReplayDeviceInfo)dev).instance.getSerial());
       Widgets.createTableColumn(incompatibleDeviceTable, "GPU", dev -> ((ReplayDeviceInfo)dev).instance.getConfiguration().getHardware().getGPU().getName());
       Widgets.createTableColumn(incompatibleDeviceTable, "Driver version", dev -> Integer.toUnsignedString(((ReplayDeviceInfo)dev).instance.getConfiguration().getDrivers().getVulkan().getPhysicalDevices(0).getDriverVersion()));
-      Widgets.createTableColumn(incompatibleDeviceTable, "Incompatibility", dev -> IncompatibilityMessage((ReplayDeviceInfo)dev));
+      Widgets.createTableColumn(incompatibleDeviceTable, "Incompatibility", dev -> Strings.getMessage(((ReplayDeviceInfo)dev).reason));
       Widgets.packColumns(incompatibleDeviceTable.getTable());
       incompatibleDeviceTable.getTable().setBackground(theme.invalidDeviceBackground());
 
@@ -358,29 +358,6 @@ public class DeviceDialog implements Devices.Listener, Capture.Listener {
       Button openTrace = getButton(IDialogConstants.OK_ID);
       if (openTrace != null) {
         openTrace.setEnabled(validationPassed);
-      }
-    }
-
-    static String IncompatibilityMessage(ReplayDeviceInfo device) {
-      switch (device.compatibility.getNumber()) {
-        case Device.ReplayCompatibility.Compatible_VALUE:
-          return Strings.getMessage("REPLAY_COMPATIBILITY_COMPATIBLE");
-        case Device.ReplayCompatibility.IncompatibleOS_VALUE:
-          return Strings.getMessage("REPLAY_COMPATIBILITY_INCOMPATIBLE_OS");
-        case Device.ReplayCompatibility.IncompatibleArchitecture_VALUE:
-          return Strings.getMessage("REPLAY_COMPATIBILITY_INCOMPATIBLE_ARCHITECTURE");
-        case Device.ReplayCompatibility.IncompatibleMemoryLayout_VALUE:
-          return Strings.getMessage("REPLAY_COMPATIBILITY_INCOMPATIBLE_MEMORY_LAYOUT");
-        case Device.ReplayCompatibility.IncompatibleGPU_VALUE:
-          return Strings.getMessage("REPLAY_COMPATIBILITY_INCOMPATIBLE_GPU");
-        case Device.ReplayCompatibility.IncompatibleDriverVersion_VALUE:
-          return Strings.getMessage("REPLAY_COMPATIBILITY_INCOMPATIBLE_DRIVER_VERSION");
-        case Device.ReplayCompatibility.IncompatibleAPIVersion_VALUE:
-          return Strings.getMessage("REPLAY_COMPATIBILITY_INCOMPATIBLE_API_VERSION");
-        case Device.ReplayCompatibility.IncompatibleAPI_VALUE:
-          return Strings.getMessage("REPLAY_COMPATIBILITY_INCOMPATIBLE_API");
-        default:
-          return "Unknown incompatibility";
       }
     }
 

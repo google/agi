@@ -29,10 +29,10 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gapid.proto.SettingsProto;
 import com.google.gapid.proto.device.Device;
 import com.google.gapid.proto.device.Device.Instance;
-import com.google.gapid.proto.device.Device.ReplayCompatibility;
 import com.google.gapid.proto.device.Device.VulkanDriver;
 import com.google.gapid.proto.service.Service;
 import com.google.gapid.proto.service.path.Path;
+import com.google.gapid.proto.stringtable.Stringtable;
 import com.google.gapid.rpc.Rpc;
 import com.google.gapid.rpc.Rpc.Result;
 import com.google.gapid.rpc.RpcException;
@@ -107,11 +107,13 @@ public class Devices {
 
   public class ReplayDeviceInfo {
     public Device.Instance instance;
-    public Device.ReplayCompatibility compatibility;
+    public Boolean compatible;
+    public Stringtable.Msg reason;
 
-    public ReplayDeviceInfo(Instance instance, ReplayCompatibility compatibility) {
+    public ReplayDeviceInfo(Instance instance, Boolean compatible, Stringtable.Msg reason) {
       this.instance = instance;
-      this.compatibility = compatibility;
+      this.compatible = compatible;
+      this.reason = reason;
     }
   }
 
@@ -132,8 +134,9 @@ public class Devices {
                 .collect(toList())),
             l -> l.stream().map(v -> v.getDevice()).collect(toList()));
 
-            List<Device.ReplayCompatibility> replayCompatilities =
-                devs.getReplayCompatibilityListList().stream().collect(toList());
+            List<Boolean> compatibilities = devs.getCompatibilitiesList();
+            List<Stringtable.Msg> reasons = devs.getReasonsList();
+
             return MoreFutures.combine(Arrays.asList(allDevices), both -> {
               MoreFutures.Result<List<Device.Instance>> devRes = both.get(0);
               if (devRes.hasFailed()) {
@@ -142,7 +145,7 @@ public class Devices {
               List<ReplayDeviceInfo> replayDevs = Lists.newArrayList();
               for (int i = 0; i < devRes.result.size(); ++i) {
 
-                replayDevs.add(new ReplayDeviceInfo(devRes.result.get(i), replayCompatilities.get(i)));
+                replayDevs.add(new ReplayDeviceInfo(devRes.result.get(i), compatibilities.get(i), reasons.get(i)));
               }
               return replayDevs;
             });
@@ -181,7 +184,7 @@ public class Devices {
       replayDevices = Lists.newArrayList();
       incompatibleReplayDevices = Lists.newArrayList();
       for (ReplayDeviceInfo d: devs) {
-        if (d.compatibility == Device.ReplayCompatibility.Compatible) {
+        if (d.compatible) {
           replayDevices.add(d.instance);
         } else {
           incompatibleReplayDevices.add(d);
