@@ -66,18 +66,12 @@ func ProcessPerformances(ctx context.Context, slices *service.ProfilingData_GpuS
 	// Calculate GPU Counter Performances for all leaf groups/commands.
 	setGpuCounterMetrics(ctx, groupToSlices, counters, &metrics, &groupToEntry)
 
-	// Collect all leaf performance entries corresponding to leaf groups/commands.
-	leafEntries := make([]*service.ProfilingData_GpuPerformance_Entry, 0)
-	for _, val := range groupToEntry {
-		leafEntries = append(leafEntries, val)
-	}
-
-	// Calculate Performances for all non-leaf command nodes upper in the tree.
-	parentEntries := deriveParentEntries(metrics, groupToEntry)
+	// Merge and organize the leaf entries.
+	entries := mergeLeafEntries(metrics, groupToEntry)
 
 	return &service.ProfilingData_GpuPerformance{
 		Metrics: metrics,
-		Entries: append(leafEntries, parentEntries...),
+		Entries: entries,
 	}, nil
 }
 
@@ -207,25 +201,25 @@ func counterPerfForGroup(slices []*service.ProfilingData_GpuSlices_Slice, counte
 	}
 }
 
-// Based on the leaf commands' GPU performances, derive the parent nodes' GPU
-// performances.
-func deriveParentEntries(metrics []*service.ProfilingData_GpuPerformance_Metric, groupToEntry map[int32]*service.ProfilingData_GpuPerformance_Entry) []*service.ProfilingData_GpuPerformance_Entry {
-	parentEntries := make([]*service.ProfilingData_GpuPerformance_Entry, 0)
+// Merge leaf group entries if they belong to the same command, and also derive
+// the parent command nodes' GPU performances based on the leaf entries.
+func mergeLeafEntries(metrics []*service.ProfilingData_GpuPerformance_Metric, groupToEntry map[int32]*service.ProfilingData_GpuPerformance_Entry) []*service.ProfilingData_GpuPerformance_Entry {
+	mergedEntries := make([]*service.ProfilingData_GpuPerformance_Entry, 0)
 
-	// Find out all the parent command nodes that need performance calculation.
+	// Find out all the self/parent command nodes that may need performance merging.
 	indexToGroups := make(map[string][]int32) // string formatted command index -> a list of contained groups referenced by group id.
 	for groupId, entry := range groupToEntry {
-		// The performance of one leaf group/command contributes to all the ancesters up to the root command node.
+		// The performance of one leaf group/command contributes to itself and all the ancestors up to the root command node.
 		leafIdx := entry.CommandIndex
-		for end := len(leafIdx) - 1; end > 0; end-- {
-			parentIdxStr := encodeIndex(leafIdx[0:end])
-			indexToGroups[parentIdxStr] = append(indexToGroups[parentIdxStr], groupId)
+		for end := len(leafIdx); end > 0; end-- {
+			mergedIdxStr := encodeIndex(leafIdx[0:end])
+			indexToGroups[mergedIdxStr] = append(indexToGroups[mergedIdxStr], groupId)
 		}
 	}
 
-	for parentIndex, leafGroupIds := range indexToGroups {
-		parentEntry := &service.ProfilingData_GpuPerformance_Entry{
-			CommandIndex:  decodeIndex(parentIndex),
+	for commandIndex, leafGroupIds := range indexToGroups {
+		mergedEntry := &service.ProfilingData_GpuPerformance_Entry{
+			CommandIndex:  decodeIndex(commandIndex),
 			MetricToValue: make(map[int32]float64),
 		}
 		for _, metric := range metrics {
@@ -244,12 +238,12 @@ func deriveParentEntries(metrics []*service.ProfilingData_GpuPerformance_Metric,
 					perf = valueSum / timeSum
 				}
 			}
-			parentEntry.MetricToValue[metric.Id] = perf
+			mergedEntry.MetricToValue[metric.Id] = perf
 		}
-		parentEntries = append(parentEntries, parentEntry)
+		mergedEntries = append(mergedEntries, mergedEntry)
 	}
 
-	return parentEntries
+	return mergedEntries
 }
 
 // Evaluate and return the appropriate aggregation method for a GPU counter.
