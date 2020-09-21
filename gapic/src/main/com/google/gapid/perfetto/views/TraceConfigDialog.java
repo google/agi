@@ -277,9 +277,9 @@ public class TraceConfigDialog extends DialogBase {
         config.addDataSourcesBuilder()
             .getConfigBuilder()
                 .setName("gpu.renderstages");
-        config.addDataSourcesBuilder()
-            .getConfigBuilder()
-                .setName("VulkanAPI");
+        // config.addDataSourcesBuilder()
+            // .getConfigBuilder()
+                // .setName("VulkanAPI");
       }
       if (gpuCaps.getGpuCounterDescriptor().getSpecsCount() > 0 &&
           gpu.getCounters() && gpu.getCounterIdsCount() > 0) {
