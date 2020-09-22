@@ -25,6 +25,7 @@ import (
 	"github.com/google/gapid/gapis/api/commandGenerator"
 	"github.com/google/gapid/gapis/api/controlFlowGenerator"
 	"github.com/google/gapid/gapis/api/transform"
+	//"github.com/google/gapid/gapis/api/vulkan/loopingVulkanControlFlowGenerator"
 	"github.com/google/gapid/gapis/capture"
 	"github.com/google/gapid/gapis/config"
 	"github.com/google/gapid/gapis/messages"
@@ -142,12 +143,30 @@ func (a API) Replay(
 	transforms = append(transforms, newDestroyResourcesAtEOS())
 	transforms = appendLogTransforms(ctx, replayType, c, transforms)
 
+	loopStart := numOfInitialCmds
+	loopEnd := api.CmdID(len(initialCmds) +len(c.Commands) -1)
 	cmdGenerator := commandGenerator.NewLinearCommandGenerator(initialCmds, c.Commands)
-	chain := transform.CreateTransformChain(ctx, cmdGenerator, transforms, out)
-	controlFlow := controlFlowGenerator.NewLinearControlFlowGenerator(chain)
-	if err := controlFlow.TransformAll(ctx); err != nil {
-		log.E(ctx, "%v Error: %v", replayType, err)
-		return err
+
+	_, _ = loopStart, loopEnd
+	switch firstRequest.(type) {
+       // case issuesRequest:
+       // case framebufferRequest:
+       case profileRequest:
+       		   log.W(ctx, "PERFORMANCE PERFORMANCE PERFORMANCE")
+               nullWriterObj := nullWriter{state: cloneState(ctx, c, out.State())}
+               chain := transform.CreateTransformChain(ctx, cmdGenerator, transforms, nullWriterObj)
+               controlFlow := NewLoopingVulkanControlFlowGenerator(ctx, chain, out, c, loopStart, loopEnd, 10)
+               if err := controlFlow.TransformAll(ctx); err != nil {
+                       log.E(ctx, "%v Error: %v", replayType, err)
+                       return err
+               }
+	default:
+	   chain := transform.CreateTransformChain(ctx, cmdGenerator, transforms, out)
+	   controlFlow := controlFlowGenerator.NewLinearControlFlowGenerator(chain)
+	   if err := controlFlow.TransformAll(ctx); err != nil {
+	           log.E(ctx, "%v Error: %v", replayType, err)
+	           return err
+	          }
 	}
 
 	return nil
@@ -428,4 +447,38 @@ func (a API) GetReplayPriority(ctx context.Context, i *device.Instance, h *captu
 		reason = messages.ReplayCompatibilityIncompatibleArchitecture(h.GetABI().GetArchitecture().String())
 	}
 	return 0, reason
+}
+
+
+// nullWriter conforms to the the transformer.Writer interface, it just updates a state object
+type nullWriter struct {
+	state   *api.GlobalState
+}
+
+func (w nullWriter) State() *api.GlobalState {
+	return w.state
+}
+
+func (w nullWriter) MutateAndWrite(ctx context.Context, id api.CmdID, cmd api.Cmd) error {
+	log.W(ctx, "nullWriter:MutateAndWrite: %v, %v", id, cmd)
+	err := cmd.Mutate(ctx, id, w.state, nil, nil)
+	panic("aaaaaa") // We don't get here because the above function never returns. I have no idea why.
+	log.W(ctx, "nullWriter:MutateAndWrite: return error: %v", err)
+	return err
+}
+
+func cloneState(ctx context.Context, capture *capture.GraphicsCapture, state *api.GlobalState) *api.GlobalState {
+
+	clone := capture.NewUninitializedState(ctx)
+	clone.Memory = state.Memory.Clone()
+
+	for apiState, graphicsApi := range state.APIs {
+
+		clonedState := graphicsApi.Clone(clone.Arena)
+		clonedState.SetupInitialState(ctx, clone)
+
+		clone.APIs[apiState] = clonedState
+	}
+
+	return clone
 }

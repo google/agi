@@ -63,6 +63,7 @@ cmd VkResult vkCreateInstance(
   // NOTE: The logic for this function should be identical to the one of
   // replayCreateVkInstance() in synthetic.api. Change both together.
 
+  vkErrorNullPointer("AAAAAAAAAAAAAAA")
   instance := createInstanceObject(pCreateInfo)
   handle := ?
   if pInstance == null { vkErrorNullPointer("VkInstance") }
