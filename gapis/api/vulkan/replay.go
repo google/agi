@@ -25,6 +25,7 @@ import (
 	"github.com/google/gapid/gapis/api/commandGenerator"
 	"github.com/google/gapid/gapis/api/controlFlowGenerator"
 	"github.com/google/gapid/gapis/api/transform"
+	//"github.com/google/gapid/gapis/api/vulkan/loopingVulkanControlFlowGenerator"
 	"github.com/google/gapid/gapis/capture"
 	"github.com/google/gapid/gapis/config"
 	"github.com/google/gapid/gapis/messages"
@@ -142,9 +143,12 @@ func (a API) Replay(
 	transforms = append(transforms, newDestroyResourcesAtEOS())
 	transforms = appendLogTransforms(ctx, replayType, c, transforms)
 
+	loopStart := numOfInitialCmds
+	loopEnd := api.CmdID(len(initialCmds) +len(c.Commands) -1)
 	cmdGenerator := commandGenerator.NewLinearCommandGenerator(initialCmds, c.Commands)
 	chain := transform.CreateTransformChain(ctx, cmdGenerator, transforms, out)
-	controlFlow := controlFlowGenerator.NewLinearControlFlowGenerator(chain)
+	//controlFlow := controlFlowGenerator.NewLinearControlFlowGenerator(chain)
+	controlFlow := NewLoopingVulkanControlFlowGenerator(ctx, chain, c, loopStart, loopEnd, 10)
 	if err := controlFlow.TransformAll(ctx); err != nil {
 		log.E(ctx, "%v Error: %v", replayType, err)
 		return err

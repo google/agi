@@ -27,7 +27,7 @@ import (
 // all the commands produced by command enerator
 type TransformChain struct {
 	transforms            []Transform
-	out                   Writer
+	out                   *commandCaptureWriter
 	generator             commandGenerator.CommandGenerator
 	hasBegun              bool
 	hasEnded              bool
@@ -42,7 +42,7 @@ func CreateTransformChain(ctx context.Context, generator commandGenerator.Comman
 	chain := TransformChain{
 		generator:        generator,
 		transforms:       transforms,
-		out:              out,
+		out:              createCommandCaptureWriter(out),
 		hasBegun:         false,
 		hasEnded:         false,
 		currentCommandID: NewTransformCommandID(0),
@@ -68,7 +68,7 @@ func CreateTransformChain(ctx context.Context, generator commandGenerator.Comman
 }
 
 func (chain *TransformChain) beginChain(ctx context.Context) error {
-	chain.handleInitialState(chain.out.State())
+	chain.handleInitialState(chain.out.State()) // ALAN: TODO: Why bother with the arg?
 	var err error
 
 	for _, transform := range chain.transforms {
@@ -92,9 +92,15 @@ func (chain *TransformChain) beginChain(ctx context.Context) error {
 }
 
 func (chain *TransformChain) endChain(ctx context.Context) error {
+
 	chain.currentCommandID = NewEndCommandID()
+	cmds := make([]api.Cmd, 0)
+	var err error
+
 	for i, transform := range chain.transforms {
-		cmds, err := transform.EndTransform(ctx, chain.out.State())
+
+		cmds, err = transform.EndTransform(ctx, chain.out.State())
+
 		if err != nil {
 			log.W(ctx, "End Transform Command Generation Error [%v] : %v", transform, err)
 			return err
@@ -118,12 +124,17 @@ func (chain *TransformChain) endChain(ctx context.Context) error {
 }
 
 func (chain *TransformChain) transformCommands(ctx context.Context, id CommandID, inputCmds []api.Cmd, beginTransformIndex int) error {
+
+	cmds := inputCmds
+
 	for i := beginTransformIndex; i < len(chain.transforms); i++ {
+
 		chain.currentTransformIndex = i
 		var err error
-		inputCmds, err = chain.transforms[i].TransformCommand(ctx, id, inputCmds, chain.out.State())
+		cmds, err = chain.transforms[i].TransformCommand(ctx, id, cmds, chain.out.State())
+
 		if err != nil {
-			log.W(ctx, "Error on Transform on cmd [%v:%v] with transform [:%v:%v] : %v", id, inputCmds, i, chain.transforms[i], err)
+			log.W(ctx, "Error on Transform on cmd [%v:%v] with transform [:%v:%v] : %v", id, cmds, i, chain.transforms[i], err)
 			return err
 		}
 
@@ -159,27 +170,29 @@ func (chain *TransformChain) GetNumOfRemainingCommands() uint64 {
 	return chain.generator.GetNumOfRemainingCommands()
 }
 
-func (chain *TransformChain) GetNextTransformedCommands(ctx context.Context) error {
+func (chain *TransformChain) ProcessNextTransformedCommands(ctx context.Context) ([]api.Cmd, error) {
+
 	if !chain.hasBegun {
 		chain.hasBegun = true
 		if err := chain.beginChain(ctx); err != nil {
-			return err
+			return make([]api.Cmd, 0), err
 		}
 	}
 
 	if chain.generator.IsEndOfCommands() {
 		if !chain.hasEnded {
 			chain.hasEnded = true
-			return chain.endChain(ctx)
+			err := chain.endChain(ctx)
+			return chain.out.GetAndResetCapturedCommands(), err
 		}
 
-		return nil
+		return make([]api.Cmd, 0), nil
 	}
 
 	currentCommand := chain.generator.GetNextCommand(ctx)
 	if !currentCommand.Terminated() {
 		// Run only the commands that terminated during trace time.
-		return nil
+		return make([]api.Cmd, 0), nil
 	}
 	if config.DebugReplay {
 		log.I(ctx, "Transforming... (%v:%v)", chain.currentCommandID, currentCommand)
@@ -193,7 +206,7 @@ func (chain *TransformChain) GetNextTransformedCommands(ctx context.Context) err
 	}
 
 	chain.currentCommandID.Increment()
-	return err
+	return chain.out.GetAndResetCapturedCommands(), err
 }
 
 func (chain *TransformChain) stateMutator(ctx context.Context, cmds []api.Cmd) error {
@@ -238,4 +251,31 @@ func mutateAndWrite(ctx context.Context, id CommandID, cmds []api.Cmd, out Write
 	}
 
 	return nil
+}
+
+type commandCaptureWriter struct {
+	out     Writer
+	cmds 	[]api.Cmd
+}
+
+func createCommandCaptureWriter(out Writer) *commandCaptureWriter {
+	writer := commandCaptureWriter{
+		out: out,
+		cmds:  make([]api.Cmd, 0),
+	}
+	return &writer
+}
+
+func (w *commandCaptureWriter) State() *api.GlobalState {
+	return w.out.State()
+}
+
+func (w *commandCaptureWriter) MutateAndWrite(ctx context.Context, id api.CmdID, cmd api.Cmd) error {
+	return w.out.MutateAndWrite(ctx, id, cmd)
+}
+
+func (w *commandCaptureWriter) GetAndResetCapturedCommands() []api.Cmd {
+	ret := w.cmds
+	w.cmds = make([]api.Cmd, 0)
+	return ret
 }
