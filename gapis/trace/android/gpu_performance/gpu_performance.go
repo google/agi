@@ -180,12 +180,12 @@ func counterPerfForGroup(slices []*service.ProfilingData_GpuSlices_Slice, counte
 			cStart, cEnd := ts[i-1], ts[i]
 			if cEnd < sStart { // Sample earlier than GPU slice's span.
 				continue
-			} else if cEnd < sEnd { // Sample inside GPU slice's span.
+			} else if cEnd < sEnd { // Sample inside GPU slice's span, or sample's latter part overlaps with slice.
 				ct := cEnd - max(cStart, sStart)
 				ctSum += ct
 				weightedValuesum += float64(ct) * vs[i]
-			} else { // Sample later than GPU slice's span.
-				ct := max(0, sEnd-cStart)
+			} else if cStart < sEnd { // Sample wraps GPU slice's span, or sample's earlier part overlaps with slice.
+				ct := sEnd - max(sStart, cStart)
 				ctSum += ct
 				weightedValuesum += float64(ct) * vs[i]
 				break
