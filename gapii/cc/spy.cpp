@@ -43,7 +43,6 @@
 
 #if TARGET_OS == GAPID_OS_WINDOWS
 #include <windows.h>
-#include "windows/wgl.h"
 #endif  //  TARGET_OS == GAPID_OS_WINDOWS
 
 #if TARGET_OS == GAPID_OS_ANDROID
