@@ -241,11 +241,7 @@ Device OS ({{device_os}}) is different from the one of the capture device ({{cap
 
 # REPLAY_COMPATIBILITY_INCOMPATIBLE_ARCHITECTURE
 
-Device ABI architecture ({{device_arch}}) is different from the one of the capture device ({{capture_arch}}).
-
-# REPLAY_COMPATIBILITY_INCOMPATIBLE_MEMORY_LAYOUT
-
-Device ABI memory layout is different from the one of the capture device.
+Device does not support {{trace_arch}} ABI architecture.
 
 # REPLAY_COMPATIBILITY_INCOMPATIBLE_GPU
 
