@@ -106,7 +106,7 @@ public class PerformanceView extends Composite
       return;
     }
     // Create columns for all the performance metrics.
-    for (Service.ProfilingData.GpuPerformance.Metric metric :
+    for (Service.ProfilingData.GpuCounters.Metric metric :
         models.profile.getData().getGpuPerformance().getMetricsList()) {
       tree.addColumnForMetric(metric);
     }
@@ -144,7 +144,7 @@ public class PerformanceView extends Composite
       return false;
     }
 
-    private void addColumnForMetric(Service.ProfilingData.GpuPerformance.Metric metric) {
+    private void addColumnForMetric(Service.ProfilingData.GpuCounters.Metric metric) {
       TreeViewerColumn column = addColumn(metric.getName() + "(" + metric.getUnit() + ")", node -> {
         Service.CommandTreeNode data = node.getData();
         if (data == null) {

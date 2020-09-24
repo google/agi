@@ -26,7 +26,7 @@ import (
 	perfetto_service "github.com/google/gapid/gapis/perfetto/service"
 	"github.com/google/gapid/gapis/service"
 	"github.com/google/gapid/gapis/service/path"
-	"github.com/google/gapid/gapis/trace/android/gpu_performance"
+	"github.com/google/gapid/gapis/trace/android/profile"
 )
 
 var (
@@ -53,15 +53,15 @@ func ProcessProfilingData(ctx context.Context, processor *perfetto.Processor, ca
 	if err != nil {
 		log.Err(ctx, err, "Failed to get GPU counters")
 	}
-	gpuPerf, err := gpu_performance.ProcessPerformances(ctx, slices, counters)
+	gpuCounters, err := profile.ComputeCounters(ctx, slices, counters)
 	if err != nil {
 		log.Err(ctx, err, "Failed to calculate performance data based on GPU slices and counters")
 	}
 
 	return &service.ProfilingData{
-		Slices:   slices,
-		Counters: counters,
-		GpuPerf:  gpuPerf,
+		Slices:      slices,
+		Counters:    counters,
+		GpuCounters: gpuCounters,
 	}, nil
 }
 

@@ -41,7 +41,7 @@ import com.google.gapid.util.Loadable;
 import com.google.gapid.util.Paths;
 import com.google.gapid.util.Ranges;
 
-import java.util.stream.Collectors;
+import java.util.Arrays;
 import org.eclipse.swt.widgets.Shell;
 
 import java.util.Collections;
@@ -135,14 +135,14 @@ public class Profile
     public final Service.ProfilingData profile;
     private final Map<Integer, List<TimeSpan>> spansByGroup;
     private final List<Service.ProfilingData.GpuSlices.Group> groups;
-    private final Map<String, Map<Integer, Double>> perfLookup; // commandIndex -> {metricId -> performanceValue}
+    private final Map<CommandIndex, Map<Integer, Double>> perfLookup; // commandIndex -> {metricId -> performanceValue}
 
     public Data(Path.Device device, Service.ProfilingData profile) {
       super(device);
       this.profile = profile;
       this.spansByGroup = aggregateSliceTimeByGroup(profile);
       this.groups = getSortedGroups(profile, spansByGroup.keySet());
-      this.perfLookup = organizeGpuPerformances(profile.getGpuPerf());
+      this.perfLookup = organizeGpuPerformances(profile.getGpuCounters());
     }
 
     private static Map<Integer, List<TimeSpan>>
@@ -164,10 +164,10 @@ public class Profile
           .collect(toList());
     }
 
-    private Map<String, Map<Integer, Double>> organizeGpuPerformances(Service.ProfilingData.GpuPerformance perf) {
-      Map<String, Map<Integer, Double>> organized = Maps.newHashMap();
-      for (Service.ProfilingData.GpuPerformance.Entry entry : perf.getEntriesList()) {
-        organized.put(stringfy(entry.getCommandIndexList()), entry.getMetricToValueMap());
+    private Map<CommandIndex, Map<Integer, Double>> organizeGpuPerformances(Service.ProfilingData.GpuCounters perf) {
+      Map<CommandIndex, Map<Integer, Double>> organized = Maps.newHashMap();
+      for (Service.ProfilingData.GpuCounters.Entry entry : perf.getEntriesList()) {
+        organized.put(new CommandIndex(entry.getCommandIndexList()), entry.getMetricToValueMap());
       }
       return organized;
     }
@@ -185,8 +185,8 @@ public class Profile
       return profile.getCountersList();
     }
 
-    public Service.ProfilingData.GpuPerformance getGpuPerformance() {
-      return profile.getGpuPerf();
+    public Service.ProfilingData.GpuCounters getGpuPerformance() {
+      return profile.getGpuCounters();
     }
 
     public TimeSpan getSlicesTimeSpan() {
@@ -203,10 +203,11 @@ public class Profile
     }
 
     public Double getGpuPerformance(List<Long> commandIndex, int metricId) {
-      if (!perfLookup.containsKey(stringfy(commandIndex))) {
+      CommandIndex indexStr = new CommandIndex(commandIndex);
+      if (!perfLookup.containsKey(indexStr)) {
         return Double.NaN;
       }
-      return perfLookup.get(stringfy(commandIndex)).get(metricId);
+      return perfLookup.get(indexStr).get(metricId);
     }
 
     public Duration getDuration(Path.Commands range) {
@@ -250,10 +251,6 @@ public class Profile
       }
       Collections.sort(spans, (s1, s2) -> Long.compare(s1.start, s2.start));
       return spans;
-    }
-
-    private static String stringfy(List<Long> index) {
-      return index.stream().map(String::valueOf).collect(Collectors.joining(","));
     }
   }
 
@@ -301,5 +298,29 @@ public class Profile
      * @param error the loading error or {@code null} if loading was successful.
      */
     public default void onProfileLoaded(Loadable.Message error) { /* empty */ }
+  }
+
+  private static class CommandIndex {
+    private final Long[] index;
+
+    public CommandIndex(List<Long> index) {
+      this.index = index.toArray(new Long[0]);
+    }
+
+    @Override
+    public int hashCode() {
+      return Arrays.hashCode(index);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (obj == this) {
+        return true;
+      } else if (!(obj instanceof CommandIndex)) {
+        return false;
+      }
+      CommandIndex that = (CommandIndex)obj;
+      return Arrays.equals(this.index, that.index);
+    }
   }
 }
