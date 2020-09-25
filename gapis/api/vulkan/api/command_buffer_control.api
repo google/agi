@@ -482,24 +482,30 @@ cmd VkResult vkBeginCommandBuffer(
   } else {
     buff := CommandBuffers[commandBuffer]
     clear(buff.ImageTransitions)
-    if (buff.Level == VK_COMMAND_BUFFER_LEVEL_SECONDARY) && (info.pInheritanceInfo != null) {
+    if (info.pInheritanceInfo != null) {
+      // Make sure to read InheritanceInfo even if the command buffer is not
+      // secondary. The spec allows a primary command buffer to have a non-null
+      // pInheritanceInfo, it will just be ignored. Not reading may lead to
+      // crashes in the validation layer at replay time, see b/161126544.
       inheritanceInfo := info.pInheritanceInfo[0]
-      begin.Inherited = true
-      begin.InheritedRenderPass = inheritanceInfo.renderPass
-      begin.InheritedSubpass = inheritanceInfo.subpass
-      begin.InheritedFramebuffer = inheritanceInfo.framebuffer
-      begin.InheritedOcclusionQuery = inheritanceInfo.occlusionQueryEnable
-      begin.InheritedQueryFlags = inheritanceInfo.queryFlags
-      begin.InheritedPipelineStatsFlags = inheritanceInfo.pipelineStatistics
-      // handle pBeginInfo->pInheritanceInfo->pNext
-      if inheritanceInfo.pNext != null {
-        numPNext := numberOfPNext(inheritanceInfo.pNext)
-        next := MutableVoidPtr(as!void*(inheritanceInfo.pNext))
-        for i in (0 .. numPNext) {
-          sType := as!const VkStructureType*(next.Ptr)[0:1][0]
-          _ = sType
-          // TODO: handle extensions for VkCommandBufferInheritanceInfo
-          next.Ptr = as!VulkanStructHeader*(next.Ptr)[0:1][0].PNext
+      if (buff.Level == VK_COMMAND_BUFFER_LEVEL_SECONDARY) {
+        begin.Inherited = true
+        begin.InheritedRenderPass = inheritanceInfo.renderPass
+        begin.InheritedSubpass = inheritanceInfo.subpass
+        begin.InheritedFramebuffer = inheritanceInfo.framebuffer
+        begin.InheritedOcclusionQuery = inheritanceInfo.occlusionQueryEnable
+        begin.InheritedQueryFlags = inheritanceInfo.queryFlags
+        begin.InheritedPipelineStatsFlags = inheritanceInfo.pipelineStatistics
+        // handle pBeginInfo->pInheritanceInfo->pNext
+        if inheritanceInfo.pNext != null {
+          numPNext := numberOfPNext(inheritanceInfo.pNext)
+          next := MutableVoidPtr(as!void*(inheritanceInfo.pNext))
+          for i in (0 .. numPNext) {
+            sType := as!const VkStructureType*(next.Ptr)[0:1][0]
+            _ = sType
+            // TODO: handle extensions for VkCommandBufferInheritanceInfo
+            next.Ptr = as!VulkanStructHeader*(next.Ptr)[0:1][0].PNext
+          }
         }
       }
     }
