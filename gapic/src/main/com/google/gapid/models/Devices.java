@@ -105,18 +105,6 @@ public class Devices {
     incompatibleReplayDevices = null;
   }
 
-  public class ReplayDeviceInfo {
-    public Device.Instance instance;
-    public Boolean compatible;
-    public Stringtable.Msg reason;
-
-    public ReplayDeviceInfo(Instance instance, Boolean compatible, Stringtable.Msg reason) {
-      this.instance = instance;
-      this.compatible = compatible;
-      this.reason = reason;
-    }
-  }
-
   public static String GetDriverVersion(Device.Instance device) {
     Device.VulkanDriver vkDriver = device.getConfiguration().getDrivers().getVulkan();
     if (vkDriver.getPhysicalDevicesCount() <= 0) {
@@ -137,14 +125,10 @@ public class Devices {
             List<Boolean> compatibilities = devs.getCompatibilitiesList();
             List<Stringtable.Msg> reasons = devs.getReasonsList();
 
-            return MoreFutures.combine(Arrays.asList(allDevices), both -> {
-              MoreFutures.Result<List<Device.Instance>> devRes = both.get(0);
-              if (devRes.hasFailed()) {
-                throw devRes.error;
-              }
+            return MoreFutures.transform(allDevices, instances -> {
               List<ReplayDeviceInfo> replayDevs = Lists.newArrayList();
-              for (int i = 0; i < devRes.result.size(); ++i) {
-                replayDevs.add(new ReplayDeviceInfo(devRes.result.get(i), compatibilities.get(i), reasons.get(i)));
+              for (int i = 0; i < instances.size(); ++i) {
+                replayDevs.add(new ReplayDeviceInfo(instances.get(i), compatibilities.get(i), reasons.get(i)));
               }
               return replayDevs;
             });
@@ -384,6 +368,21 @@ public class Devices {
      * Event indicating that the capture devices have been loaded.
      */
     public default void onCaptureDevicesLoaded() { /* empty */ }
+  }
+
+  /**
+   * Encapsulates information about a replay device.
+   */
+  public static class ReplayDeviceInfo {
+    public final Device.Instance instance;
+    public final Boolean compatible;
+    public final Stringtable.Msg reason;
+
+    public ReplayDeviceInfo(Instance instance, Boolean compatible, Stringtable.Msg reason) {
+      this.instance = instance;
+      this.compatible = compatible;
+      this.reason = reason;
+    }
   }
 
   /**

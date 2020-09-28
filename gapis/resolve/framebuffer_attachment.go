@@ -97,7 +97,7 @@ func FramebufferAttachment(ctx context.Context, p *path.FramebufferAttachment, r
 			return nil, err
 		}
 		if len(compatibilities) == 0 || !compatibilities[0] {
-			return nil, fmt.Errorf("No compatible devices found")
+			return nil, fmt.Errorf("No compatible device found")
 		}
 		r.ReplayDevice = devices[0]
 	}
