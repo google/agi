@@ -91,6 +91,7 @@ func typeToString(t api.FramebufferAttachmentType) string {
 // FramebufferAttachment resolves the specified framebuffer attachment at the
 // specified point in a capture.
 func FramebufferAttachment(ctx context.Context, p *path.FramebufferAttachment, r *path.ResolveConfig) (interface{}, error) {
+	// TODO(b/169641668): cleanup this replay device lookup: bail out if r.ReplayDevice is nil?
 	if r.ReplayDevice == nil {
 		devices, compatibilities, _, err := devices.ForReplay(ctx, p.After.Capture)
 		if err != nil {
