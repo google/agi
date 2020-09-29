@@ -11,6 +11,8 @@ Profiling an application on an Android device requires the following:
 * A [supported device](devices).
 * The device must run Android 11 or later. Previous versions are not supported.
 * The device must have [adb debugging enabled], and be accessible via adb.
+* AGI must be able to install its own APK via adb: on some devices you may have
+  to turn on a "install via USB" option.
 * The target application must be debuggable; the [debuggable attribute] in the
   Android manifest of the application must be set to `true`. This attribute
   enables proper instrumentations from the graphics driver. For Vulkan applications,
