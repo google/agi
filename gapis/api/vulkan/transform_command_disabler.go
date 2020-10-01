@@ -87,7 +87,18 @@ func (disablerTransform *commandDisabler) BeginTransform(ctx context.Context, in
 }
 
 func (disablerTransform *commandDisabler) EndTransform(ctx context.Context, inputState *api.GlobalState) ([]api.Cmd, error) {
-	return nil, nil
+	if len(disablerTransform.disabledCommands) == 0 {
+		return nil, nil
+	}
+
+	err := fmt.Errorf("The requested commands to be disabled could not found: ")
+
+	for _, cmdID := range disablerTransform.disabledCommands {
+		cmdID[0] = cmdID[0] - disablerTransform.cmdsOffset
+		err = fmt.Errorf("%v %v ", err, cmdID)
+	}
+
+	return nil, err
 }
 
 func (disablerTransform *commandDisabler) ClearTransformResources(ctx context.Context) {
@@ -100,12 +111,12 @@ func (disablerTransform *commandDisabler) TransformCommand(ctx context.Context, 
 	}
 
 	if id.GetCommandType() != transform.TransformCommand {
-		// We do not interest with the artificial commands from endTransform.
+		// We are not interested in the artificial commands from endTransform.
 		return inputCommands, nil
 	}
 
 	currentSubCmdID := api.SubCmdIdx{uint64(id.GetID())}
-	if !disablerTransform.shouldBeDisabled(currentSubCmdID) {
+	if !disablerTransform.doesContainDisabledCmd(currentSubCmdID) {
 		return inputCommands, nil
 	}
 
@@ -147,9 +158,9 @@ func (disablerTransform *commandDisabler) removeCommandFromVkQueueSubmit(ctx con
 	newSubmit := cb.VkQueueSubmit(cmd.Queue(), cmd.SubmitCount(), cmd.PSubmits(), cmd.Fence(), cmd.Result())
 	newSubmit.Extras().MustClone(cmd.Extras().All()...)
 
-	for i := 0; i < len(submitInfos); i++ {
+	for i := range submitInfos {
 		currentSubCmdID := append(idx, uint64(i))
-		if !disablerTransform.shouldBeDisabled(currentSubCmdID) {
+		if !disablerTransform.doesContainDisabledCmd(currentSubCmdID) {
 			newSubmitInfos = append(newSubmitInfos, submitInfos[i])
 			continue
 		}
@@ -190,7 +201,7 @@ func (disablerTransform *commandDisabler) removeCommandFromSubmit(ctx context.Co
 
 	for i := range commandBuffers {
 		currentSubCmdID := append(idx, uint64(i))
-		if !disablerTransform.shouldBeDisabled(currentSubCmdID) {
+		if !disablerTransform.doesContainDisabledCmd(currentSubCmdID) {
 			newCommandBuffers = append(newCommandBuffers, commandBuffers[i])
 			continue
 		}
@@ -254,9 +265,11 @@ func (disablerTransform *commandDisabler) rewriteCommandBuffer(ctx context.Conte
 		}
 
 		if !isCmdAllowedToDisable(args) {
-			return VkCommandBuffer(0), fmt.Errorf("Command type is not allowed to be disabled : %V", args)
+			return VkCommandBuffer(0), fmt.Errorf("Command type is not allowed to be disabled : %v", args)
 		}
-		log.W(ctx, "Command %v disabled", currentSubCmdID)
+
+		disablerTransform.removeFromDisabledList(currentSubCmdID)
+		log.I(ctx, "Command %v disabled", currentSubCmdID)
 	}
 
 	if err := disablerTransform.observeAndWriteCommand(cb.VkEndCommandBuffer(newCmdBuffer, VkResult_VK_SUCCESS)); err != nil {
@@ -392,7 +405,7 @@ func (disablerTransform *commandDisabler) observeAndWriteCommand(cmd api.Cmd) er
 	return disablerTransform.writeCommand(cmd)
 }
 
-func (disablerTransform *commandDisabler) shouldBeDisabled(id api.SubCmdIdx) bool {
+func (disablerTransform *commandDisabler) doesContainDisabledCmd(id api.SubCmdIdx) bool {
 	for _, r := range disablerTransform.disabledCommands {
 		if id.Contains(r) {
 			return true
@@ -400,6 +413,27 @@ func (disablerTransform *commandDisabler) shouldBeDisabled(id api.SubCmdIdx) boo
 	}
 
 	return false
+}
+
+func (disablerTransform *commandDisabler) shouldBeDisabled(id api.SubCmdIdx) bool {
+	for _, r := range disablerTransform.disabledCommands {
+		if id.Equals(r) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (disablerTransform *commandDisabler) removeFromDisabledList(id api.SubCmdIdx) {
+	for i, r := range disablerTransform.disabledCommands {
+		if id.Equals(r) {
+			disablerTransform.disabledCommands[i] =
+				disablerTransform.disabledCommands[len(disablerTransform.disabledCommands)-1]
+			disablerTransform.disabledCommands =
+				disablerTransform.disabledCommands[:len(disablerTransform.disabledCommands)-1]
+		}
+	}
 }
 
 func isCmdAllowedToDisable(commandArgs interface{}) bool {
