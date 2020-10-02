@@ -158,14 +158,14 @@ func (disablerTransform *commandDisabler) removeCommandFromVkQueueSubmit(ctx con
 	newSubmit := cb.VkQueueSubmit(cmd.Queue(), cmd.SubmitCount(), cmd.PSubmits(), cmd.Fence(), cmd.Result())
 	newSubmit.Extras().MustClone(cmd.Extras().All()...)
 
-	for i := range submitInfos {
+	for i, submitInfo := range submitInfos {
 		currentSubCmdID := append(idx, uint64(i))
 		if !disablerTransform.doesContainDisabledCmd(currentSubCmdID) {
-			newSubmitInfos = append(newSubmitInfos, submitInfos[i])
+			newSubmitInfos = append(newSubmitInfos, submitInfo)
 			continue
 		}
 
-		newSubmitInfo, err := disablerTransform.removeCommandFromSubmit(ctx, currentSubCmdID, submitInfos[i], cmd, inputState)
+		newSubmitInfo, err := disablerTransform.removeCommandFromSubmit(ctx, currentSubCmdID, submitInfo, cmd, inputState)
 		if err != nil {
 			log.E(ctx, "Failed during removing command from submit : %v", err)
 			return err
@@ -180,8 +180,8 @@ func (disablerTransform *commandDisabler) removeCommandFromVkQueueSubmit(ctx con
 
 	newSubmit.SetPSubmits(NewVkSubmitInfoᶜᵖ(disablerTransform.mustAllocReadDataForSubmit(ctx, inputState, newSubmitInfos).Ptr()))
 
-	for x := range disablerTransform.readMemoriesForSubmit {
-		newSubmit.AddRead(disablerTransform.readMemoriesForSubmit[x].Data())
+	for _, mem := range disablerTransform.readMemoriesForSubmit {
+		newSubmit.AddRead(mem.Data())
 	}
 	disablerTransform.readMemoriesForSubmit = []*api.AllocResult{}
 
@@ -199,14 +199,14 @@ func (disablerTransform *commandDisabler) removeCommandFromSubmit(ctx context.Co
 	commandBuffers := submitInfo.PCommandBuffers().Slice(0, uint64(submitInfo.CommandBufferCount()), layout).MustRead(ctx, cmd, inputState, nil)
 	newCommandBuffers := make([]VkCommandBuffer, 0, len(commandBuffers))
 
-	for i := range commandBuffers {
+	for i, commandBuffer := range commandBuffers {
 		currentSubCmdID := append(idx, uint64(i))
 		if !disablerTransform.doesContainDisabledCmd(currentSubCmdID) {
-			newCommandBuffers = append(newCommandBuffers, commandBuffers[i])
+			newCommandBuffers = append(newCommandBuffers, commandBuffer)
 			continue
 		}
 
-		existingCommandBufferObject := GetState(inputState).CommandBuffers().Get(commandBuffers[i])
+		existingCommandBufferObject := GetState(inputState).CommandBuffers().Get(commandBuffer)
 		newCommandBuffer, err := disablerTransform.rewriteCommandBuffer(ctx, currentSubCmdID, existingCommandBufferObject, cmd, inputState)
 		if err != nil {
 			log.E(ctx, "Failed during rewriting command buffer : %v", err)
@@ -393,11 +393,11 @@ func (disablerTransform *commandDisabler) writeCommand(cmd api.Cmd) error {
 }
 
 func (disablerTransform *commandDisabler) observeAndWriteCommand(cmd api.Cmd) error {
-	for i := range disablerTransform.readMemoriesForCmd {
-		cmd.Extras().GetOrAppendObservations().AddRead(disablerTransform.readMemoriesForCmd[i].Data())
+	for _, mem := range disablerTransform.readMemoriesForCmd {
+		cmd.Extras().GetOrAppendObservations().AddRead(mem.Data())
 	}
-	for i := range disablerTransform.writeMemoriesForCmd {
-		cmd.Extras().GetOrAppendObservations().AddWrite(disablerTransform.writeMemoriesForCmd[i].Data())
+	for _, mem := range disablerTransform.writeMemoriesForCmd {
+		cmd.Extras().GetOrAppendObservations().AddWrite(mem.Data())
 	}
 	disablerTransform.readMemoriesForCmd = []*api.AllocResult{}
 	disablerTransform.writeMemoriesForCmd = []*api.AllocResult{}
