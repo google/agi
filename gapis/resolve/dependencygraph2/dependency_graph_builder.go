@@ -60,6 +60,19 @@ const (
 	ACCESS_READ_WRITE AccessMode = ACCESS_READ | ACCESS_WRITE
 )
 
+func (a AccessMode) String() string {
+	switch a {
+	case ACCESS_READ:
+		return "read"
+	case ACCESS_WRITE:
+		return "write"
+	case ACCESS_READ_WRITE:
+		return "readwrite"
+	default:
+		return "invalid"
+	}
+}
+
 // The data needed to build a dependency graph by iterating through the commands in a trace
 type dependencyGraphBuilder struct {
 	// graph is the dependency graph being constructed

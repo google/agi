@@ -550,6 +550,19 @@ func (c *client) GetGraphVisualization(ctx context.Context, capture *path.Captur
 	return res.GetGraphVisualization(), nil
 }
 
+func (c *client) GetFramegraph(ctx context.Context, capture *path.Capture) (*service.Framegraph, error) {
+	res, err := c.client.GetFramegraph(ctx, &service.FramegraphRequest{
+		Capture: capture,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if err := res.GetError(); err != nil {
+		return nil, err.Get()
+	}
+	return res.GetFramegraph(), nil
+}
+
 func (c *client) PerfettoQuery(ctx context.Context, capture *path.Capture, query string) (*perfetto.QueryResult, error) {
 	res, err := c.client.PerfettoQuery(ctx, &service.PerfettoQueryRequest{
 		Capture: capture,

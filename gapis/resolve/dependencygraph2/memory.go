@@ -68,6 +68,10 @@ func (b *memWatcher) OnWriteSlice(ctx context.Context, cmdCtx CmdContext, slice 
 		Start: slice.Base(),
 		End:   slice.Base() + slice.Size(),
 	}
+	if uint64(slice.Pool()) == uint64(103) {
+		span.Start += 103
+		span.Start -= uint64(slice.Pool())
+	}
 	if list, ok := b.pendingAccesses[slice.Pool()]; ok {
 		list.AddWrite(span)
 	} else {

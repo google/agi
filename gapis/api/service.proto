@@ -507,3 +507,70 @@ message SparseBinding {
   // The offset into the buffer of the binding
   uint64 offset = 1;
 }
+
+// Framegraph
+
+// A resource is something that can be read/write
+// re-use e.g. BufferInfo and ImageInfo here?
+enum FramegraphResourceType {
+  BUFFER = 0;
+  IMAGE = 1;
+}
+message FramegraphResource {
+  uint64 id = 1;
+  FramegraphResourceType type = 2;
+  string text = 3;
+}
+// A node is basically a "workload",
+// something that reads/writes resources
+enum FramegraphNodeType {
+  COMPUTE = 0;
+  RENDERPASS = 1; // or "GRAPHICS", to stay api-agnostic
+  // SUBPASS
+  // even DRAWCALL eventually, and correlate a drawcall with the dependencies it affects
+  // vkCopyCmd, vkMap/Unmap ?
+}
+message FramegraphNode {
+  uint64 id = 1;
+  FramegraphNodeType type = 2;
+  string text = 3;
+  repeated FramegraphResource read = 4;
+  repeated FramegraphResource write = 5;
+}
+// An edge marks a dependency,
+// and can be caused by various reasons
+enum FramegraphEdgeExecutionDependency {
+  // to stay api-agnostic, we might want to just use a string here.
+  // But also, it's interesting to be able to type-switch so that we
+  // can present edges in various ways in the UI
+
+  // nothing protects the memory dependency,
+  // although there is a r/w dependency. This is almost-always a bad sign,
+  // but in some cases it may be OK, e.g. reading from a buffer that stores
+  // a particle system that is regularly-yet-out-of-frame-sync updated.
+  NO_EXECUTION_DEPENDENCY = 0;
+  SEMAPHORE = 1;
+  FENCE = 2;
+  EVENT = 3;
+  TIMELINE_SEMAPHORE = 4;
+  // implicit dependencies with:
+  // SUBPASS IMAGE LAYOUT TRANSITION
+  // RENDERPASS
+}
+enum FramegraphEdgeMemoryDependency {
+  NO_MEMORY_DEPENDENCY = 0;
+  PIPELINE_BARRIER = 1; // this is for memory dependencies, not execution dependencies
+}
+// distinguish memory / execution dependencies
+// We probably need more info on edges, e.g.
+// a semaphore's vkHandle, etc
+message FramegraphEdge {
+  uint64 origin = 1;
+  uint64 destination = 2;
+  FramegraphEdgeExecutionDependency execDep = 3;
+  FramegraphEdgeMemoryDependency memDep = 4;
+  // Number of edges creating this one, e.g. how many draw
+  // calls inside a RP leads to a similar edge at the RP level.
+  // We probably want to remove the duplicates, but keep a counter
+  // of how many edges lead to a single edge.
+}

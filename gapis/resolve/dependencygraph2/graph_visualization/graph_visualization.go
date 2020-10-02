@@ -17,6 +17,7 @@ package graph_visualization
 import (
 	"context"
 	"fmt"
+
 	"github.com/google/gapid/gapis/api"
 	"github.com/google/gapid/gapis/resolve/dependencygraph2"
 	"github.com/google/gapid/gapis/service"
@@ -113,6 +114,7 @@ func createGraphFromDependencyGraph(ctx context.Context, dependencyGraph depende
 func GetGraphVisualizationFromCapture(ctx context.Context, p *path.Capture, format service.GraphFormat) ([]byte, error) {
 	config := dependencygraph2.DependencyGraphConfig{
 		SaveNodeAccesses:       true,
+		ReverseDependencies:    true,
 		IncludeInitialCommands: true,
 	}
 	dependencyGraph, err := dependencygraph2.GetDependencyGraph(ctx, p, config)

@@ -222,6 +222,13 @@ func getFramebufferTransforms(ctx context.Context,
 
 	transforms := make([]transform.Transform, 0)
 
+	framegraph, err := newFrameGraph()
+	if err != nil {
+		log.E(ctx, "Framegraph failed: %v", err)
+		return nil, err
+	}
+	transforms = append(transforms, framegraph)
+
 	if shouldRenderWired {
 		transforms = append(transforms, newWireframeTransform())
 	}

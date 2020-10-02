@@ -514,6 +514,15 @@ func (s *grpcServer) GetGraphVisualization(ctx xctx.Context, req *service.GraphV
 	return &service.GraphVisualizationResponse{Res: &service.GraphVisualizationResponse_GraphVisualization{GraphVisualization: graphVisualization}}, nil
 }
 
+func (s *grpcServer) GetFramegraph(ctx xctx.Context, req *service.FramegraphRequest) (*service.FramegraphResponse, error) {
+	defer s.inRPC()()
+	framegraph, err := s.handler.GetFramegraph(s.bindCtx(ctx), req.Capture)
+	if err := service.NewError(err); err != nil {
+		return &service.FramegraphResponse{Res: &service.FramegraphResponse_Error{Error: err}}, nil
+	}
+	return &service.FramegraphResponse{Res: &service.FramegraphResponse_Framegraph{Framegraph: framegraph}}, nil
+}
+
 func (s *grpcServer) GetDevices(ctx xctx.Context, req *service.GetDevicesRequest) (*service.GetDevicesResponse, error) {
 	defer s.inRPC()()
 	devices, err := s.handler.GetDevices(s.bindCtx(ctx))

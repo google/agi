@@ -38,7 +38,7 @@ type StateWatcher interface {
 	OnReadFrag(ctx context.Context, owner RefObject, f Fragment, v RefObject, track bool)
 
 	// OnSet is called when a fragment of state (field, map key, array index) is written
-	OnWriteFrag(ctx context.Context, owner RefObject, f Fragment, old RefObject, new RefObject, tracke bool)
+	OnWriteFrag(ctx context.Context, owner RefObject, f Fragment, old RefObject, new RefObject, track bool)
 
 	// OnWriteSlice is called when writing to a slice
 	OnWriteSlice(ctx context.Context, s memory.Slice)

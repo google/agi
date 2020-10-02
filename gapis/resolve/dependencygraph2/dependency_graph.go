@@ -162,6 +162,8 @@ type DependencyGraph interface {
 	// first command in the capture)
 	NumInitialCommands() int
 
+	// GetNodeAccesses returns information about which kind of memory
+	// accesses is done by a given node
 	GetNodeAccesses(NodeID) NodeAccesses
 
 	// Config returns the config used to create this graph
@@ -173,6 +175,7 @@ type obsNodeIDs struct {
 	writeNodeIDStart NodeID
 }
 
+// dependencyGraph implements the DependencyGraph interface
 type dependencyGraph struct {
 	capture                     *capture.GraphicsCapture
 	cmdNodeIDs                  *api.SubCmdIdxTrie

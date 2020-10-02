@@ -393,6 +393,21 @@ message GraphVisualizationResponse {
   }
 }
 
+// Framegraph
+message Framegraph {
+  repeated api.FramegraphNode nodes = 1;
+  repeated api.FramegraphEdge edges = 2;
+}
+message FramegraphRequest {
+  path.Capture capture = 1;
+}
+message FramegraphResponse {
+  oneof res {
+    Framegraph framegraph = 1;
+    Error error = 2;
+  }
+}
+
 message GetDevicesRequest {
 }
 message GetDevicesResponse {
@@ -645,6 +660,11 @@ service Gapid {
   rpc GetGraphVisualization(GraphVisualizationRequest)
       returns (GraphVisualizationResponse) {
   }
+
+  // GetFramegraph returns the framegraph of the requested capture.
+  rpc GetFramegraph(FramegraphRequest) returns (FramegraphResponse) {
+  }
+
   // GetDevices returns the full list of replay devices avaliable to the server.
   // These include local replay devices and any connected Android devices.
   // This list may change over time, as devices are connected and disconnected.
@@ -687,7 +707,7 @@ service Gapid {
       returns (TraceTargetTreeNodeResponse) {
   }
 
-  // Trace returns a steam that can be used to start and stop
+  // Trace returns a stream that can be used to start and stop
   // a trace
   rpc Trace(stream TraceRequest) returns (stream TraceResponse) {
   }

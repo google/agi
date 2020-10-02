@@ -307,8 +307,10 @@ func (r *CommandTreeResolvable) Resolve(ctx context.Context) (interface{}, error
 			subr := out.root.AddRoot([]uint64{uint64(id)}, snc.SubcommandNames)
 			// subcommands are added before nesting SubCmdRoots.
 			cv := append([]api.SubCmdIdx{}, v...)
+			log.W(ctx, "HUGUES CT id:%v v: %v cv:%v", id, v, cv)
 			sort.SliceStable(cv, func(i, j int) bool { return len(cv[i]) < len(cv[j]) })
 			for _, x := range cv {
+				log.W(ctx, "HUGUES CT x:%v", x)
 				// subcommand marker groups are added before subcommands. And groups with
 				// shorter indices are added before groups with longer indices.
 				// SubCmdRoot will be created when necessary.

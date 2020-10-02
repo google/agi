@@ -98,6 +98,7 @@ go_library(
         "transform_end_of_replay.go",
         "transform_file_log.go",
         "transform_find_issues.go",
+        "transform_framegraph.go",
         "transform_make_attachment_readable.go",
         "transform_mapping_exporter.go",
         "transform_overdraw.go",
