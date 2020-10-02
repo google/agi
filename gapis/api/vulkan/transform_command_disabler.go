@@ -58,10 +58,6 @@ func (disablerTransform *commandDisabler) remove(ctx context.Context, id api.Sub
 		return fmt.Errorf("Requested id is empty")
 	}
 
-	if len(id) > 4 {
-		return fmt.Errorf("Drawcall removal from secondary command buffer is not implemented")
-	}
-
 	id[0] = id[0] + disablerTransform.cmdsOffset
 
 	disablerTransform.disabledCommands = append(disablerTransform.disabledCommands,
@@ -147,7 +143,8 @@ func (disablerTransform *commandDisabler) TransformCommand(ctx context.Context, 
 	return nil, nil
 }
 
-func (disablerTransform *commandDisabler) removeCommandFromVkQueueSubmit(ctx context.Context, idx api.SubCmdIdx, cmd *VkQueueSubmit, inputState *api.GlobalState) error {
+func (disablerTransform *commandDisabler) removeCommandFromVkQueueSubmit(ctx context.Context,
+	idx api.SubCmdIdx, cmd *VkQueueSubmit, inputState *api.GlobalState) error {
 	layout := inputState.MemoryLayout
 	cb := CommandBuilder{Thread: cmd.Thread(), Arena: inputState.Arena}
 	cmd.Extras().Observations().ApplyReads(inputState.Memory.ApplicationPool())
@@ -193,7 +190,8 @@ func (disablerTransform *commandDisabler) removeCommandFromVkQueueSubmit(ctx con
 	return nil
 }
 
-func (disablerTransform *commandDisabler) removeCommandFromSubmit(ctx context.Context, idx api.SubCmdIdx, submitInfo VkSubmitInfo, cmd *VkQueueSubmit, inputState *api.GlobalState) (VkSubmitInfo, error) {
+func (disablerTransform *commandDisabler) removeCommandFromSubmit(ctx context.Context,
+	idx api.SubCmdIdx, submitInfo VkSubmitInfo, cmd *VkQueueSubmit, inputState *api.GlobalState) (VkSubmitInfo, error) {
 	layout := inputState.MemoryLayout
 	// pCommandBuffers
 	commandBuffers := submitInfo.PCommandBuffers().Slice(0, uint64(submitInfo.CommandBufferCount()), layout).MustRead(ctx, cmd, inputState, nil)
@@ -235,11 +233,12 @@ func (disablerTransform *commandDisabler) removeCommandFromSubmit(ctx context.Co
 	return newSubmitInfo, nil
 }
 
-func (disablerTransform *commandDisabler) rewriteCommandBuffer(ctx context.Context, idx api.SubCmdIdx, existingCommandBuffer CommandBufferObjectʳ, cmd *VkQueueSubmit, inputState *api.GlobalState) (VkCommandBuffer, error) {
+func (disablerTransform *commandDisabler) rewriteCommandBuffer(ctx context.Context, idx api.SubCmdIdx,
+	existingCommandBuffer CommandBufferObjectʳ, cmd *VkQueueSubmit, inputState *api.GlobalState) (VkCommandBuffer, error) {
 	cb := CommandBuilder{Thread: cmd.Thread(), Arena: inputState.Arena}
 	st := GetState(inputState)
 
-	newCmdBuffer, err := disablerTransform.getNewCommandBufferAndBegin(ctx, cmd, inputState)
+	newCmdBuffer, err := disablerTransform.getNewCommandBufferAndBegin(ctx, existingCommandBuffer, cmd, inputState)
 	if err != nil {
 		log.E(ctx, "Command buffer could not be created : %v", err)
 		return VkCommandBuffer(0), err
@@ -251,25 +250,48 @@ func (disablerTransform *commandDisabler) rewriteCommandBuffer(ctx context.Conte
 		currentCmd := existingCommandBuffer.CommandReferences().Get(uint32(i))
 		args := GetCommandArgs(ctx, currentCmd, st)
 
-		if !disablerTransform.shouldBeDisabled(currentSubCmdID) {
-			cleanup, newCmd, err := AddCommand(ctx, cb, newCmdBuffer, inputState, inputState, args)
+		if disablerTransform.shouldBeDisabled(currentSubCmdID) {
+			if !isCmdAllowedToDisable(args) {
+				return VkCommandBuffer(0), fmt.Errorf("Command type is not allowed to be disabled : %v", args)
+			}
+
+			// Skip the disabled command and do not copy it to the new command buffer
+			disablerTransform.removeFromDisabledList(currentSubCmdID)
+			log.I(ctx, "Command %v disabled", currentSubCmdID)
+			continue
+		}
+
+		if disablerTransform.doesContainDisabledCmd(currentSubCmdID) {
+			// Rewrite the secondary command buffer and create a new VkCmdExecuteCommands
+			// to use new command buffer instead the old one
+			executeCommandsArgs, ok := args.(VkCmdExecuteCommandsArgsʳ)
+			if !ok {
+				return VkCommandBuffer(0), fmt.Errorf("VkExecuteCommands could not found %v: ", args)
+			}
+
+			newCmd, err := disablerTransform.rewriteExecuteSecondaryCommandBuffer(ctx,
+				currentSubCmdID, newCmdBuffer, executeCommandsArgs, cmd, inputState)
 			if err != nil {
-				panic(fmt.Errorf("Invalid command-buffer detected %+v", err))
+				return VkCommandBuffer(0), fmt.Errorf("Error during rewriting secondary command buffer")
 			}
 			if err := disablerTransform.observeAndWriteCommand(newCmd); err != nil {
 				log.E(ctx, "Failed during adding command : [%v]%v", newCmd, err)
 				return VkCommandBuffer(0), err
 			}
-			cleanup()
+			log.I(ctx, "Secondary Command Buffer %v updated", currentSubCmdID)
 			continue
 		}
 
-		if !isCmdAllowedToDisable(args) {
-			return VkCommandBuffer(0), fmt.Errorf("Command type is not allowed to be disabled : %v", args)
+		// Copy the unaffected commands to the new command buffer
+		cleanup, newCmd, err := AddCommand(ctx, cb, newCmdBuffer, inputState, inputState, args)
+		if err != nil {
+			panic(fmt.Errorf("Invalid command-buffer detected %+v", err))
 		}
-
-		disablerTransform.removeFromDisabledList(currentSubCmdID)
-		log.I(ctx, "Command %v disabled", currentSubCmdID)
+		if err := disablerTransform.observeAndWriteCommand(newCmd); err != nil {
+			log.E(ctx, "Failed during adding command : [%v]%v", newCmd, err)
+			return VkCommandBuffer(0), err
+		}
+		cleanup()
 	}
 
 	if err := disablerTransform.observeAndWriteCommand(cb.VkEndCommandBuffer(newCmdBuffer, VkResult_VK_SUCCESS)); err != nil {
@@ -280,7 +302,41 @@ func (disablerTransform *commandDisabler) rewriteCommandBuffer(ctx context.Conte
 	return newCmdBuffer, nil
 }
 
-func (disablerTransform *commandDisabler) getNewCommandBufferAndBegin(ctx context.Context, cmd *VkQueueSubmit, inputState *api.GlobalState) (VkCommandBuffer, error) {
+func (disablerTransform *commandDisabler) rewriteExecuteSecondaryCommandBuffer(ctx context.Context,
+	idx api.SubCmdIdx, primaryCommandBuffer VkCommandBuffer, args VkCmdExecuteCommandsArgsʳ,
+	cmd *VkQueueSubmit, inputState *api.GlobalState) (api.Cmd, error) {
+
+	existingCmdBufferCount := uint32(args.CommandBuffers().Len())
+	newCommandBuffers := make([]VkCommandBuffer, 0, existingCmdBufferCount)
+
+	for i := uint32(0); i < existingCmdBufferCount; i++ {
+		currentSubCmdID := append(idx, uint64(i))
+		existingCommandBuffer := args.CommandBuffers().Get(uint32(i))
+		if !disablerTransform.doesContainDisabledCmd(currentSubCmdID) {
+			newCommandBuffers = append(newCommandBuffers, existingCommandBuffer)
+			continue
+		}
+
+		existingCommandBufferObject := GetState(inputState).CommandBuffers().Get(existingCommandBuffer)
+		newCommandBuffer, err := disablerTransform.rewriteCommandBuffer(ctx, currentSubCmdID, existingCommandBufferObject, cmd, inputState)
+		if err != nil {
+			return nil, fmt.Errorf("Error during writing secondary command buffer : %v", err)
+		}
+
+		newCommandBuffers = append(newCommandBuffers, newCommandBuffer)
+	}
+
+	if uint32(len(newCommandBuffers)) != existingCmdBufferCount {
+		return nil, fmt.Errorf("Number of command buffers changed")
+	}
+
+	cb := CommandBuilder{Thread: cmd.Thread(), Arena: inputState.Arena}
+	commandBuffersMemory := disablerTransform.mustAllocReadDataForCmd(ctx, inputState, newCommandBuffers)
+	newCmd := cb.VkCmdExecuteCommands(primaryCommandBuffer, existingCmdBufferCount, commandBuffersMemory.Ptr())
+	return newCmd, nil
+}
+
+func (disablerTransform *commandDisabler) getNewCommandBufferAndBegin(ctx context.Context, existingCommandBuffer CommandBufferObjectʳ, cmd *VkQueueSubmit, inputState *api.GlobalState) (VkCommandBuffer, error) {
 	cb := CommandBuilder{Thread: cmd.Thread(), Arena: inputState.Arena}
 	queue := GetState(inputState).Queues().Get(cmd.Queue())
 
@@ -294,8 +350,8 @@ func (disablerTransform *commandDisabler) getNewCommandBufferAndBegin(ctx contex
 		VkStructureType_VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // sType
 		NewVoidᶜᵖ(memory.Nullptr),                                      // pNext
 		commandPoolID,                                                  // commandPool
-		VkCommandBufferLevel_VK_COMMAND_BUFFER_LEVEL_PRIMARY,           // level
-		1, // commandBufferCount
+		existingCommandBuffer.Level(),                                  // level
+		1,                                                              // commandBufferCount
 	)
 	commandBufferID := VkCommandBuffer(newUnusedID(true, func(x uint64) bool {
 		return GetState(inputState).CommandBuffers().Contains(VkCommandBuffer(x))
@@ -314,10 +370,10 @@ func (disablerTransform *commandDisabler) getNewCommandBufferAndBegin(ctx contex
 	}
 
 	beginInfo := NewVkCommandBufferBeginInfo(inputState.Arena,
-		VkStructureType_VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // sType
-		NewVoidᶜᵖ(memory.Nullptr),                                   // pNext
-		0,                                                           // flags
-		NewVkCommandBufferInheritanceInfoᶜᵖ(memory.Nullptr), // pInheritanceInfo
+		VkStructureType_VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,                                         // sType
+		NewVoidᶜᵖ(memory.Nullptr),                                                                           // pNext
+		VkCommandBufferUsageFlags(VkCommandBufferUsageFlagBits_VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT), // flags
+		NewVkCommandBufferInheritanceInfoᶜᵖ(memory.Nullptr),                                                 // pInheritanceInfo
 	)
 	beginCommandBufferCmd := cb.VkBeginCommandBuffer(
 		commandBufferID,
@@ -445,6 +501,8 @@ func isCmdAllowedToDisable(commandArgs interface{}) bool {
 	case VkCmdDrawIndexedIndirectArgsʳ:
 		return true
 	case VkCmdDrawIndirectArgsʳ:
+		return true
+	case VkCmdExecuteCommandsArgsʳ:
 		return true
 	default:
 		return false
