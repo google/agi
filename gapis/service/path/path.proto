@@ -44,6 +44,7 @@ message Any {
     FramebufferAttachments framebuffer_attachments = 18;
     FramebufferAttachment framebuffer_attachment = 19;
     Field field = 20;
+    Framegraph framegraph = 44;
     GlobalState global_state = 21;
     ImageInfo image_info = 22;
     MapIndex map_index = 23;
@@ -294,6 +295,10 @@ message Field {
     GlobalState global_state = 7;
     Parameter parameter = 8;
   }
+}
+
+message Framegraph {
+  Capture capture = 1;
 }
 
 // CommandFilter are the optional filters applied to CommandTrees and Events.
