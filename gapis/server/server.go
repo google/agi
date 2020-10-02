@@ -45,6 +45,7 @@ import (
 	"github.com/google/gapid/core/os/file"
 	"github.com/google/gapid/gapis/capture"
 	"github.com/google/gapid/gapis/config"
+	"github.com/google/gapid/gapis/framegraph"
 	"github.com/google/gapid/gapis/messages"
 	perfetto "github.com/google/gapid/gapis/perfetto/service"
 	"github.com/google/gapid/gapis/replay"
@@ -384,6 +385,18 @@ func (s *server) GetGraphVisualization(ctx context.Context, p *path.Capture, for
 		return []byte{}, log.Errf(ctx, err, "The file size for graph visualization exceeds %d bytes", FILE_SIZE_LIMIT_IN_BYTES)
 	}
 	return graphVisualization, nil
+}
+
+func (s *server) GetFramegraph(ctx context.Context, p *path.Capture) (*service.Framegraph, error) {
+	ctx = status.Start(ctx, "RPC GetFramegraph")
+	defer status.Finish(ctx)
+	ctx = log.Enter(ctx, "GetFramegraph")
+
+	framegraph, err := framegraph.GetFramegraph(ctx, p)
+	if err != nil {
+		return nil, err
+	}
+	return framegraph, nil
 }
 
 func (s *server) GetDevices(ctx context.Context) ([]*path.Device, error) {
