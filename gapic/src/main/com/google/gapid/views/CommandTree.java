@@ -246,6 +246,9 @@ public class CommandTree extends Composite
 
   @Override
   public void onProfileLoaded(Loadable.Message error) {
+    if (error != null) {
+      tree.profileLoadingError = error;
+    }
     tree.refresh();
   }
 
@@ -313,6 +316,7 @@ public class CommandTree extends Composite
     protected final Models models;
     private final Widgets widgets;
     private final Map<Long, Color> threadBackgroundColors = Maps.newHashMap();
+    private Loadable.Message profileLoadingError;
 
     public Tree(Composite parent, Models models, Widgets widgets) {
       super(parent, SWT.H_SCROLL | SWT.V_SCROLL | SWT.MULTI, widgets);
@@ -334,6 +338,8 @@ public class CommandTree extends Composite
         Service.CommandTreeNode data = node.getData();
         if (data == null) {
           return "";
+        } else if (profileLoadingError != null) {
+          return "Profiling failed.";
         } else if (!models.profile.isLoaded()) {
           return "Profiling...";
         } else {
