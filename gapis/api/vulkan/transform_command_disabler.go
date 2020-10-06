@@ -369,11 +369,30 @@ func (disablerTransform *commandDisabler) getNewCommandBufferAndBegin(ctx contex
 		return VkCommandBuffer(0), err
 	}
 
+	pInheritenceInfo := NewVkCommandBufferInheritanceInfoᶜᵖ(memory.Nullptr)
+
+	if existingCommandBuffer.BeginInfo().Inherited() {
+		existingBeginInfo := existingCommandBuffer.BeginInfo()
+		inheritenceInfo := NewVkCommandBufferInheritanceInfo(inputState.Arena,
+			VkStructureType_VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
+			NewVoidᶜᵖ(memory.Nullptr),
+			existingBeginInfo.InheritedRenderPass(),
+			existingBeginInfo.InheritedSubpass(),
+			existingBeginInfo.InheritedFramebuffer(),
+			existingBeginInfo.InheritedOcclusionQuery(),
+			existingBeginInfo.InheritedQueryFlags(),
+			existingBeginInfo.InheritedPipelineStatsFlags(),
+		)
+
+		inheritanceInfoData := disablerTransform.mustAllocReadDataForCmd(ctx, inputState, inheritenceInfo)
+		pInheritenceInfo = NewVkCommandBufferInheritanceInfoᶜᵖ(inheritanceInfoData.Ptr())
+	}
+
 	beginInfo := NewVkCommandBufferBeginInfo(inputState.Arena,
-		VkStructureType_VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,                                         // sType
-		NewVoidᶜᵖ(memory.Nullptr),                                                                           // pNext
-		VkCommandBufferUsageFlags(VkCommandBufferUsageFlagBits_VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT), // flags
-		NewVkCommandBufferInheritanceInfoᶜᵖ(memory.Nullptr),                                                 // pInheritanceInfo
+		VkStructureType_VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // sType
+		NewVoidᶜᵖ(memory.Nullptr),                                   // pNext
+		existingCommandBuffer.BeginInfo().Flags(),                   // flags
+		pInheritenceInfo, // pInheritanceInfo
 	)
 	beginCommandBufferCmd := cb.VkBeginCommandBuffer(
 		commandBufferID,
