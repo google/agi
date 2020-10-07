@@ -245,10 +245,13 @@ public class CommandTree extends Composite
   }
 
   @Override
+  public void onProfileLoadingStart() {
+    tree.profileLoadingError = null;
+  }
+
+  @Override
   public void onProfileLoaded(Loadable.Message error) {
-    if (error != null) {
-      tree.profileLoadingError = error;
-    }
+    tree.profileLoadingError = error;
     tree.refresh();
   }
 
