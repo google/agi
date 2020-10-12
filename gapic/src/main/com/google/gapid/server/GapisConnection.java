@@ -15,6 +15,10 @@
  */
 package com.google.gapid.server;
 
+
+import static java.util.logging.Level.INFO;
+import static java.util.logging.Level.WARNING;
+
 import static io.grpc.ClientInterceptors.intercept;
 import static io.grpc.stub.MetadataUtils.newAttachHeadersInterceptor;
 
@@ -25,6 +29,7 @@ import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.logging.Logger;
 
 import io.grpc.Channel;
 import io.grpc.ManagedChannel;
@@ -138,6 +143,8 @@ public abstract class GapisConnection implements Closeable {
      * the server from exiting due to the --idle-timeout.
      */
     protected static class Heartbeat extends Thread {
+      private static final Logger LOG = Logger.getLogger(Heartbeat.class.getName());
+
       private final GapidClient client;
       private final int rateMS;
 
@@ -148,11 +155,13 @@ public abstract class GapisConnection implements Closeable {
 
       @Override
       public void run() {
+        LOG.log(INFO, "Start heartbeat thread with rate (ms): " + rateMS);
         while (true) {
           try {
             client.ping().get(rateMS, TimeUnit.MILLISECONDS);
             Thread.sleep(rateMS);
           } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            LOG.log(WARNING, "Heartbeat thread caught exception: " + e.toString());
             return; // If the connection failed, the error will appear on another thread.
           }
         }
