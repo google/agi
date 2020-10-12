@@ -237,6 +237,11 @@ func (chain *TransformChain) handleInitialState(state *api.GlobalState) (*api.Gl
 	return state, nil
 }
 
+
+func (chain *TransformChain) State() *api.GlobalState {
+	return chain.out.State()
+}
+
 func mutateAndWrite(ctx context.Context, id CommandID, cmds []api.Cmd, out Writer) error {
 	cmdID := api.CmdID(0)
 	if id.GetCommandType() == TransformCommand {

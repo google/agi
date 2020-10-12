@@ -95,6 +95,7 @@ type loopingVulkanControlFlowGenerator struct {
 	ctx context.Context
 
 	chain *transform.TransformChain
+	out2 transform.Writer
 
 	capture   *capture.GraphicsCapture
 	loopCount int32
@@ -210,7 +211,7 @@ type loopingVulkanControlFlowGenerator struct {
 
 // NewLoopingVulkanControlFlowGenerator generates a simple control flow
 // that takes initial and real commands and transforms all of them
-func NewLoopingVulkanControlFlowGenerator(ctx context.Context, chain *transform.TransformChain, graphicsCapture *capture.GraphicsCapture, loopStart api.CmdID, loopEnd api.CmdID, loopCount int32) controlFlowGenerator.ControlFlowGenerator {
+func NewLoopingVulkanControlFlowGenerator(ctx context.Context, chain *transform.TransformChain, out transform.Writer, graphicsCapture *capture.GraphicsCapture, loopStart api.CmdID, loopEnd api.CmdID, loopCount int32) controlFlowGenerator.ControlFlowGenerator {
 
 	if loopCount < 2 {
 		panic("oh no") // TODO: ALAN
@@ -230,6 +231,7 @@ func NewLoopingVulkanControlFlowGenerator(ctx context.Context, chain *transform.
 
 		ctx: ctx,
 		chain: chain,
+		out2: out,
 
 		capture:   graphicsCapture,
 		loopCount: loopCount,
@@ -368,7 +370,7 @@ func (f *loopingVulkanControlFlowGenerator) TransformAll(ctx context.Context) er
 
 		if cmds, err := f.chain.ProcessNextTransformedCommands(subctx); err == nil {
 
-			ctx = log.Enter(ctx, "FrameLoop Transform")
+			//ctx = log.Enter(ctx, "FrameLoop Transform")
 			log.D(ctx, "FrameLoop: looping from %v to %v. Current CmdID/CmDs = %v/%v", f.loopStartIdx, f.loopEndIdx, id, cmds)
 			log.D(ctx, "f.loopTerminated = %v, f.lastObservedCommand = %v", f.loopTerminated, f.lastObservedCommand)
 
@@ -388,6 +390,8 @@ func (f *loopingVulkanControlFlowGenerator) TransformAll(ctx context.Context) er
 
 					log.D(ctx, "FrameLoop: start loop at cmdId %v, cmds %v.", cmdId, cmds)
 
+					f.loopStartState = f.cloneState(ctx, f.chain.State()) // ALAN: This is going to have the effects of the first command applied, we actually want the state one command earlier.
+
 					for _, cmd := range cmds {
 						f.capturedLoopCmds = append(f.capturedLoopCmds, cmd)
 						f.capturedLoopCmdIds = append(f.capturedLoopCmdIds, cmdId)
@@ -399,7 +403,7 @@ func (f *loopingVulkanControlFlowGenerator) TransformAll(ctx context.Context) er
 	
 					log.D(ctx, "FrameLoop: before loop at cmdId %v, cmds %v.", cmdId, cmds)
 
-					if err := f.buildCommands(ctx, cmdId, cmds) {
+					if err := f.buildCommands(ctx, cmdId, cmds, f.out2); err != nil {
 						return err
 					}
 					
@@ -437,8 +441,7 @@ func (f *loopingVulkanControlFlowGenerator) TransformAll(ctx context.Context) er
 
 					// Some things we're going to need for the next work...
 					globalState := f.chain.State() //AAA: get builder state
-					apiState := GetState(globalState)
-					stateBuilder := apiState.newStateBuilder(ctx, newTransformerOutput(out2))
+					stateBuilder := GetState(globalState).newStateBuilder(ctx, newTransformerOutput(f.out2))
 
 					// Do start loop stuff.
 					{
@@ -446,7 +449,7 @@ func (f *loopingVulkanControlFlowGenerator) TransformAll(ctx context.Context) er
 						// We can finally run over the loop contents looking for resources that have changed.
 						// This is required so we can emit extra instructions before the loop capturing the values of
 						// anything that we need to restore at the end of the loop. Do that now.
-						f.buildStartEndStates(ctx, globalState)
+						f.buildEndState(ctx, globalState)
 						f.detectChangedResources(ctx)
 						f.updateChangedResourcesMap(ctx, stateBuilder)
 
@@ -458,7 +461,7 @@ func (f *loopingVulkanControlFlowGenerator) TransformAll(ctx context.Context) er
 					}
 
 					// Do first iteration of mid-loop stuff.
-					if err := f.writeLoopContents(ctx, out2); err != nil {
+					if err := f.writeLoopContents(ctx, f.out2); err != nil {
 						return err
 					}
 
@@ -483,7 +486,7 @@ func (f *loopingVulkanControlFlowGenerator) TransformAll(ctx context.Context) er
 					}
 
 					// Do second and subsequent iterations of mid-loop stuff.
-					if err := f.writeLoopContents(ctx, out2); err != nil {
+					if err := f.writeLoopContents(ctx, f.out2); err != nil {
 						return err
 					}
 
@@ -514,14 +517,14 @@ func (f *loopingVulkanControlFlowGenerator) TransformAll(ctx context.Context) er
 						f.capturedLoopCmdIds = append(f.capturedLoopCmdIds, cmdId)
 					}
 
-					log.D(ctx, "FrameLoop: inside loop at cmdId %v, cmd %v.", cmdId, cmd)
+					log.D(ctx, "FrameLoop: inside loop at cmdId %v, cmds %v.", cmdId, cmds)
 
 					continue
 				}
 
 			} else { // We're after the loop. Again, we can simply pass-through commands.
 
-				if err := f.buildCommands(ctx, cmdID, cmds); err != nil {
+				if err := f.buildCommands(ctx, cmdId, cmds, f.out2); err != nil {
 					return err
 				}
 
@@ -535,14 +538,14 @@ func (f *loopingVulkanControlFlowGenerator) TransformAll(ctx context.Context) er
 	return nil
 }
 
-func (f *loopingVulkanControlFlowGenerator) writeLoopContents(ctx context.Context, out legacyTransformWriter) error {
+func (f *loopingVulkanControlFlowGenerator) writeLoopContents(ctx context.Context, out transform.Writer) error {
 
 	// Notify the other transforms that we're about to emit the start of the loop.
 	//out.NotifyPreLoop(ctx) // ALAN
 
 	// Iterate through the loop contents, emitting instructions one by one.
 	for cmdIndex, cmd := range f.capturedLoopCmds {
-		if err := out2.MutateAndWrite(ctx, f.capturedLoopCmdIds[cmdIndex], cmd); err != nil {
+		if err := out.MutateAndWrite(ctx, f.capturedLoopCmdIds[cmdIndex], cmd); err != nil {
 			return err
 		}
 	}
@@ -552,23 +555,6 @@ func (f *loopingVulkanControlFlowGenerator) writeLoopContents(ctx context.Contex
 
 	return nil
 }
-
-// func (f *loopingVulkanControlFlowGenerator) Flush(ctx context.Context, out legacyTransformWriter) error { // ALAN
-
-// 	log.W(ctx, "FrameLoop FLUSH")
-
-// 	if f.loopTerminated == false {
-// 		if f.lastObservedCommand == api.CmdNoID {
-// 			log.W(ctx, "FrameLoop transform was applied to whole trace (Flush() has been called) without the loop starting.")
-// 			return fmt.Errorf("FrameLoop transform was applied to whole trace (Flush() has been called) without the loop starting.")
-// 		} else {
-// 			log.E(ctx, "FrameLoop: cmdId %v, cmd is %v.", f.capturedLoopCmdIds[len(f.capturedLoopCmdIds)-1], f.capturedLoopCmds[len(f.capturedLoopCmds)-1])
-// 			log.F(ctx, true, "FrameLoop transform was applied to whole trace (Flush() has been called) mid loop. Cannot end transformation in this state.")
-// 		}
-// 	}
-// 	return nil
-// }
-
 
 func recoverFromPanic(id transform.CommandID) {
 	r := recover()
@@ -603,10 +589,9 @@ func (f *loopingVulkanControlFlowGenerator) cloneState(ctx context.Context, stat
 	return clone
 }
 
-func (f *loopingVulkanControlFlowGenerator) buildStartEndStates(ctx context.Context, startState *api.GlobalState) {
+func (f *loopingVulkanControlFlowGenerator) buildEndState(ctx context.Context, startState *api.GlobalState) {
 
-	f.loopStartState = f.cloneState(ctx, startState)
-	currentState := f.cloneState(ctx, startState)
+	currentState := f.cloneState(ctx, f.loopStartState)
 
 	st := GetState(currentState)
 	st.PreSubcommand = func(i interface{}) {
@@ -3240,11 +3225,11 @@ func (f *loopingVulkanControlFlowGenerator) resetCommandBuffers(ctx context.Cont
 }
 
 
-func (f *loopingVulkanControlFlowGenerator) buildCommands(ctx context.Context, cmdId api.CmdID, cmds []api.Cmd) error {
+func (f *loopingVulkanControlFlowGenerator) buildCommands(ctx context.Context, cmdId api.CmdID, cmds []api.Cmd, out transform.Writer) error {
 
 	for _, cmd := range cmds {
 
-		if err := out2.MutateAndWrite(ctx, cmdId, cmd); err != nil {
+		if err := out.MutateAndWrite(ctx, cmdId, cmd); err != nil {
 			return err
 		}
 	}
