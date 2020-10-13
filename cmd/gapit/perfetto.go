@@ -36,6 +36,11 @@ import (
 
 type perfettoVerb struct{ PerfettoFlags }
 
+// Perfetto interaction does not need any device
+var gapisFlags = GapisFlags{
+	Args: "-monitor-android-devices=false -add-local-device=false",
+}
+
 func init() {
 	verb := &perfettoVerb{}
 	app.AddVerb(&app.Verb{
@@ -217,7 +222,7 @@ func RunMetrics(ctx context.Context, trace string, inputPath string, categories 
 	}
 
 	// Load the trace
-	client, capture, err := getGapisAndLoadCapture(ctx, GapisFlags{}, GapirFlags{}, trace, CaptureFileFlags{})
+	client, capture, err := getGapisAndLoadCapture(ctx, gapisFlags, GapirFlags{}, trace, CaptureFileFlags{})
 	if err != nil {
 		return fmt.Errorf("Error while loading the trace file %s: %v.", trace, err)
 	}
@@ -313,7 +318,7 @@ func RunInteractive(ctx context.Context, trace string, inputPath string, outputP
 	}
 
 	// Load the trace
-	client, capture, err := getGapisAndLoadCapture(ctx, GapisFlags{}, GapirFlags{}, trace, CaptureFileFlags{})
+	client, capture, err := getGapisAndLoadCapture(ctx, gapisFlags, GapirFlags{}, trace, CaptureFileFlags{})
 	if err != nil {
 		return fmt.Errorf("Error while loading the trace file %s: %v.", trace, err)
 	}
