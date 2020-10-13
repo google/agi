@@ -146,13 +146,24 @@ func (a API) Replay(
 	loopStart := numOfInitialCmds
 	loopEnd := api.CmdID(len(initialCmds) +len(c.Commands) -1)
 	cmdGenerator := commandGenerator.NewLinearCommandGenerator(initialCmds, c.Commands)
-	nullWriterObj := nullWriter{state: cloneState(ctx, c, out.State())}
-	chain := transform.CreateTransformChain(ctx, cmdGenerator, transforms, nullWriterObj)
-	//controlFlow := controlFlowGenerator.NewLinearControlFlowGenerator(chain)
-	controlFlow := NewLoopingVulkanControlFlowGenerator(ctx, chain, out, c, loopStart, loopEnd, 10)
-	if err := controlFlow.TransformAll(ctx); err != nil {
-		log.E(ctx, "%v Error: %v", replayType, err)
-		return err
+
+	switch firstRequest.(type) {
+	case issuesRequest:
+		nullWriterObj := nullWriter{state: cloneState(ctx, c, out.State())}
+		chain := transform.CreateTransformChain(ctx, cmdGenerator, transforms, nullWriterObj)
+		//controlFlow := controlFlowGenerator.NewLinearControlFlowGenerator(chain)
+		controlFlow := NewLoopingVulkanControlFlowGenerator(ctx, chain, out, c, loopStart, loopEnd, 10)
+		if err := controlFlow.TransformAll(ctx); err != nil {
+			log.E(ctx, "%v Error: %v", replayType, err)
+			return err
+		}
+	default:
+		chain := transform.CreateTransformChain(ctx, cmdGenerator, transforms, out)
+		controlFlow := controlFlowGenerator.NewLinearControlFlowGenerator(chain)
+		if err := controlFlow.TransformAll(ctx); err != nil {
+			log.E(ctx, "%v Error: %v", replayType, err)
+			return err
+		}
 	}
 
 	return nil
