@@ -25,6 +25,7 @@ import (
 )
 
 type commandDisabler struct {
+	// This should be presorted before mutation starts
 	disabledCommands []api.SubCmdIdx
 	cmdsOffset       uint64
 	mutationStarted  bool
@@ -503,31 +504,34 @@ func (disablerTransform *commandDisabler) sortAndMergeDisabledCmds(ctx context.C
 }
 
 func (disablerTransform *commandDisabler) doesContainDisabledCmd(id api.SubCmdIdx) bool {
-	for _, r := range disablerTransform.disabledCommands {
-		if id.Contains(r) {
-			return true
-		}
+	if len(disablerTransform.disabledCommands) == 0 {
+		return false
 	}
 
-	return false
+	// Disabled commands are sorted and as we traverse in our command tree in order,
+	// if we cannot find it in first element, it will not be there after
+	return id.Contains(disablerTransform.disabledCommands[0])
 }
 
 func (disablerTransform *commandDisabler) shouldBeDisabled(id api.SubCmdIdx) bool {
-	for _, r := range disablerTransform.disabledCommands {
-		if id.Equals(r) {
-			return true
-		}
+	if len(disablerTransform.disabledCommands) == 0 {
+		return false
 	}
 
-	return false
+	// Disabled commands are sorted and as we traverse in our command tree in order,
+	// if we cannot find it in first element, it will not be there after
+	return id.Equals(disablerTransform.disabledCommands[0])
 }
 
 func (disablerTransform *commandDisabler) removeFromDisabledList(id api.SubCmdIdx) {
 	if len(disablerTransform.disabledCommands) == 0 {
 		panic("Disabled Command list is empty, this should not happen")
 	}
+
+	// Disabled commands are sorted and as we traverse in our command tree in order,
+	// if we cannot find it in first element, it will not be there after
 	if !id.Equals(disablerTransform.disabledCommands[0]) {
-		panic("disabled command is not the first element, this should not happen")
+		panic("Disabled command is not the first element, this should not happen")
 	}
 
 	disablerTransform.disabledCommands = disablerTransform.disabledCommands[1:len(disablerTransform.disabledCommands)]
