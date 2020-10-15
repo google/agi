@@ -485,6 +485,19 @@ func (disablerTransform *commandDisabler) observeAndWriteCommand(cmd api.Cmd) er
 }
 
 func (disablerTransform *commandDisabler) sortAndMergeDisabledCmds(ctx context.Context) {
+	/*
+		This functions ensures these conditions:
+			- All disabled commands are sorted so we can guarantee that any command to be
+			disabled is not touched by command disabler, therefore can be assumed to have
+			correct id.
+
+			- Ensures for this input set:
+			"[3893.0.6.3.0.13], [3893.0.6.3.0.17], [3893.0.6.3.0.22], [3893.0.6.3]"
+			All the subcommands of [3893.0.6.3] are eliminated as they are not necessary.
+
+			- Removes all duplicates.
+	*/
+
 	api.SortSubCmdIDs(disablerTransform.disabledCommands)
 
 	size := len(disablerTransform.disabledCommands)
