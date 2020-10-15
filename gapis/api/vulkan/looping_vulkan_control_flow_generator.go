@@ -368,6 +368,8 @@ func (f *loopingVulkanControlFlowGenerator) TransformAll(ctx context.Context) er
 		lastObservedCommand := f.lastObservedCommand
 		f.lastObservedCommand = cmdId 
 
+		log.D(ctx, "FrameLoop: looping start processing commands")
+
 		if cmds, err := f.chain.ProcessNextTransformedCommands(subctx); err == nil {
 
 			//ctx = log.Enter(ctx, "FrameLoop Transform")
@@ -531,6 +533,7 @@ func (f *loopingVulkanControlFlowGenerator) TransformAll(ctx context.Context) er
 				continue
 			}
 		} else {
+			log.E(ctx, "FrameLoop: error processing command: %v.", err)
 			return err
 		}
 	}

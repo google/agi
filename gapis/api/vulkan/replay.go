@@ -149,13 +149,24 @@ func (a API) Replay(
 
 	_, _ = loopStart, loopEnd
 	switch firstRequest.(type) {
+       // case issuesRequest:
+       // case framebufferRequest:
+       case profileRequest:
+       		   log.W(ctx, "PERFORMANCE PERFORMANCE PERFORMANCE")
+               nullWriterObj := nullWriter{state: cloneState(ctx, c, out.State())}
+               chain := transform.CreateTransformChain(ctx, cmdGenerator, transforms, nullWriterObj)
+               controlFlow := NewLoopingVulkanControlFlowGenerator(ctx, chain, out, c, loopStart, loopEnd, 10)
+               if err := controlFlow.TransformAll(ctx); err != nil {
+                       log.E(ctx, "%v Error: %v", replayType, err)
+                       return err
+               }
 	default:
-		chain := transform.CreateTransformChain(ctx, cmdGenerator, transforms, out)
-		controlFlow := controlFlowGenerator.NewLinearControlFlowGenerator(chain)
-		if err := controlFlow.TransformAll(ctx); err != nil {
-			log.E(ctx, "%v Error: %v", replayType, err)
-			return err
-		}
+	   chain := transform.CreateTransformChain(ctx, cmdGenerator, transforms, out)
+	   controlFlow := controlFlowGenerator.NewLinearControlFlowGenerator(chain)
+	   if err := controlFlow.TransformAll(ctx); err != nil {
+	           log.E(ctx, "%v Error: %v", replayType, err)
+	           return err
+	          }
 	}
 
 	return nil
@@ -449,7 +460,10 @@ func (w nullWriter) State() *api.GlobalState {
 }
 
 func (w nullWriter) MutateAndWrite(ctx context.Context, id api.CmdID, cmd api.Cmd) error {
+	log.W(ctx, "nullWriter:MutateAndWrite: %v, %v", id, cmd)
 	err := cmd.Mutate(ctx, id, w.state, nil, nil)
+	panic("aaaaaa") // We don't get here because the above function never returns. I have no idea why.
+	log.W(ctx, "nullWriter:MutateAndWrite: return error: %v", err)
 	return err
 }
 

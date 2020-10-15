@@ -145,7 +145,7 @@ func (chain *TransformChain) transformCommands(ctx context.Context, id CommandID
 
 	}
 
-	if err := mutateAndWrite(ctx, id, inputCmds, chain.out); err != nil {
+	if err := mutateAndWrite(ctx, id, cmds, chain.out); err != nil {
 		return err
 	}
 
@@ -183,7 +183,7 @@ func (chain *TransformChain) ProcessNextTransformedCommands(ctx context.Context)
 		if !chain.hasEnded {
 			chain.hasEnded = true
 			err := chain.endChain(ctx)
-			return chain.out.GetAndResetCapturedCommands(), err
+			return chain.out.GetAndResetCapturedCommands(ctx), err
 		}
 
 		return make([]api.Cmd, 0), nil
@@ -206,7 +206,7 @@ func (chain *TransformChain) ProcessNextTransformedCommands(ctx context.Context)
 	}
 
 	chain.currentCommandID.Increment()
-	return chain.out.GetAndResetCapturedCommands(), err
+	return chain.out.GetAndResetCapturedCommands(ctx), err
 }
 
 func (chain *TransformChain) stateMutator(ctx context.Context, cmds []api.Cmd) error {
@@ -276,11 +276,14 @@ func (w *commandCaptureWriter) State() *api.GlobalState {
 }
 
 func (w *commandCaptureWriter) MutateAndWrite(ctx context.Context, id api.CmdID, cmd api.Cmd) error {
+	log.W(ctx, "captured command %v, %v", id, cmd)
+	w.cmds = append(w.cmds, cmd)
 	return w.out.MutateAndWrite(ctx, id, cmd)
 }
 
-func (w *commandCaptureWriter) GetAndResetCapturedCommands() []api.Cmd {
+func (w *commandCaptureWriter) GetAndResetCapturedCommands(ctx context.Context) []api.Cmd {
 	ret := w.cmds
 	w.cmds = make([]api.Cmd, 0)
+	log.W(ctx, "returning captured commands %v", ret)
 	return ret
 }
