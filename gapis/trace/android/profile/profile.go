@@ -67,7 +67,7 @@ func ComputeCounters(ctx context.Context, slices *service.ProfilingData_GpuSlice
 	setTimeMetrics(groupToSlices, &metrics, groupToEntry)
 
 	// Calculate GPU Counter Performances for all leaf groups/commands.
-	setGpuCounterMetrics(ctx, groupToSlices, counters, &metrics, groupToEntry)
+	setGpuCounterMetrics(ctx, groupToSlices, counters, filteredSlices, &metrics, groupToEntry)
 
 	// Merge and organize the leaf entries.
 	entries := mergeLeafEntries(ctx, metrics, groupToEntry)
@@ -130,7 +130,7 @@ func gpuTimeForGroup(slices []*service.ProfilingData_GpuSlices_Slice) (uint64, u
 
 // Create GPU counter metric metadata, calculate counter performance for each
 // GPU slice group, and append the result to corresponding entries.
-func setGpuCounterMetrics(ctx context.Context, groupToSlices map[int32][]*service.ProfilingData_GpuSlices_Slice, counters []*service.ProfilingData_Counter, metrics *[]*service.ProfilingData_GpuCounters_Metric, groupToEntry map[int32]*service.ProfilingData_GpuCounters_Entry) {
+func setGpuCounterMetrics(ctx context.Context, groupToSlices map[int32][]*service.ProfilingData_GpuSlices_Slice, counters []*service.ProfilingData_Counter, globalSlices []*service.ProfilingData_GpuSlices_Slice, metrics *[]*service.ProfilingData_GpuCounters_Metric, groupToEntry map[int32]*service.ProfilingData_GpuCounters_Entry) {
 	for i, counter := range counters {
 		metricId := counterMetricIdOffset + int32(i)
 		op := getCounterAggregationMethod(counter)
@@ -144,8 +144,9 @@ func setGpuCounterMetrics(ctx context.Context, groupToSlices map[int32][]*servic
 			log.E(ctx, "Counter aggregation method not implemented yet. Operation: %v", op)
 			continue
 		}
+		concurrentSlicesCount := scanConcurrency(globalSlices, counter)
 		for groupId, slices := range groupToSlices {
-			estimateSet, minSet, maxSet := mapCounterSamples(slices, counter)
+			estimateSet, minSet, maxSet := mapCounterSamples(slices, counter, concurrentSlicesCount)
 			estimate := aggregateCounterSamples(estimateSet, counter)
 			// Extra comparison here because minSet/maxSet only denote minimal/maximal
 			// number of counter samples inclusion strategy, the aggregation result
@@ -168,13 +169,10 @@ func setGpuCounterMetrics(ctx context.Context, groupToSlices map[int32][]*servic
 	}
 }
 
-// Map counter samples to GPU slice. When collecting samples, three sets will
-// be maintained based on attribution strategy: the minimum set,
-// the best guess set, and the maximum set.
-// The returned results map {sample index} to {sample weight}.
-func mapCounterSamples(slices []*service.ProfilingData_GpuSlices_Slice, counter *service.ProfilingData_Counter) (map[int]float64, map[int]float64, map[int]float64) {
-	estimateSet, minSet, maxSet := map[int]float64{}, map[int]float64{}, map[int]float64{}
-	for _, slice := range slices {
+// Scan global slices and count concurrent slices for each counter sample.
+func scanConcurrency(globalSlices []*service.ProfilingData_GpuSlices_Slice, counter *service.ProfilingData_Counter) []int {
+	slicesCount := make([]int, len(counter.Timestamps))
+	for _, slice := range globalSlices {
 		sStart, sEnd := slice.Ts, slice.Ts+slice.Dur
 		for i := 1; i < len(counter.Timestamps); i++ {
 			cStart, cEnd := counter.Timestamps[i-1], counter.Timestamps[i]
@@ -182,14 +180,41 @@ func mapCounterSamples(slices []*service.ProfilingData_GpuSlices_Slice, counter 
 				continue
 			} else if cStart > sEnd { // Sample later than GPU slice's span.
 				break
+			} else { // Sample overlaps with GPU slice's span.
+				slicesCount[i]++
+			}
+		}
+	}
+	return slicesCount
+}
+
+// Map counter samples to GPU slice. When collecting samples, three sets will
+// be maintained based on attribution strategy: the minimum set,
+// the best guess set, and the maximum set.
+// The returned results map {sample index} to {sample weight}.
+func mapCounterSamples(slices []*service.ProfilingData_GpuSlices_Slice, counter *service.ProfilingData_Counter, concurrentSlicesCount []int) (map[int]float64, map[int]float64, map[int]float64) {
+	estimateSet, minSet, maxSet := map[int]float64{}, map[int]float64{}, map[int]float64{}
+	for _, slice := range slices {
+		sStart, sEnd := slice.Ts, slice.Ts+slice.Dur
+		for i := 1; i < len(counter.Timestamps); i++ {
+			cStart, cEnd := counter.Timestamps[i-1], counter.Timestamps[i]
+			concurrencyWeight := 1.0
+			if concurrentSlicesCount[i] > 1 {
+				concurrencyWeight = 1 / float64(concurrentSlicesCount[i])
+			}
+			if cEnd < sStart { // Sample earlier than GPU slice's span.
+				continue
+			} else if cStart > sEnd { // Sample later than GPU slice's span.
+				break
 			} else if cStart > sStart && cEnd < sEnd { // Sample is contained inside GPU slice's span.
-				estimateSet[i] = 1
-				minSet[i] = 1
+				estimateSet[i] = 1 * concurrencyWeight
+				minSet[i] = 1 * concurrencyWeight
 				maxSet[i] = 1
 			} else { // Sample contains, or partially overlap with GPU slice's span.
 				percent := float64(0)
 				if cEnd != cStart {
-					percent = float64(u64.Min(cEnd, sEnd)-u64.Max(cStart, sStart)) / float64(cEnd-cStart)
+					percent = float64(u64.Min(cEnd, sEnd)-u64.Max(cStart, sStart)) / float64(cEnd-cStart) // Time overlap weight.
+					percent *= concurrencyWeight
 				}
 				if _, ok := estimateSet[i]; !ok {
 					estimateSet[i] = 0
