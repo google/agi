@@ -87,13 +87,21 @@ func Convert(dst, src *Format, data []byte) ([]byte, error) {
 	// Some components can be implicitly added (alpha, Y, Z, W).
 	mappings = resolveImplicitMappings(count, mappings, src, data)
 
+	// Calculate min/max if floats
+	min, max := float64(math.MaxFloat64), -float64(math.MaxFloat64)
+	for _, m := range mappings {
+		if m.dst.component.DataType.IsInteger() && m.src.component.DataType.IsFloat() && !m.dst.component.DataType.Signed {
+			readMinMax(count, m.src, &min, &max)
+		}
+	}
+
 	// Do the conversion work.
 	for _, m := range mappings {
 		if m.src.component == nil {
 			return nil, fmt.Errorf("Channel %v not found in source format: %v",
 				m.dst.component.Channel, src)
 		}
-		if err := m.conv(count); err != nil {
+		if err := m.conv(count, min, max); err != nil {
 			return nil, err
 		}
 
@@ -155,7 +163,7 @@ var (
 	buf1Norm = buf{[]byte{1}, &Component{DataType: &U1, Sampling: LinearNormalized}, 0, 0}
 )
 
-func (m *mapping) conv(count int) error {
+func (m *mapping) conv(count int, min, max float64) error {
 	d, s := m.dst.component, m.src.component
 	if d.GetSampling().GetCurve() != s.GetSampling().GetCurve() {
 		return fmt.Errorf("Cannot convert curve from %v to %v", s.GetSampling().GetCurve(), d.GetSampling().GetCurve())
@@ -188,7 +196,7 @@ func (m *mapping) conv(count int) error {
 		if d.DataType.Signed {
 			return ftos(count, m.dst, m.src)
 		}
-		return ftou(count, m.dst, m.src)
+		return ftou(count, m.dst, m.src, min, max)
 	default:
 		return fmt.Errorf("Cannot convert from Unknown %v to Unknown %v", s, d)
 	}
@@ -480,7 +488,7 @@ func remapFloat(f, min, max float64, c Channel) float64 {
 }
 
 // float to unsigned int
-func ftou(count int, dst, src buf) error {
+func ftou(count int, dst, src buf, min, max float64) error {
 	dstTy, srcTy := dst.component.DataType, src.component.DataType
 	srcIsF16, srcIsF32, srcIsF64 := srcTy.Is(F16), srcTy.Is(F32), srcTy.Is(F64)
 	srcExpBits, srcManBits := srcTy.GetFloat().ExponentBits, srcTy.GetFloat().MantissaBits
@@ -489,10 +497,6 @@ func ftou(count int, dst, src buf) error {
 	dstMask := (1 << dstBits) - 1
 	sourceStream := binary.BitStream{Data: src.bytes, ReadPos: src.offset}
 	destStream := binary.BitStream{Data: dst.bytes, WritePos: dst.offset}
-
-	// Calculate min/max if floats
-	min, max := float64(math.MaxFloat64), -float64(math.MaxFloat64)
-	readMinMax(count, src, &min, &max)
 
 	switch {
 	case srcIsF16:
