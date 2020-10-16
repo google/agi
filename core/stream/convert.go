@@ -497,7 +497,6 @@ func ftou(count int, dst, src buf, min, max float64) error {
 	dstMask := (1 << dstBits) - 1
 	sourceStream := binary.BitStream{Data: src.bytes, ReadPos: src.offset}
 	destStream := binary.BitStream{Data: dst.bytes, WritePos: dst.offset}
-
 	switch {
 	case srcIsF16:
 		scale := float32(dstMask)
