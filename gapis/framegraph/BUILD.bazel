@@ -16,9 +16,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
-    srcs = [
-        "framegraph.go",
-    ],
+    srcs = ["framegraph.go"],
     importpath = "github.com/google/gapid/gapis/framegraph",
     visibility = ["//visibility:public"],
     deps = [

@@ -525,10 +525,10 @@ message FramegraphResource {
 // something that reads/writes resources
 enum FramegraphNodeType {
   COMPUTE = 0;
-  RENDERPASS = 1; // or "GRAPHICS", to stay api-agnostic
+  RENDERPASS = 1;  // or "GRAPHICS", to stay api-agnostic
   // SUBPASS
-  // even DRAWCALL eventually, and correlate a drawcall with the dependencies it affects
-  // vkCopyCmd, vkMap/Unmap ?
+  // even DRAWCALL eventually, and correlate a drawcall with the dependencies it
+  // affects vkCopyCmd, vkMap/Unmap ?
 }
 message FramegraphNode {
   uint64 id = 1;
@@ -559,7 +559,8 @@ enum FramegraphEdgeExecutionDependency {
 }
 enum FramegraphEdgeMemoryDependency {
   NO_MEMORY_DEPENDENCY = 0;
-  PIPELINE_BARRIER = 1; // this is for memory dependencies, not execution dependencies
+  PIPELINE_BARRIER =
+      1;  // this is for memory dependencies, not execution dependencies
 }
 // distinguish memory / execution dependencies
 // We probably need more info on edges, e.g.

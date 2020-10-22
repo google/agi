@@ -44,7 +44,6 @@ go_library(
         "//core/os/file:go_default_library",
         "//gapis/api/all:go_default_library",
         "//gapis/capture:go_default_library",
-        "//gapis/config:go_default_library",
         "//gapis/database:go_default_library",
         "//gapis/framegraph:go_default_library",
         "//gapis/messages:go_default_library",
