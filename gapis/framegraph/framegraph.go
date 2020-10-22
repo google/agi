@@ -279,12 +279,12 @@ func GetFramegraph(ctx context.Context, p *path.Capture) (*service.Framegraph, e
 	for i, rpi := range rpInfos {
 
 		// Use "\l" for newlines as this produce left-align lines in graphviz DOT labels
-		text := fmt.Sprintf("RP %v\\lTotal: read(%v) write(%v)\\l", rpi.beginCmdIdx, rpi.totalRead, rpi.totalWrite)
+		text := fmt.Sprintf("RP %v\\lTotal: read(%v) write(%v)\\l", rpi.beginCmdIdx, memFmt(rpi.totalRead), memFmt(rpi.totalWrite))
 		for img, bytes := range rpi.imgRead {
-			text += fmt.Sprintf("Img 0x%x read(%v)\\l", img, bytes)
+			text += fmt.Sprintf("Img 0x%x read(%v)\\l", img, memFmt(bytes))
 		}
 		for img, bytes := range rpi.imgWrite {
-			text += fmt.Sprintf("Img 0x%x  write(%v)\\l", img, bytes)
+			text += fmt.Sprintf("Img 0x%x  write(%v)\\l", img, memFmt(bytes))
 		}
 
 		nodes = append(nodes, &api.FramegraphNode{
@@ -319,4 +319,18 @@ func GetFramegraph(ctx context.Context, p *path.Capture) (*service.Framegraph, e
 	}
 
 	return &service.Framegraph{Nodes: nodes, Edges: edges}, nil
+}
+
+// TODO: I guess there's already a helper function somewhere
+// to do this properly.
+func memFmt(bytes uint64) string {
+	kb := bytes / 1000
+	mb := kb / 1000
+	if mb > 0 {
+		return fmt.Sprintf("%vMb", mb)
+	}
+	if kb > 0 {
+		return fmt.Sprintf("%vKb", kb)
+	}
+	return fmt.Sprintf("%vb", bytes)
 }
