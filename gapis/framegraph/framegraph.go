@@ -19,7 +19,6 @@ import (
 	"fmt"
 
 	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/math/interval"
 	"github.com/google/gapid/gapis/api"
 	"github.com/google/gapid/gapis/api/sync"
 	"github.com/google/gapid/gapis/api/vulkan"
@@ -37,17 +36,17 @@ import (
 // a memory observation. There is room for improvement in this caching approach,
 // e.g. index the outermost map by memory pool IDs.
 type stateResourceMapping struct {
-	images map[vulkan.VkImage]map[memory.PoolID][]interval.U64Span
+	images map[vulkan.VkImage]map[memory.PoolID][]memory.Range
 }
 
 func createStateResourceMapping(s *vulkan.State) stateResourceMapping {
 	srm := stateResourceMapping{
-		images: make(map[vulkan.VkImage]map[memory.PoolID][]interval.U64Span),
+		images: make(map[vulkan.VkImage]map[memory.PoolID][]memory.Range),
 	}
 
 	for handle, image := range s.Images().All() {
 		if _, ok := srm.images[handle]; !ok {
-			srm.images[handle] = make(map[memory.PoolID][]interval.U64Span)
+			srm.images[handle] = make(map[memory.PoolID][]memory.Range)
 		}
 		for _, aspect := range image.Aspects().All() {
 			for _, layer := range aspect.Layers().All() {
@@ -55,9 +54,9 @@ func createStateResourceMapping(s *vulkan.State) stateResourceMapping {
 					data := level.Data()
 					pool := data.Pool()
 					if _, ok := srm.images[handle][pool]; !ok {
-						srm.images[handle][pool] = []interval.U64Span{}
+						srm.images[handle][pool] = []memory.Range{}
 					}
-					srm.images[handle][pool] = append(srm.images[handle][pool], data.Range().Span())
+					srm.images[handle][pool] = append(srm.images[handle][pool], data.Range())
 				}
 			}
 		}
@@ -66,9 +65,9 @@ func createStateResourceMapping(s *vulkan.State) stateResourceMapping {
 			data := memInfo.BoundMemory().Data()
 			pool := data.Pool()
 			if _, ok := srm.images[handle][pool]; !ok {
-				srm.images[handle][pool] = []interval.U64Span{}
+				srm.images[handle][pool] = []memory.Range{}
 			}
-			srm.images[handle][pool] = append(srm.images[handle][pool], data.Range().Span())
+			srm.images[handle][pool] = append(srm.images[handle][pool], data.Range())
 		}
 	}
 
@@ -78,7 +77,6 @@ func createStateResourceMapping(s *vulkan.State) stateResourceMapping {
 	for _, devMem := range devMems {
 		data := devMem.Data()
 		pool := data.Pool()
-		span := data.Range().Span()
 		boundObj := devMem.BoundObjects().All()
 		// TODO: deal with memory offset from boundObj
 		found := false
@@ -90,9 +88,9 @@ func createStateResourceMapping(s *vulkan.State) stateResourceMapping {
 				}
 				found = true
 				if _, ok := srm.images[imgHandle][pool]; !ok {
-					srm.images[imgHandle][pool] = []interval.U64Span{}
+					srm.images[imgHandle][pool] = []memory.Range{}
 				}
-				srm.images[imgHandle][pool] = append(srm.images[imgHandle][pool], span)
+				srm.images[imgHandle][pool] = append(srm.images[imgHandle][pool], data.Range())
 			}
 		}
 	}
@@ -100,12 +98,11 @@ func createStateResourceMapping(s *vulkan.State) stateResourceMapping {
 	return srm
 }
 
-func (s stateResourceMapping) imageLookup(poolID memory.PoolID, span interval.U64Span) (uint64, bool) {
+func (s stateResourceMapping) imageLookup(poolID memory.PoolID, rang memory.Range) (uint64, bool) {
 	for img, mem := range s.images {
-		if intervals, ok := mem[poolID]; ok {
-			for _, interval := range intervals {
-				// TODO: we should probably use memory.Range rather than internal.U64Span
-				if interval.Start <= span.Start && span.End <= interval.End {
+		if ranges, ok := mem[poolID]; ok {
+			for _, r := range ranges {
+				if r.First() <= rang.First() && rang.Last() <= r.Last() {
 					return uint64(img), true
 				}
 			}
@@ -216,9 +213,12 @@ func GetFramegraph(ctx context.Context, p *path.Capture) (*service.Framegraph, e
 
 					// Analyze memory accesses
 					for _, memAccess := range dependencyGraph.GetNodeAccesses(nodeID).MemoryAccesses {
-						// TODO: operate on memory.Range rather than internal.U64Span
 						// TODO: refactor rpInfo fields to make the following code smoother to write
 						count := memAccess.Span.End - memAccess.Span.Start
+						memRange := memory.Range{
+							Base: memAccess.Span.Start,
+							Size: count,
+						}
 						switch memAccess.Mode {
 						case d2.ACCESS_READ:
 							rpi.totalRead += count
@@ -227,14 +227,14 @@ func GetFramegraph(ctx context.Context, p *path.Capture) (*service.Framegraph, e
 							} else {
 								rpi.read[memAccess.Pool] = count
 							}
-							if imgHandle, ok := srm.imageLookup(memAccess.Pool, memAccess.Span); ok {
+							if imgHandle, ok := srm.imageLookup(memAccess.Pool, memRange); ok {
 								if _, ok := rpi.imgRead[imgHandle]; ok {
 									rpi.imgRead[imgHandle] += count
 								} else {
 									rpi.imgRead[imgHandle] = count
 								}
 							} else {
-								log.W(ctx, "HUGUES FAIL lookup (read) pool:%v span:%v", memAccess.Pool, memAccess.Span)
+								log.W(ctx, "HUGUES FAIL lookup (read) pool:%v span:%v", memAccess.Pool, memRange)
 							}
 						case d2.ACCESS_WRITE:
 							rpi.totalWrite += count
@@ -244,7 +244,7 @@ func GetFramegraph(ctx context.Context, p *path.Capture) (*service.Framegraph, e
 								rpi.write[memAccess.Pool] = count
 							}
 
-							if imgHandle, ok := srm.imageLookup(memAccess.Pool, memAccess.Span); ok {
+							if imgHandle, ok := srm.imageLookup(memAccess.Pool, memRange); ok {
 								//log.W(ctx, "HUGUES hit write resource: %v", res)
 								if _, ok := rpi.imgWrite[imgHandle]; ok {
 									rpi.imgWrite[imgHandle] += count
@@ -252,7 +252,7 @@ func GetFramegraph(ctx context.Context, p *path.Capture) (*service.Framegraph, e
 									rpi.imgWrite[imgHandle] = count
 								}
 							} else {
-								log.W(ctx, "HUGUES FAIL lookup (write) pool:%v span:%v", memAccess.Pool, memAccess.Span)
+								log.W(ctx, "HUGUES FAIL lookup (write) pool:%v span:%v", memAccess.Pool, memRange)
 							}
 						}
 					}

@@ -21,7 +21,6 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//core/log:go_default_library",
-        "//core/math/interval:go_default_library",
         "//gapis/api:go_default_library",
         "//gapis/api/sync:go_default_library",
         "//gapis/api/vulkan:go_default_library",
