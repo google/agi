@@ -292,7 +292,7 @@ func (p *Process) captureWithClientApi(ctx context.Context, start task.Signal, s
 		}
 	}
 
-	// TODO Find a way to reliably know when Perfetto/producers are ready (b/147388497)
+	// TODO(b/147388497): Find a way to reliably know when Perfetto/producers are ready.
 	delayedReady := task.Delay(ready, 250*time.Millisecond)
 
 	atomic.StoreInt64(written, 1)
