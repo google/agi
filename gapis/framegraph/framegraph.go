@@ -33,6 +33,7 @@ import (
 type rpInfo struct {
 	beginCmdIdx api.SubCmdIdx
 	numCmds     uint64
+	rpObj       vulkan.RenderPassObjectʳ
 	dpNodes     map[d2.NodeID]bool
 	imgRead     map[vulkan.VkImage]bool
 	imgWrite    map[vulkan.VkImage]bool
@@ -99,12 +100,14 @@ func GetFramegraph(ctx context.Context, p *path.Capture) (*service.Framegraph, e
 		cmdArgs := vulkan.GetCommandArgs(ctx, cmdRef, vkState)
 
 		// Beginning of RP
-		if _, ok := cmdArgs.(vulkan.VkCmdBeginRenderPassArgsʳ); ok {
+		if args, ok := cmdArgs.(vulkan.VkCmdBeginRenderPassArgsʳ); ok {
 			if rpi != nil {
 				panic("Nested renderpasses?")
 			}
+			rpObj := vkState.RenderPasses().Get(args.RenderPass())
 			rpi = &rpInfo{
 				beginCmdIdx: append(subCmdIdx),
+				rpObj:       rpObj,
 				dpNodes:     make(map[d2.NodeID]bool),
 				imgRead:     make(map[vulkan.VkImage]bool),
 				imgWrite:    make(map[vulkan.VkImage]bool),
@@ -181,7 +184,8 @@ func GetFramegraph(ctx context.Context, p *path.Capture) (*service.Framegraph, e
 	for i, rpi := range rpInfos {
 
 		// Use "\l" for newlines as this produce left-align lines in graphviz DOT labels
-		text := fmt.Sprintf("%v Cmds, startIdx:%v\\l\\l", rpi.numCmds, rpi.beginCmdIdx)
+		numSubPasses := rpi.rpObj.SubpassDescriptions().Len()
+		text := fmt.Sprintf("RenderPass\\l%v Cmds, %v subPass, startIdx:%v\\l\\l", rpi.numCmds, numSubPasses, rpi.beginCmdIdx)
 		for img, info := range rpi.imgInfos {
 			// Represent read/write with 2 characters as in file accesss bits, e.g. -- / r- / -w / rw
 			r := "-"
