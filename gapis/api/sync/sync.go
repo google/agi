@@ -60,7 +60,7 @@ type SynchronizedAPI interface {
 	// called before and after executing each subcommand callback.
 	MutateSubcommands(ctx context.Context, id api.CmdID, cmd api.Cmd, s *api.GlobalState,
 		preSubCmdCallback func(*api.GlobalState, api.SubCmdIdx, api.Cmd),
-		postSubCmdCallback func(*api.GlobalState, api.SubCmdIdx, api.Cmd)) error
+		postSubCmdCallback func(*api.GlobalState, api.SubCmdIdx, api.Cmd, interface{})) error
 
 	// FlattenSubcommandIdx returns the flatten command id for the subcommand
 	// specified by the given SubCmdIdx. If flattening succeeded, the flatten
@@ -175,7 +175,7 @@ func MutationCmdsFor(ctx context.Context, c *path.Capture, data *Data, cmds []ap
 func MutateWithSubcommands(ctx context.Context, c *path.Capture, cmds []api.Cmd,
 	postCmdCb func(*api.GlobalState, api.SubCmdIdx, api.Cmd),
 	preSubCmdCb func(*api.GlobalState, api.SubCmdIdx, api.Cmd),
-	postSubCmdCb func(*api.GlobalState, api.SubCmdIdx, api.Cmd)) error {
+	postSubCmdCb func(*api.GlobalState, api.SubCmdIdx, api.Cmd, interface{})) error {
 
 	ctx = status.Start(ctx, "Sync.MutateWithSubcommands")
 	defer status.Finish(ctx)

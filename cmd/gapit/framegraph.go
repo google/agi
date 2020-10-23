@@ -19,6 +19,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/google/gapid/core/app"
 	"github.com/google/gapid/core/log"
@@ -53,6 +54,8 @@ func (verb *framegraphVerb) Run(ctx context.Context, flags flag.FlagSet) error {
 	if err != nil {
 		return log.Errf(ctx, err, "GetFramegraph(%v)", capture)
 	}
+
+	time.Sleep(1 * time.Second)
 
 	// Print framegraph in DOT format
 	dot := "digraph agiFramegraph {\n"

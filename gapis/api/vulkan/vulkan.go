@@ -464,11 +464,11 @@ func (API) GetTerminator(ctx context.Context, c *path.Capture) (terminator.Termi
 
 func (API) MutateSubcommands(ctx context.Context, id api.CmdID, cmd api.Cmd,
 	s *api.GlobalState, preSubCmdCb func(*api.GlobalState, api.SubCmdIdx, api.Cmd),
-	postSubCmdCb func(*api.GlobalState, api.SubCmdIdx, api.Cmd)) error {
+	postSubCmdCb func(*api.GlobalState, api.SubCmdIdx, api.Cmd, interface{})) error {
 	c := GetState(s)
 	if postSubCmdCb != nil {
-		c.PostSubcommand = func(interface{}) {
-			postSubCmdCb(s, append(api.SubCmdIdx{uint64(id)}, c.SubCmdIdx...), cmd)
+		c.PostSubcommand = func(i interface{}) {
+			postSubCmdCb(s, append(api.SubCmdIdx{uint64(id)}, c.SubCmdIdx...), cmd, i)
 		}
 	}
 	if preSubCmdCb != nil {

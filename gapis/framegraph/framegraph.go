@@ -142,44 +142,22 @@ func GetFramegraph(ctx context.Context, p *path.Capture) (*service.Framegraph, e
 		return nil, err
 	}
 
-	// Sync data lets us iterate over subcommands
-	// snc, err := resolve.SyncData(ctx, p)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// vkSyncAPI := api.Find(vulkan.ID).(sync.SynchronizedAPI)
-
-	//	state := c.NewState(ctx)
-
 	rpInfos := []*rpInfo{}
 	var rpi *rpInfo
 
-	// func MutateWithSubcommands(ctx context.Context, c *path.Capture, cmds []api.Cmd,
-	// 	postCmdCb func(*api.GlobalState, api.SubCmdIdx, api.Cmd),
-	// 	preSubCmdCb func(*api.GlobalState, api.SubCmdIdx, api.Cmd),
-	// 	postSubCmdCb func(*api.GlobalState, api.SubCmdIdx, api.Cmd)) error
-
 	postCmdCb := func(*api.GlobalState, api.SubCmdIdx, api.Cmd) {}
 
-	postSubCmdCb := func(state *api.GlobalState, subCmdIdx api.SubCmdIdx, cmd api.Cmd) {
+	postSubCmdCb := func(state *api.GlobalState, subCmdIdx api.SubCmdIdx, cmd api.Cmd, i interface{}) {
 		vkState := vulkan.GetState(state)
+
+		cmdRef := i.(vulkan.CommandReferenceʳ)
+		cmdArgs := vulkan.GetCommandArgs(ctx, cmdRef, vkState)
+		log.W(ctx, "HUGUES subcmdix:%v cmdArgs %v", subCmdIdx, cmdArgs)
+
 		srm := createStateResourceMapping(vkState)
 
-		if queueSubmit, ok := cmd.(*vulkan.VkQueueSubmit); ok {
-			submitCount := queueSubmit.SubmitCount()
-			submitInfos := queueSubmit.PSubmits().Slice(0, uint64(submitCount), state.MemoryLayout).MustRead(ctx, queueSubmit, state, nil)
-			for _, si := range submitInfos {
-				cmdBuffers := si.PCommandBuffers().Slice(0, uint64(si.CommandBufferCount()), state.MemoryLayout).MustRead(ctx, queueSubmit, state, nil)
-				for _, cmdBufHandle := range cmdBuffers {
-					_ = vkState.CommandBuffers().Get(cmdBufHandle)
-				}
-			}
-		}
-
-		log.W(ctx, "HUGUES subCmdIdx: %v subCmd: %v", subCmdIdx, cmd)
-
-		// Detect begin of RP
-		if _, ok := cmd.(*vulkan.VkCmdBeginRenderPass); ok {
+		// Beginning of RP
+		if _, ok := cmdArgs.(vulkan.VkCmdBeginRenderPassArgsʳ); ok {
 			if rpi != nil {
 				panic("Nested renderpasses?")
 			}
@@ -249,12 +227,11 @@ func GetFramegraph(ctx context.Context, p *path.Capture) (*service.Framegraph, e
 			}
 		}
 
-		// Detect end of RP
-		if _, ok := cmd.(*vulkan.VkCmdEndRenderPass); ok {
+		// Ending of RP
+		if _, ok := cmdArgs.(vulkan.VkCmdEndRenderPassArgsʳ); ok {
 			rpInfos = append(rpInfos, rpi)
 			rpi = nil
 		}
-
 	}
 
 	if err := sync.MutateWithSubcommands(ctx, p, c.Commands, postCmdCb, nil, postSubCmdCb); err != nil {
@@ -267,134 +244,7 @@ func GetFramegraph(ctx context.Context, p *path.Capture) (*service.Framegraph, e
 	// Basically, you cannot assume that all subcommands are executed
 	// upon the queuesubmit.
 	// MutateWithSubCommand handles all this properly. Also secondary
-	// command buffer.
-
-	/*
-		// This lambda processes each command of the capture
-		processCmd := func(ctx context.Context, id api.CmdID, cmd api.Cmd) error {
-
-			// Start by mutating the command to have an up-to-date state
-			err := cmd.Mutate(ctx, id, state, nil, nil)
-			if err != nil {
-				return err
-			}
-
-			// For vkQueueSubmits, scan subcommands and collect per-renderpass info
-			if _, ok := cmd.(*vulkan.VkQueueSubmit); ok {
-
-				// Assert there are subcommands
-				subCmdRefs, ok := snc.SubcommandReferences[id]
-				if !ok {
-					return log.Errf(ctx, nil, "no subcommands found for vkQueueSubmit?")
-				}
-
-				// Create the state resource mapping cache
-				srm := createStateResourceMapping(vulkan.GetState(state))
-
-				// Iterate over subcommands
-				var rpi *rpInfo
-				for _, subCmdRef := range subCmdRefs {
-
-					// Get the proper api.Cmd for this sub command
-					var subCmd api.Cmd
-					genCmdID := subCmdRef.GeneratingCmd
-					if genCmdID == api.CmdNoID {
-						// It's expensive to call RecoverMidExecutionCommand,
-						// so better match the FooBarArgs type, see command splitter.
-						subCmd, err = vkSyncAPI.RecoverMidExecutionCommand(ctx, p, subCmdRef.MidExecutionCommandData)
-						if err != nil {
-							return err
-						}
-					} else {
-						subCmd = c.Commands[genCmdID]
-					}
-
-					// Detect start of RP
-					if _, ok := subCmd.(*vulkan.VkCmdBeginRenderPass); ok {
-						if rpi != nil {
-							return log.Errf(ctx, nil, "nested renderpasses?")
-						}
-						nodeID := dependencyGraph.GetCmdNodeID(id, subCmdIdx)
-						rpi = &rpInfo{
-							beginCmdIdx: append(api.SubCmdIdx{uint64(id)}, subCmdIdx...),
-							read:        make(map[memory.PoolID]uint64),
-							write:       make(map[memory.PoolID]uint64),
-							dpNodes:     map[d2.NodeID]bool{nodeID: true},
-							imgRead:     make(map[uint64]uint64),
-							imgWrite:    make(map[uint64]uint64),
-						}
-					}
-
-					// Store info for subcommands that are inside a RP
-					if rpi != nil {
-						// Collect dependencygraph nodes from this RP
-						// TODO: maybe there's a better way to find dependencies between RPs?
-						nodeID := dependencyGraph.GetCmdNodeID(id, subCmdIdx)
-						rpi.dpNodes[nodeID] = true
-
-						// Analyze memory accesses
-						for _, memAccess := range dependencyGraph.GetNodeAccesses(nodeID).MemoryAccesses {
-							// TODO: refactor rpInfo fields to make the following code smoother to write
-							count := memAccess.Span.End - memAccess.Span.Start
-							memRange := memory.Range{
-								Base: memAccess.Span.Start,
-								Size: count,
-							}
-							switch memAccess.Mode {
-							case d2.ACCESS_READ:
-								rpi.totalRead += count
-								if _, ok := rpi.read[memAccess.Pool]; ok {
-									rpi.read[memAccess.Pool] += count
-								} else {
-									rpi.read[memAccess.Pool] = count
-								}
-								if imgHandle, ok := srm.imageLookup(memAccess.Pool, memRange); ok {
-									if _, ok := rpi.imgRead[imgHandle]; ok {
-										rpi.imgRead[imgHandle] += count
-									} else {
-										rpi.imgRead[imgHandle] = count
-									}
-								} else {
-									log.W(ctx, "HUGUES FAIL lookup (read) pool:%v span:%v", memAccess.Pool, memRange)
-								}
-							case d2.ACCESS_WRITE:
-								rpi.totalWrite += count
-								if _, ok := rpi.write[memAccess.Pool]; ok {
-									rpi.write[memAccess.Pool] += count
-								} else {
-									rpi.write[memAccess.Pool] = count
-								}
-
-								if imgHandle, ok := srm.imageLookup(memAccess.Pool, memRange); ok {
-									//log.W(ctx, "HUGUES hit write resource: %v", res)
-									if _, ok := rpi.imgWrite[imgHandle]; ok {
-										rpi.imgWrite[imgHandle] += count
-									} else {
-										rpi.imgWrite[imgHandle] = count
-									}
-								} else {
-									log.W(ctx, "HUGUES FAIL lookup (write) pool:%v span:%v", memAccess.Pool, memRange)
-								}
-							}
-						}
-					}
-
-					// Detect end of RP
-					if _, ok := subCmd.(*vulkan.VkCmdEndRenderPass); ok {
-						rpInfos = append(rpInfos, rpi)
-						rpi = nil
-					}
-				}
-			}
-			return nil
-		}
-
-		// Process all commands
-		err = api.ForeachCmd(ctx, c.Commands, true, processCmd)
-		if err != nil {
-			return nil, err
-		}
-	*/
+	// command buffers.
 
 	// Create framegraph contents based on rpInfo and dependency graph
 	nodes := []*api.FramegraphNode{}
