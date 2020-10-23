@@ -387,6 +387,10 @@ sub void BindImageMemory(
               lsize := as!u64(level.LinearLayout.size)
               level.Data = getImagePlaneMemoryInfo(imageObject, plane).BoundMemory.Data[loffset:loffset + lsize]
             } else {
+              // This should be a slice of VkDeviceMemory
+              // we have to allocate tightlyPackedSize because this
+              // size may be bigger than what was allocated.
+              // the driver may be able to store in less memory.
               level.Data = make!u8(tightlyPackedSize)
             }
           }

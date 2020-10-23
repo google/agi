@@ -30,6 +30,8 @@ import (
 	"github.com/google/gapid/gapis/service/path"
 )
 
+// map[memory.PoolID]map[memory.Range]ImageObject^r
+
 // stateResourceMapping correlates VkImage handles with their memory accesses.
 // It is created once per vkQueueSubmit, and then used as a cache to avoid
 // scanning the state data-structures everytime we try to find an image from
@@ -151,6 +153,14 @@ func GetFramegraph(ctx context.Context, p *path.Capture) (*service.Framegraph, e
 	rpInfos := []*rpInfo{}
 	state := c.NewState(ctx)
 
+	// Better use MutateWithSubCommands than syncData.
+	// executing queuesubmit may NOT always execute the subcommands, e.g.
+	// it may need a setEvent from host side to be able to execute.
+	// Basically, you cannot assume that all subcommands are executed
+	// upon the queuesubmit.
+	// MutateWithSubCommand handles all this properly. Also secondary
+	// command buffer.
+
 	// This lambda processes each command of the capture
 	processCmd := func(ctx context.Context, id api.CmdID, cmd api.Cmd) error {
 
@@ -180,6 +190,8 @@ func GetFramegraph(ctx context.Context, p *path.Capture) (*service.Framegraph, e
 				var subCmd api.Cmd
 				genCmdID := subCmdRef.GeneratingCmd
 				if genCmdID == api.CmdNoID {
+					// It's expensive to call RecoverMidExecutionCommand,
+					// so better match the FooBarArgs type, see command splitter.
 					subCmd, err = vkSyncAPI.RecoverMidExecutionCommand(ctx, p, subCmdRef.MidExecutionCommandData)
 					if err != nil {
 						return err
