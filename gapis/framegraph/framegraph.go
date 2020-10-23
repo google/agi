@@ -17,6 +17,7 @@ package framegraph
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/google/gapid/core/log"
 	"github.com/google/gapid/gapis/api"
@@ -48,11 +49,8 @@ func lookupImage(state *vulkan.State, pool memory.PoolID, memRange memory.Range)
 // rpInfo stores information for a given renderpass
 type rpInfo struct {
 	beginCmdIdx api.SubCmdIdx
+	numCmds     uint64
 	dpNodes     map[d2.NodeID]bool
-	totalRead   uint64
-	totalWrite  uint64
-	read        map[memory.PoolID]uint64
-	write       map[memory.PoolID]uint64
 	imgRead     map[vulkan.VkImage]bool
 	imgWrite    map[vulkan.VkImage]bool
 	imgInfos    map[vulkan.VkImage]vulkan.ImageInfo
@@ -95,8 +93,6 @@ func GetFramegraph(ctx context.Context, p *path.Capture) (*service.Framegraph, e
 			}
 			rpi = &rpInfo{
 				beginCmdIdx: append(subCmdIdx),
-				read:        make(map[memory.PoolID]uint64),
-				write:       make(map[memory.PoolID]uint64),
 				dpNodes:     make(map[d2.NodeID]bool),
 				imgRead:     make(map[vulkan.VkImage]bool),
 				imgWrite:    make(map[vulkan.VkImage]bool),
@@ -107,6 +103,7 @@ func GetFramegraph(ctx context.Context, p *path.Capture) (*service.Framegraph, e
 		// Store info for subcommands that are inside a RP
 		if rpi != nil {
 			// Collect dependencygraph nodes from this RP
+			rpi.numCmds++
 			// TODO: maybe there's a better way to find dependencies between RPs?
 			nodeID := dependencyGraph.GetCmdNodeID(api.CmdID(subCmdIdx[0]), subCmdIdx[1:])
 			rpi.dpNodes[nodeID] = true
@@ -125,22 +122,10 @@ func GetFramegraph(ctx context.Context, p *path.Capture) (*service.Framegraph, e
 				}
 				switch memAccess.Mode {
 				case d2.ACCESS_READ:
-					rpi.totalRead += count
-					if _, ok := rpi.read[memAccess.Pool]; ok {
-						rpi.read[memAccess.Pool] += count
-					} else {
-						rpi.read[memAccess.Pool] = count
-					}
 					if image != nil {
 						rpi.imgRead[image.VulkanHandle()] = true
 					}
 				case d2.ACCESS_WRITE:
-					rpi.totalWrite += count
-					if _, ok := rpi.write[memAccess.Pool]; ok {
-						rpi.write[memAccess.Pool] += count
-					} else {
-						rpi.write[memAccess.Pool] = count
-					}
 					if image != nil {
 						rpi.imgWrite[image.VulkanHandle()] = true
 					}
@@ -172,7 +157,7 @@ func GetFramegraph(ctx context.Context, p *path.Capture) (*service.Framegraph, e
 	for i, rpi := range rpInfos {
 
 		// Use "\l" for newlines as this produce left-align lines in graphviz DOT labels
-		text := fmt.Sprintf("RP %v\\lTotal: read(%v) write(%v)\\l", rpi.beginCmdIdx, memFmt(rpi.totalRead), memFmt(rpi.totalWrite))
+		text := fmt.Sprintf("%v Cmds, startIdx:%v\\l\\l", rpi.numCmds, rpi.beginCmdIdx)
 		for img, info := range rpi.imgInfos {
 			// Represent read/write with 2 characters as in file accesss bits, e.g. -- / r- / -w / rw
 			r := "-"
@@ -186,7 +171,9 @@ func GetFramegraph(ctx context.Context, p *path.Capture) (*service.Framegraph, e
 
 			extent := info.Extent()
 			dimensions := fmt.Sprintf("[%vx%vx%v]", extent.Width(), extent.Height(), extent.Depth())
-			text += fmt.Sprintf("Img 0x%X %v%v %v %v %v\\l", img, r, w, dimensions, info.ImageType(), info.Fmt())
+			imgType := strings.TrimPrefix(fmt.Sprintf("%v", info.ImageType()), "VK_IMAGE_TYPE_")
+			imgFmt := strings.TrimPrefix(fmt.Sprintf("%v", info.Fmt()), "VK_FORMAT_")
+			text += fmt.Sprintf("Img 0x%X %v%v %v %v %v\\l", img, r, w, dimensions, imgType, imgFmt)
 		}
 
 		nodes = append(nodes, &api.FramegraphNode{
