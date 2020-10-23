@@ -30,6 +30,19 @@ import (
 	"github.com/google/gapid/gapis/service/path"
 )
 
+// rpInfo stores information for a given renderpass
+type rpInfo struct {
+	beginCmdIdx api.SubCmdIdx
+	numCmds     uint64
+	dpNodes     map[d2.NodeID]bool
+	imgRead     map[vulkan.VkImage]bool
+	imgWrite    map[vulkan.VkImage]bool
+	imgInfos    map[vulkan.VkImage]vulkan.ImageInfo
+	bufInfos    map[vulkan.VkBuffer]vulkan.BufferInfo
+	bufRead     map[vulkan.VkBuffer]bool
+	bufWrite    map[vulkan.VkBuffer]bool
+}
+
 func lookupImage(state *vulkan.State, pool memory.PoolID, memRange memory.Range) *vulkan.ImageObjectʳ {
 	for _, image := range state.Images().All() {
 		for _, aspect := range image.Aspects().All() {
@@ -46,14 +59,15 @@ func lookupImage(state *vulkan.State, pool memory.PoolID, memRange memory.Range)
 	return nil
 }
 
-// rpInfo stores information for a given renderpass
-type rpInfo struct {
-	beginCmdIdx api.SubCmdIdx
-	numCmds     uint64
-	dpNodes     map[d2.NodeID]bool
-	imgRead     map[vulkan.VkImage]bool
-	imgWrite    map[vulkan.VkImage]bool
-	imgInfos    map[vulkan.VkImage]vulkan.ImageInfo
+func lookupBuffer(state *vulkan.State, pool memory.PoolID, memRange memory.Range) *vulkan.BufferObjectʳ {
+	for _, buffer := range state.Buffers().All() {
+		data := buffer.Memory().Data()
+		// TODO: check memory offsets
+		if data.Pool() == pool && data.Range().First() <= memRange.First() && memRange.Last() <= data.Range().Last() {
+			return &buffer
+		}
+	}
+	return nil
 }
 
 // GetFramegraph creates and returns the framegraph of a capture.
@@ -97,6 +111,9 @@ func GetFramegraph(ctx context.Context, p *path.Capture) (*service.Framegraph, e
 				imgRead:     make(map[vulkan.VkImage]bool),
 				imgWrite:    make(map[vulkan.VkImage]bool),
 				imgInfos:    make(map[vulkan.VkImage]vulkan.ImageInfo),
+				bufRead:     make(map[vulkan.VkBuffer]bool),
+				bufWrite:    make(map[vulkan.VkBuffer]bool),
+				bufInfos:    make(map[vulkan.VkBuffer]vulkan.BufferInfo),
 			}
 		}
 
@@ -104,7 +121,6 @@ func GetFramegraph(ctx context.Context, p *path.Capture) (*service.Framegraph, e
 		if rpi != nil {
 			// Collect dependencygraph nodes from this RP
 			rpi.numCmds++
-			// TODO: maybe there's a better way to find dependencies between RPs?
 			nodeID := dependencyGraph.GetCmdNodeID(api.CmdID(subCmdIdx[0]), subCmdIdx[1:])
 			rpi.dpNodes[nodeID] = true
 
@@ -120,14 +136,24 @@ func GetFramegraph(ctx context.Context, p *path.Capture) (*service.Framegraph, e
 				if image != nil {
 					rpi.imgInfos[image.VulkanHandle()] = image.Info()
 				}
+				buffer := lookupBuffer(vkState, memAccess.Pool, memRange)
+				if buffer != nil {
+					rpi.bufInfos[buffer.VulkanHandle()] = buffer.Info()
+				}
 				switch memAccess.Mode {
 				case d2.ACCESS_READ:
 					if image != nil {
 						rpi.imgRead[image.VulkanHandle()] = true
 					}
+					if buffer != nil {
+						rpi.bufRead[buffer.VulkanHandle()] = true
+					}
 				case d2.ACCESS_WRITE:
 					if image != nil {
 						rpi.imgWrite[image.VulkanHandle()] = true
+					}
+					if buffer != nil {
+						rpi.bufWrite[buffer.VulkanHandle()] = true
 					}
 				}
 			}
@@ -176,6 +202,21 @@ func GetFramegraph(ctx context.Context, p *path.Capture) (*service.Framegraph, e
 			text += fmt.Sprintf("Img 0x%X %v%v %v %v %v\\l", img, r, w, dimensions, imgType, imgFmt)
 		}
 
+		text += "\\l"
+		for buf, info := range rpi.bufInfos {
+			// Represent read/write with 2 characters as in file accesss bits, e.g. -- / r- / -w / rw
+			r := "-"
+			if _, ok := rpi.bufRead[buf]; ok {
+				r = "r"
+			}
+			w := "-"
+			if _, ok := rpi.bufWrite[buf]; ok {
+				w = "w"
+			}
+
+			text += fmt.Sprintf("Buf 0x%X %v%v [%v]\\l", buf, r, w, info.Size())
+		}
+
 		nodes = append(nodes, &api.FramegraphNode{
 			Id:   uint64(i),
 			Type: api.FramegraphNodeType_RENDERPASS,
@@ -201,25 +242,12 @@ func GetFramegraph(ctx context.Context, p *path.Capture) (*service.Framegraph, e
 		}
 		for dep := range dependsOn {
 			edges = append(edges, &api.FramegraphEdge{
-				Origin:      uint64(i),
-				Destination: uint64(dep),
+				// Invert dependency relation to show the flow of RP in the frame
+				Origin:      uint64(dep),
+				Destination: uint64(i),
 			})
 		}
 	}
 
 	return &service.Framegraph{Nodes: nodes, Edges: edges}, nil
-}
-
-// TODO: I guess there's already a helper function somewhere
-// to do this properly.
-func memFmt(bytes uint64) string {
-	kb := bytes / 1000
-	mb := kb / 1000
-	if mb > 0 {
-		return fmt.Sprintf("%vMb", mb)
-	}
-	if kb > 0 {
-		return fmt.Sprintf("%vKb", kb)
-	}
-	return fmt.Sprintf("%vb", bytes)
 }
