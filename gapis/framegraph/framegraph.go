@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/google/gapid/core/log"
 	"github.com/google/gapid/gapis/api"
 	"github.com/google/gapid/gapis/api/sync"
 	"github.com/google/gapid/gapis/api/vulkan"
@@ -98,7 +97,6 @@ func GetFramegraph(ctx context.Context, p *path.Capture) (*service.Framegraph, e
 
 		cmdRef := i.(vulkan.CommandReferenceʳ)
 		cmdArgs := vulkan.GetCommandArgs(ctx, cmdRef, vkState)
-		log.W(ctx, "HUGUES subcmdix:%v cmdArgs %v", subCmdIdx, cmdArgs)
 
 		// Beginning of RP
 		if _, ok := cmdArgs.(vulkan.VkCmdBeginRenderPassArgsʳ); ok {
