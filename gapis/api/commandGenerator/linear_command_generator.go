@@ -50,5 +50,8 @@ func (generator *linearCommandGenerator) IsEndOfCommands() bool {
 }
 
 func (generator *linearCommandGenerator) GetNumOfRemainingCommands() uint64 {
-	return uint64(len(generator.commands))
+	if generator.IsEndOfCommands() {
+		return 0
+	}
+	return uint64(len(generator.commands) - generator.index)
 }
