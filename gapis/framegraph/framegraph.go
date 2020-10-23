@@ -29,87 +29,21 @@ import (
 	"github.com/google/gapid/gapis/service/path"
 )
 
-// map[memory.PoolID]map[memory.Range]ImageObject^r
-
-// stateResourceMapping correlates VkImage handles with their memory accesses.
-// It is created once per vkQueueSubmit, and then used as a cache to avoid
-// scanning the state data-structures everytime we try to find an image from
-// a memory observation. There is room for improvement in this caching approach,
-// e.g. index the outermost map by memory pool IDs.
-type stateResourceMapping struct {
-	images map[vulkan.VkImage]map[memory.PoolID][]memory.Range
-}
-
-func createStateResourceMapping(s *vulkan.State) stateResourceMapping {
-	srm := stateResourceMapping{
-		images: make(map[vulkan.VkImage]map[memory.PoolID][]memory.Range),
-	}
-
-	for handle, image := range s.Images().All() {
-		if _, ok := srm.images[handle]; !ok {
-			srm.images[handle] = make(map[memory.PoolID][]memory.Range)
-		}
+func lookupImage(state *vulkan.State, pool memory.PoolID, memRange memory.Range) *vulkan.ImageObjectʳ {
+	// do we get a copy of the image object here?
+	for _, image := range state.Images().All() {
 		for _, aspect := range image.Aspects().All() {
 			for _, layer := range aspect.Layers().All() {
 				for _, level := range layer.Levels().All() {
 					data := level.Data()
-					pool := data.Pool()
-					if _, ok := srm.images[handle][pool]; !ok {
-						srm.images[handle][pool] = []memory.Range{}
+					if data.Pool() == pool && data.Range().First() <= memRange.First() && memRange.Last() <= data.Range().Last() {
+						return &image
 					}
-					srm.images[handle][pool] = append(srm.images[handle][pool], data.Range())
-				}
-			}
-		}
-		planeMemInfos := image.PlaneMemoryInfo().All()
-		for _, memInfo := range planeMemInfos {
-			data := memInfo.BoundMemory().Data()
-			pool := data.Pool()
-			if _, ok := srm.images[handle][pool]; !ok {
-				srm.images[handle][pool] = []memory.Range{}
-			}
-			srm.images[handle][pool] = append(srm.images[handle][pool], data.Range())
-		}
-	}
-
-	// TODO: It is probaly not necessary to scan device memories,
-	// as it will just alias to the info gathered by scanning images.
-	devMems := s.DeviceMemories().All()
-	for _, devMem := range devMems {
-		data := devMem.Data()
-		pool := data.Pool()
-		boundObj := devMem.BoundObjects().All()
-		// TODO: deal with memory offset from boundObj
-		found := false
-		for objHandle := range boundObj {
-			imgHandle := vulkan.VkImage(objHandle)
-			if _, ok := srm.images[imgHandle]; ok {
-				if found {
-					fmt.Printf("\nHUGUES double handle: %v", imgHandle)
-				}
-				found = true
-				if _, ok := srm.images[imgHandle][pool]; !ok {
-					srm.images[imgHandle][pool] = []memory.Range{}
-				}
-				srm.images[imgHandle][pool] = append(srm.images[imgHandle][pool], data.Range())
-			}
-		}
-	}
-
-	return srm
-}
-
-func (s stateResourceMapping) imageLookup(poolID memory.PoolID, rang memory.Range) (uint64, bool) {
-	for img, mem := range s.images {
-		if ranges, ok := mem[poolID]; ok {
-			for _, r := range ranges {
-				if r.First() <= rang.First() && rang.Last() <= r.Last() {
-					return uint64(img), true
 				}
 			}
 		}
 	}
-	return uint64(0), false
+	return nil
 }
 
 // rpInfo stores information for a given renderpass
@@ -154,8 +88,6 @@ func GetFramegraph(ctx context.Context, p *path.Capture) (*service.Framegraph, e
 		cmdArgs := vulkan.GetCommandArgs(ctx, cmdRef, vkState)
 		log.W(ctx, "HUGUES subcmdix:%v cmdArgs %v", subCmdIdx, cmdArgs)
 
-		srm := createStateResourceMapping(vkState)
-
 		// Beginning of RP
 		if _, ok := cmdArgs.(vulkan.VkCmdBeginRenderPassArgsʳ); ok {
 			if rpi != nil {
@@ -186,6 +118,7 @@ func GetFramegraph(ctx context.Context, p *path.Capture) (*service.Framegraph, e
 					Base: memAccess.Span.Start,
 					Size: count,
 				}
+				image := lookupImage(vkState, memAccess.Pool, memRange)
 				switch memAccess.Mode {
 				case d2.ACCESS_READ:
 					rpi.totalRead += count
@@ -194,16 +127,13 @@ func GetFramegraph(ctx context.Context, p *path.Capture) (*service.Framegraph, e
 					} else {
 						rpi.read[memAccess.Pool] = count
 					}
-					if imgHandle, ok := srm.imageLookup(memAccess.Pool, memRange); ok {
-						if _, ok := rpi.imgRead[imgHandle]; ok {
-							rpi.imgRead[imgHandle] += count
+					if image != nil {
+						if _, ok := rpi.imgRead[uint64(image.VulkanHandle())]; ok {
+							rpi.imgRead[uint64(image.VulkanHandle())] += count
 						} else {
-							rpi.imgRead[imgHandle] = count
+							rpi.imgRead[uint64(image.VulkanHandle())] = count
 						}
 					}
-					//else {
-					// 	log.W(ctx, "HUGUES FAIL lookup (read) pool:%v span:%v", memAccess.Pool, memRange)
-					// }
 				case d2.ACCESS_WRITE:
 					rpi.totalWrite += count
 					if _, ok := rpi.write[memAccess.Pool]; ok {
@@ -211,18 +141,13 @@ func GetFramegraph(ctx context.Context, p *path.Capture) (*service.Framegraph, e
 					} else {
 						rpi.write[memAccess.Pool] = count
 					}
-
-					if imgHandle, ok := srm.imageLookup(memAccess.Pool, memRange); ok {
-						//log.W(ctx, "HUGUES hit write resource: %v", res)
-						if _, ok := rpi.imgWrite[imgHandle]; ok {
-							rpi.imgWrite[imgHandle] += count
+					if image != nil {
+						if _, ok := rpi.imgWrite[uint64(image.VulkanHandle())]; ok {
+							rpi.imgWrite[uint64(image.VulkanHandle())] += count
 						} else {
-							rpi.imgWrite[imgHandle] = count
+							rpi.imgWrite[uint64(image.VulkanHandle())] = count
 						}
 					}
-					// else {
-					// 	log.W(ctx, "HUGUES FAIL lookup (write) pool:%v span:%v", memAccess.Pool, memRange)
-					// }
 				}
 			}
 		}
