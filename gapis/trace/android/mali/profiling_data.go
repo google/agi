@@ -27,6 +27,7 @@ import (
 	"github.com/google/gapid/gapis/service"
 	"github.com/google/gapid/gapis/service/path"
 	"github.com/google/gapid/gapis/trace/android/profile"
+	"github.com/google/gapid/gapis/trace/android/utils"
 )
 
 var (
@@ -252,6 +253,13 @@ func processGpuSlices(ctx context.Context, processor *perfetto.Processor, captur
 }
 
 func processCounters(ctx context.Context, processor *perfetto.Processor, desc *device.GpuCounterDescriptor) ([]*service.ProfilingData_Counter, error) {
+	// Use counter name, rather than counter id as key here, since the counter id
+	// is different from the counter track id that we would query.
+	specMapping := map[string]*device.GpuCounterDescriptor_GpuCounterSpec{}
+	for _, spec := range desc.GetSpecs() {
+		specMapping[spec.GetName()] = spec
+	}
+
 	counterTracksQueryResult, err := processor.Query(counterTracksQuery)
 	if err != nil {
 		return nil, log.Errf(ctx, err, "SQL query failed: %v", counterTracksQuery)
@@ -279,11 +287,17 @@ func processCounters(ctx context.Context, processor *perfetto.Processor, desc *d
 			timestamps[i] = uint64(t)
 		}
 		values := countersColumns[1].GetDoubleValues()
+
+		unit := units[i]
+		if spec, ok := specMapping[names[i]]; ok {
+			unit = utils.FormatUnit(spec.GetNumeratorUnits(), spec.GetDenominatorUnits())
+		}
+
 		// TODO(apbodnar) Populate the `default` field once the trace processor supports it (b/147432390)
 		counters[i] = &service.ProfilingData_Counter{
 			Id:          uint32(trackIds[i]),
 			Name:        names[i],
-			Unit:        units[i],
+			Unit:        unit,
 			Description: descriptions[i],
 			Timestamps:  timestamps,
 			Values:      values,

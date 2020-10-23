@@ -1,0 +1,11 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["utils.go"],
+    importpath = "github.com/google/gapid/gapis/trace/android/utils",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//core/os/device:go_default_library",
+    ],
+)

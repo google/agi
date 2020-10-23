@@ -172,7 +172,7 @@ public class PerformanceView extends Composite
     }
 
     private void addColumnForMetric(Service.ProfilingData.GpuCounters.Metric metric) {
-      TreeViewerColumn column = addColumn(metric.getName() + "(" + metric.getUnit() + ")", node -> {
+      TreeViewerColumn column = addColumn(metric.getName() + " (" + metric.getUnit() + ")", node -> {
         Service.CommandTreeNode data = node.getData();
         if (data == null) {
           return "";
