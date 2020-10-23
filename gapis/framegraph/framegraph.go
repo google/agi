@@ -30,7 +30,6 @@ import (
 )
 
 func lookupImage(state *vulkan.State, pool memory.PoolID, memRange memory.Range) *vulkan.ImageObjectʳ {
-	// do we get a copy of the image object here?
 	for _, image := range state.Images().All() {
 		for _, aspect := range image.Aspects().All() {
 			for _, layer := range aspect.Layers().All() {
@@ -54,8 +53,9 @@ type rpInfo struct {
 	totalWrite  uint64
 	read        map[memory.PoolID]uint64
 	write       map[memory.PoolID]uint64
-	imgRead     map[uint64]uint64
-	imgWrite    map[uint64]uint64
+	imgRead     map[vulkan.VkImage]bool
+	imgWrite    map[vulkan.VkImage]bool
+	imgInfos    map[vulkan.VkImage]vulkan.ImageInfo
 }
 
 // GetFramegraph creates and returns the framegraph of a capture.
@@ -98,8 +98,9 @@ func GetFramegraph(ctx context.Context, p *path.Capture) (*service.Framegraph, e
 				read:        make(map[memory.PoolID]uint64),
 				write:       make(map[memory.PoolID]uint64),
 				dpNodes:     make(map[d2.NodeID]bool),
-				imgRead:     make(map[uint64]uint64),
-				imgWrite:    make(map[uint64]uint64),
+				imgRead:     make(map[vulkan.VkImage]bool),
+				imgWrite:    make(map[vulkan.VkImage]bool),
+				imgInfos:    make(map[vulkan.VkImage]vulkan.ImageInfo),
 			}
 		}
 
@@ -119,6 +120,9 @@ func GetFramegraph(ctx context.Context, p *path.Capture) (*service.Framegraph, e
 					Size: count,
 				}
 				image := lookupImage(vkState, memAccess.Pool, memRange)
+				if image != nil {
+					rpi.imgInfos[image.VulkanHandle()] = image.Info()
+				}
 				switch memAccess.Mode {
 				case d2.ACCESS_READ:
 					rpi.totalRead += count
@@ -128,11 +132,7 @@ func GetFramegraph(ctx context.Context, p *path.Capture) (*service.Framegraph, e
 						rpi.read[memAccess.Pool] = count
 					}
 					if image != nil {
-						if _, ok := rpi.imgRead[uint64(image.VulkanHandle())]; ok {
-							rpi.imgRead[uint64(image.VulkanHandle())] += count
-						} else {
-							rpi.imgRead[uint64(image.VulkanHandle())] = count
-						}
+						rpi.imgRead[image.VulkanHandle()] = true
 					}
 				case d2.ACCESS_WRITE:
 					rpi.totalWrite += count
@@ -142,11 +142,7 @@ func GetFramegraph(ctx context.Context, p *path.Capture) (*service.Framegraph, e
 						rpi.write[memAccess.Pool] = count
 					}
 					if image != nil {
-						if _, ok := rpi.imgWrite[uint64(image.VulkanHandle())]; ok {
-							rpi.imgWrite[uint64(image.VulkanHandle())] += count
-						} else {
-							rpi.imgWrite[uint64(image.VulkanHandle())] = count
-						}
+						rpi.imgWrite[image.VulkanHandle()] = true
 					}
 				}
 			}
@@ -177,11 +173,20 @@ func GetFramegraph(ctx context.Context, p *path.Capture) (*service.Framegraph, e
 
 		// Use "\l" for newlines as this produce left-align lines in graphviz DOT labels
 		text := fmt.Sprintf("RP %v\\lTotal: read(%v) write(%v)\\l", rpi.beginCmdIdx, memFmt(rpi.totalRead), memFmt(rpi.totalWrite))
-		for img, bytes := range rpi.imgRead {
-			text += fmt.Sprintf("Img 0x%x read(%v)\\l", img, memFmt(bytes))
-		}
-		for img, bytes := range rpi.imgWrite {
-			text += fmt.Sprintf("Img 0x%x  write(%v)\\l", img, memFmt(bytes))
+		for img, info := range rpi.imgInfos {
+			// Represent read/write with 2 characters as in file accesss bits, e.g. -- / r- / -w / rw
+			r := "-"
+			if _, ok := rpi.imgRead[img]; ok {
+				r = "r"
+			}
+			w := "-"
+			if _, ok := rpi.imgWrite[img]; ok {
+				w = "w"
+			}
+
+			extent := info.Extent()
+			dimensions := fmt.Sprintf("[%vx%vx%v]", extent.Width(), extent.Height(), extent.Depth())
+			text += fmt.Sprintf("Img 0x%X %v%v %v %v %v\\l", img, r, w, dimensions, info.ImageType(), info.Fmt())
 		}
 
 		nodes = append(nodes, &api.FramegraphNode{
