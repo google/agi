@@ -17,6 +17,7 @@ package vulkan
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/google/gapid/core/log"
 	"github.com/google/gapid/core/math/interval"
@@ -368,13 +369,15 @@ func (f *loopingVulkanControlFlowGenerator) TransformAll(ctx context.Context) er
 		lastObservedCommand := f.lastObservedCommand
 		f.lastObservedCommand = cmdId 
 
-		log.D(ctx, "FrameLoop: looping start processing commands")
+		//log.W(ctx, "FrameLoop: looping start processing commands")
+		log.W(ctx, "\n")
+		time.Sleep(4 * time.Millisecond)
 
 		if cmds, err := f.chain.ProcessNextTransformedCommands(subctx); err == nil {
 
 			//ctx = log.Enter(ctx, "FrameLoop Transform")
-			log.D(ctx, "FrameLoop: looping from %v to %v. Current CmdID/CmDs = %v/%v", f.loopStartIdx, f.loopEndIdx, id, cmds)
-			log.D(ctx, "f.loopTerminated = %v, f.lastObservedCommand = %v", f.loopTerminated, f.lastObservedCommand)
+			log.W(ctx, "FrameLoop: looping from %v to %v. Current CmdID/CmDs = %v/%v", f.loopStartIdx, f.loopEndIdx, id, cmds)
+			//log.W(ctx, "f.loopTerminated = %v, lastObservedCommand = %v", f.loopTerminated, lastObservedCommand)
 
 			if err := task.StopReason(ctx); err != nil {
 				return err
@@ -390,9 +393,9 @@ func (f *loopingVulkanControlFlowGenerator) TransformAll(ctx context.Context) er
 				// This is the start of the loop.
 				if api.CmdID.Real(cmdId) >= f.loopStartIdx && cmdId != api.CmdNoID {
 
-					log.D(ctx, "FrameLoop: start loop at cmdId %v, cmds %v.", cmdId, cmds)
+					log.W(ctx, "FrameLoop: start loop at cmdId %v, cmds %v.", cmdId, cmds)
 
-					f.loopStartState = f.cloneState(ctx, f.chain.State()) // ALAN: This is going to have the effects of the first command applied, we actually want the state one command earlier.
+					//f.loopStartState = f.cloneState(ctx, f.chain.State()) // ALAN: This is going to have the effects of the first command applied, we actually want the state one command earlier.
 
 					for _, cmd := range cmds {
 						f.capturedLoopCmds = append(f.capturedLoopCmds, cmd)
@@ -403,10 +406,15 @@ func (f *loopingVulkanControlFlowGenerator) TransformAll(ctx context.Context) er
 
 				} else { // The current command is before the loop begins and needs no special treatment. Just pass-through.
 	
-					log.D(ctx, "FrameLoop: before loop at cmdId %v, cmds %v.", cmdId, cmds)
+					log.W(ctx, "FrameLoop: before loop at cmdId %v, cmds %v.", cmdId, cmds)
 
 					if err := f.buildCommands(ctx, cmdId, cmds, f.out2); err != nil {
 						return err
+					}
+
+					if api.CmdID.Real(cmdId) == f.loopStartIdx -1 {
+						log.W(ctx, "DUPLICATING LOOP START STATE")
+						f.loopStartState = f.cloneState(ctx, f.chain.State()) // ALAN: This is going to have the effects of the first command applied, we actually want the state one command earlier.
 					}
 					
 					continue
@@ -426,7 +434,7 @@ func (f *loopingVulkanControlFlowGenerator) TransformAll(ctx context.Context) er
 					}
 
 					f.loopTerminated = true
-					log.D(ctx, "FrameLoop: end loop at cmdId %v, cmds is %v.", cmdId, cmds)
+					log.W(ctx, "FrameLoop: end loop at cmdId %v, cmds is %v.", cmdId, cmds)
 
 					// This command is the last in the loop so lets add it to the captured commands so we don't need to special case it.
 					for _, cmd := range cmds {
@@ -442,7 +450,7 @@ func (f *loopingVulkanControlFlowGenerator) TransformAll(ctx context.Context) er
 					// }
 
 					// Some things we're going to need for the next work...
-					globalState := f.chain.State() //AAA: get builder state
+					globalState := f.out2.State() //f.chain.State() //AAA: get builder state
 					stateBuilder := GetState(globalState).newStateBuilder(ctx, newTransformerOutput(f.out2))
 
 					// Do start loop stuff.
@@ -451,9 +459,13 @@ func (f *loopingVulkanControlFlowGenerator) TransformAll(ctx context.Context) er
 						// We can finally run over the loop contents looking for resources that have changed.
 						// This is required so we can emit extra instructions before the loop capturing the values of
 						// anything that we need to restore at the end of the loop. Do that now.
+											time.Sleep(40 * time.Millisecond)
 						f.buildEndState(ctx, globalState)
+											time.Sleep(40 * time.Millisecond)
 						f.detectChangedResources(ctx)
+											time.Sleep(40 * time.Millisecond)
 						f.updateChangedResourcesMap(ctx, stateBuilder)
+											time.Sleep(40 * time.Millisecond)
 
 						// Back up the resources that change in the loop (as indentified above)
 						if err := f.backupChangedResources(ctx, stateBuilder); err != nil {
@@ -519,7 +531,7 @@ func (f *loopingVulkanControlFlowGenerator) TransformAll(ctx context.Context) er
 						f.capturedLoopCmdIds = append(f.capturedLoopCmdIds, cmdId)
 					}
 
-					log.D(ctx, "FrameLoop: inside loop at cmdId %v, cmds %v.", cmdId, cmds)
+					log.W(ctx, "FrameLoop: inside loop at cmdId %v, cmds %v.", cmdId, cmds)
 
 					continue
 				}
@@ -639,13 +651,13 @@ func (f *loopingVulkanControlFlowGenerator) buildEndState(ctx context.Context, s
 		case *VkCreateInstance:
 			vkCmd := cmd.(*VkCreateInstance)
 			instance := vkCmd.PInstance().MustRead(ctx, vkCmd, currentState, nil)
-			log.D(ctx, "Instance %v created.", instance)
+			log.W(ctx, "Instance %v created.", instance)
 			f.instanceToDestroy[instance] = true
 
 		case *VkDestroyInstance:
 			vkCmd := cmd.(*VkDestroyInstance)
 			instance := vkCmd.Instance()
-			log.D(ctx, "Instance %v destroyed.", instance)
+			log.W(ctx, "Instance %v destroyed.", instance)
 			if _, ok := f.instanceToDestroy[instance]; ok {
 				delete(f.instanceToDestroy, instance)
 			} else {
@@ -656,13 +668,13 @@ func (f *loopingVulkanControlFlowGenerator) buildEndState(ctx context.Context, s
 		case *VkCreateDevice:
 			vkCmd := cmd.(*VkCreateDevice)
 			device := vkCmd.PDevice().MustRead(ctx, vkCmd, currentState, nil)
-			log.D(ctx, "Device %v created.", device)
+			log.W(ctx, "Device %v created.", device)
 			f.deviceToDestroy[device] = true
 
 		case *VkDestroyDevice:
 			vkCmd := cmd.(*VkDestroyDevice)
 			device := vkCmd.Device()
-			log.D(ctx, "Device %v destroyed.", device)
+			log.W(ctx, "Device %v destroyed.", device)
 			if _, ok := f.deviceToDestroy[device]; ok {
 				delete(f.deviceToDestroy, device)
 			} else {
@@ -673,13 +685,13 @@ func (f *loopingVulkanControlFlowGenerator) buildEndState(ctx context.Context, s
 		case *VkAllocateMemory:
 			vkCmd := cmd.(*VkAllocateMemory)
 			mem := vkCmd.PMemory().MustRead(ctx, vkCmd, currentState, nil)
-			log.D(ctx, "Memory %v allocated", mem)
+			log.W(ctx, "Memory %v allocated", mem)
 			f.memoryToFree[mem] = true
 
 		case *VkFreeMemory:
 			vkCmd := cmd.(*VkFreeMemory)
 			mem := vkCmd.Memory()
-			log.D(ctx, "Memory %v freed", mem)
+			log.W(ctx, "Memory %v freed", mem)
 			if _, ok := f.memoryToFree[mem]; ok {
 				delete(f.memoryToFree, mem)
 			} else {
@@ -690,13 +702,13 @@ func (f *loopingVulkanControlFlowGenerator) buildEndState(ctx context.Context, s
 		case *VkMapMemory:
 			vkCmd := cmd.(*VkMapMemory)
 			mem := vkCmd.Memory()
-			log.D(ctx, "Memory %v mapped", mem)
+			log.W(ctx, "Memory %v mapped", mem)
 			f.memoryToUnmap[mem] = true
 
 		case *VkUnmapMemory:
 			vkCmd := cmd.(*VkUnmapMemory)
 			mem := vkCmd.Memory()
-			log.D(ctx, "Memory %v unmapped", mem)
+			log.W(ctx, "Memory %v unmapped", mem)
 			if _, ok := f.memoryToUnmap[mem]; ok {
 				delete(f.memoryToUnmap, mem)
 			} else {
@@ -707,13 +719,13 @@ func (f *loopingVulkanControlFlowGenerator) buildEndState(ctx context.Context, s
 		case *VkCreateBuffer:
 			vkCmd := cmd.(*VkCreateBuffer)
 			buffer := vkCmd.PBuffer().MustRead(ctx, vkCmd, currentState, nil)
-			log.D(ctx, "Buffer %v created.", buffer)
+			log.W(ctx, "Buffer %v created.", buffer)
 			f.bufferToDestroy[buffer] = true
 
 		case *VkDestroyBuffer:
 			vkCmd := cmd.(*VkDestroyBuffer)
 			buffer := vkCmd.Buffer()
-			log.D(ctx, "Buffer %v destroyed.", buffer)
+			log.W(ctx, "Buffer %v destroyed.", buffer)
 			if _, ok := f.bufferToDestroy[buffer]; ok {
 				delete(f.bufferToDestroy, buffer)
 			} else {
@@ -724,43 +736,43 @@ func (f *loopingVulkanControlFlowGenerator) buildEndState(ctx context.Context, s
 		case *VkCreateXlibSurfaceKHR:
 			vkCmd := cmd.(*VkCreateXlibSurfaceKHR)
 			surface := vkCmd.PSurface().MustRead(ctx, vkCmd, currentState, nil)
-			log.D(ctx, "Surface %v created", surface)
+			log.W(ctx, "Surface %v created", surface)
 			f.surfaceToDestroy[surface] = true
 
 		case *VkCreateWaylandSurfaceKHR:
 			vkCmd := cmd.(*VkCreateWaylandSurfaceKHR)
 			surface := vkCmd.PSurface().MustRead(ctx, vkCmd, currentState, nil)
-			log.D(ctx, "Surface %v created", surface)
+			log.W(ctx, "Surface %v created", surface)
 			f.surfaceToDestroy[surface] = true
 
 		case *VkCreateWin32SurfaceKHR:
 			vkCmd := cmd.(*VkCreateWin32SurfaceKHR)
 			surface := vkCmd.PSurface().MustRead(ctx, vkCmd, currentState, nil)
-			log.D(ctx, "Surface %v created", surface)
+			log.W(ctx, "Surface %v created", surface)
 			f.surfaceToDestroy[surface] = true
 
 		case *VkCreateAndroidSurfaceKHR:
 			vkCmd := cmd.(*VkCreateAndroidSurfaceKHR)
 			surface := vkCmd.PSurface().MustRead(ctx, vkCmd, currentState, nil)
-			log.D(ctx, "Surface %v created", surface)
+			log.W(ctx, "Surface %v created", surface)
 			f.surfaceToDestroy[surface] = true
 
 		case *VkCreateDisplayPlaneSurfaceKHR:
 			vkCmd := cmd.(*VkCreateDisplayPlaneSurfaceKHR)
 			surface := vkCmd.PSurface().MustRead(ctx, vkCmd, currentState, nil)
-			log.D(ctx, "Surface %v created", surface)
+			log.W(ctx, "Surface %v created", surface)
 			f.surfaceToDestroy[surface] = true
 
 		case *VkCreateMacOSSurfaceMVK:
 			vkCmd := cmd.(*VkCreateMacOSSurfaceMVK)
 			surface := vkCmd.PSurface().MustRead(ctx, vkCmd, currentState, nil)
-			log.D(ctx, "Surface %v created", surface)
+			log.W(ctx, "Surface %v created", surface)
 			f.surfaceToDestroy[surface] = true
 
 		case *VkDestroySurfaceKHR:
 			vkCmd := cmd.(*VkDestroySurfaceKHR)
 			surface := vkCmd.Surface()
-			log.D(ctx, "Surface %v destroyed", surface)
+			log.W(ctx, "Surface %v destroyed", surface)
 			if _, ok := f.surfaceToDestroy[surface]; ok {
 				delete(f.surfaceToDestroy, surface)
 			} else {
@@ -771,13 +783,13 @@ func (f *loopingVulkanControlFlowGenerator) buildEndState(ctx context.Context, s
 		case *VkCreateSwapchainKHR:
 			vkCmd := cmd.(*VkCreateSwapchainKHR)
 			swapchain := vkCmd.PSwapchain().MustRead(ctx, vkCmd, currentState, nil)
-			log.D(ctx, "Swapchain %v created", swapchain)
+			log.W(ctx, "Swapchain %v created", swapchain)
 			f.swapchainToDestroy[swapchain] = true
 
 		case *VkDestroySwapchainKHR:
 			vkCmd := cmd.(*VkDestroySwapchainKHR)
 			swapchain := vkCmd.Swapchain()
-			log.D(ctx, "Swapchain %v destroyed", swapchain)
+			log.W(ctx, "Swapchain %v destroyed", swapchain)
 			if _, ok := f.swapchainToDestroy[swapchain]; ok {
 				delete(f.swapchainToDestroy, swapchain)
 			} else {
@@ -788,13 +800,13 @@ func (f *loopingVulkanControlFlowGenerator) buildEndState(ctx context.Context, s
 		case *VkCreateBufferView:
 			vkCmd := cmd.(*VkCreateBufferView)
 			buffer := vkCmd.PView().MustRead(ctx, vkCmd, currentState, nil)
-			log.D(ctx, "BuferView %v created", buffer)
+			log.W(ctx, "BuferView %v created", buffer)
 			f.bufferViewToDestroy[buffer] = true
 
 		case *VkDestroyBufferView:
 			vkCmd := cmd.(*VkDestroyBufferView)
 			bufferView := vkCmd.BufferView()
-			log.D(ctx, "BufferView %v destroyed", bufferView)
+			log.W(ctx, "BufferView %v destroyed", bufferView)
 			if _, ok := f.bufferViewToDestroy[bufferView]; ok {
 				delete(f.bufferViewToDestroy, bufferView)
 			} else {
@@ -805,13 +817,13 @@ func (f *loopingVulkanControlFlowGenerator) buildEndState(ctx context.Context, s
 		case *VkCreateImage:
 			vkCmd := cmd.(*VkCreateImage)
 			img := vkCmd.PImage().MustRead(ctx, vkCmd, currentState, nil)
-			log.D(ctx, "Image %v created", img)
+			log.W(ctx, "Image %v created", img)
 			f.imageToDestroy[img] = true
 
 		case *VkDestroyImage:
 			vkCmd := cmd.(*VkDestroyImage)
 			img := vkCmd.Image()
-			log.D(ctx, "Image %v destroyed", img)
+			log.W(ctx, "Image %v destroyed", img)
 			if _, ok := f.imageToDestroy[img]; ok {
 				delete(f.imageToDestroy, img)
 			} else {
@@ -822,13 +834,13 @@ func (f *loopingVulkanControlFlowGenerator) buildEndState(ctx context.Context, s
 		case *VkCreateImageView:
 			vkCmd := cmd.(*VkCreateImageView)
 			img := vkCmd.PView().MustRead(ctx, vkCmd, currentState, nil)
-			log.D(ctx, "ImageView %v created", img)
+			log.W(ctx, "ImageView %v created", img)
 			f.imageViewToDestroy[img] = true
 
 		case *VkDestroyImageView:
 			vkCmd := cmd.(*VkDestroyImageView)
 			img := vkCmd.ImageView()
-			log.D(ctx, "ImageView %v destroyed", img)
+			log.W(ctx, "ImageView %v destroyed", img)
 			if _, ok := f.imageViewToDestroy[img]; ok {
 				delete(f.imageViewToDestroy, img)
 			} else {
@@ -839,13 +851,13 @@ func (f *loopingVulkanControlFlowGenerator) buildEndState(ctx context.Context, s
 		case *VkCreateSamplerYcbcrConversion:
 			vkCmd := cmd.(*VkCreateSamplerYcbcrConversion)
 			samplerYcbcrConversion := vkCmd.PYcbcrConversion().MustRead(ctx, vkCmd, currentState, nil)
-			log.D(ctx, "SamplerYcbcrConversion %v created", samplerYcbcrConversion)
+			log.W(ctx, "SamplerYcbcrConversion %v created", samplerYcbcrConversion)
 			f.samplerYcbcrConversionToDestroy[samplerYcbcrConversion] = true
 
 		case *VkDestroySamplerYcbcrConversion:
 			vkCmd := cmd.(*VkDestroySamplerYcbcrConversion)
 			samplerYcbcrConversion := vkCmd.YcbcrConversion()
-			log.D(ctx, "SamplerYcbcrConversion %v destroyed", samplerYcbcrConversion)
+			log.W(ctx, "SamplerYcbcrConversion %v destroyed", samplerYcbcrConversion)
 			if _, ok := f.samplerYcbcrConversionToDestroy[samplerYcbcrConversion]; ok {
 				delete(f.samplerYcbcrConversionToDestroy, samplerYcbcrConversion)
 			} else {
@@ -856,13 +868,13 @@ func (f *loopingVulkanControlFlowGenerator) buildEndState(ctx context.Context, s
 		case *VkCreateSampler:
 			vkCmd := cmd.(*VkCreateSampler)
 			sampler := vkCmd.PSampler().MustRead(ctx, vkCmd, currentState, nil)
-			log.D(ctx, "Sampler %v created", sampler)
+			log.W(ctx, "Sampler %v created", sampler)
 			f.samplerToDestroy[sampler] = true
 
 		case *VkDestroySampler:
 			vkCmd := cmd.(*VkDestroySampler)
 			sampler := vkCmd.Sampler()
-			log.D(ctx, "Sampler %v destroyed", sampler)
+			log.W(ctx, "Sampler %v destroyed", sampler)
 			if _, ok := f.samplerToDestroy[sampler]; ok {
 				delete(f.samplerToDestroy, sampler)
 			} else {
@@ -873,13 +885,13 @@ func (f *loopingVulkanControlFlowGenerator) buildEndState(ctx context.Context, s
 		case *VkCreateShaderModule:
 			vkCmd := cmd.(*VkCreateShaderModule)
 			shaderModule := vkCmd.PShaderModule().MustRead(ctx, vkCmd, currentState, nil)
-			log.D(ctx, "ShaderModule %v created", shaderModule)
+			log.W(ctx, "ShaderModule %v created", shaderModule)
 			f.shaderModuleToDestroy[shaderModule] = true
 
 		case *VkDestroyShaderModule:
 			vkCmd := cmd.(*VkDestroyShaderModule)
 			shaderModule := vkCmd.ShaderModule()
-			log.D(ctx, "ShaderModule %v destroyed", shaderModule)
+			log.W(ctx, "ShaderModule %v destroyed", shaderModule)
 			if _, ok := f.shaderModuleToDestroy[shaderModule]; ok {
 				delete(f.shaderModuleToDestroy, shaderModule)
 			} else {
@@ -890,13 +902,13 @@ func (f *loopingVulkanControlFlowGenerator) buildEndState(ctx context.Context, s
 		case *VkCreateDescriptorSetLayout:
 			vkCmd := cmd.(*VkCreateDescriptorSetLayout)
 			descriptorSetLayout := vkCmd.PSetLayout().MustRead(ctx, vkCmd, currentState, nil)
-			log.D(ctx, "DescriptorSetLayout %v created", descriptorSetLayout)
+			log.W(ctx, "DescriptorSetLayout %v created", descriptorSetLayout)
 			f.descriptorSetLayoutToDestroy[descriptorSetLayout] = true
 
 		case *VkDestroyDescriptorSetLayout:
 			vkCmd := cmd.(*VkDestroyDescriptorSetLayout)
 			descriptorSetLayout := vkCmd.DescriptorSetLayout()
-			log.D(ctx, "DescriptorSetLayout %v destroyed", descriptorSetLayout)
+			log.W(ctx, "DescriptorSetLayout %v destroyed", descriptorSetLayout)
 			if _, ok := f.descriptorSetLayoutToDestroy[descriptorSetLayout]; ok {
 				delete(f.descriptorSetLayoutToDestroy, descriptorSetLayout)
 			} else {
@@ -907,13 +919,13 @@ func (f *loopingVulkanControlFlowGenerator) buildEndState(ctx context.Context, s
 		case *VkCreatePipelineLayout:
 			vkCmd := cmd.(*VkCreatePipelineLayout)
 			pipelineLayout := vkCmd.PPipelineLayout().MustRead(ctx, vkCmd, currentState, nil)
-			log.D(ctx, "PipelineLayout %v created", pipelineLayout)
+			log.W(ctx, "PipelineLayout %v created", pipelineLayout)
 			f.pipelineLayoutToDestroy[pipelineLayout] = true
 
 		case *VkDestroyPipelineLayout:
 			vkCmd := cmd.(*VkDestroyPipelineLayout)
 			pipelineLayout := vkCmd.PipelineLayout()
-			log.D(ctx, "PipelineLayout %v destroyed", pipelineLayout)
+			log.W(ctx, "PipelineLayout %v destroyed", pipelineLayout)
 			if _, ok := f.pipelineLayoutToDestroy[pipelineLayout]; ok {
 				delete(f.pipelineLayoutToDestroy, pipelineLayout)
 			} else {
@@ -924,13 +936,13 @@ func (f *loopingVulkanControlFlowGenerator) buildEndState(ctx context.Context, s
 		case *VkCreatePipelineCache:
 			vkCmd := cmd.(*VkCreatePipelineCache)
 			pipelineCache := vkCmd.PPipelineCache().MustRead(ctx, vkCmd, currentState, nil)
-			log.D(ctx, "PipelineCache %v created", pipelineCache)
+			log.W(ctx, "PipelineCache %v created", pipelineCache)
 			f.pipelineCacheToDestroy[pipelineCache] = true
 
 		case *VkDestroyPipelineCache:
 			vkCmd := cmd.(*VkDestroyPipelineCache)
 			pipelineCache := vkCmd.PipelineCache()
-			log.D(ctx, "PipelineCache %v destroyed", pipelineCache)
+			log.W(ctx, "PipelineCache %v destroyed", pipelineCache)
 			if _, ok := f.pipelineCacheToDestroy[pipelineCache]; ok {
 				delete(f.pipelineCacheToDestroy, pipelineCache)
 			} else {
@@ -943,7 +955,7 @@ func (f *loopingVulkanControlFlowGenerator) buildEndState(ctx context.Context, s
 			count := vkCmd.CreateInfoCount()
 			pipelines := vkCmd.PPipelines().Slice(0, (uint64)(count), startState.MemoryLayout).MustRead(ctx, vkCmd, currentState, nil)
 			for index := range pipelines {
-				log.D(ctx, "ComputePipeline %v created", pipelines[index])
+				log.W(ctx, "ComputePipeline %v created", pipelines[index])
 				f.pipelineToDestroy[pipelines[index]] = true
 			}
 
@@ -953,14 +965,14 @@ func (f *loopingVulkanControlFlowGenerator) buildEndState(ctx context.Context, s
 			count := vkCmd.CreateInfoCount()
 			pipelines := vkCmd.PPipelines().Slice(0, (uint64)(count), startState.MemoryLayout).MustRead(ctx, vkCmd, currentState, nil)
 			for index := range pipelines {
-				log.D(ctx, "GraphicsPipeline %v created", pipelines[index])
+				log.W(ctx, "GraphicsPipeline %v created", pipelines[index])
 				f.pipelineToDestroy[pipelines[index]] = true
 			}
 
 		case *VkDestroyPipeline:
 			vkCmd := cmd.(*VkDestroyPipeline)
 			pipeline := vkCmd.Pipeline()
-			log.D(ctx, "Pipeline %v destroyed", pipeline)
+			log.W(ctx, "Pipeline %v destroyed", pipeline)
 			if _, ok := f.pipelineToDestroy[pipeline]; ok {
 				delete(f.pipelineToDestroy, pipeline)
 			} else {
@@ -979,13 +991,13 @@ func (f *loopingVulkanControlFlowGenerator) buildEndState(ctx context.Context, s
 		case *VkCreateDescriptorPool:
 			vkCmd := cmd.(*VkCreateDescriptorPool)
 			descriptorPool := vkCmd.PDescriptorPool().MustRead(ctx, vkCmd, currentState, nil)
-			log.D(ctx, "DescriptorPool %v created", descriptorPool)
+			log.W(ctx, "DescriptorPool %v created", descriptorPool)
 			f.descriptorPoolToDestroy[descriptorPool] = true
 
 		case *VkDestroyDescriptorPool:
 			vkCmd := cmd.(*VkDestroyDescriptorPool)
 			descriptorPool := vkCmd.DescriptorPool()
-			log.D(ctx, "DescriptorPool %v destroyed", descriptorPool)
+			log.W(ctx, "DescriptorPool %v destroyed", descriptorPool)
 			if _, ok := f.descriptorPoolToDestroy[descriptorPool]; ok {
 				delete(f.descriptorPoolToDestroy, descriptorPool)
 			} else {
@@ -1015,7 +1027,7 @@ func (f *loopingVulkanControlFlowGenerator) buildEndState(ctx context.Context, s
 				descSetCount := allocInfo.DescriptorSetCount()
 				descriptorSets := vkCmd.PDescriptorSets().Slice(0, (uint64)(descSetCount), startState.MemoryLayout).MustRead(ctx, vkCmd, currentState, nil)
 				for index := range descriptorSets {
-					log.D(ctx, "DescriptorSet %v allocated", descriptorSets[index])
+					log.W(ctx, "DescriptorSet %v allocated", descriptorSets[index])
 					f.descriptorSetToFree[descriptorSets[index]] = true
 				}
 			}
@@ -1025,7 +1037,7 @@ func (f *loopingVulkanControlFlowGenerator) buildEndState(ctx context.Context, s
 			descSetCount := vkCmd.DescriptorSetCount()
 			descriptorSets := vkCmd.PDescriptorSets().Slice(0, (uint64)(descSetCount), startState.MemoryLayout).MustRead(ctx, vkCmd, currentState, nil)
 			for index := range descriptorSets {
-				log.D(ctx, "DescriptorSet %v freed", descriptorSets[index])
+				log.W(ctx, "DescriptorSet %v freed", descriptorSets[index])
 				if _, ok := f.descriptorSetToFree[descriptorSets[index]]; ok {
 					delete(f.descriptorSetToFree, descriptorSets[index])
 				} else {
@@ -1037,13 +1049,13 @@ func (f *loopingVulkanControlFlowGenerator) buildEndState(ctx context.Context, s
 		case *VkCreateSemaphore:
 			vkCmd := cmd.(*VkCreateSemaphore)
 			sem := vkCmd.PSemaphore().MustRead(ctx, vkCmd, currentState, nil)
-			log.D(ctx, "Semaphore %v is created during loop.", sem)
+			log.W(ctx, "Semaphore %v is created during loop.", sem)
 			f.semaphoreToDestroy[sem] = true
 
 		case *VkDestroySemaphore:
 			vkCmd := cmd.(*VkDestroySemaphore)
 			sem := vkCmd.Semaphore()
-			log.D(ctx, "Semaphore %v is destroyed during loop.", sem)
+			log.W(ctx, "Semaphore %v is destroyed during loop.", sem)
 			if _, ok := f.semaphoreToDestroy[sem]; ok {
 				delete(f.semaphoreToDestroy, sem)
 			} else {
@@ -1054,13 +1066,13 @@ func (f *loopingVulkanControlFlowGenerator) buildEndState(ctx context.Context, s
 		case *VkCreateFence:
 			vkCmd := cmd.(*VkCreateFence)
 			fence := vkCmd.PFence().MustRead(ctx, vkCmd, currentState, nil)
-			log.D(ctx, "Fence %v is created during loop.", fence)
+			log.W(ctx, "Fence %v is created during loop.", fence)
 			f.fenceToDestroy[fence] = true
 
 		case *VkDestroyFence:
 			vkCmd := cmd.(*VkDestroyFence)
 			fence := vkCmd.Fence()
-			log.D(ctx, "Fence %v is destroyed during loop.", fence)
+			log.W(ctx, "Fence %v is destroyed during loop.", fence)
 			if _, ok := f.fenceToDestroy[fence]; ok {
 				delete(f.fenceToDestroy, fence)
 			} else {
@@ -1071,13 +1083,13 @@ func (f *loopingVulkanControlFlowGenerator) buildEndState(ctx context.Context, s
 		case *VkCreateEvent:
 			vkCmd := cmd.(*VkCreateEvent)
 			event := vkCmd.PEvent().MustRead(ctx, vkCmd, currentState, nil)
-			log.D(ctx, "Event %v is created during loop.", event)
+			log.W(ctx, "Event %v is created during loop.", event)
 			f.eventToDestroy[event] = true
 
 		case *VkDestroyEvent:
 			vkCmd := cmd.(*VkDestroyEvent)
 			event := vkCmd.Event()
-			log.D(ctx, "Event %v is destroyed during loop.", event)
+			log.W(ctx, "Event %v is destroyed during loop.", event)
 			if _, ok := f.eventToDestroy[event]; ok {
 				delete(f.eventToDestroy, event)
 			} else {
@@ -1088,13 +1100,13 @@ func (f *loopingVulkanControlFlowGenerator) buildEndState(ctx context.Context, s
 		case *VkCreateFramebuffer:
 			vkCmd := cmd.(*VkCreateFramebuffer)
 			framebuffer := vkCmd.PFramebuffer().MustRead(ctx, vkCmd, currentState, nil)
-			log.D(ctx, "Framebuffer %v created", framebuffer)
+			log.W(ctx, "Framebuffer %v created", framebuffer)
 			f.framebufferToDestroy[framebuffer] = true
 
 		case *VkDestroyFramebuffer:
 			vkCmd := cmd.(*VkDestroyFramebuffer)
 			framebuffer := vkCmd.Framebuffer()
-			log.D(ctx, "Framebuffer %v created", framebuffer)
+			log.W(ctx, "Framebuffer %v created", framebuffer)
 			if _, ok := f.framebufferToDestroy[framebuffer]; ok {
 				delete(f.framebufferToDestroy, framebuffer)
 			} else {
@@ -1105,13 +1117,13 @@ func (f *loopingVulkanControlFlowGenerator) buildEndState(ctx context.Context, s
 		case *VkCreateRenderPass:
 			vkCmd := cmd.(*VkCreateRenderPass)
 			renderPass := vkCmd.PRenderPass().MustRead(ctx, vkCmd, currentState, nil)
-			log.D(ctx, "RenderPass %v created", renderPass)
+			log.W(ctx, "RenderPass %v created", renderPass)
 			f.renderPassToDestroy[renderPass] = true
 
 		case *VkDestroyRenderPass:
 			vkCmd := cmd.(*VkDestroyRenderPass)
 			renderPass := vkCmd.RenderPass()
-			log.D(ctx, "RenderPass %v destroyed", renderPass)
+			log.W(ctx, "RenderPass %v destroyed", renderPass)
 			if _, ok := f.renderPassToDestroy[renderPass]; ok {
 				delete(f.renderPassToDestroy, renderPass)
 			} else {
@@ -1122,13 +1134,13 @@ func (f *loopingVulkanControlFlowGenerator) buildEndState(ctx context.Context, s
 		case *VkCreateQueryPool:
 			vkCmd := cmd.(*VkCreateQueryPool)
 			queryPool := vkCmd.PQueryPool().MustRead(ctx, vkCmd, currentState, nil)
-			log.D(ctx, "QueryPool %v created", queryPool)
+			log.W(ctx, "QueryPool %v created", queryPool)
 			f.queryPoolToDestroy[queryPool] = true
 
 		case *VkDestroyQueryPool:
 			vkCmd := cmd.(*VkDestroyQueryPool)
 			queryPool := vkCmd.QueryPool()
-			log.D(ctx, "QueryPool %v destroyed", queryPool)
+			log.W(ctx, "QueryPool %v destroyed", queryPool)
 			if _, ok := f.queryPoolToDestroy[queryPool]; ok {
 				delete(f.queryPoolToDestroy, queryPool)
 			} else {
@@ -1138,28 +1150,28 @@ func (f *loopingVulkanControlFlowGenerator) buildEndState(ctx context.Context, s
 		case *VkCmdBeginQuery:
 			vkCmd := cmd.(*VkCmdBeginQuery)
 			queryPool := vkCmd.QueryPool()
-			log.D(ctx, "QueryPool %v began query", queryPool)
+			log.W(ctx, "QueryPool %v began query", queryPool)
 			f.queryPoolToDestroy[queryPool] = true
 			f.queryPoolToCreate[queryPool] = true
 
 		case *VkCmdEndQuery:
 			vkCmd := cmd.(*VkCmdEndQuery)
 			queryPool := vkCmd.QueryPool()
-			log.D(ctx, "QueryPool %v ended query", queryPool)
+			log.W(ctx, "QueryPool %v ended query", queryPool)
 			f.queryPoolToDestroy[queryPool] = true
 			f.queryPoolToCreate[queryPool] = true
 
 		case *VkCmdWriteTimestamp:
 			vkCmd := cmd.(*VkCmdWriteTimestamp)
 			queryPool := vkCmd.QueryPool()
-			log.D(ctx, "QueryPool %v wrote timestamp", queryPool)
+			log.W(ctx, "QueryPool %v wrote timestamp", queryPool)
 			f.queryPoolToDestroy[queryPool] = true
 			f.queryPoolToCreate[queryPool] = true
 
 		case *VkCmdResetQueryPool:
 			vkCmd := cmd.(*VkCmdResetQueryPool)
 			queryPool := vkCmd.QueryPool()
-			log.D(ctx, "QueryPool %v reset", queryPool)
+			log.W(ctx, "QueryPool %v reset", queryPool)
 			f.queryPoolToDestroy[queryPool] = true
 			f.queryPoolToCreate[queryPool] = true
 
@@ -1167,13 +1179,13 @@ func (f *loopingVulkanControlFlowGenerator) buildEndState(ctx context.Context, s
 		case *VkCreateCommandPool:
 			vkCmd := cmd.(*VkCreateCommandPool)
 			commandPool := vkCmd.PCommandPool().MustRead(ctx, vkCmd, currentState, nil)
-			log.D(ctx, "CommandPool %v created", commandPool)
+			log.W(ctx, "CommandPool %v created", commandPool)
 			f.commandPoolToDestroy[commandPool] = true
 
 		case *VkDestroyCommandPool:
 			vkCmd := cmd.(*VkDestroyCommandPool)
 			commandPool := vkCmd.CommandPool()
-			log.D(ctx, "CommandPool %v destroyed", commandPool)
+			log.W(ctx, "CommandPool %v destroyed", commandPool)
 			if _, ok := f.commandPoolToDestroy[commandPool]; ok {
 				delete(f.commandPoolToDestroy, commandPool)
 			} else {
@@ -1187,7 +1199,7 @@ func (f *loopingVulkanControlFlowGenerator) buildEndState(ctx context.Context, s
 			cmdBuffers := vkCmd.PCommandBuffers().Slice(0, uint64(cmdBufCount), currentState.MemoryLayout).MustRead(ctx, vkCmd, currentState, nil)
 			for _, cmdBuf := range cmdBuffers {
 				f.commandBufferToFree[cmdBuf] = true
-				log.D(ctx, "Command buffer %v allocated.", cmdBuf)
+				log.W(ctx, "Command buffer %v allocated.", cmdBuf)
 			}
 
 		case *VkFreeCommandBuffers:
@@ -1195,7 +1207,7 @@ func (f *loopingVulkanControlFlowGenerator) buildEndState(ctx context.Context, s
 			cmdBufCount := vkCmd.CommandBufferCount()
 			cmdBufs := vkCmd.PCommandBuffers().Slice(0, uint64(cmdBufCount), currentState.MemoryLayout).MustRead(ctx, cmd, currentState, nil)
 			for _, cmdBuf := range cmdBufs {
-				log.D(ctx, "Command buffer %v freed.", cmdBufs)
+				log.W(ctx, "Command buffer %v freed.", cmdBufs)
 				if _, ok := f.commandBufferToFree[cmdBuf]; ok {
 					// The command buffer freed in this call was created during loop, no action needed.
 					delete(f.commandBufferToFree, cmdBuf)
@@ -1283,7 +1295,7 @@ func (f *loopingVulkanControlFlowGenerator) detectChangedBuffers(ctx context.Con
 			}
 		}
 	}
-	log.D(ctx, "Total number of buffer %v, number of buffer changed %v", len(apiState.Buffers().All()), len(f.bufferChanged))
+	log.W(ctx, "Total number of buffer %v, number of buffer changed %v", len(apiState.Buffers().All()), len(f.bufferChanged))
 }
 
 func (f *loopingVulkanControlFlowGenerator) detectChangedImages(ctx context.Context) {
@@ -1347,7 +1359,7 @@ func (f *loopingVulkanControlFlowGenerator) detectChangedImages(ctx context.Cont
 			}
 		}
 	}
-	log.D(ctx, "Total number of Image %v, number of image changed %v", len(apiState.Images().All()), len(f.imageChanged))
+	log.W(ctx, "Total number of Image %v, number of image changed %v", len(apiState.Images().All()), len(f.imageChanged))
 }
 
 func (f *loopingVulkanControlFlowGenerator) isSameDescriptorSet(src, dst DescriptorSetObjectʳ) bool {
@@ -1423,7 +1435,7 @@ func (f *loopingVulkanControlFlowGenerator) detectChangedDescriptorSets(ctx cont
 		if descriptorExistsOverLoop == true && descriptorDestroyedDuringLoop == false {
 
 			if f.isSameDescriptorSet(descriptorSetDataAtStart, descriptorSetDataAtEnd) == false {
-				log.D(ctx, "DescriptorSet %v modified", descriptorSetKey)
+				log.W(ctx, "DescriptorSet %v modified", descriptorSetKey)
 				f.descriptorSetChanged[descriptorSetKey] = true
 			}
 		}
@@ -1529,7 +1541,7 @@ func (f *loopingVulkanControlFlowGenerator) allocateMemoryForStagingbuffer(ctx c
 
 	for dev, memInfo := range f.memoryForStagingBuffer {
 		memInfo.size = 256 * ((memInfo.size + 255) / 256)
-		log.D(ctx, "Total size need for backup is %v", memInfo.size)
+		log.W(ctx, "Total size need for backup is %v", memInfo.size)
 		memInfo.memory = VkDeviceMemory(newUnusedID(true, func(x uint64) bool {
 			return GetState(stateBuilder.newState).DeviceMemories().Contains(VkDeviceMemory(x))
 		}))
@@ -1542,7 +1554,7 @@ func (f *loopingVulkanControlFlowGenerator) allocateMemoryForStagingbuffer(ctx c
 
 		stateBuilder.createDeviceMemory(memObj, false)
 		f.totalMemoryAllocated += uint64(memObj.AllocationSize())
-		log.D(ctx, "Allocate device memory of size %v, total allocated %v", memObj.AllocationSize(), f.totalMemoryAllocated)
+		log.W(ctx, "Allocate device memory of size %v, total allocated %v", memObj.AllocationSize(), f.totalMemoryAllocated)
 	}
 }
 
@@ -1552,7 +1564,7 @@ func (f *loopingVulkanControlFlowGenerator) backupChangedBuffers(ctx context.Con
 
 	for buffer := range f.bufferChanged {
 
-		log.D(ctx, "Buffer [%v] changed during loop.", buffer)
+		log.W(ctx, "Buffer [%v] changed during loop.", buffer)
 		bufferObj := GetState(stateBuilder.oldState).Buffers().Get(buffer)
 		if bufferObj == NilBufferObjectʳ {
 			return log.Err(ctx, nil, "Buffer is nil")
@@ -1597,7 +1609,7 @@ func (f *loopingVulkanControlFlowGenerator) backupChangedImages(ctx context.Cont
 
 	for img := range f.imageChanged {
 
-		log.D(ctx, "Image [%v] changed during loop.", img)
+		log.W(ctx, "Image [%v] changed during loop.", img)
 
 		// Create staging Image which is used to backup the changed images
 		imgObj := apiState.Images().Get(img)
@@ -1876,18 +1888,18 @@ func (f *loopingVulkanControlFlowGenerator) updateChangedResourcesMap(ctx contex
 		}
 
 		for _, commandPoolObject := range GetState(f.loopStartState).CommandPools().All() {
-			log.D(ctx, "commandPoolObject %v ", commandPoolObject.VulkanHandle())
+			log.W(ctx, "commandPoolObject %v ", commandPoolObject.VulkanHandle())
 
 			device := commandPoolObject.Device()
 
 			if _, ok := f.deviceToCreate[device]; ok {
 				f.commandPoolToDestroy[commandPoolObject.VulkanHandle()] = true
 				f.commandPoolToCreate[commandPoolObject.VulkanHandle()] = true
-				log.D(ctx, "Command pool %v is going to be recreated ", commandPoolObject.VulkanHandle())
+				log.W(ctx, "Command pool %v is going to be recreated ", commandPoolObject.VulkanHandle())
 			}
 			if _, ok := f.deviceToDestroy[device]; ok {
 				f.commandPoolToDestroy[commandPoolObject.VulkanHandle()] = true
-				log.D(ctx, "Command pool %v is going to be destroyed ", commandPoolObject.VulkanHandle())
+				log.W(ctx, "Command pool %v is going to be destroyed ", commandPoolObject.VulkanHandle())
 
 			}
 		}
@@ -1950,7 +1962,7 @@ func (f *loopingVulkanControlFlowGenerator) updateChangedResourcesMap(ctx contex
 		for _, samplerObject := range GetState(f.loopStartState).Samplers().All() {
 			ycbcrConversion := samplerObject.YcbcrConversion()
 			if ycbcrConversion == NilSamplerYcbcrConversionObjectʳ {
-				log.D(ctx, "Sampler %v doesn't enable ycbcrConversion", samplerObject)
+				log.W(ctx, "Sampler %v doesn't enable ycbcrConversion", samplerObject)
 				continue
 			}
 			if _, ok := f.samplerYcbcrConversionToCreate[ycbcrConversion.VulkanHandle()]; ok {
@@ -2051,7 +2063,7 @@ func (f *loopingVulkanControlFlowGenerator) updateChangedResourcesMap(ctx contex
 		for _, computePipelineObject := range GetState(f.loopStartState).ComputePipelines().All() {
 			pipelineCache := computePipelineObject.PipelineCache()
 			if pipelineCache == NilPipelineCacheObjectʳ {
-				log.D(ctx, "computePipelineObject %v doesn't have a pipeline cache.", computePipelineObject)
+				log.W(ctx, "computePipelineObject %v doesn't have a pipeline cache.", computePipelineObject)
 				continue
 			}
 			if _, ok := f.pipelineCacheToCreate[pipelineCache.VulkanHandle()]; ok {
@@ -2064,7 +2076,7 @@ func (f *loopingVulkanControlFlowGenerator) updateChangedResourcesMap(ctx contex
 		for _, graphicsPipelineObject := range GetState(f.loopStartState).GraphicsPipelines().All() {
 			pipelineCache := graphicsPipelineObject.PipelineCache()
 			if pipelineCache == NilPipelineCacheObjectʳ {
-				log.D(ctx, "graphicsPipelineObject %v doesn't have a pipeline cache.", graphicsPipelineObject)
+				log.W(ctx, "graphicsPipelineObject %v doesn't have a pipeline cache.", graphicsPipelineObject)
 				continue
 			}
 			if _, ok := f.pipelineCacheToCreate[pipelineCache.VulkanHandle()]; ok {
@@ -2113,7 +2125,7 @@ func (f *loopingVulkanControlFlowGenerator) destroyAllocatedResources(ctx contex
 	//commandBuffers
 	{
 		for cmdBuf := range f.commandBufferToFree {
-			log.D(ctx, "Command buffer %v allocated during loop, free it.", cmdBuf)
+			log.W(ctx, "Command buffer %v allocated during loop, free it.", cmdBuf)
 			cmdBufObj := GetState(f.loopEndState).CommandBuffers().Get(cmdBuf)
 			if cmdBufObj != NilCommandBufferObjectʳ {
 				stateBuilder.write(stateBuilder.cb.VkFreeCommandBuffers(
@@ -2172,7 +2184,7 @@ func (f *loopingVulkanControlFlowGenerator) destroyAllocatedResources(ctx contex
 		for event := range f.eventToDestroy {
 			eventObj := GetState(f.loopEndState).Events().Get(event)
 			if eventObj != NilEventObjectʳ {
-				log.D(ctx, "Destroy event: %v which was created during loop.", event)
+				log.W(ctx, "Destroy event: %v which was created during loop.", event)
 				stateBuilder.write(stateBuilder.cb.VkDestroyEvent(eventObj.Device(), eventObj.VulkanHandle(), memory.Nullptr))
 			} else {
 				log.E(ctx, "Event %v cannot be found in loop ending state.", event)
@@ -2184,7 +2196,7 @@ func (f *loopingVulkanControlFlowGenerator) destroyAllocatedResources(ctx contex
 		for fence := range f.fenceToDestroy {
 			fenceObj := GetState(f.loopEndState).Fences().Get(fence)
 			if fenceObj != NilFenceObjectʳ {
-				log.D(ctx, "Destroy fence: %v which was created during loop.", fence)
+				log.W(ctx, "Destroy fence: %v which was created during loop.", fence)
 				stateBuilder.write(stateBuilder.cb.VkDestroyFence(fenceObj.Device(), fenceObj.VulkanHandle(), memory.Nullptr))
 			} else {
 				log.E(ctx, "Fence %v cannot be found in the loop ending state", fence)
@@ -2196,7 +2208,7 @@ func (f *loopingVulkanControlFlowGenerator) destroyAllocatedResources(ctx contex
 		for sem := range f.semaphoreToDestroy {
 			semObj := GetState(f.loopEndState).Semaphores().Get(sem)
 			if semObj != NilSemaphoreObjectʳ {
-				log.D(ctx, "Destroy semaphore %v which was created during loop.", sem)
+				log.W(ctx, "Destroy semaphore %v which was created during loop.", sem)
 				stateBuilder.write(stateBuilder.cb.VkDestroySemaphore(semObj.Device(), semObj.VulkanHandle(), memory.Nullptr))
 			} else {
 				log.E(ctx, "Semaphore %v cannot be found in the loop ending state", sem)
@@ -2341,7 +2353,7 @@ func (f *loopingVulkanControlFlowGenerator) destroyAllocatedResources(ctx contex
 	// Images
 	{
 		for toDestroy := range f.imageToDestroy {
-			log.D(ctx, "Destroy image %v which was created during loop.", toDestroy)
+			log.W(ctx, "Destroy image %v which was created during loop.", toDestroy)
 			image := GetState(f.loopEndState).Images().Get(toDestroy)
 			stateBuilder.write(stateBuilder.cb.VkDestroyImage(image.Device(), toDestroy, memory.Nullptr))
 
@@ -2385,7 +2397,7 @@ func (f *loopingVulkanControlFlowGenerator) destroyAllocatedResources(ctx contex
 	// buffers
 	{
 		for buf := range f.bufferToDestroy {
-			log.D(ctx, "Destroy buffer %v which was created during loop.", buf)
+			log.W(ctx, "Destroy buffer %v which was created during loop.", buf)
 			bufObj := GetState(stateBuilder.newState).Buffers().Get(buf)
 			stateBuilder.write(stateBuilder.cb.VkDestroyBuffer(bufObj.Device(), buf, memory.Nullptr))
 		}
@@ -2403,7 +2415,7 @@ func (f *loopingVulkanControlFlowGenerator) destroyAllocatedResources(ctx contex
 		}
 
 		for mem := range f.memoryToFree {
-			log.D(ctx, "Free memory %v which was allocated during loop.", mem)
+			log.W(ctx, "Free memory %v which was allocated during loop.", mem)
 			memObj := GetState(f.loopEndState).DeviceMemories().Get(mem)
 			if memObj == NilDeviceMemoryObjectʳ {
 				log.E(ctx, "device memory %s doesn't exist in the loop ending state", mem)
@@ -2442,7 +2454,7 @@ func (f *loopingVulkanControlFlowGenerator) destroyAllocatedResources(ctx contex
 
 func (f *loopingVulkanControlFlowGenerator) resetResources(ctx context.Context, stateBuilder *stateBuilder) error {
 
-	log.D(ctx, "Begin to reset resources in frame loop")
+	log.W(ctx, "Begin to reset resources in frame loop")
 	// TODO: remove those waitdeviceidle after we're sure it is safe to do so.
 	f.waitDeviceIdle(stateBuilder)
 	defer f.waitDeviceIdle(stateBuilder)
@@ -2560,7 +2572,7 @@ func (f *loopingVulkanControlFlowGenerator) resetResources(ctx context.Context, 
 		return err
 	}
 
-	log.D(ctx, "End reset resources in frame loop")
+	log.W(ctx, "End reset resources in frame loop")
 
 	return nil
 }
@@ -2592,7 +2604,7 @@ func (f *loopingVulkanControlFlowGenerator) resetDevices(ctx context.Context, st
 func (f *loopingVulkanControlFlowGenerator) resetDeviceMemory(ctx context.Context, stateBuilder *stateBuilder) error {
 
 	for mem := range f.memoryToAllocate {
-		log.D(ctx, "Allcate memory %v which was freed during loop.", mem)
+		log.W(ctx, "Allcate memory %v which was freed during loop.", mem)
 		memObj := GetState(f.loopStartState).DeviceMemories().Get(mem)
 		if memObj == NilDeviceMemoryObjectʳ {
 			return fmt.Errorf("device memory %s doesn't exist in the loop starting state", mem)
@@ -2628,13 +2640,13 @@ func (f *loopingVulkanControlFlowGenerator) resetDeviceMemory(ctx context.Contex
 func (f *loopingVulkanControlFlowGenerator) resetBuffers(ctx context.Context, stateBuilder *stateBuilder) error {
 
 	for buf := range f.bufferToCreate {
-		log.D(ctx, "Recreate buffer %v which was destroyed during loop.", buf)
+		log.W(ctx, "Recreate buffer %v which was destroyed during loop.", buf)
 		srcBuffer := GetState(f.loopStartState).Buffers().Get(buf)
 		mem := GetState(stateBuilder.newState).DeviceMemories().Get(srcBuffer.Memory().VulkanHandle())
 		stateBuilder.createSameBuffer(srcBuffer, buf, mem, srcBuffer.MemoryOffset())
 	}
 
-	log.D(ctx, "Total number of bufferToRestore is %v", len(f.bufferToRestore))
+	log.W(ctx, "Total number of bufferToRestore is %v", len(f.bufferToRestore))
 	for dst, src := range f.bufferToRestore {
 
 		srcBufferObj := GetState(stateBuilder.newState).Buffers().Get(src)
@@ -2672,7 +2684,7 @@ func (f *loopingVulkanControlFlowGenerator) resetBuffers(ctx context.Context, st
 			return log.Errf(ctx, err, "Reset buffer [%v] with buffer [%v] failed", dst, src)
 		}
 
-		log.D(ctx, "Reset buffer [%v] with buffer [%v] succeed", dst, src)
+		log.W(ctx, "Reset buffer [%v] with buffer [%v] succeed", dst, src)
 	}
 
 	return nil
@@ -2721,7 +2733,7 @@ func (f *loopingVulkanControlFlowGenerator) resetImages(ctx context.Context, sta
 	}
 
 	for toCreate := range f.imageToCreate {
-		log.D(ctx, "Recreate image %v which was destroyed during loop.", toCreate)
+		log.W(ctx, "Recreate image %v which was destroyed during loop.", toCreate)
 		image := GetState(f.loopStartState).Images().Get(toCreate)
 		stateBuilder.createImage(image, f.loopStartState, toCreate)
 		// For image creation, the associated image views changes are handled in the restore step below.
@@ -2743,7 +2755,7 @@ func (f *loopingVulkanControlFlowGenerator) resetImages(ctx context.Context, sta
 			return log.Errf(ctx, err, "Priming image %v with data", dst)
 		}
 
-		log.D(ctx, "Prime image from [%v] to [%v] succeed", src, dst)
+		log.W(ctx, "Prime image from [%v] to [%v] succeed", src, dst)
 
 	}
 
@@ -2775,11 +2787,11 @@ func (f *loopingVulkanControlFlowGenerator) getBackupImageTargetLayout(ctx conte
 	primeByImageStore := (!primeByCopy) && (!primeByRendering) && ((srcImg.Info().Usage() & storageBit) != 0)
 
 	if primeByCopy {
-		log.D(ctx, "Image %v will be primbed by copy", srcImg.VulkanHandle())
+		log.W(ctx, "Image %v will be primbed by copy", srcImg.VulkanHandle())
 		dstImageLayout = useSpecifiedLayout(VkImageLayout_VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
 	}
 	if primeByRendering || primeByImageStore {
-		log.D(ctx, "Image %v will be primbed by rendering", srcImg.VulkanHandle())
+		log.W(ctx, "Image %v will be primbed by rendering", srcImg.VulkanHandle())
 		dstImageLayout = useSpecifiedLayout(ipRenderInputAttachmentLayout)
 	}
 
@@ -2928,31 +2940,31 @@ func (f *loopingVulkanControlFlowGenerator) updateChangedDescriptorSet(ctx conte
 			for _, bufferInfo := range binding.BufferBinding().All() {
 				buf := bufferInfo.Buffer()
 				if _, ok := f.bufferChanged[buf]; ok {
-					log.D(ctx, "descriptorSet %v changed due to buffer %v changed", descriptorSet, buf)
+					log.W(ctx, "descriptorSet %v changed due to buffer %v changed", descriptorSet, buf)
 					f.descriptorSetChanged[descriptorSet] = true
 				}
 
 				if _, ok := f.bufferToCreate[buf]; ok {
-					log.D(ctx, "descriptorSet %v changed due to buffer %v recreated", descriptorSet, buf)
+					log.W(ctx, "descriptorSet %v changed due to buffer %v recreated", descriptorSet, buf)
 					f.descriptorSetChanged[descriptorSet] = true
 				}
 			}
 
 			for _, imageInfo := range binding.ImageBinding().All() {
 				if _, ok := f.imageViewToCreate[imageInfo.ImageView()]; ok {
-					log.D(ctx, "descriptorSet %v changed due to imageview %v recreated", descriptorSet, imageInfo.ImageView())
+					log.W(ctx, "descriptorSet %v changed due to imageview %v recreated", descriptorSet, imageInfo.ImageView())
 					f.descriptorSetChanged[descriptorSet] = true
 				}
 
 				if _, ok := f.samplerToCreate[imageInfo.Sampler()]; ok {
-					log.D(ctx, "descriptorSet %v changed due to sampler %v recreated", descriptorSet, imageInfo.Sampler())
+					log.W(ctx, "descriptorSet %v changed due to sampler %v recreated", descriptorSet, imageInfo.Sampler())
 					f.descriptorSetChanged[descriptorSet] = true
 				}
 			}
 
 			for _, bufferView := range binding.BufferViewBindings().All() {
 				if _, ok := f.bufferViewToCreate[bufferView]; ok {
-					log.D(ctx, "descriptorSet %v changed due to bufferView %v recreated", descriptorSet, bufferView)
+					log.W(ctx, "descriptorSet %v changed due to bufferView %v recreated", descriptorSet, bufferView)
 					f.descriptorSetChanged[descriptorSet] = true
 				}
 			}
@@ -2992,7 +3004,7 @@ func (f *loopingVulkanControlFlowGenerator) resetSemaphores(ctx context.Context,
 	for sem := range f.semaphoreToCreate {
 		semObj := GetState(f.loopStartState).Semaphores().Get(sem)
 		if semObj != NilSemaphoreObjectʳ {
-			log.D(ctx, "Create semaphore %v which was destroyed during loop.", sem)
+			log.W(ctx, "Create semaphore %v which was destroyed during loop.", sem)
 			stateBuilder.createSemaphore(semObj)
 		} else {
 			log.E(ctx, "Semaphore %v cannot be found in the loop starting state", sem)
@@ -3026,7 +3038,7 @@ func (f *loopingVulkanControlFlowGenerator) resetSemaphores(ctx context.Context,
 			// used to ensure these occur in order. Semaphore waits and signals should thus occur in discrete 1:1 pairs."
 			// So there's no need to wait for it be signalled here. And add additional waiting here may break the 1:1 waits and signals pairs.
 		} else {
-			log.D(ctx, "Signal semaphore %v.", sem)
+			log.W(ctx, "Signal semaphore %v.", sem)
 			stateBuilder.write(stateBuilder.cb.VkQueueSubmit(
 				queue.VulkanHandle(),
 				1,
@@ -3054,7 +3066,7 @@ func (f *loopingVulkanControlFlowGenerator) resetFences(ctx context.Context, sta
 	for fence := range f.fenceToCreate {
 		fenceObj := GetState(f.loopStartState).Fences().Get(fence)
 		if fenceObj != NilFenceObjectʳ {
-			log.D(ctx, "Create fence %v which was destroyed during loop.", fence)
+			log.W(ctx, "Create fence %v which was destroyed during loop.", fence)
 			stateBuilder.createFence(fenceObj)
 		} else {
 			log.E(ctx, "Fence %v cannot be found in the loop starting state", fence)
@@ -3080,10 +3092,10 @@ func (f *loopingVulkanControlFlowGenerator) resetFences(ctx context.Context, sta
 			pFence := stateBuilder.MustAllocReadData(fenceObj.VulkanHandle()).Ptr()
 			// Wait fence to be signaled before resetting it.
 			stateBuilder.write(stateBuilder.cb.VkWaitForFences(fenceObj.Device(), 1, pFence, VkBool32(1), 0xFFFFFFFFFFFFFFFF, VkResult_VK_SUCCESS))
-			log.D(ctx, "Reset fence %v.", fence)
+			log.W(ctx, "Reset fence %v.", fence)
 			stateBuilder.write(stateBuilder.cb.VkResetFences(fenceObj.Device(), 1, pFence, VkResult_VK_SUCCESS))
 		} else {
-			log.D(ctx, "Singal fence %v.", fence)
+			log.W(ctx, "Singal fence %v.", fence)
 			queue := stateBuilder.getQueueFor(
 				VkQueueFlagBits_VK_QUEUE_GRAPHICS_BIT|VkQueueFlagBits_VK_QUEUE_COMPUTE_BIT|VkQueueFlagBits_VK_QUEUE_TRANSFER_BIT,
 				[]uint32{},
@@ -3111,7 +3123,7 @@ func (f *loopingVulkanControlFlowGenerator) resetEvents(ctx context.Context, sta
 	for event := range f.eventToCreate {
 		eventObj := GetState(f.loopStartState).Events().Get(event)
 		if eventObj != NilEventObjectʳ {
-			log.D(ctx, "Create event %v which was destroyed during loop.", event)
+			log.W(ctx, "Create event %v which was destroyed during loop.", event)
 			stateBuilder.createEvent(eventObj)
 		} else {
 			log.E(ctx, "Event %v cannot be found in loop starting state.", event)
@@ -3133,12 +3145,12 @@ func (f *loopingVulkanControlFlowGenerator) resetEvents(ctx context.Context, sta
 			continue
 		}
 		if eventObj.Signaled() {
-			log.D(ctx, "Reset event %v ", event)
+			log.W(ctx, "Reset event %v ", event)
 			// Wait event to be signaled before resetting it.
 			stateBuilder.write(stateBuilder.cb.ReplayGetEventStatus(eventObj.Device(), eventObj.VulkanHandle(), VkResult_VK_EVENT_SET, true, VkResult_VK_SUCCESS))
 			stateBuilder.write(stateBuilder.cb.VkResetEvent(eventObj.Device(), eventObj.VulkanHandle(), VkResult_VK_SUCCESS))
 		} else {
-			log.D(ctx, "Set event %v ", event)
+			log.W(ctx, "Set event %v ", event)
 			stateBuilder.write(stateBuilder.cb.ReplayGetEventStatus(eventObj.Device(), eventObj.VulkanHandle(), VkResult_VK_EVENT_RESET, true, VkResult_VK_SUCCESS))
 			stateBuilder.write(stateBuilder.cb.VkSetEvent(eventObj.Device(), eventObj.VulkanHandle(), VkResult_VK_SUCCESS))
 		}
@@ -3206,7 +3218,7 @@ func (f *loopingVulkanControlFlowGenerator) resetCommandBuffers(ctx context.Cont
 			log.F(ctx, true, "Command buffer %v can not be found in loop starting state", cmdBuf)
 			continue
 		}
-		log.D(ctx, "Command buffer %v freed during loop, recreate it.", cmdBuf)
+		log.W(ctx, "Command buffer %v freed during loop, recreate it.", cmdBuf)
 		stateBuilder.createCommandBuffer(cmdBufObj, cmdBufObj.Level())
 	}
 
@@ -3215,7 +3227,7 @@ func (f *loopingVulkanControlFlowGenerator) resetCommandBuffers(ctx context.Cont
 		if cmdBufObj == NilCommandBufferObjectʳ {
 			log.F(ctx, true, "Command buffer %v can not be found in loop starting state", cmdBuf)
 		}
-		log.D(ctx, "Command buffer %v changed during loop, re-record it.", cmdBuf)
+		log.W(ctx, "Command buffer %v changed during loop, re-record it.", cmdBuf)
 		stateBuilder.write(stateBuilder.cb.VkResetCommandBuffer(
 			cmdBufObj.VulkanHandle(),
 			0,
@@ -3232,9 +3244,14 @@ func (f *loopingVulkanControlFlowGenerator) buildCommands(ctx context.Context, c
 
 	for _, cmd := range cmds {
 
+		//log.W(ctx, "BUILD COMMAND %v, %v", cmdId, cmd)
+
 		if err := out.MutateAndWrite(ctx, cmdId, cmd); err != nil {
+			//log.W(ctx, "FAILURE %v", err)
 			return err
 		}
+
+		//log.W(ctx, "success")
 	}
 
 	return nil

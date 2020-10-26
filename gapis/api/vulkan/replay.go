@@ -460,10 +460,10 @@ func (w nullWriter) State() *api.GlobalState {
 }
 
 func (w nullWriter) MutateAndWrite(ctx context.Context, id api.CmdID, cmd api.Cmd) error {
-	log.W(ctx, "nullWriter:MutateAndWrite: %v, %v", id, cmd)
+	//log.W(ctx, "nullWriter:MutateAndWrite: %v, %v", id, cmd)
 	err := cmd.Mutate(ctx, id, w.state, nil, nil)
-	panic("aaaaaa") // We don't get here because the above function never returns. I have no idea why.
-	log.W(ctx, "nullWriter:MutateAndWrite: return error: %v", err)
+	//panic("aaaaaa") // We don't get here because the above function never returns. I have no idea why.
+	//log.W(ctx, "nullWriter:MutateAndWrite: return error: %v", err)
 	return err
 }
 

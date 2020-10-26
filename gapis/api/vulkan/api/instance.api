@@ -120,11 +120,13 @@ sub ref!InstanceObject createInstanceObject(const VkInstanceCreateInfo* createIn
 
   layerNames := info.ppEnabledLayerNames[0:info.enabledLayerCount]
   for i in (0 .. info.enabledLayerCount) {
+  print("loopbody %d of %d", i, info.enabledLayerCount)
     // We do not need to store off the list of enabled layers, since
     // a layer's presence should not affect any other calls in the API,
     // only an enabled extension that is provided by a layer.
     object.EnabledLayers[i] = as!string(layerNames[i])
   }
+  print("loopend")
 
   supported := supportedInstanceExtensions()
   extensionNames := info.ppEnabledExtensionNames[0:info.enabledExtensionCount]

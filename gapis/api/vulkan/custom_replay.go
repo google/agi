@@ -268,17 +268,25 @@ func (a *VkCreateInstance) Mutate(ctx context.Context, id api.CmdID, s *api.Glob
 	// in vulkan_gfx_api_extras.cpp, which modifies VkInstanceCreateInfo to enable virtual swapchain
 	// layer before delegating the real work back to the normal flow.
 
+	//log.W(ctx, "QQQQ")
 	hijack := cb.ReplayCreateVkInstance(a.PCreateInfo(), a.PAllocator(), a.PInstance(), a.Result())
+	//log.W(ctx, "QQQQ2")
 	hijack.Extras().MustClone(a.Extras().All()...)
+	//log.W(ctx, "QQQQ: extras: %v", hijack.Extras().All())
 	err := hijack.Mutate(ctx, id, s, b, w)
+	//log.W(ctx, "QQQQ3")
 
 	if b == nil || err != nil {
 		return err
 	}
 
 	// Call the replayRegisterVkInstance() synthetic API function.
+	//log.W(ctx, "QQQQW1")
 	instance := a.PInstance().MustRead(ctx, a, s, b)
-	return cb.ReplayRegisterVkInstance(instance).Mutate(ctx, id, s, b, nil)
+	//log.W(ctx, "QQQQW2")
+	ret := cb.ReplayRegisterVkInstance(instance).Mutate(ctx, id, s, b, nil)
+	//log.W(ctx, "QQQQW3")
+	return ret
 }
 
 func (a *VkDestroyInstance) Mutate(ctx context.Context, id api.CmdID, s *api.GlobalState, b *builder.Builder, w api.StateWatcher) error {

@@ -276,7 +276,7 @@ func (w *commandCaptureWriter) State() *api.GlobalState {
 }
 
 func (w *commandCaptureWriter) MutateAndWrite(ctx context.Context, id api.CmdID, cmd api.Cmd) error {
-	log.W(ctx, "captured command %v, %v", id, cmd)
+	//log.W(ctx, "captured command %v, %v", id, cmd)
 	w.cmds = append(w.cmds, cmd)
 	return w.out.MutateAndWrite(ctx, id, cmd)
 }
@@ -284,6 +284,6 @@ func (w *commandCaptureWriter) MutateAndWrite(ctx context.Context, id api.CmdID,
 func (w *commandCaptureWriter) GetAndResetCapturedCommands(ctx context.Context) []api.Cmd {
 	ret := w.cmds
 	w.cmds = make([]api.Cmd, 0)
-	log.W(ctx, "returning captured commands %v", ret)
+	//log.W(ctx, "returning captured commands %v", ret)
 	return ret
 }
