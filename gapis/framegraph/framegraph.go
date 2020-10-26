@@ -31,6 +31,7 @@ import (
 
 // rpInfo stores information for a given renderpass
 type rpInfo struct {
+	isCompute   bool
 	beginCmdIdx api.SubCmdIdx
 	numCmds     uint64
 	rpObj       vulkan.RenderPassObjectʳ
@@ -106,9 +107,37 @@ func GetFramegraph(ctx context.Context, p *path.Capture) (*service.Framegraph, e
 				panic("Nested renderpasses?")
 			}
 			rpi = &rpInfo{
-				beginCmdIdx: append(subCmdIdx),
+				beginCmdIdx: subCmdIdx,
 				rpObj:       vkState.RenderPasses().Get(args.RenderPass()),
 				fbObj:       vkState.LastDrawInfos().Get(vkState.LastBoundQueue().VulkanHandle()).Framebuffer(),
+				dpNodes:     make(map[d2.NodeID]bool),
+				imgRead:     make(map[vulkan.VkImage]bool),
+				imgWrite:    make(map[vulkan.VkImage]bool),
+				imgInfos:    make(map[vulkan.VkImage]vulkan.ImageInfo),
+				bufRead:     make(map[vulkan.VkBuffer]bool),
+				bufWrite:    make(map[vulkan.VkBuffer]bool),
+				bufInfos:    make(map[vulkan.VkBuffer]vulkan.BufferInfo),
+			}
+		}
+
+		// Compute (always outside of renderpasses)
+		isCompute := false
+		switch cmdArgs.(type) {
+		// we cannot fallthrough in type switches, hence the duplicates here
+		case vulkan.VkCmdDispatchArgsʳ:
+			isCompute = true
+		case vulkan.VkCmdDispatchBaseArgsʳ:
+			isCompute = true
+		case vulkan.VkCmdDispatchIndirectArgsʳ:
+			isCompute = true
+		}
+		if isCompute {
+			if rpi != nil {
+				panic("Compute inside renderpass?")
+			}
+			rpi = &rpInfo{
+				isCompute:   true,
+				beginCmdIdx: subCmdIdx,
 				dpNodes:     make(map[d2.NodeID]bool),
 				imgRead:     make(map[vulkan.VkImage]bool),
 				imgWrite:    make(map[vulkan.VkImage]bool),
@@ -159,6 +188,12 @@ func GetFramegraph(ctx context.Context, p *path.Capture) (*service.Framegraph, e
 					}
 				}
 			}
+
+			// Compute ends after a single command
+			if rpi.isCompute {
+				rpInfos = append(rpInfos, rpi)
+				rpi = nil
+			}
 		}
 
 		// Ending of RP
@@ -183,50 +218,54 @@ func GetFramegraph(ctx context.Context, p *path.Capture) (*service.Framegraph, e
 	// Create framegraph contents based on rpInfo and dependency graph
 	nodes := []*api.FramegraphNode{}
 	for i, rpi := range rpInfos {
-
-		// Use "\l" for newlines as this produce left-align lines in graphviz DOT labels
-		numSubPasses := rpi.rpObj.SubpassDescriptions().Len()
-		text := fmt.Sprintf("RenderPass\\l%v Cmds, %v subPass, startIdx:%v\\l", rpi.numCmds, numSubPasses, rpi.beginCmdIdx)
-		rpDbgInfo := rpi.rpObj.DebugInfo()
-		if !rpDbgInfo.IsNil() {
-			rpName := rpDbgInfo.ObjectName()
-			if rpName != "" {
-				text += "RP name: " + rpName + "\\l"
+		text := ""
+		if rpi.isCompute {
+			text = fmt.Sprintf("Compute\\lcmdIdx:%v", rpi.beginCmdIdx)
+		} else {
+			// Use "\l" for newlines as this produce left-align lines in graphviz DOT labels
+			numSubPasses := rpi.rpObj.SubpassDescriptions().Len()
+			text = fmt.Sprintf("RenderPass\\l%v Cmds, %v subPass, startIdx:%v\\l", rpi.numCmds, numSubPasses, rpi.beginCmdIdx)
+			rpDbgInfo := rpi.rpObj.DebugInfo()
+			if !rpDbgInfo.IsNil() {
+				rpName := rpDbgInfo.ObjectName()
+				if rpName != "" {
+					text += "RP name: " + rpName + "\\l"
+				}
 			}
-		}
-		text += fmt.Sprintf("Framebuffer [%vx%vx%v]\\l\\l", rpi.fbObj.Width(), rpi.fbObj.Height(), rpi.fbObj.Layers())
+			text += fmt.Sprintf("Framebuffer [%vx%vx%v]\\l\\l", rpi.fbObj.Width(), rpi.fbObj.Height(), rpi.fbObj.Layers())
 
-		for img, info := range rpi.imgInfos {
-			// Represent read/write with 2 characters as in file accesss bits, e.g. -- / r- / -w / rw
-			r := "-"
-			if _, ok := rpi.imgRead[img]; ok {
-				r = "r"
-			}
-			w := "-"
-			if _, ok := rpi.imgWrite[img]; ok {
-				w = "w"
-			}
+			for img, info := range rpi.imgInfos {
+				// Represent read/write with 2 characters as in file accesss bits, e.g. -- / r- / -w / rw
+				r := "-"
+				if _, ok := rpi.imgRead[img]; ok {
+					r = "r"
+				}
+				w := "-"
+				if _, ok := rpi.imgWrite[img]; ok {
+					w = "w"
+				}
 
-			extent := info.Extent()
-			dimensions := fmt.Sprintf("[%vx%vx%v]", extent.Width(), extent.Height(), extent.Depth())
-			imgType := strings.TrimPrefix(fmt.Sprintf("%v", info.ImageType()), "VK_IMAGE_TYPE_")
-			imgFmt := strings.TrimPrefix(fmt.Sprintf("%v", info.Fmt()), "VK_FORMAT_")
-			text += fmt.Sprintf("Img 0x%X %v%v %v %v %v\\l", img, r, w, dimensions, imgType, imgFmt)
-		}
-
-		text += "\\l"
-		for buf, info := range rpi.bufInfos {
-			// Represent read/write with 2 characters as in file accesss bits, e.g. -- / r- / -w / rw
-			r := "-"
-			if _, ok := rpi.bufRead[buf]; ok {
-				r = "r"
-			}
-			w := "-"
-			if _, ok := rpi.bufWrite[buf]; ok {
-				w = "w"
+				extent := info.Extent()
+				dimensions := fmt.Sprintf("[%vx%vx%v]", extent.Width(), extent.Height(), extent.Depth())
+				imgType := strings.TrimPrefix(fmt.Sprintf("%v", info.ImageType()), "VK_IMAGE_TYPE_")
+				imgFmt := strings.TrimPrefix(fmt.Sprintf("%v", info.Fmt()), "VK_FORMAT_")
+				text += fmt.Sprintf("Img 0x%X %v%v %v %v %v\\l", img, r, w, dimensions, imgType, imgFmt)
 			}
 
-			text += fmt.Sprintf("Buf 0x%X %v%v [%v]\\l", buf, r, w, info.Size())
+			text += "\\l"
+			for buf, info := range rpi.bufInfos {
+				// Represent read/write with 2 characters as in file accesss bits, e.g. -- / r- / -w / rw
+				r := "-"
+				if _, ok := rpi.bufRead[buf]; ok {
+					r = "r"
+				}
+				w := "-"
+				if _, ok := rpi.bufWrite[buf]; ok {
+					w = "w"
+				}
+
+				text += fmt.Sprintf("Buf 0x%X %v%v [%v]\\l", buf, r, w, info.Size())
+			}
 		}
 
 		nodes = append(nodes, &api.FramegraphNode{
