@@ -113,8 +113,8 @@ func (r *FramebufferChangesResolvable) Resolve(ctx context.Context) (interface{}
 		}
 	}
 
-	postSubCmd := func(s *api.GlobalState, subcommandIndex api.SubCmdIdx, cmd api.Cmd, i interface{}) {
-		postCmd(s, subcommandIndex, cmd)
+	postSubCmd := func(s *api.GlobalState, idx api.SubCmdIdx, cmd api.Cmd, subCmdRef interface{}) {
+		postCmd(s, idx, cmd)
 	}
 
 	sync.MutateWithSubcommands(ctx, r.Capture, c.Commands, postCmd, nil, postSubCmd)
