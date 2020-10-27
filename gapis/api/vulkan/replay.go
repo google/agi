@@ -278,7 +278,7 @@ func getProfileTransforms(ctx context.Context,
 	transforms = append(transforms, newProfilingLayers(layerName))
 	transforms = append(transforms, newMappingExporter(ctx, request.handleMappings))
 
-	if request.experiments.DisableAF {
+	if request.experiments.DisableAnisotropicFiltering {
 		transforms = append(transforms, newAfDisablerTransform())
 	}
 

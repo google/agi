@@ -104,6 +104,6 @@ type Issue struct {
 
 // ProfileExperiments represents the experiment settings for the profiling
 type ProfileExperiments struct {
-	DisabledCmds [][]uint64
-	DisableAF    bool
+	DisabledCmds                [][]uint64
+	DisableAnisotropicFiltering bool
 }
