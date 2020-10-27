@@ -16,7 +16,6 @@ package profile
 
 import (
 	"context"
-	"fmt"
 	"sort"
 	"strconv"
 	"strings"
@@ -84,13 +83,13 @@ func setTimeMetrics(groupToSlices map[int32][]*service.ProfilingData_GpuSlices_S
 	*metrics = append(*metrics, &service.ProfilingData_GpuCounters_Metric{
 		Id:   gpuTimeMetricId,
 		Name: "GPU Time",
-		Unit: fmt.Sprint(device.GpuCounterDescriptor_MeasureUnit_value[device.GpuCounterDescriptor_NANOSECOND.String()]),
+		Unit: strconv.Itoa(int(device.GpuCounterDescriptor_NANOSECOND)),
 		Op:   service.ProfilingData_GpuCounters_Metric_Summation,
 	})
 	*metrics = append(*metrics, &service.ProfilingData_GpuCounters_Metric{
 		Id:   gpuWallTimeMetricId,
 		Name: "GPU Wall Time",
-		Unit: fmt.Sprint(device.GpuCounterDescriptor_MeasureUnit_value[device.GpuCounterDescriptor_NANOSECOND.String()]),
+		Unit: strconv.Itoa(int(device.GpuCounterDescriptor_NANOSECOND)),
 		Op:   service.ProfilingData_GpuCounters_Metric_Summation,
 	})
 	for groupId, slices := range groupToSlices {
