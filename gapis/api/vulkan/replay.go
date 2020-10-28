@@ -153,9 +153,11 @@ func (a API) Replay(
        // case framebufferRequest:
        case profileRequest:
        		   log.W(ctx, "PERFORMANCE PERFORMANCE PERFORMANCE")
+       		   	request := (&rrs[0]).Request.(profileRequest)
+       		   	log.W(ctx, "aaaaaaaaaaaaa %v", request)
                nullWriterObj := nullWriter{state: cloneState(ctx, c, out.State())}
                chain := transform.CreateTransformChain(ctx, cmdGenerator, transforms, nullWriterObj)
-               controlFlow := NewLoopingVulkanControlFlowGenerator(ctx, chain, out, c, loopStart, loopEnd, 10)
+               controlFlow := NewLoopingVulkanControlFlowGenerator(ctx, request.traceOptions, request.handler, request.buffer, chain, out, c, loopStart, loopEnd, 10)
                if err := controlFlow.TransformAll(ctx); err != nil {
                        log.E(ctx, "%v Error: %v", replayType, err)
                        return err
@@ -288,12 +290,13 @@ func getProfileTransforms(ctx context.Context,
 	}
 
 	request := requestAndResult.Request.(profileRequest)
+	//request.traceOptions, request.handler, request.buffer,
 
 	profileTransform := newEndOfReplay()
 	profileTransform.AddResult(requestAndResult.Result)
 
 	transforms := make([]transform.Transform, 0)
-	transforms = append(transforms, newWaitForPerfetto(request.traceOptions, request.handler, request.buffer, numOfInitialCmds))
+	//transforms = append(transforms, newWaitForPerfetto(request.traceOptions, request.handler, request.buffer, numOfInitialCmds))
 	transforms = append(transforms, newProfilingLayers(layerName))
 	transforms = append(transforms, newMappingExporter(ctx, request.handleMappings))
 

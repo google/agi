@@ -18,7 +18,9 @@ import (
 	"context"
 	"fmt"
 	"time"
+	"bytes"
 
+	"github.com/google/gapid/gapir"
 	"github.com/google/gapid/core/log"
 	"github.com/google/gapid/core/math/interval"
 	"github.com/google/gapid/gapis/memory"
@@ -31,7 +33,10 @@ import (
 	"github.com/google/gapid/gapis/api/transform"
 	"github.com/google/gapid/gapis/replay/builder"
 	"github.com/google/gapid/gapis/replay/protocol"
+	"github.com/google/gapid/gapis/service"
+	"github.com/google/gapid/gapis/replay"
 	"github.com/google/gapid/gapis/api/controlFlowGenerator"
+	"github.com/google/gapid/gapis/trace"
 )
 
 type stateWatcher2 struct {
@@ -94,6 +99,10 @@ type backupMemory2 struct {
 
 type loopingVulkanControlFlowGenerator struct {
 	ctx context.Context
+
+	traceOptions      *service.TraceOptions
+	signalHandler     *replay.SignalHandler
+	buffer            *bytes.Buffer
 
 	chain *transform.TransformChain
 	out2 transform.Writer
@@ -212,7 +221,7 @@ type loopingVulkanControlFlowGenerator struct {
 
 // NewLoopingVulkanControlFlowGenerator generates a simple control flow
 // that takes initial and real commands and transforms all of them
-func NewLoopingVulkanControlFlowGenerator(ctx context.Context, chain *transform.TransformChain, out transform.Writer, graphicsCapture *capture.GraphicsCapture, loopStart api.CmdID, loopEnd api.CmdID, loopCount int32) controlFlowGenerator.ControlFlowGenerator {
+func NewLoopingVulkanControlFlowGenerator(ctx context.Context, traceOptions *service.TraceOptions, signalHandler *replay.SignalHandler, buffer *bytes.Buffer, chain *transform.TransformChain, out transform.Writer, graphicsCapture *capture.GraphicsCapture, loopStart api.CmdID, loopEnd api.CmdID, loopCount int32) controlFlowGenerator.ControlFlowGenerator {
 
 	if loopCount < 2 {
 		panic("oh no") // TODO: ALAN
@@ -511,9 +520,44 @@ func (f *loopingVulkanControlFlowGenerator) TransformAll(ctx context.Context) er
 						}))
 					}
 
+					// Start the perfetto
+					{
+						log.W(ctx, "STARTSTARTSTART1")
+						cmds := make([]api.Cmd, 0)
+						cmds = append(cmds, createVkDeviceWaitIdleCommandsForDevices(ctx, f.out2.State())...)
+						//fenceID := uint32(0x3fffffe)
+						waitForFenceCmd := createWaitForFence2(ctx, /*fenceID*/ uint32(id.GetID()), func(ctx context.Context, request *gapir.FenceReadyRequest) {
+							f.transformCallback(ctx, request)
+						})
+						cmds = append(cmds, waitForFenceCmd)
+
+						if err := f.buildCommands(ctx, cmdId, cmds, f.out2); err != nil {
+							return err
+						}
+						log.W(ctx, "STARTSTARTSTART2")
+					}
+
 					// Do the final iteration of mid-loop stuff.
 					if err := f.writeLoopContents(ctx, f.out2); err != nil {
 						return err
+					}
+
+					// End the perfetto
+					{
+						log.W(ctx, "ENDENDEND1")
+						cmds := make([]api.Cmd, 0)
+						cmds = append(cmds, createVkDeviceWaitIdleCommandsForDevices(ctx, f.out2.State())...)
+
+						fenceID := uint32(0x3ffffff)
+						waitForFenceCmd := createWaitForFence2(ctx, fenceID, func(ctx context.Context, request *gapir.FenceReadyRequest) {
+							f.endOfTransformCallback(ctx, request)
+						})
+						cmds = append(cmds, waitForFenceCmd)
+						
+						if err := f.buildCommands(ctx, cmdId, cmds, f.out2); err != nil {
+							return err
+						}
+						log.W(ctx, "ENDENDEND2")
 					}
 
 					stateBuilder.ta.Dispose()
@@ -3255,4 +3299,61 @@ func (f *loopingVulkanControlFlowGenerator) buildCommands(ctx context.Context, c
 	}
 
 	return nil
+}
+
+/////////////////////////////////////
+
+func (f *loopingVulkanControlFlowGenerator) endOfTransformCallback(ctx context.Context, request *gapir.FenceReadyRequest) {
+	log.W(ctx, "END TRANSFORM CALLBACK 1")
+	if !f.signalHandler.StopSignal.Fired() {
+		f.signalHandler.StopFunc(ctx)
+	}
+	log.W(ctx, "END TRANSFORM CALLBACK 2")
+}
+
+func (f *loopingVulkanControlFlowGenerator) transformCallback(ctx context.Context, request *gapir.FenceReadyRequest) {
+
+	log.W(ctx, "TRANSFORM CALLBACK 1")
+
+	errChannel := make(chan error)
+	signalHandler := f.signalHandler
+
+	go func() {
+		err := trace.TraceBuffered(ctx,
+			f.traceOptions.Device,
+			signalHandler.StartSignal,
+			signalHandler.StopSignal,
+			signalHandler.ReadyFunc,
+			f.traceOptions,
+			f.buffer)
+		if err != nil {
+			errChannel <- err
+		}
+		if !signalHandler.DoneSignal.Fired() {
+			signalHandler.DoneFunc(ctx)
+		}
+	}()
+
+	select {
+	case err := <-errChannel:
+		log.W(ctx, "Profiling error: %v", err)
+		return
+	case <-task.ShouldStop(ctx):
+		return
+	case <-signalHandler.ReadySignal:
+		return
+	}
+
+	log.W(ctx, "TRANSFORM CALLBACK 2")
+}
+
+func createWaitForFence2(ctx context.Context, id uint32, callback FenceCallback) api.Cmd {
+	return replay.Custom{T: 0, F: func(ctx context.Context, s *api.GlobalState, b *builder.Builder) error {
+		fenceID := id
+		b.Wait(fenceID)
+		tcb := func(p *gapir.FenceReadyRequest) {
+			callback(ctx, p)
+		}
+		return b.RegisterFenceReadyRequestCallback(fenceID, tcb)
+	}}
 }
