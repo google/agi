@@ -474,11 +474,6 @@ func (f *loopingVulkanControlFlowGenerator) TransformAll(ctx context.Context) er
 
 					}
 
-					// Do first iteration of mid-loop stuff.
-					if err := f.writeLoopContents(ctx, f.out2); err != nil {
-						return err
-					}
-
 					// Mark branch target for loop jump
 					{
 						// Write out some custom bytecode for the loop.
@@ -491,17 +486,17 @@ func (f *loopingVulkanControlFlowGenerator) TransformAll(ctx context.Context) er
 						}))
 					}
 
+					// Do first N-1 iterations of mid-loop stuff.
+					if err := f.writeLoopContents(ctx, f.out2); err != nil {
+						return err
+					}
+
 					// Do state rewind stuff.
 					{
 						// Now we need to emit the instructions to reset the state, before the conditional branch back to the start of the loop.
 						if err := f.resetResources(ctx, stateBuilder); err != nil {
 							return fmt.Errorf("FrameLoop: Failed to reset changed resources %v.", err)
 						}
-					}
-
-					// Do second and subsequent iterations of mid-loop stuff.
-					if err := f.writeLoopContents(ctx, f.out2); err != nil {
-						return err
 					}
 
 					// Write out the conditional jump to the start of the state rewind code to provide the actual looping behaviour
@@ -514,6 +509,11 @@ func (f *loopingVulkanControlFlowGenerator) TransformAll(ctx context.Context) er
 							b.JumpNZ(uint32(0x1))
 							return nil
 						}))
+					}
+
+					// Do the final iteration of mid-loop stuff.
+					if err := f.writeLoopContents(ctx, f.out2); err != nil {
+						return err
 					}
 
 					stateBuilder.ta.Dispose()
