@@ -44,6 +44,7 @@ import com.google.gapid.views.ReportView;
 import com.google.gapid.views.ShaderView;
 import com.google.gapid.views.StateView;
 import com.google.gapid.views.Tab;
+import com.google.gapid.views.TextureList;
 import com.google.gapid.views.TextureView;
 import com.google.gapid.widgets.TabArea;
 import com.google.gapid.widgets.TabArea.FolderInfo;
@@ -137,7 +138,7 @@ public class GraphicsTraceView extends Composite implements MainWindow.MainView,
 
   @Override
   public void onTextureFollowed(Service.Resource resource) {
-    tabs.showTab(MainTab.Type.Textures);
+    tabs.showTab(MainTab.Type.TextureView);
   }
 
   @Override
@@ -370,13 +371,14 @@ public class GraphicsTraceView extends Composite implements MainWindow.MainView,
 
       Framebuffer(View.Framebuffer, "Framebuffer", DefaultPosition.Center, FramebufferView::new),
       Pipeline(View.Pipeline, "Pipeline", DefaultPosition.Center, PipelineView::new),
-      Textures(View.Textures, "Textures", DefaultPosition.Center, TextureView::new),
+      TextureList(View.TextureList, "Textures", DefaultPosition.Center, TextureList::new),
       Geometry(View.Geometry, "Geometry", DefaultPosition.Center, GeometryView::new),
       Shaders(View.Shaders, "Shaders", DefaultPosition.Center, ShaderView::new),
       Performance(View.Performance, "Performance(Experimental)", DefaultPosition.Center, PerformanceView::new),
       Report(View.Report, "Report", DefaultPosition.Center, ReportView::new),
       Log(View.Log, "Log", DefaultPosition.Center, (p, m, w) -> new LogView(p, w)),
 
+      TextureView(View.TextureView, "Texture", DefaultPosition.Right, TextureView::new),
       ApiState(View.State, "State", DefaultPosition.Right, StateView::new),
       Memory(View.Memory, "Memory", DefaultPosition.Right, MemoryView::new);
 
