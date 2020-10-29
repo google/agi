@@ -25,5 +25,5 @@ import (
 // GetFramegraph creates the framegraph of the given capture.
 func (API) GetFramegraph(ctx context.Context, p *path.Capture) (*api.Framegraph, error) {
 	log.W(ctx, "TODO: implement framegraph creation")
-	return &api.Framegraph{}, nil
+	return nil, nil
 }
