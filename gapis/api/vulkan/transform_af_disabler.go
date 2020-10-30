@@ -22,6 +22,8 @@ import (
 	"github.com/google/gapid/gapis/memory"
 )
 
+// afDisablerTransform implements the Transform interface to disable anisotropic
+// during every vkCreateSampler call
 type afDisablerTransform struct {
 	allocations *allocationTracker
 }
@@ -41,7 +43,7 @@ func (afDisabler *afDisablerTransform) RequiresInnerStateMutation() bool {
 }
 
 func (afDisabler *afDisablerTransform) SetInnerStateMutationFunction(mutator transform.StateMutator) {
-	// This transform do not require inner state mutation
+	// This transform does not require inner state mutation
 }
 
 func (afDisabler *afDisablerTransform) BeginTransform(ctx context.Context, inputState *api.GlobalState) error {
@@ -56,7 +58,7 @@ func (afDisabler *afDisablerTransform) ClearTransformResources(ctx context.Conte
 func (afDisabler *afDisablerTransform) TransformCommand(ctx context.Context, id transform.CommandID, inputCommands []api.Cmd, inputState *api.GlobalState) ([]api.Cmd, error) {
 	for i, cmd := range inputCommands {
 		if cmd, ok := cmd.(*VkCreateSampler); ok {
-			inputCommands[i] = afDisabler.modifySamplerCreation(ctx, cmd, inputState)
+			inputCommands[i] = afDisabler.disableAFInSamplerCreation(ctx, cmd, inputState)
 		}
 	}
 
@@ -67,7 +69,7 @@ func (afDisabler *afDisablerTransform) EndTransform(ctx context.Context, inputSt
 	return nil, nil
 }
 
-func (afDisabler *afDisablerTransform) modifySamplerCreation(ctx context.Context, cmd *VkCreateSampler, inputState *api.GlobalState) api.Cmd {
+func (afDisabler *afDisablerTransform) disableAFInSamplerCreation(ctx context.Context, cmd *VkCreateSampler, inputState *api.GlobalState) api.Cmd {
 	cmd.Extras().Observations().ApplyReads(inputState.Memory.ApplicationPool())
 
 	pAlloc := memory.Pointer(cmd.PAllocator())
