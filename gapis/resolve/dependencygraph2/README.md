@@ -109,7 +109,8 @@ Now, a single command may have multiple read/write to the same slot: we should
 not update the memory access tracker as soon as there is a write, otherwise a
 subsequent read by the same command would create a circular dependency to the
 node itself. To avoid this, all read/writes of a single command are temporarily
-stored in a list of pending accesses, which are flushed when the command ends.
+stored in a list of *pending* accesses, which are *flushed* (see the various
+`Flush()` functions) when the command ends.
 
 ### In practice
 
