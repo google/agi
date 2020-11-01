@@ -35,17 +35,19 @@ import org.eclipse.swt.widgets.Layout;
 import org.eclipse.swt.widgets.Shell;
 
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class TabComposite extends Composite {
-  private static final int TITLE_WIDTH = 50;
   private static final int SEP_HEIGHT = 2;
   private static final int BAR_MARGIN = 6;
-  private static final int TAB_MARGIN = 10;
+  private static final int TAB_MARGIN = 6;
   private static final int FOLDER_MARGIN = 5; // needs to be odd.
   private static final int ICON_SIZE = 24;
   private static final int MIN_WIDTH = 50;
@@ -89,7 +91,10 @@ public class TabComposite extends Composite {
       if (e.button == 1) {
         mouseDown = hovered;
         switch (mouseDown.type) {
-          case Button:
+          case Close:
+            mouseDown.tab.info.disposeTab();
+            break;
+          case Maximize:
             if (maximizedFolder == null) {
               mouseDown.folder.maximized = true;
               maximizedFolder = mouseDown.folder;
@@ -222,11 +227,11 @@ public class TabComposite extends Composite {
   }
 
   private void updateHover(Hover newHover) {
-    if (!hovered.isTab()) {
-      if (newHover.isTab()) {
+    if (!hovered.isBar()) {
+      if (newHover.isBar()) {
         newHover.folder.redrawBar();
       }
-    } else if (!newHover.isTab()) {
+    } else if (!newHover.isBar()) {
       hovered.folder.redrawBar();
     } else if (hovered.folder != newHover.folder) {
       hovered.folder.redrawBar();
@@ -311,13 +316,19 @@ public class TabComposite extends Composite {
     public final Analytics.View view;
     public final String label;
     public final Function<Composite, Control> contentFactory;
+    private final Consumer<Object> dispose;
 
     public TabInfo(
-        Object id, View view, String label, Function<Composite, Control> contentFactory) {
+        Object id, View view, String label, Function<Composite, Control> contentFactory, Consumer<Object> dispose) {
       this.id = id;
       this.view = view;
       this.label = label;
       this.contentFactory = contentFactory;
+      this.dispose = dispose;
+    }
+
+    public void disposeTab() {
+      dispose.accept(id);
     }
   }
 
@@ -873,10 +884,77 @@ public class TabComposite extends Composite {
       this.titleHeight = getMaxTitleHeight();
 
       int barH = BAR_MARGIN + titleHeight + BAR_MARGIN + SEP_HEIGHT + BAR_MARGIN;
+      int barW = 0;
       for (Tab tab : tabs) {
         tab.control.setBounds(x, y + barH, w, h - barH);
         tab.control.setVisible(tab.control == current);
         controls.remove(tab.control);
+        tab.currentWidth = TAB_MARGIN + tab.titleSize.x + ICON_SIZE;
+        barW += tab.currentWidth;
+      }
+
+      int maxBarW = w - ICON_SIZE;
+      if (barW > maxBarW) {
+        // the default tab width doesn't fit, shrink the tabs
+        if (barW - tabs.size() * (ICON_SIZE - TAB_MARGIN) <= maxBarW) {
+          // it is enough to reduce the right margin reserved for the close button
+          int rightMarginSpace = maxBarW - (barW - tabs.size() * ICON_SIZE);
+          int rightMargin = rightMarginSpace / tabs.size();
+          int extraMargin = rightMarginSpace % tabs.size();
+          for (Tab tab : tabs) {
+            tab.currentWidth -= ICON_SIZE - rightMargin;
+            if (extraMargin > 0) {
+              tab.currentWidth++;
+              extraMargin--;
+            }
+          }
+        } else {
+          // first reduce right margin spaces to the minimum
+          for (Tab tab : tabs) {
+            tab.currentWidth -= ICON_SIZE - TAB_MARGIN;
+          }
+          barW -= tabs.size() * (ICON_SIZE - TAB_MARGIN);
+
+          // now the tab titles have to be trimmed
+          // algorithm:
+          // 1. find the widest tab and all other tabs of the same width
+          // 2. reduce width until they fit or have the same size as the next widest tab
+          // 3. repeat from 1. until it fits or minimum width is reached
+          List<Tab> sortedTabs =
+              tabs.stream().sorted(Comparator.comparingInt(Tab::getCurrentWidth).reversed())
+                  .collect(Collectors.toList());
+          int sameWidth = 1;
+          int widest = sortedTabs.get(0).currentWidth;
+          do {
+            while (sameWidth < sortedTabs.size() && sortedTabs.get(sameWidth).currentWidth == widest) {
+              ++sameWidth;
+            }
+            int minTabW = sameWidth < sortedTabs.size() ? sortedTabs.get(sameWidth).currentWidth
+                : 2 * TAB_MARGIN + ICON_SIZE;
+            if (barW - sameWidth * (widest - minTabW) <= maxBarW) {
+              // tabs will fit after this reduction, fill up space
+              int space = maxBarW - (barW - sameWidth * (widest - minTabW));
+              int newWidth = minTabW + space / sameWidth;
+              int extraSpace = space % sameWidth;
+              for (int i = 0; i < sameWidth; i++) {
+                barW -= sortedTabs.get(i).currentWidth;
+                sortedTabs.get(i).currentWidth = newWidth;
+                if (extraSpace > 0) {
+                  sortedTabs.get(i).currentWidth++;
+                  extraSpace--;
+                }
+                barW += sortedTabs.get(i).currentWidth;
+              }
+            } else {
+              // tabs won't fit yet after this reduction, reduce to minimum
+              for (int i = 0; i < sameWidth; i++) {
+                sortedTabs.get(i).currentWidth = minTabW;
+              }
+              barW -= sameWidth * (widest - minTabW);
+              widest = minTabW;
+            }
+          } while (barW > maxBarW && sameWidth < sortedTabs.size());
+        }
       }
 
       redrawBar(); // redraw the new area
@@ -960,9 +1038,10 @@ public class TabComposite extends Composite {
 
       gc.setClipping(x, y, w - ICON_SIZE, h);
 
+      int maxX = x + w - ICON_SIZE;
       int tabX = x;
       for (Tab tab : tabs) {
-        int tabW = TAB_MARGIN + Math.max(TITLE_WIDTH, tab.titleSize.x) + TAB_MARGIN;
+        int tabW = tab.getCurrentWidth();
 
         if (dragger != null) {
           if (dragger.tab.tab == tab) {
@@ -973,38 +1052,50 @@ public class TabComposite extends Composite {
           }
         }
 
+        int clipW = Math.min(tabW, maxX - tabX) - TAB_MARGIN;
         if (hovered != null && tab == hovered.tab) {
           gc.setBackground(theme.tabFolderHovered());
           gc.fillRectangle(tabX, y, tabW, tabH + 1);
+          gc.drawImage(hovered.type == Hover.Type.Close ? theme.closeHovered() : theme.close(),
+              tabX + tabW - ICON_SIZE, y + (tabH - ICON_SIZE) / 2);
+          clipW = Math.min(tabW, maxX - tabX) - ICON_SIZE;
         } else if (tab.control == current) {
           gc.setBackground(theme.tabFolderSelected());
           gc.fillRectangle(tabX, y, tabW, tabH + 1);
         }
 
-        int dx = (tabW - tab.titleSize.x) / 2;
         gc.setForeground(theme.tabTitle());
         if (tab.control == current) {
           gc.setBackground(theme.tabFolderLineSelected());
           gc.fillRectangle(tabX, y + tabH, tabW, SEP_HEIGHT);
           gc.setFont(theme.selectedTabTitleFont());
-          gc.drawText(tab.info.label, tabX + dx, y + BAR_MARGIN, SWT.DRAW_TRANSPARENT);
+        }
+        gc.setClipping(tabX, y, clipW, h);
+        gc.drawText(tab.info.label, tabX + TAB_MARGIN, y + BAR_MARGIN, SWT.DRAW_TRANSPARENT);
+        gc.setClipping(x, y, w - ICON_SIZE, h);
+        if (tab.control == current) {
           gc.setFont(null);
-        } else {
-          gc.drawText(tab.info.label, tabX + dx, y + BAR_MARGIN, SWT.DRAW_TRANSPARENT);
         }
 
         tabX += tabW;
+        if (tabX >= maxX) {
+          break;
+        }
       }
 
       if (dragger != null &&
           dragger.location.x >= tabX && dragger.location.x < x + w &&
           dragger.location.y >= y && dragger.location.y < y + tabH) {
-        int tabW = Math.max(TITLE_WIDTH, dragger.tab.tab.titleSize.x);
+        int tabW = TAB_MARGIN + dragger.tab.tab.titleSize.x + ICON_SIZE;
         drawPlaceholder(gc, tabX, y, tabW);
       }
 
       gc.setClipping((Rectangle)null);
 
+      if (hovered != null && hovered.type == Hover.Type.Maximize && hovered.folder == this) {
+        gc.setBackground(theme.tabFolderHovered());
+        gc.fillRectangle(x + w - ICON_SIZE, y, ICON_SIZE, tabH + 1);
+      }
       gc.drawImage(maximized ? theme.fullscreenExit() : theme.fullscreen(),
           x + w - ICON_SIZE, y + (tabH - ICON_SIZE) / 2);
     }
@@ -1026,16 +1117,19 @@ public class TabComposite extends Composite {
       }
 
       if (mx >= x + w - ICON_SIZE) {
-        return Hover.button(this);
+        return Hover.maximize(this);
       }
 
       int tabX = x;
       for (Tab tab : tabs) {
-        int tabW = TAB_MARGIN + Math.max(TITLE_WIDTH, tab.titleSize.x) + TAB_MARGIN;
-        if (mx >= tabX && mx < tabX + tabW) {
-          return Hover.tab(this, tab);
+        if (mx >= tabX && mx < tabX + tab.getCurrentWidth()) {
+          if (mx >= tabX + tab.getCurrentWidth() - ICON_SIZE) {
+            return Hover.close(this, tab);
+          } else {
+            return Hover.tab(this, tab);
+          }
         }
-        tabX += tabW;
+        tabX += tab.getCurrentWidth();
       }
       return includeTrailing ? Hover.tab(this, null) : Hover.NONE;
     }
@@ -1064,11 +1158,17 @@ public class TabComposite extends Composite {
     public final TabInfo info;
     public final Control control;
     public final Point titleSize;
+    public int currentWidth;
 
     public Tab(TabInfo info, Control control, Point titleSize) {
       this.info = info;
       this.control = control;
       this.titleSize = titleSize;
+      this.currentWidth = -1;
+    }
+
+    public int getCurrentWidth() {
+      return currentWidth;
     }
   }
 
@@ -1095,8 +1195,12 @@ public class TabComposite extends Composite {
       return new Hover(Type.Separator, group, index, cursor, null, null);
     }
 
-    public static Hover button(Folder folder) {
-      return new Hover(Type.Button, null, 0, 0, folder, null);
+    public static Hover close(Folder folder, Tab tab) {
+      return new Hover(Type.Close, null, 0, 0, folder, tab);
+    }
+
+    public static Hover maximize(Folder folder) {
+      return new Hover(Type.Maximize, null, 0, 0, folder, null);
     }
 
     public static Hover folder(Group parent, int index, Folder folder) {
@@ -1115,12 +1219,12 @@ public class TabComposite extends Composite {
       return type == Type.Folder;
     }
 
-    public boolean isTab() {
-      return type == Type.Tab;
+    public boolean isBar() {
+      return type == Type.Close || type == Type.Maximize || type == Type.Tab;
     }
 
     public static enum Type {
-      None, Separator, Button, Folder, Tab;
+      None, Separator, Close, Maximize, Folder, Tab;
     }
   }
 
