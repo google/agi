@@ -34,8 +34,9 @@ import java.util.List;
  * with movable dividers.
  */
 public class TabArea extends TabComposite {
-  public TabArea(Composite parent, Analytics analytics, Theme theme, Persistance persistance) {
-    super(parent, theme, false);
+  public TabArea(Composite parent, Analytics analytics, TabManager manager, Theme theme,
+      Persistance persistance) {
+    super(parent, manager, theme, false);
 
     restore(getRoot(), persistance.restore());
 

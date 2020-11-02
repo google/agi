@@ -52,6 +52,7 @@ import com.google.gapid.widgets.TabArea;
 import com.google.gapid.widgets.TabArea.FolderInfo;
 import com.google.gapid.widgets.TabArea.Persistance;
 import com.google.gapid.widgets.TabComposite.TabInfo;
+import com.google.gapid.widgets.TabComposite.TabManager;
 import com.google.gapid.widgets.Widgets;
 
 import org.eclipse.jface.action.Action;
@@ -75,7 +76,7 @@ import java.util.function.Function;
  * Main view shown when a graphics trace is loaded.
  */
 public class GraphicsTraceView extends Composite
-    implements MainWindow.MainView, Resources.Listener, Follower.Listener {
+    implements MainWindow.MainView, TabManager, Resources.Listener, Follower.Listener {
   private final Models models;
   private final Widgets widgets;
   private final Map<MainTab.Type, Action> typeActions;
@@ -94,7 +95,7 @@ public class GraphicsTraceView extends Composite
 
     setLayout(new GridLayout(1, false));
 
-    tabs = new TabArea(this, models.analytics, widgets.theme, new Persistance() {
+    tabs = new TabArea(this, models.analytics, this, widgets.theme, new Persistance() {
       @Override
       public void store(TabArea.FolderInfo[] folders) {
         MainTab.store(models, folders);
@@ -102,7 +103,7 @@ public class GraphicsTraceView extends Composite
 
       @Override
       public TabArea.FolderInfo[] restore() {
-        return MainTab.getFolders(models, widgets, id -> closeTab(id), hiddenTabs);
+        return MainTab.getFolders(models, widgets, hiddenTabs);
       }
     });
 
@@ -132,6 +133,17 @@ public class GraphicsTraceView extends Composite
   public void updateViewMenu(MenuManager manager) {
     manager.removeAll();
     manager.add(createViewTabsMenu());
+  }
+
+  @Override
+  public void closeTab(Object id) {
+    if (id instanceof MainTab.Type) {
+      Action action = typeActions.get(id);
+      if (action != null && action.isChecked()) {
+        action.setChecked(false);
+        action.run();
+      }
+    }
   }
 
   @Override
@@ -170,7 +182,7 @@ public class GraphicsTraceView extends Composite
             Tab tab = type.factory.create(parent, models, widgets);
             tab.reinitialize();
             return tab.getControl();
-          }, id -> closeTab(id));
+          });
           if (type.position == MainTab.DefaultPosition.Top) {
             tabs.addTabToFirstFolder(tabInfo);
           } else {
@@ -193,22 +205,12 @@ public class GraphicsTraceView extends Composite
     return manager;
   }
 
-  void closeTab(Object id) {
-    if (id instanceof MainTab.Type) {
-      Action action = typeActions.get(id);
-      if (action != null && action.isChecked()) {
-        action.setChecked(false);
-        action.run();
-      }
-    }
-  }
-
   /**
    * Information about the tabs to be shown in the main window.
    */
   private static class MainTab extends TabInfo {
-    public MainTab(Type type, Function<Composite, Control> contentFactory, Consumer<Object> dispose) {
-      super(type, type.view, type.label, contentFactory, dispose);
+    public MainTab(Type type, Function<Composite, Control> contentFactory) {
+      super(type, type.view, type.label, contentFactory);
     }
 
     /**
@@ -219,8 +221,7 @@ public class GraphicsTraceView extends Composite
      * 'f' for folder. The remainder of the string is an integer representing the number of
      * recursive children in case of groups, or the number of tabs in case of folders.
      */
-    public static FolderInfo[] getFolders(Models models, Widgets widgets, Consumer<Object> dispose,
-        Set<Type> hidden) {
+    public static FolderInfo[] getFolders(Models models, Widgets widgets, Set<Type> hidden) {
       SettingsProto.TabsOrBuilder sTabs = models.settings.tabs();
       Set<Type> allTabs = Sets.newLinkedHashSet(Arrays.asList(Type.values()));
       allTabs.removeAll(hidden);
@@ -235,20 +236,20 @@ public class GraphicsTraceView extends Composite
       Iterator<Integer> weights = sTabs.getWeightsList().iterator();
       Iterator<String> tabs = sTabs.getTabsList().iterator();
 
-      FolderInfo root = parse(models, widgets, dispose, structs, weights, tabs, allTabs);
+      FolderInfo root = parse(models, widgets, structs, weights, tabs, allTabs);
       if (structs.hasNext()) {
         root = null;
       }
       if (root == null || root.children == null) {
-        return getDefaultFolderInfo(models, widgets, dispose, hidden);
+        return getDefaultFolderInfo(models, widgets, hidden);
       }
 
       if (!allTabs.isEmpty()) {
         List<TabInfo> toAddToLargest = Lists.newArrayList();
         List<TabInfo> toAddToTop = Lists.newArrayList();
         for (Type tab : allTabs) {
-          (tab.position == DefaultPosition.Top ? toAddToTop : toAddToLargest).add(new MainTab(tab,
-              parent -> tab.factory.create(parent, models, widgets).getControl(), dispose));
+          (tab.position == DefaultPosition.Top ? toAddToTop : toAddToLargest).add(
+              new MainTab(tab, parent -> tab.factory.create(parent, models, widgets).getControl()));
         }
         if (!toAddToLargest.isEmpty()) {
           root = root.addToLargest(toAddToLargest.toArray(new TabInfo[toAddToLargest.size()]));
@@ -260,8 +261,8 @@ public class GraphicsTraceView extends Composite
       return root.children;
     }
 
-    private static FolderInfo parse(Models models, Widgets widgets, Consumer<Object> dispose,
-        Iterator<String> structs, Iterator<Integer> weights, Iterator<String> tabs, Set<Type> left) {
+    private static FolderInfo parse(Models models, Widgets widgets, Iterator<String> structs,
+        Iterator<Integer> weights, Iterator<String> tabs, Set<Type> left) {
       if (!structs.hasNext() || !weights.hasNext()) {
         return null;
       }
@@ -282,14 +283,14 @@ public class GraphicsTraceView extends Composite
         case 'g':
           FolderInfo[] folders = new FolderInfo[count];
           for (int i = 0; i < folders.length; i++) {
-            folders[i] = parse(models, widgets, dispose, structs, weights, tabs, left);
+            folders[i] = parse(models, widgets, structs, weights, tabs, left);
             if (folders[i] == null) {
               return null;
             }
           }
           return new FolderInfo(folders, weight);
         case 'f':
-          List<TabInfo> children = getTabs(tabs, count, left, models, widgets, dispose);
+          List<TabInfo> children = getTabs(tabs, count, left, models, widgets);
           return (children.isEmpty()) ? null :
               new FolderInfo(children.toArray(new TabInfo[children.size()]), weight);
         default:
@@ -298,13 +299,13 @@ public class GraphicsTraceView extends Composite
     }
 
     private static FolderInfo[] getDefaultFolderInfo(
-        Models models, Widgets widgets, Consumer<Object> dispose, Set<Type> hidden) {
+        Models models, Widgets widgets, Set<Type> hidden) {
       ListMultimap<DefaultPosition, TabInfo> toAdd =
           MultimapBuilder.enumKeys(DefaultPosition.class).arrayListValues().build();
       for (Type type : Type.values()) {
         if (!hidden.contains(type)) {
           toAdd.put(type.position, new MainTab(
-              type, parent -> type.factory.create(parent, models, widgets).getControl(), dispose));
+              type, parent -> type.factory.create(parent, models, widgets).getControl()));
         }
       }
 
@@ -365,8 +366,8 @@ public class GraphicsTraceView extends Composite
       }
     }
 
-    private static List<TabInfo> getTabs(Iterator<String> names, int count, Set<Type> left,
-        Models models, Widgets widgets, Consumer<Object> dispose) {
+    private static List<TabInfo> getTabs(
+        Iterator<String> names, int count, Set<Type> left, Models models, Widgets widgets) {
 
       List<TabInfo> result = Lists.newArrayList();
       for (int i = 0; i < count && names.hasNext(); i++) {
@@ -374,7 +375,7 @@ public class GraphicsTraceView extends Composite
           Type type = Type.valueOf(names.next());
           if (left.remove(type)) {
             result.add(new MainTab(type,
-                parent -> type.factory.create(parent, models, widgets).getControl(), dispose));
+                parent -> type.factory.create(parent, models, widgets).getControl()));
           }
         } catch (IllegalArgumentException e) {
           // Ignore incorrect names in the properties.

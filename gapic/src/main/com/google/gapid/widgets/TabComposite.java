@@ -40,7 +40,6 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -53,6 +52,7 @@ public class TabComposite extends Composite {
   private static final int MIN_WIDTH = 50;
   private static final int MIN_HEIGHT = 75;
 
+  protected final TabManager manager;
   protected final Theme theme;
   private final Group group;
   private final Events.ListenerCollection<Listener> listeners = Events.listeners(Listener.class);
@@ -61,8 +61,9 @@ public class TabComposite extends Composite {
   private Hover mouseDown = Hover.NONE;
   protected Dragger dragger = null;
 
-  public TabComposite(Composite parent, Theme theme, boolean horizontal) {
+  public TabComposite(Composite parent, TabManager manager, Theme theme, boolean horizontal) {
     super(parent, SWT.BORDER | SWT.DOUBLE_BUFFERED);
+    this.manager = manager;
     this.theme = theme;
     this.group = horizontal ? new HorizontalGroup(1) : new VerticalGroup(1);
 
@@ -92,7 +93,7 @@ public class TabComposite extends Composite {
         mouseDown = hovered;
         switch (mouseDown.type) {
           case Close:
-            mouseDown.tab.info.disposeTab();
+            manager.closeTab(mouseDown.tab.info.id);
             break;
           case Maximize:
             if (maximizedFolder == null) {
@@ -316,19 +317,13 @@ public class TabComposite extends Composite {
     public final Analytics.View view;
     public final String label;
     public final Function<Composite, Control> contentFactory;
-    private final Consumer<Object> dispose;
 
     public TabInfo(
-        Object id, View view, String label, Function<Composite, Control> contentFactory, Consumer<Object> dispose) {
+        Object id, View view, String label, Function<Composite, Control> contentFactory) {
       this.id = id;
       this.view = view;
       this.label = label;
       this.contentFactory = contentFactory;
-      this.dispose = dispose;
-    }
-
-    public void disposeTab() {
-      dispose.accept(id);
     }
   }
 
@@ -1314,5 +1309,9 @@ public class TabComposite extends Composite {
       overlay.close();
       shell.dispose();
     }
+  }
+
+  public interface TabManager {
+    public void closeTab(Object id);
   }
 }
