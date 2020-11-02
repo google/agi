@@ -202,8 +202,9 @@ func observationSlice(obs api.CmdObservation) memory.Slice {
 	return memory.NewSlice(obs.Range.Base, obs.Range.Base, obs.Range.Size, obs.Range.Size, obs.Pool, reflect.TypeOf(memory.Char(0)))
 }
 
-// applyMemWrite marks or creates the memoryWrites of wmap affected by (p, s)
-// as being writes of node n. It returns true if this is a new write by n.
+// applyMemWrite marks or creates the memoryWrites of wmap ("writeMap") affected
+// by (p, s) as being writes of node n. It returns true if this is a new write
+// by n.
 func applyMemWrite(wmap map[memory.PoolID]*memoryWriteList,
 	p memory.PoolID, n NodeID, s interval.U64Span) bool {
 	if writes, ok := wmap[p]; ok {
@@ -226,7 +227,7 @@ func applyMemWrite(wmap map[memory.PoolID]*memoryWriteList,
 }
 
 // applyMemRead returns the list of nodes for which there is a memoryWrite in
-// wmap that interesects with (p, s)
+// wmap ("writeMap") that interesects with (p, s)
 func applyMemRead(wmap map[memory.PoolID]*memoryWriteList,
 	p memory.PoolID, s interval.U64Span) []NodeID {
 	writeNodes := []NodeID{}
