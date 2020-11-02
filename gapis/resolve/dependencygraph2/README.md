@@ -9,16 +9,17 @@ The dependency graph tracks dependencies between the commands of a capture.
 In general, Command B depends on command A if command A has some side-effect to
 the API state or some resource (image, buffer...) memory that impacts command B.
 
-To take a simple GL example:
+To take a small Vulkan example:
 
 ```
-glClearColor(1, 0, 0, 1);     // Set clear color to red
-glClear(GL_COLOR_BUFFER_BIT); // Clear using the red clear color
+vkCmdSetScissor(...);  // Update the scissor value in Vulkan state
+vkCmdDraw(...);        // Draw is affected by the scissor value
 ```
 
-Here, `glClearColor()` updates "clear color" in the GL API state, then
-`glClear()` uses this part of the API state to know which color to use when
-clearing the color buffer. Hence, `glClear()` depends on `glClearColor()`.
+Here, `vkCmdSetScissor()` updates the scissor value of the associated graphics
+pipeline in the Vulkan API state, then `vkCmdDraw()` performs a draw that is
+impacted by this scissor value. Hence, `vkCmdDraw()` depends on
+`vkCmdSetScissor()`.
 
 The dependency graph establishes dependencies between the commands of a trace by
 tracking each command's accesses to memory and the API state. It was introduced
