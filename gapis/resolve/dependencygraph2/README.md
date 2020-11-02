@@ -83,11 +83,12 @@ monitoring their accesses to API state and memory.
 
 ### Approach overview
 
-Let's give a high-level illustration of this process: consider we have a memory
-made of two slots. In each slot, we remember the ID of the node that was the
-latest to write to this memory. Say during mutation we are at a point where the
-latest node to write to slot 1 was node 11, and the latest to write to slot 2
-was 22:
+Let's give a high-level, conceptual illustration of this process: consider we
+have a memory made of two slots, each slot being an addressable part of the
+memory. When building the dependency graph, for each slot we remember the ID of
+the node that was the latest to write to this memory. Say during mutation we are
+at a point where the latest node to write to slot 1 was node 11, and the latest
+to write to slot 2 was 22:
 
 ```
 slot1: 11
@@ -95,8 +96,8 @@ slot2: 22
 ```
 
 Now, we mutate the next command whose CmdNode ID is 33. This command reads
-from slot1, and read-writes to slot2. Since it reads from both slots, it will
-depend on both node 11 and 22. As it writes to slot2, at the end of the command
+from slot1, and read-writes to slot2. Since it reads from both slots, it depends
+on both node 11 and 22. As it writes to slot2, at the end of the command
 mutation, the memory accesses tracker is updated to:
 
 ```
@@ -132,7 +133,7 @@ dependencies are established when a top-level command ends: `OnEndCmd()` calls
 The tracking of API state fragment and memory accesses is done in an
 API-agnostic way, there is no direct correlation with e.g. Vulkan state or
 objects. This tracking is also more complex than the simplified memory slots
-used to illustrate the approach. basically, a memory access is defined by an
+used to illustrate the approach. Basically, a memory access is defined by an
 `interval.U64Span` within a given `memory.PoolID`, and an API state fragment
 access is defined by some `api.RefID` and `api.Fragment`. In both cases, the
 high-level approach presented above applies.
@@ -151,10 +152,10 @@ three callbacks: `OpenForwardDependency()`, `CloseForwardDependency()` and
 
 Most forward dependencies are only concerned with open and close operations. For
 instance, the mutation of `vkBeginCommandBuffer()` triggers
-`OpenForwardDependency()` which creates an open forward dependency, and
-`vkBeginCommandBuffer()` triggers `CloseForwardDependency()` which closes it,
+`OpenForwardDependency()` that creates an open forward dependency, and
+`vkEndCommandBuffer()` triggers `CloseForwardDependency()` that closes it,
 marking the dependency between these two commands. Open and close are matched on
-a `dependencyID` which is, as empty interface, could be anything. In the case of
+a `dependencyID` that, as empty interface, could be anything. In the case of
 `vkBegin/EndCommandBuffer`, the command buffer Vulkan handle is used as a
 `dependencyID`. Other kinds of command pairs are the `vkCreate*()` and
 `vkDestroy*()` ones.
