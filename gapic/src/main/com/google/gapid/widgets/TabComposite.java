@@ -51,6 +51,7 @@ public class TabComposite extends Composite {
   private static final int ICON_SIZE = 24;
   private static final int MIN_WIDTH = 50;
   private static final int MIN_HEIGHT = 75;
+  private static final int MIN_TAB_WIDTH = 50;
 
   protected final TabManager manager;
   protected final Theme theme;
@@ -92,9 +93,6 @@ public class TabComposite extends Composite {
       if (e.button == 1) {
         mouseDown = hovered;
         switch (mouseDown.type) {
-          case Close:
-            manager.closeTab(mouseDown.tab.info.id);
-            break;
           case Maximize:
             if (maximizedFolder == null) {
               mouseDown.folder.maximized = true;
@@ -105,11 +103,6 @@ public class TabComposite extends Composite {
             }
             requestLayout();
             break;
-          case Tab:
-            if (mouseDown.folder.updateCurrent(mouseDown.tab.control)) {
-              listeners.fire().onTabShown(mouseDown.tab.info);
-            }
-            break;
           default:
             // Do nothing.
         }
@@ -118,6 +111,9 @@ public class TabComposite extends Composite {
 
     addListener(SWT.MouseMove, e -> {
       switch (mouseDown.type) {
+        case Close:
+          mouseDown = Hover.tab(mouseDown.folder, mouseDown.tab);
+          //$FALL-THROUGH$
         case Tab:
           if (dragger == null) {
             dragger = new Dragger(theme, getShell(), getDisplay().map(this, null, getClientArea()),
@@ -160,6 +156,20 @@ public class TabComposite extends Composite {
     });
 
     addListener(SWT.MouseUp, e -> {
+      if (e.button == 1 && dragger == null) {
+        switch (mouseDown.type) {
+          case Close:
+            manager.closeTab(mouseDown.tab.info.id);
+            break;
+          case Tab:
+            if (mouseDown.folder.updateCurrent(mouseDown.tab.control)) {
+              listeners.fire().onTabShown(mouseDown.tab.info);
+            }
+            break;
+          default:
+            // Do nothing.
+        }
+      }
       mouseDown = Hover.NONE;
       if (dragger != null) {
         Hover src = dragger.tab;
@@ -884,72 +894,50 @@ public class TabComposite extends Composite {
         tab.control.setBounds(x, y + barH, w, h - barH);
         tab.control.setVisible(tab.control == current);
         controls.remove(tab.control);
-        tab.currentWidth = TAB_MARGIN + tab.titleSize.x + ICON_SIZE;
+        tab.currentWidth = Math.max(TAB_MARGIN + tab.titleSize.x + TAB_MARGIN, MIN_TAB_WIDTH);
         barW += tab.currentWidth;
       }
 
       int maxBarW = w - ICON_SIZE;
       if (barW > maxBarW) {
-        // the default tab width doesn't fit, shrink the tabs
-        if (barW - tabs.size() * (ICON_SIZE - TAB_MARGIN) <= maxBarW) {
-          // it is enough to reduce the right margin reserved for the close button
-          int rightMarginSpace = maxBarW - (barW - tabs.size() * ICON_SIZE);
-          int rightMargin = rightMarginSpace / tabs.size();
-          int extraMargin = rightMarginSpace % tabs.size();
-          for (Tab tab : tabs) {
-            tab.currentWidth -= ICON_SIZE - rightMargin;
-            if (extraMargin > 0) {
-              tab.currentWidth++;
-              extraMargin--;
-            }
+        // the default tab width doesn't fit, shrink the tabs with algorithm:
+        // 1. find the widest tab and all other tabs of the same width
+        // 2. reduce width until they fit or have the same size as the next widest tab
+        // 3. repeat from 1. until it fits or minimum width is reached
+        List<Tab> sortedTabs =
+            tabs.stream().sorted(Comparator.comparingInt(Tab::getCurrentWidth).reversed())
+            .collect(Collectors.toList());
+        int sameWidth = 1;
+        int widest = sortedTabs.get(0).currentWidth;
+        do {
+          while (sameWidth < sortedTabs.size() && sortedTabs.get(sameWidth).currentWidth == widest) {
+            ++sameWidth;
           }
-        } else {
-          // first reduce right margin spaces to the minimum
-          for (Tab tab : tabs) {
-            tab.currentWidth -= ICON_SIZE - TAB_MARGIN;
+          int minTabW = sameWidth < sortedTabs.size() ? sortedTabs.get(sameWidth).currentWidth
+              : MIN_TAB_WIDTH;
+          if (barW - sameWidth * (widest - minTabW) <= maxBarW) {
+            // tabs will fit after this reduction, fill up space
+            int space = maxBarW - (barW - sameWidth * (widest - minTabW));
+            int newWidth = minTabW + space / sameWidth;
+            int extraSpace = space % sameWidth;
+            for (int i = 0; i < sameWidth; i++) {
+              barW -= sortedTabs.get(i).currentWidth;
+              sortedTabs.get(i).currentWidth = newWidth;
+              if (extraSpace > 0) {
+                sortedTabs.get(i).currentWidth++;
+                extraSpace--;
+              }
+              barW += sortedTabs.get(i).currentWidth;
+            }
+          } else {
+            // tabs won't fit yet after this reduction, reduce to minimum
+            for (int i = 0; i < sameWidth; i++) {
+              sortedTabs.get(i).currentWidth = minTabW;
+            }
+            barW -= sameWidth * (widest - minTabW);
+            widest = minTabW;
           }
-          barW -= tabs.size() * (ICON_SIZE - TAB_MARGIN);
-
-          // now the tab titles have to be trimmed
-          // algorithm:
-          // 1. find the widest tab and all other tabs of the same width
-          // 2. reduce width until they fit or have the same size as the next widest tab
-          // 3. repeat from 1. until it fits or minimum width is reached
-          List<Tab> sortedTabs =
-              tabs.stream().sorted(Comparator.comparingInt(Tab::getCurrentWidth).reversed())
-                  .collect(Collectors.toList());
-          int sameWidth = 1;
-          int widest = sortedTabs.get(0).currentWidth;
-          do {
-            while (sameWidth < sortedTabs.size() && sortedTabs.get(sameWidth).currentWidth == widest) {
-              ++sameWidth;
-            }
-            int minTabW = sameWidth < sortedTabs.size() ? sortedTabs.get(sameWidth).currentWidth
-                : 2 * TAB_MARGIN + ICON_SIZE;
-            if (barW - sameWidth * (widest - minTabW) <= maxBarW) {
-              // tabs will fit after this reduction, fill up space
-              int space = maxBarW - (barW - sameWidth * (widest - minTabW));
-              int newWidth = minTabW + space / sameWidth;
-              int extraSpace = space % sameWidth;
-              for (int i = 0; i < sameWidth; i++) {
-                barW -= sortedTabs.get(i).currentWidth;
-                sortedTabs.get(i).currentWidth = newWidth;
-                if (extraSpace > 0) {
-                  sortedTabs.get(i).currentWidth++;
-                  extraSpace--;
-                }
-                barW += sortedTabs.get(i).currentWidth;
-              }
-            } else {
-              // tabs won't fit yet after this reduction, reduce to minimum
-              for (int i = 0; i < sameWidth; i++) {
-                sortedTabs.get(i).currentWidth = minTabW;
-              }
-              barW -= sameWidth * (widest - minTabW);
-              widest = minTabW;
-            }
-          } while (barW > maxBarW && sameWidth < sortedTabs.size());
-        }
+        } while (barW > maxBarW && sameWidth < sortedTabs.size());
       }
 
       redrawBar(); // redraw the new area
@@ -1051,9 +1039,11 @@ public class TabComposite extends Composite {
         if (hovered != null && tab == hovered.tab) {
           gc.setBackground(theme.tabFolderHovered());
           gc.fillRectangle(tabX, y, tabW, tabH + 1);
-          gc.drawImage(hovered.type == Hover.Type.Close ? theme.closeHovered() : theme.close(),
-              tabX + tabW - ICON_SIZE, y + (tabH - ICON_SIZE) / 2);
-          clipW = Math.min(tabW, maxX - tabX) - ICON_SIZE;
+          if (tab.control == current) {
+            gc.drawImage(hovered.type == Hover.Type.Close ? theme.closeHovered() : theme.close(),
+                tabX + tabW - ICON_SIZE, y + (tabH - ICON_SIZE) / 2);
+            clipW = Math.min(tabW, maxX - tabX) - ICON_SIZE;
+          }
         } else if (tab.control == current) {
           gc.setBackground(theme.tabFolderSelected());
           gc.fillRectangle(tabX, y, tabW, tabH + 1);
@@ -1118,7 +1108,7 @@ public class TabComposite extends Composite {
       int tabX = x;
       for (Tab tab : tabs) {
         if (mx >= tabX && mx < tabX + tab.getCurrentWidth()) {
-          if (mx >= tabX + tab.getCurrentWidth() - ICON_SIZE) {
+          if (tab.control == current && mx >= tabX + tab.getCurrentWidth() - ICON_SIZE) {
             return Hover.close(this, tab);
           } else {
             return Hover.tab(this, tab);
