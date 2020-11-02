@@ -69,7 +69,7 @@ import java.util.logging.Logger;
  * View that displays the API state as a tree.
  */
 public class StateView extends Composite
-    implements Tab, Capture.Listener, CommandStream.Listener, ApiState.Listener {
+    implements TabContent, Capture.Listener, CommandStream.Listener, ApiState.Listener {
   private static final Logger LOG = Logger.getLogger(StateView.class.getName());
 
   protected final Models models;

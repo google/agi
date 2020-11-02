@@ -105,7 +105,7 @@ import java.util.regex.Pattern;
  * View allowing the inspection and editing of the shader resources.
  */
 public class ShaderView extends Composite
-    implements Tab, Capture.Listener, CommandStream.Listener, Resources.Listener {
+    implements TabContent, Capture.Listener, CommandStream.Listener, Resources.Listener {
   protected static final Logger LOG = Logger.getLogger(ShaderView.class.getName());
 
   protected final Models models;

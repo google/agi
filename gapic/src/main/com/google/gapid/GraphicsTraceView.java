@@ -44,7 +44,7 @@ import com.google.gapid.views.ProfileView;
 import com.google.gapid.views.ReportView;
 import com.google.gapid.views.ShaderView;
 import com.google.gapid.views.StateView;
-import com.google.gapid.views.Tab;
+import com.google.gapid.views.TabContent;
 import com.google.gapid.views.TextureList;
 import com.google.gapid.views.TextureView;
 import com.google.gapid.widgets.TabArea;
@@ -61,7 +61,6 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Control;
 
 import java.util.Arrays;
 import java.util.Iterator;
@@ -122,6 +121,13 @@ public class GraphicsTraceView extends Composite
           syncTabMenuItem((MainTab.Type)tab.id, false);
         }
       }
+
+      @Override
+      public void onTabPinned(TabInfo tab) {
+        if (tab.id instanceof MainTab.Type) {
+          syncTabMenuItem((MainTab.Type)tab.id, false);
+        }
+      }
     };
     tabs.addListener(listener);
 
@@ -177,9 +183,9 @@ public class GraphicsTraceView extends Composite
   private void showTab(MainTab.Type type) {
     if (!tabs.showTab(type)) {
       TabInfo tabInfo = new MainTab(type, parent -> {
-        Tab tab = type.factory.create(parent, models, widgets);
-        tab.reinitialize();
-        return tab.getControl();
+        TabContent content = type.factory.create(parent, models, widgets);
+        content.reinitialize();
+        return content;
       });
       if (type.position == MainTab.DefaultPosition.Top) {
         tabs.addTabToFirstFolder(tabInfo);
@@ -229,7 +235,7 @@ public class GraphicsTraceView extends Composite
    * Information about the tabs to be shown in the main window.
    */
   private static class MainTab extends TabInfo {
-    public MainTab(Type type, Function<Composite, Control> contentFactory) {
+    public MainTab(Type type, Function<Composite, TabContent> contentFactory) {
       super(type, type.view, type.label, contentFactory);
     }
 
@@ -269,7 +275,7 @@ public class GraphicsTraceView extends Composite
         List<TabInfo> toAddToTop = Lists.newArrayList();
         for (Type tab : allTabs) {
           (tab.position == DefaultPosition.Top ? toAddToTop : toAddToLargest).add(
-              new MainTab(tab, parent -> tab.factory.create(parent, models, widgets).getControl()));
+              new MainTab(tab, parent -> tab.factory.create(parent, models, widgets)));
         }
         if (!toAddToLargest.isEmpty()) {
           root = root.addToLargest(toAddToLargest.toArray(new TabInfo[toAddToLargest.size()]));
@@ -325,7 +331,7 @@ public class GraphicsTraceView extends Composite
       for (Type type : Type.values()) {
         if (!hidden.contains(type)) {
           toAdd.put(type.position, new MainTab(
-              type, parent -> type.factory.create(parent, models, widgets).getControl()));
+              type, parent -> type.factory.create(parent, models, widgets)));
         }
       }
 
@@ -394,8 +400,7 @@ public class GraphicsTraceView extends Composite
         try {
           Type type = Type.valueOf(names.next());
           if (left.remove(type)) {
-            result.add(new MainTab(type,
-                parent -> type.factory.create(parent, models, widgets).getControl()));
+            result.add(new MainTab(type, parent -> type.factory.create(parent, models, widgets)));
           }
         } catch (IllegalArgumentException e) {
           // Ignore incorrect names in the properties.
@@ -458,7 +463,7 @@ public class GraphicsTraceView extends Composite
      * Factory to create the UI components of a tab.
      */
     public static interface TabFactory {
-      public Tab create(Composite parent, Models models, Widgets widgets);
+      public TabContent create(Composite parent, Models models, Widgets widgets);
     }
   }
 }

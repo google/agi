@@ -85,7 +85,7 @@ import java.util.logging.Logger;
  * Displays a list of texture resources of the current capture.
  */
 public class TextureList extends Composite
-    implements Tab, Capture.Listener, Resources.Listener, CommandStream.Listener {
+    implements TabContent, Capture.Listener, Resources.Listener, CommandStream.Listener {
   protected static final Logger LOG = Logger.getLogger(TextureList.class.getName());
 
   private final Models models;

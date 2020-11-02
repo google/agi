@@ -78,7 +78,7 @@ import java.util.logging.Logger;
  * View that displays the 3D geometry of the last draw call within the current selection.
  */
 public class GeometryView extends Composite
-    implements Tab, Capture.Listener, CommandStream.Listener, Geometries.Listener {
+    implements TabContent, Capture.Listener, CommandStream.Listener, Geometries.Listener {
   private static final Logger LOG = Logger.getLogger(GeometryView.class.getName());
 
   private final Models models;

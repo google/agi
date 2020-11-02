@@ -65,7 +65,7 @@ import java.util.concurrent.ExecutionException;
 /**
  * View that shows the capture report items in a tree.
  */
-public class ReportView extends Composite implements Tab, Capture.Listener, Reports.Listener {
+public class ReportView extends Composite implements TabContent, Capture.Listener, Reports.Listener {
   private final Models models;
   private final MessageProvider messages = new MessageProvider();
   private final LoadablePanel<SashForm> loading;

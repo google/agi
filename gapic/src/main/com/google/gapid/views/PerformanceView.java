@@ -44,7 +44,7 @@ import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Menu;
 
 public class PerformanceView extends Composite
-    implements Tab, Capture.Listener, CommandStream.Listener, Profile.Listener {
+    implements TabContent, Capture.Listener, CommandStream.Listener, Profile.Listener {
   protected static final Logger LOG = Logger.getLogger(PerformanceView.class.getName());
 
   private final Models models;

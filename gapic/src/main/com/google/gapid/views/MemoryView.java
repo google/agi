@@ -124,7 +124,7 @@ import java.util.logging.Logger;
  * View that has two tabs, displaying block-styled or struct-styled memory after loading.
  */
 public class MemoryView extends Composite
-    implements Tab, Capture.Listener, CommandStream.Listener, Follower.Listener, Memory.Listener {
+    implements TabContent, Capture.Listener, CommandStream.Listener, Follower.Listener, Memory.Listener {
   protected static final Logger LOG = Logger.getLogger(MemoryView.class.getName());
 
   protected final Models models;
