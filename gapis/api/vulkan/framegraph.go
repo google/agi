@@ -34,6 +34,54 @@ type renderpassInfo struct {
 	deps     map[uint64]struct{} // set of renderpasses this renderpass depends on
 }
 
+// framegraphInfoHelpers contains variables that stores information while
+// processing subCommands.
+type framegraphInfoHelpers struct {
+	rpInfos  []*renderpassInfo
+	rpInfo   *renderpassInfo
+	currRpId uint64
+}
+
+// processSubCommand records framegraph information upon each subcommand.
+func processSubCommand(ctx context.Context, helpers *framegraphInfoHelpers, dependencyGraph dependencygraph2.DependencyGraph, state *api.GlobalState, subCmdIdx api.SubCmdIdx, cmd api.Cmd, i interface{}) {
+	vkState := GetState(state)
+	cmdRef, ok := i.(CommandReferenceʳ)
+	if !ok {
+		panic("In Vulkan, MutateWithSubCommands' postSubCmdCb 'interface{}' is not a CommandReferenceʳ")
+	}
+	cmdArgs := GetCommandArgs(ctx, cmdRef, vkState)
+
+	// Beginning of renderpass
+	if _, ok := cmdArgs.(VkCmdBeginRenderPassArgsʳ); ok {
+		if helpers.rpInfo != nil {
+			panic("Renderpass starts without having ended")
+		}
+		helpers.rpInfo = &renderpassInfo{
+			id:       helpers.currRpId,
+			beginIdx: subCmdIdx,
+			nodes:    []dependencygraph2.NodeID{},
+			deps:     make(map[uint64]struct{}),
+		}
+		helpers.currRpId++
+	}
+
+	// Process commands that are inside a renderpass
+	if helpers.rpInfo != nil {
+		nodeID := dependencyGraph.GetCmdNodeID(api.CmdID(subCmdIdx[0]), subCmdIdx[1:])
+		helpers.rpInfo.nodes = append(helpers.rpInfo.nodes, nodeID)
+	}
+
+	// Ending of renderpass
+	if _, ok := cmdArgs.(VkCmdEndRenderPassArgsʳ); ok {
+		if helpers.rpInfo == nil {
+			panic("Renderpass ends without having started")
+		}
+		helpers.rpInfo.endIdx = subCmdIdx
+		helpers.rpInfos = append(helpers.rpInfos, helpers.rpInfo)
+		helpers.rpInfo = nil
+	}
+}
+
 // GetFramegraph creates the framegraph of the given capture.
 func (API) GetFramegraph(ctx context.Context, p *path.Capture) (*api.Framegraph, error) {
 	config := dependencygraph2.DependencyGraphConfig{
@@ -45,48 +93,18 @@ func (API) GetFramegraph(ctx context.Context, p *path.Capture) (*api.Framegraph,
 		return nil, err
 	}
 
-	rpInfos := []*renderpassInfo{}
-	var rpInfo *renderpassInfo
-	currRpId := uint64(0)
-
-	// postSubCmdCb effectively processes each subcommand to extract renderpass info.
+	// postSubCmdCb effectively processes each subcommand to extract renderpass
+	// info, while recording information into the helpers.
+	helpers := &framegraphInfoHelpers{
+		rpInfos:  []*renderpassInfo{},
+		rpInfo:   nil,
+		currRpId: uint64(0),
+	}
 	postSubCmdCb := func(state *api.GlobalState, subCmdIdx api.SubCmdIdx, cmd api.Cmd, i interface{}) {
-		vkState := GetState(state)
-		cmdRef := i.(CommandReferenceʳ)
-		cmdArgs := GetCommandArgs(ctx, cmdRef, vkState)
-
-		// Beginning of renderpass
-		if _, ok := cmdArgs.(VkCmdBeginRenderPassArgsʳ); ok {
-			if rpInfo != nil {
-				panic("Renderpass starts without having ended")
-			}
-			rpInfo = &renderpassInfo{
-				id:       currRpId,
-				beginIdx: subCmdIdx,
-				nodes:    []dependencygraph2.NodeID{},
-				deps:     make(map[uint64]struct{}),
-			}
-			currRpId++
-		}
-
-		// Process commands that are inside a renderpass
-		if rpInfo != nil {
-			nodeID := dependencyGraph.GetCmdNodeID(api.CmdID(subCmdIdx[0]), subCmdIdx[1:])
-			rpInfo.nodes = append(rpInfo.nodes, nodeID)
-		}
-
-		// Ending of renderpass
-		if _, ok := cmdArgs.(VkCmdEndRenderPassArgsʳ); ok {
-			if rpInfo == nil {
-				panic("Renderpass ends without having started")
-			}
-			rpInfo.endIdx = subCmdIdx
-			rpInfos = append(rpInfos, rpInfo)
-			rpInfo = nil
-		}
+		processSubCommand(ctx, helpers, dependencyGraph, state, subCmdIdx, cmd, i)
 	}
 
-	// Iterate on the capture commands to gather information
+	// Iterate on the capture commands to collect information
 	c, err := capture.ResolveGraphicsFromPath(ctx, p)
 	if err != nil {
 		return nil, err
@@ -95,11 +113,11 @@ func (API) GetFramegraph(ctx context.Context, p *path.Capture) (*api.Framegraph,
 		return nil, err
 	}
 
-	updateDependencies(rpInfos, dependencyGraph)
+	updateDependencies(helpers.rpInfos, dependencyGraph)
 
 	// Build the framegraph nodes and edges from collected data.
-	nodes := make([]*api.FramegraphNode, len(rpInfos))
-	for i, rpInfo := range rpInfos {
+	nodes := make([]*api.FramegraphNode, len(helpers.rpInfos))
+	for i, rpInfo := range helpers.rpInfos {
 		// Graphviz DOT: use "\l" as a newline to obtain left-aligned text.
 		text := fmt.Sprintf("Renderpass %v\\lbegin:%v\\lend:%v\\l", rpInfo.id, rpInfo.beginIdx, rpInfo.endIdx)
 		nodes[i] = &api.FramegraphNode{
@@ -109,7 +127,7 @@ func (API) GetFramegraph(ctx context.Context, p *path.Capture) (*api.Framegraph,
 	}
 
 	edges := []*api.FramegraphEdge{}
-	for _, rpInfo = range rpInfos {
+	for _, rpInfo := range helpers.rpInfos {
 		for deps := range rpInfo.deps {
 			edges = append(edges, &api.FramegraphEdge{
 				// We want the graph to show the flow of how the frame is
