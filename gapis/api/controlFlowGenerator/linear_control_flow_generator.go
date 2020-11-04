@@ -26,6 +26,7 @@ import (
 
 type linearControlFlowGenerator struct {
 	chain *transform.TransformChain
+	out transform.Writer
 }
 
 // NewLinearControlFlowGenerator generates a simple control flow
@@ -33,6 +34,15 @@ type linearControlFlowGenerator struct {
 func NewLinearControlFlowGenerator(chain *transform.TransformChain) ControlFlowGenerator {
 	return &linearControlFlowGenerator{
 		chain: chain,
+		out: nil,
+	}
+}
+
+
+func NewLinearControlFlowGenerator2(chain *transform.TransformChain, out transform.Writer) ControlFlowGenerator {
+	return &linearControlFlowGenerator{
+		chain: chain,
+		out: out,
 	}
 }
 
@@ -54,8 +64,16 @@ func (cf *linearControlFlowGenerator) TransformAll(ctx context.Context) error {
 			}
 		}
 
-		if err := cf.chain.GetNextTransformedCommands(subctx); err != nil {
+		cmds, err := cf.chain.ProcessNextTransformedCommands(subctx);
+
+		if err != nil {
 			return err
+		}
+
+		if cf.out != nil {
+			for _, cmd := range cmds {
+				cf.out.MutateAndWrite(ctx, id.GetID(), cmd)
+			}
 		}
 
 		if err := task.StopReason(ctx); err != nil {

@@ -143,8 +143,9 @@ func (a API) Replay(
 	transforms = appendLogTransforms(ctx, replayType, c, transforms)
 
 	cmdGenerator := commandGenerator.NewLinearCommandGenerator(initialCmds, c.Commands)
-	chain := transform.CreateTransformChain(ctx, cmdGenerator, transforms, out)
-	controlFlow := controlFlowGenerator.NewLinearControlFlowGenerator(chain)
+	nullWriterObj := nullWriter{state: cloneState(ctx, c, out.State())}
+	chain := transform.CreateTransformChain(ctx, cmdGenerator, transforms, nullWriterObj)
+	controlFlow := controlFlowGenerator.NewLinearControlFlowGenerator2(chain, out)
 	if err := controlFlow.TransformAll(ctx); err != nil {
 		log.E(ctx, "%v Error: %v", replayType, err)
 		return err
@@ -428,4 +429,54 @@ func (a API) GetReplayPriority(ctx context.Context, i *device.Instance, h *captu
 		reason = messages.ReplayCompatibilityIncompatibleArchitecture(h.GetABI().GetArchitecture().String())
 	}
 	return 0, reason
+}
+
+
+func cloneState2(ctx context.Context, capture *capture.GraphicsCapture, startState *api.GlobalState) *api.GlobalState {
+
+	clone := capture.NewUninitializedState(ctx)
+	clone.Memory = startState.Memory.Clone()
+
+	for apiState, graphicsApi := range startState.APIs {
+
+		clonedState := graphicsApi.Clone(clone.Arena)
+		clonedState.SetupInitialState(ctx, clone)
+
+		clone.APIs[apiState] = clonedState
+	}
+
+	return clone
+}
+
+// nullWriter conforms to the the transformer.Writer interface, it just updates a state object
+type nullWriter struct {
+	state   *api.GlobalState
+}
+
+func (w nullWriter) State() *api.GlobalState {
+	return w.state
+}
+
+func (w nullWriter) MutateAndWrite(ctx context.Context, id api.CmdID, cmd api.Cmd) error {
+	//log.W(ctx, "nullWriter:MutateAndWrite: %v, %v", id, cmd)
+	err := cmd.Mutate(ctx, id, w.state, nil, nil)
+	//panic("aaaaaa") // We don't get here because the above function never returns. I have no idea why.
+	//log.W(ctx, "nullWriter:MutateAndWrite: return error: %v", err)
+	return err
+}
+
+func cloneState(ctx context.Context, capture *capture.GraphicsCapture, state *api.GlobalState) *api.GlobalState {
+
+	clone := capture.NewUninitializedState(ctx)
+	clone.Memory = state.Memory.Clone()
+
+	for apiState, graphicsApi := range state.APIs {
+
+		clonedState := graphicsApi.Clone(clone.Arena)
+		clonedState.SetupInitialState(ctx, clone)
+
+		clone.APIs[apiState] = clonedState
+	}
+
+	return clone
 }
