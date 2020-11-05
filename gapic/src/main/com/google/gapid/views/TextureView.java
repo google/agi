@@ -25,8 +25,8 @@ import com.google.gapid.image.FetchedImage;
 import com.google.gapid.models.Analytics.View;
 import com.google.gapid.models.Capture;
 import com.google.gapid.models.CommandStream.CommandIndex;
-import com.google.gapid.models.Follower;
 import com.google.gapid.models.Models;
+import com.google.gapid.models.Resources;
 import com.google.gapid.proto.service.Service;
 import com.google.gapid.proto.service.Service.ClientAction;
 import com.google.gapid.proto.service.api.API;
@@ -65,7 +65,7 @@ import java.util.logging.Logger;
  * View that displays a selected texture resource of the current capture.
  */
 public class TextureView extends Composite
-    implements Tab, Capture.Listener, Follower.Listener {
+    implements Tab, Capture.Listener, Resources.Listener {
   protected static final Logger LOG = Logger.getLogger(TextureView.class.getName());
 
   private final Models models;
@@ -91,13 +91,12 @@ public class TextureView extends Composite
     gotoAction.createToolItem(toolBar);
 
     models.capture.addListener(this);
-    models.follower.addListener(this);
+    models.resources.addListener(this);
     addListener(SWT.Dispose, e -> {
       models.capture.removeListener(this);
-      models.follower.removeListener(this);
+      models.resources.removeListener(this);
       gotoAction.dispose();
     });
-    reinitialize();
   }
 
   protected void setImage(FetchedImage result) {
@@ -114,7 +113,7 @@ public class TextureView extends Composite
     if (!models.capture.isLoaded()) {
       onCaptureLoadingStart(false);
     } else {
-      onCaptureLoaded(null);
+      loadTexture(models.resources.getSelectedTexture());
     }
   }
 
@@ -126,26 +125,36 @@ public class TextureView extends Composite
 
   @Override
   public void onCaptureLoaded(Loadable.Message error) {
-    if (error == null) {
-      imagePanel.showMessage(Info, Messages.SELECT_TEXTURE);
-    } else {
+    if (error != null) {
       imagePanel.showMessage(Error, Messages.CAPTURE_LOAD_FAILURE);
     }
     clear();
   }
 
   @Override
-  public void onTextureFollowed(Service.Resource resource) {
-    loadTexture(resource);
+  public void onResourcesLoaded() {
+    imagePanel.showMessage(Info, Messages.SELECT_TEXTURE);
+    clear();
+  }
+
+  @Override
+  public void onTextureSelected(Service.Resource texture) {
+    loadTexture(texture);
   }
 
   private void clear() {
     gotoAction.clear();
   }
 
-  private void loadTexture(Service.Resource resource) {
+  private void loadTexture(Service.Resource texture) {
+    if (texture == null) {
+      imagePanel.showMessage(Info, Messages.SELECT_TEXTURE);
+      clear();
+      return;
+    }
+
     imagePanel.startLoading();
-    Path.ResourceData path = models.resources.getResourcePath(resource);
+    Path.ResourceData path = models.resources.getResourcePath(texture);
     rpcController.start().listen(models.images.getResource(path),
         new UiErrorCallback<FetchedImage, FetchedImage, String>(this, LOG) {
       @Override
@@ -169,7 +178,7 @@ public class TextureView extends Composite
         imagePanel.showMessage(Info, error);
       }
     });
-    gotoAction.setCommandIds(resource.getAccessesList(), path.getAfter());
+    gotoAction.setCommandIds(texture.getAccessesList(), path.getAfter());
   }
 
 

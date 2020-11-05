@@ -37,13 +37,11 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gapid.models.Capture;
 import com.google.gapid.models.CommandStream;
 import com.google.gapid.models.CommandStream.CommandIndex;
-import com.google.gapid.models.Follower;
 import com.google.gapid.models.Models;
 import com.google.gapid.models.Resources;
 import com.google.gapid.proto.image.Image;
 import com.google.gapid.proto.service.Service;
 import com.google.gapid.proto.service.api.API;
-import com.google.gapid.proto.service.path.Path;
 import com.google.gapid.rpc.Rpc;
 import com.google.gapid.rpc.RpcException;
 import com.google.gapid.rpc.UiCallback;
@@ -58,6 +56,7 @@ import com.google.gapid.widgets.Widgets;
 
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.LabelProvider;
+import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerComparator;
@@ -65,13 +64,13 @@ import org.eclipse.jface.viewers.ViewerFilter;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.internal.DPIUtil;
+import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
-import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Widget;
 
@@ -86,38 +85,38 @@ import java.util.logging.Logger;
  * Displays a list of texture resources of the current capture.
  */
 public class TextureList extends Composite
-    implements Tab, Capture.Listener, Resources.Listener, CommandStream.Listener, Follower.Listener {
+    implements Tab, Capture.Listener, Resources.Listener, CommandStream.Listener {
   protected static final Logger LOG = Logger.getLogger(TextureList.class.getName());
 
   private final Models models;
-  private final LoadablePanel<Table> loading;
-  private TableViewer textureTable;
+  private final LoadablePanel<Composite> loading;
+  private final TableViewer textureTable;
   private final ImageProvider imageProvider;
 
   public TextureList(Composite parent, Models models, Widgets widgets) {
     super(parent, SWT.NONE);
     this.models = models;
 
-    setLayout(new GridLayout(1, false));
-    loading = LoadablePanel.create(this, widgets, panel -> {
-      textureTable = createTableViewer(panel, SWT.BORDER | SWT.SINGLE | SWT.FULL_SELECTION);
-      return textureTable.getTable();
-    });
+    setLayout(new FillLayout(SWT.VERTICAL));
+
+    loading = LoadablePanel.create(this, widgets,
+        panel -> createComposite(panel, new GridLayout(1, false), SWT.BORDER));
+    Composite tableAndOption = loading.getContents();
+    textureTable = createTableViewer(tableAndOption, SWT.BORDER | SWT.SINGLE | SWT.FULL_SELECTION);
     textureTable.getTable().setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
     imageProvider = new ImageProvider(models, textureTable, widgets.loading);
     initTextureSelector(textureTable, imageProvider);
-    Composite options = createComposite(this, filling(new RowLayout(SWT.HORIZONTAL), true, false));
+    Composite options =
+        createComposite(tableAndOption, filling(new RowLayout(SWT.HORIZONTAL), true, false));
     Button showDeleted = createCheckbox(options, "Show deleted textures", true);
 
     models.capture.addListener(this);
     models.commands.addListener(this);
     models.resources.addListener(this);
-    models.follower.addListener(this);
     addListener(SWT.Dispose, e -> {
       models.capture.removeListener(this);
       models.commands.removeListener(this);
       models.resources.removeListener(this);
-      models.follower.removeListener(this);
       imageProvider.reset();
     });
 
@@ -170,7 +169,7 @@ public class TextureList extends Composite
 
   @Override
   public void reinitialize() {
-    updateTextures(true);
+    updateTextures();
   }
 
   @Override
@@ -189,39 +188,54 @@ public class TextureList extends Composite
 
   @Override
   public void onResourcesLoaded() {
-    updateTextures(true);
+    updateTextures();
+  }
+
+  @Override
+  public void onTextureSelected(Service.Resource texture) {
+    TableItem[] items = textureTable.getTable().getItems();
+
+    // Do nothing if texture is already selected.
+    int selection = textureTable.getTable().getSelectionIndex();
+    if (texture != null && selection >= 0) {
+      Data data = (Data)items[selection].getData();
+      if (data.info.getID().equals(texture.getID())) {
+        return;
+      }
+    } else if (texture == null && selection < 0) {
+      return;
+    }
+
+    if (texture != null) {
+      // Find texture in table and select it.
+      for (int i = 0; i < items.length; i++) {
+        Data data = (Data)(items[i].getData());
+        if (data.info.getID().equals(texture.getID())) {
+          textureTable.getTable().setSelection(items[i]);
+          break;
+        }
+      }
+    } else {
+      textureTable.setSelection(StructuredSelection.EMPTY);
+    }
   }
 
   @Override
   public void onCommandsSelected(CommandIndex path) {
-    updateTextures(false);
+    updateTextures();
   }
 
-  @Override
-  public void onTextureFollowed(Service.Resource resource) {
-    TableItem[] items = textureTable.getTable().getItems();
-    for (int i = 0; i < items.length; i++) {
-      Data d = (Data)(items[i].getData());
-      if (d.info.getID().equals(resource.getID())) {
-        textureTable.getTable().setSelection(items[i]);
-        break;
-      }
-    }
-  }
-
-  private void updateTextures(boolean resourcesChanged) {
+  private void updateTextures() {
     if (!models.resources.isLoaded()) {
-      loading.showMessage(Info, Messages.LOADING_CAPTURE);
+      loading.startLoading();
       clear();
     } else if (models.commands.getSelectedCommands() == null) {
       loading.showMessage(Info, Messages.SELECT_COMMAND);
       clear();
     } else {
-      // Memorize selection index before disposing image resource.
       // When comparator is reset, the table is refreshed, and early image disposal will introduce null error.
       ViewerComparator comparator = textureTable.getComparator();
       textureTable.setComparator(null);
-      int selection = textureTable.getTable().getSelectionIndex();
 
       imageProvider.reset();
 
@@ -236,16 +250,14 @@ public class TextureList extends Composite
 
       textureTable.setInput(textures);
       packColumns(textureTable.getTable());
-
-      if (!resourcesChanged && selection >= 0 && selection < textures.size()) {
-        textureTable.getTable().select(selection);
-      }
       textureTable.setComparator(comparator);
 
       if (textures.isEmpty()) {
         loading.showMessage(Info, Messages.NO_TEXTURES);
+      } else {
+        loading.stopLoading();
+        onTextureSelected(models.resources.getSelectedTexture());
       }
-      updateSelection();
     }
   }
 
@@ -256,12 +268,12 @@ public class TextureList extends Composite
   }
 
   private void updateSelection() {
+    Service.Resource selectedTexture = null;
     int selection = textureTable.getTable().getSelectionIndex();
     if (selection >= 0) {
-      Data data = (Data)textureTable.getElementAt(selection);
-      Path.ResourceData path = models.resources.getResourcePath(data.info);
-      models.follower.onFollow(Path.Any.newBuilder().setResourceData(path).build());
+      selectedTexture = ((Data)textureTable.getElementAt(selection)).info;
     }
+    models.resources.selectTexture(selectedTexture);
   }
 
 

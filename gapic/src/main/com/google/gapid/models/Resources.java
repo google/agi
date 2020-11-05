@@ -16,10 +16,10 @@
 package com.google.gapid.models;
 
 import static com.google.gapid.util.Paths.compare;
+import static com.google.gapid.util.Paths.framebufferAttachmentsAfter;
 import static com.google.gapid.util.Paths.isNull;
 import static com.google.gapid.util.Paths.pipelinesAfter;
 import static com.google.gapid.util.Paths.resourceAfter;
-import static com.google.gapid.util.Paths.framebufferAttachmentsAfter;
 import static java.util.Collections.emptyList;
 
 import com.google.common.collect.Lists;
@@ -47,11 +47,14 @@ import java.util.stream.Stream;
 /**
  * Model containing the capture resources (textures, shaders, etc.) metadata.
  */
-public class Resources extends CaptureDependentModel.ForValue<Resources.Data, Resources.Listener> {
+public class Resources extends CaptureDependentModel.ForValue<Resources.Data, Resources.Listener>
+    implements Follower.Listener {
   private static final Logger LOG = Logger.getLogger(Resources.class.getName());
 
   protected final Capture capture;
   private final CommandStream commands;
+
+  protected Service.Resource selectedTexture = null;
 
   public Resources(Shell shell, Analytics analytics, Client client, Capture capture,
       Devices devices, CommandStream commands) {
@@ -80,12 +83,17 @@ public class Resources extends CaptureDependentModel.ForValue<Resources.Data, Re
 
   @Override
   protected void fireLoadStartEvent() {
-    // Do nothing.
+    selectTexture(null);
   }
 
   @Override
   protected void fireLoadedEvent() {
     listeners.fire().onResourcesLoaded();
+  }
+
+  @Override
+  public void onTextureFollowed(Service.Resource resource) {
+    selectTexture(resource);
   }
 
   public List<Service.ResourcesByType> getResources() {
@@ -177,6 +185,17 @@ public class Resources extends CaptureDependentModel.ForValue<Resources.Data, Re
     });
   }
 
+  public Service.Resource getSelectedTexture() {
+    return selectedTexture;
+  }
+
+  public void selectTexture(Service.Resource texture) {
+    if (selectedTexture != texture) {
+      selectedTexture = texture;
+      listeners.fire().onTextureSelected(selectedTexture);
+    }
+  }
+
   public static class Data extends DeviceDependentModel.Data {
     public final Service.Resources resources;
 
@@ -253,10 +272,16 @@ public class Resources extends CaptureDependentModel.ForValue<Resources.Data, Re
     }
   }
 
+  @SuppressWarnings("unused")
   public static interface Listener extends Events.Listener {
     /**
      * Event indicating that the resources metadata has been loaded.
      */
     public default void onResourcesLoaded() { /* empty */ }
+
+    /**
+     * Event indicating that a texture resource has been selected.
+     */
+    public default void onTextureSelected(Service.Resource texture) { /* empty */ }
   }
 }
