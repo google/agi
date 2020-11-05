@@ -98,16 +98,20 @@ func GpuProfile(ctx context.Context, capturePath *path.Capture, device *path.Dev
 		}
 
 		var disabledCmdsIndices [][]uint64
-		if experiments.DisabledCommands != nil {
+		if experiments != nil && experiments.DisabledCommands != nil {
 			disabledCmdsIndices = make([][]uint64, 0, len(experiments.DisabledCommands))
 			for _, cmd := range experiments.DisabledCommands {
 				disabledCmdsIndices = append(disabledCmdsIndices, cmd.Indices)
 			}
 		}
+		var disableAnisotropicFiltering bool
+		if experiments != nil {
+			disableAnisotropicFiltering = experiments.DisableAnisotropicFiltering
+		}
 
 		profilingExperiments := ProfileExperiments{
 			DisabledCmds:                disabledCmdsIndices,
-			DisableAnisotropicFiltering: experiments.DisableAnisotropicFiltering,
+			DisableAnisotropicFiltering: disableAnisotropicFiltering,
 		}
 
 		mgr := GetManager(ctx)
