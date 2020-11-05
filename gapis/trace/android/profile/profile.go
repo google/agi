@@ -208,7 +208,11 @@ func mapCounterSamples(slices []*service.ProfilingData_GpuSlices_Slice, counter 
 				break
 			} else if cStart > sStart && cEnd < sEnd { // Sample is contained inside GPU slice's span.
 				estimateSet[i] = 1 * concurrencyWeight
-				minSet[i] = 1 * concurrencyWeight
+				// Only add to minSet when there's no concurrent slices, because of the
+				// possibility that the sample belongs entirely to one of the slices.
+				if concurrencyWeight == 1.0 {
+					minSet[i] = 1
+				}
 				maxSet[i] = 1
 			} else { // Sample contains, or partially overlap with GPU slice's span.
 				percent := float64(0)
