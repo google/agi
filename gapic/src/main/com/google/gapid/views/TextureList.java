@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Google Inc.
+ * Copyright (C) 2020 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@ package com.google.gapid.views;
 
 import static com.google.gapid.image.Images.noAlpha;
 import static com.google.gapid.proto.service.api.API.ResourceType.TextureResource;
+import static com.google.gapid.util.Loadable.MessageType.Error;
+import static com.google.gapid.util.Loadable.MessageType.Info;
 import static com.google.gapid.widgets.Widgets.createCheckbox;
 import static com.google.gapid.widgets.Widgets.createComposite;
 import static com.google.gapid.widgets.Widgets.createTableColumn;
@@ -47,7 +49,9 @@ import com.google.gapid.rpc.RpcException;
 import com.google.gapid.rpc.UiCallback;
 import com.google.gapid.server.Client.DataUnavailableException;
 import com.google.gapid.util.Loadable;
+import com.google.gapid.util.Messages;
 import com.google.gapid.widgets.LoadableImage;
+import com.google.gapid.widgets.LoadablePanel;
 import com.google.gapid.widgets.LoadingIndicator;
 import com.google.gapid.widgets.VisibilityTrackingTableViewer;
 import com.google.gapid.widgets.Widgets;
@@ -61,13 +65,13 @@ import org.eclipse.jface.viewers.ViewerFilter;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.internal.DPIUtil;
-import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Widget;
 
@@ -86,21 +90,23 @@ public class TextureList extends Composite
   protected static final Logger LOG = Logger.getLogger(TextureList.class.getName());
 
   private final Models models;
-  private final TableViewer textureTable;
+  private final LoadablePanel<Table> loading;
+  private TableViewer textureTable;
   private final ImageProvider imageProvider;
 
   public TextureList(Composite parent, Models models, Widgets widgets) {
     super(parent, SWT.NONE);
     this.models = models;
 
-    setLayout(new FillLayout(SWT.VERTICAL));
-    Composite tableAndOption = createComposite(this, new GridLayout(1, false), SWT.BORDER);
-    textureTable = createTableViewer(tableAndOption, SWT.BORDER | SWT.SINGLE | SWT.FULL_SELECTION);
+    setLayout(new GridLayout(1, false));
+    loading = LoadablePanel.create(this, widgets, panel -> {
+      textureTable = createTableViewer(panel, SWT.BORDER | SWT.SINGLE | SWT.FULL_SELECTION);
+      return textureTable.getTable();
+    });
     textureTable.getTable().setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
     imageProvider = new ImageProvider(models, textureTable, widgets.loading);
     initTextureSelector(textureTable, imageProvider);
-    Composite options =
-        createComposite(tableAndOption, filling(new RowLayout(SWT.HORIZONTAL), true, false));
+    Composite options = createComposite(this, filling(new RowLayout(SWT.HORIZONTAL), true, false));
     Button showDeleted = createCheckbox(options, "Show deleted textures", true);
 
     models.capture.addListener(this);
@@ -164,20 +170,21 @@ public class TextureList extends Composite
 
   @Override
   public void reinitialize() {
-    onCaptureLoadingStart(false);
     updateTextures(true);
   }
 
   @Override
   public void onCaptureLoadingStart(boolean maintainState) {
+    loading.showMessage(Info, Messages.LOADING_CAPTURE);
     clear();
   }
 
   @Override
   public void onCaptureLoaded(Loadable.Message error) {
     if (error != null) {
-      clear();
+      loading.showMessage(Error, Messages.CAPTURE_LOAD_FAILURE);
     }
+    clear();
   }
 
   @Override
@@ -204,9 +211,10 @@ public class TextureList extends Composite
 
   private void updateTextures(boolean resourcesChanged) {
     if (!models.resources.isLoaded()) {
-      // TODO: show capture loading message
+      loading.showMessage(Info, Messages.LOADING_CAPTURE);
+      clear();
     } else if (models.commands.getSelectedCommands() == null) {
-      // TODO: show Messages.SELECT_COMMAND
+      loading.showMessage(Info, Messages.SELECT_COMMAND);
       clear();
     } else {
       // Memorize selection index before disposing image resource.
@@ -233,6 +241,10 @@ public class TextureList extends Composite
         textureTable.getTable().select(selection);
       }
       textureTable.setComparator(comparator);
+
+      if (textures.isEmpty()) {
+        loading.showMessage(Info, Messages.NO_TEXTURES);
+      }
       updateSelection();
     }
   }
