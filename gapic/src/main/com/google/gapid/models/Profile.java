@@ -205,7 +205,7 @@ public class Profile
     public Service.ProfilingData.GpuCounters.Perf getGpuPerformance(List<Long> commandIndex, int metricId) {
       CommandIndex indexStr = new CommandIndex(commandIndex);
       Map<Integer, Service.ProfilingData.GpuCounters.Perf> perfs = perfLookup.get(indexStr);
-      return (perfs == null) ? null : perfs.getOrDefault(metricId, null);
+      return (perfs == null) ? null : perfs.get(metricId);
     }
 
     public Duration getDuration(Path.Commands range) {
