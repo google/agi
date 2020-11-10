@@ -533,7 +533,7 @@ enum StoreOpType {
 message FramegraphAttachment {
   LoadOpType loadOp = 1;
   StoreOpType storeOp = 2;
-  uint64      imageViewHandle = 3;
+  uint64 imageViewHandle = 3;
   FramegraphImage image = 4;
 }
 
