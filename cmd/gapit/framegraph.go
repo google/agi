@@ -123,17 +123,13 @@ func exportDot(ctx context.Context, framegraph *api.Framegraph, captureFilename 
 }
 
 func image2dot(img *api.FramegraphImage) string {
-	swapchain := ""
-	if img.IsSwapchain {
-		swapchain = " swapchain"
-	}
-	transient := ""
-	if img.IsTransient {
-		transient = " transient"
+	nature := ""
+	if img.Nature != api.FramegraphImageNature_NONE {
+		nature = fmt.Sprintf(" %v", img.Nature)
 	}
 	imgType := strings.TrimPrefix(fmt.Sprintf("%v", img.ImageType), "VK_IMAGE_TYPE_")
 	imgFormat := strings.TrimPrefix(fmt.Sprintf("%v", img.Info.Format.Name), "VK_FORMAT_")
-	return fmt.Sprintf("[Img %v%s%s %s %s %vx%vx%v]", img.Handle, swapchain, transient, imgType, imgFormat, img.Info.Width, img.Info.Height, img.Info.Depth)
+	return fmt.Sprintf("[Img %v%s %s %s %vx%vx%v]", img.Handle, nature, imgType, imgFormat, img.Info.Width, img.Info.Height, img.Info.Depth)
 }
 
 func attachment2dot(att *api.FramegraphAttachment) string {

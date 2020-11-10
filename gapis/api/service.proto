@@ -510,29 +510,31 @@ message SparseBinding {
 
 // Framegraph
 
+enum FramegraphImageNature {
+  NONE = 0;
+  SWAPCHAIN = 1;
+  TRANSIENT = 2;
+}
+
 message FramegraphImage {
   uint64 handle = 1;
+  // We reuse image.Info here, but note that its Info.bytes field won't be set.
   image.Info info = 2;
   string imageType = 3;
   uint32 usage = 4;
-  bool isSwapchain = 5;
-  bool isTransient = 6;
+  FramegraphImageNature nature = 5;
 }
 
-enum LoadOpType {
-  LOAD_OP_LOAD = 0;
-  LOAD_OP_CLEAR = 1;
-  LOAD_OP_DONT_CARE = 2;
-}
-
-enum StoreOpType {
-  STORE_OP_STORE = 0;
-  STORE_OP_DONT_CARE = 1;
+enum LoadStoreOp {
+  DISCARD = 0; // Used for Vulkan DONT_CARE
+  CLEAR = 1;
+  LOAD = 2;
+  STORE = 3;
 }
 
 message FramegraphAttachment {
-  LoadOpType loadOp = 1;
-  StoreOpType storeOp = 2;
+  LoadStoreOp loadOp = 1;
+  LoadStoreOp storeOp = 2;
   uint64 imageViewHandle = 3;
   FramegraphImage image = 4;
 }

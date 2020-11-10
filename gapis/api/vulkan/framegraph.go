@@ -34,12 +34,17 @@ func newFramegraphImage(img *ImageObjectʳ) *api.FramegraphImage {
 	if err != nil {
 		panic("Unrecognized Vulkan image format")
 	}
+	nature := api.FramegraphImageNature_NONE
+	if img.IsSwapchainImage() {
+		nature = api.FramegraphImageNature_SWAPCHAIN
+	} else if img.Info().Usage()&VkImageUsageFlags(VkImageUsageFlagBits_VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT) != 0 {
+		nature = api.FramegraphImageNature_TRANSIENT
+	}
 	return &api.FramegraphImage{
-		Handle:      uint64(img.VulkanHandle()),
-		Usage:       uint32(img.Info().Usage()),
-		ImageType:   strings.TrimPrefix(fmt.Sprintf("%v", img.Info().ImageType()), "VK_IMAGE_TYPE_"),
-		IsSwapchain: img.IsSwapchainImage(),
-		IsTransient: img.Info().Usage()&VkImageUsageFlags(VkImageUsageFlagBits_VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT) != 0,
+		Handle:    uint64(img.VulkanHandle()),
+		Usage:     uint32(img.Info().Usage()),
+		ImageType: strings.TrimPrefix(fmt.Sprintf("%v", img.Info().ImageType()), "VK_IMAGE_TYPE_"),
+		Nature:    nature,
 		Info: &image.Info{
 			Format: format,
 			Width:  img.Info().Extent().Width(),
@@ -49,24 +54,24 @@ func newFramegraphImage(img *ImageObjectʳ) *api.FramegraphImage {
 	}
 }
 
-func getLoadOpType(loadOp VkAttachmentLoadOp) api.LoadOpType {
+func loadOp2LoadStoreOp(loadOp VkAttachmentLoadOp) api.LoadStoreOp {
 	switch loadOp {
 	case VkAttachmentLoadOp_VK_ATTACHMENT_LOAD_OP_LOAD:
-		return api.LoadOpType_LOAD_OP_LOAD
+		return api.LoadStoreOp_LOAD
 	case VkAttachmentLoadOp_VK_ATTACHMENT_LOAD_OP_CLEAR:
-		return api.LoadOpType_LOAD_OP_CLEAR
+		return api.LoadStoreOp_CLEAR
 	case VkAttachmentLoadOp_VK_ATTACHMENT_LOAD_OP_DONT_CARE:
-		return api.LoadOpType_LOAD_OP_DONT_CARE
+		return api.LoadStoreOp_DISCARD
 	}
 	panic("Unknown loadOp")
 }
 
-func getStoreOpType(storeOp VkAttachmentStoreOp) api.StoreOpType {
+func storeOp2LoadStoreOp(storeOp VkAttachmentStoreOp) api.LoadStoreOp {
 	switch storeOp {
 	case VkAttachmentStoreOp_VK_ATTACHMENT_STORE_OP_STORE:
-		return api.StoreOpType_STORE_OP_STORE
+		return api.LoadStoreOp_STORE
 	case VkAttachmentStoreOp_VK_ATTACHMENT_STORE_OP_DONT_CARE:
-		return api.StoreOpType_STORE_OP_DONT_CARE
+		return api.LoadStoreOp_DISCARD
 	}
 	panic("Unknown storeOp")
 }
@@ -83,12 +88,10 @@ func newFramegraphAttachment(desc VkAttachmentDescription, imgView ImageViewObje
 	}
 	imgObj := imgView.Image()
 	return &api.FramegraphAttachment{
-		LoadOp:          getLoadOpType(loadOp),
-		StoreOp:         getStoreOpType(storeOp),
+		LoadOp:          loadOp2LoadStoreOp(loadOp),
+		StoreOp:         storeOp2LoadStoreOp(storeOp),
 		ImageViewHandle: uint64(imgView.VulkanHandle()),
-		// imgViewType:   imgView.Type(),
-		// imgViewFormat: imgView.Fmt(),
-		Image: newFramegraphImage(&imgObj),
+		Image:           newFramegraphImage(&imgObj),
 	}
 }
 
