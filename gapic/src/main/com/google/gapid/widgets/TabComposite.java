@@ -33,6 +33,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Layout;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.ToolTip;
 
 import java.util.Arrays;
 import java.util.Comparator;
@@ -57,6 +58,8 @@ public class TabComposite extends Composite {
   protected final Theme theme;
   private final Group group;
   private final Events.ListenerCollection<Listener> listeners = Events.listeners(Listener.class);
+  private final ToolTip tooltip;
+
   private Folder maximizedFolder = null;
   protected Hover hovered = Hover.NONE;
   private Hover mouseDown = Hover.NONE;
@@ -67,6 +70,7 @@ public class TabComposite extends Composite {
     this.manager = manager;
     this.theme = theme;
     this.group = horizontal ? new HorizontalGroup(1) : new VerticalGroup(1);
+    this.tooltip = new ToolTip(getShell(), SWT.BALLOON);
 
     setLayout(new Layout() {
       @Override
@@ -256,6 +260,21 @@ public class TabComposite extends Composite {
       setCursor(getDisplay().getSystemCursor(hovered.cursor));
     } else {
       setCursor(null);
+    }
+
+    if (mouseDown == Hover.NONE && dragger == null &&
+        hovered.tab != null && hovered.folder != null &&
+        hovered.tab.currentWidth < hovered.tab.titleSize.x + TAB_MARGIN) {
+      Point loc = hovered.folder.getToolTipLocation(hovered.tab);
+      if (loc != null) {
+        tooltip.setText(hovered.tab.info.label);
+        tooltip.setLocation(toDisplay(loc));
+        tooltip.setVisible(true);
+      } else {
+        tooltip.setVisible(false);
+      }
+    } else {
+      tooltip.setVisible(false);
     }
   }
 
@@ -941,6 +960,19 @@ public class TabComposite extends Composite {
       }
 
       redrawBar(); // redraw the new area
+    }
+
+    public Point getToolTipLocation(Tab tab) {
+      Point loc = new Point(x, y + BAR_MARGIN + titleHeight);
+      for (Tab t : tabs) {
+        if (t.equals(tab)) {
+          loc.x += t.currentWidth / 2;
+          return loc;
+        } else {
+          loc.x += t.currentWidth;
+        }
+      }
+      return null;
     }
 
     private int getMaxTitleHeight() {
