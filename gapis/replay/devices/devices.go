@@ -50,12 +50,15 @@ func ForReplay(ctx context.Context, p *path.Capture) ([]*path.Device, []bool, []
 			apis = append(apis, f)
 		}
 	}
+	log.E(ctx, "HUGUES num apis:%v", len(apis))
 
 	all := Sorted(ctx)
+	log.E(ctx, "HUGUES num devices:%v", len(all))
 	compatibleDevices := []prioritizedDevice{}
 	incompatibleDevices := []prioritizedDevice{}
 	for _, device := range all {
 		instance := device.Instance()
+		log.E(ctx, "HUGUES device:%v", instance.Name)
 		p := uint32(1)
 		for _, api := range apis {
 			// TODO: Check if device is a LAD, and if so filter by supportsLAD.
@@ -64,6 +67,7 @@ func ForReplay(ctx context.Context, p *path.Capture) ([]*path.Device, []bool, []
 				"device": instance.Name,
 			}.Bind(ctx)
 			priority, reason := api.GetReplayPriority(ctx, instance, c.Header)
+			log.E(ctx, "HUGUES device:%v prio:%v reason:%v", instance.Name, priority, reason)
 			p = p * priority
 			prioDev := prioritizedDevice{device, p, reason}
 			if priority != 0 {
