@@ -526,7 +526,7 @@ message FramegraphImage {
 }
 
 enum LoadStoreOp {
-  DISCARD = 0; // Used for Vulkan DONT_CARE
+  DISCARD = 0;  // Used for Vulkan DONT_CARE
   CLEAR = 1;
   LOAD = 2;
   STORE = 3;
