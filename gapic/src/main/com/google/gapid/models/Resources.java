@@ -21,6 +21,7 @@ import static com.google.gapid.util.Paths.isNull;
 import static com.google.gapid.util.Paths.pipelinesAfter;
 import static com.google.gapid.util.Paths.resourceAfter;
 import static java.util.Collections.emptyList;
+import static java.util.logging.Level.WARNING;
 
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.Futures;
@@ -40,6 +41,7 @@ import com.google.gapid.util.MoreFutures;
 import org.eclipse.swt.widgets.Shell;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
@@ -57,10 +59,12 @@ public class Resources extends CaptureDependentModel.ForValue<Resources.Data, Re
   protected Service.Resource selectedTexture = null;
 
   public Resources(Shell shell, Analytics analytics, Client client, Capture capture,
-      Devices devices, CommandStream commands) {
+      Devices devices, CommandStream commands, Follower follower) {
     super(LOG, shell, analytics, client, Listener.class, capture, devices);
     this.capture = capture;
     this.commands = commands;
+
+    follower.addListener(this);
   }
 
   @Override
@@ -92,8 +96,20 @@ public class Resources extends CaptureDependentModel.ForValue<Resources.Data, Re
   }
 
   @Override
-  public void onTextureFollowed(Service.Resource resource) {
-    selectTexture(resource);
+  public void onResourceFollowed(Path.ResourceData path) {
+    Resources.Resource r = getResource(path);
+
+    if (r != null) {
+      switch (r.resource.getType()) {
+        case TextureResource:
+          selectTexture(r.resource);
+          break;
+        default:
+          LOG.log(WARNING, "Unknown follow path result: " + path);
+      }
+    } else {
+      LOG.log(WARNING, "Path resolved to null resource: " + path);
+    }
   }
 
   public List<Service.ResourcesByType> getResources() {
@@ -190,7 +206,7 @@ public class Resources extends CaptureDependentModel.ForValue<Resources.Data, Re
   }
 
   public void selectTexture(Service.Resource texture) {
-    if (selectedTexture != texture) {
+    if (!Objects.equals(selectedTexture, texture)) {
       selectedTexture = texture;
       listeners.fire().onTextureSelected(selectedTexture);
     }
