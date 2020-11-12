@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include "core/cc/make_unique.h"
 #include "core/cc/log.h"
+#include "core/cc/make_unique.h"
 
 #include "gapii/cc/state_serializer.h"
 #include "gapii/cc/vulkan_exports.h"
