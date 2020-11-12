@@ -15,6 +15,7 @@
  */
 
 #include "core/cc/make_unique.h"
+#include "core/cc/log.h"
 
 #include "gapii/cc/state_serializer.h"
 #include "gapii/cc/vulkan_exports.h"
@@ -294,7 +295,10 @@ class StagingCommandBuffer {
 };
 
 void VulkanSpy::serializeGPUBuffers(StateSerializer* serializer) {
+  GAPID_ERROR("HUGUES enter serializeGPUBuffers");
+  unsigned hug = 0;
   for (auto& device : mState.Devices) {
+    GAPID_ERROR("HUGUES vkDeviceWaitIdle %u", hug++);
     auto& device_functions =
         mImports.mVkDeviceFunctions[device.second->mVulkanHandle];
     device_functions.vkDeviceWaitIdle(device.second->mVulkanHandle);
@@ -334,7 +338,9 @@ void VulkanSpy::serializeGPUBuffers(StateSerializer* serializer) {
         device.second->mVulkanHandle, buffer, nullptr);
   }
 
+  hug = 0;
   for (auto& mem : mState.DeviceMemories) {
+    GAPID_ERROR("HUGUES mState.DeviceMemories %u", hug++);
     auto& memory = mem.second;
     serializer->encodeBuffer(memory->mAllocationSize, &memory->mData, nullptr);
     if (memory->mMappedLocation != nullptr) {
@@ -358,7 +364,9 @@ void VulkanSpy::serializeGPUBuffers(StateSerializer* serializer) {
         kChunkSizeLimit);
   }
 
+  hug = 0;
   for (auto& buffer : mState.Buffers) {
+    GAPID_ERROR("HUGUES mState.Buffers %u", hug++);
     VkBuffer buf_handle = buffer.first;
     auto buf = buffer.second;
     auto& device = mState.Devices[buf->mDevice];
@@ -462,7 +470,9 @@ void VulkanSpy::serializeGPUBuffers(StateSerializer* serializer) {
     }
   }
 
+  hug = 0;
   for (auto& image : mState.Images) {
+    GAPID_ERROR("HUGUES mState.Images %u", hug++);
     auto img = image.second;
     const ImageInfo& image_info = img->mInfo;
     auto& device_functions = mImports.mVkDeviceFunctions[img->mDevice];
@@ -1044,7 +1054,9 @@ void VulkanSpy::serializeGPUBuffers(StateSerializer* serializer) {
     }
   }
 
+  hug = 0;
   for (auto& cache : mState.PipelineCaches) {
+    GAPID_ERROR("HUGUES mState.PipelineCaches %u", hug++);
     VkPipelineCache cache_handle = cache.first;
     auto cache_obj = cache.second;
 
@@ -1063,6 +1075,8 @@ void VulkanSpy::serializeGPUBuffers(StateSerializer* serializer) {
           serializer->sendData(obs, false, data.data(), data.size());
         });
   }
+
+  GAPID_ERROR("HUGUES exit serializeGPUBuffers");
 }
 
 }  // namespace gapii

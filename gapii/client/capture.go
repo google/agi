@@ -34,6 +34,10 @@ import (
 type Flags uint32
 
 const (
+	// captureAppUnresponsiveTimeoutSec is the number of seconds after which,
+	// if we don't receive any data from the app being captured, we declare it
+	// unresponsive and stop the capture process with an error.
+	captureAppUnresponsiveTimeoutSec = 10
 
 	// NOTE: flags must be kept in sync with gapii/cc/connection_header.h
 
@@ -199,6 +203,7 @@ func (p *Process) Capture(ctx context.Context, start task.Signal, stop task.Sign
 	if (p.Options.Flags & DeferStart) != 0 {
 		go func() {
 			if start.Wait(ctx) {
+				log.E(ctx, "HUGUES START was fired")
 				if err := writeStartTrace(conn); err != nil {
 					writeErr <- err
 				}
@@ -207,8 +212,9 @@ func (p *Process) Capture(ctx context.Context, start task.Signal, stop task.Sign
 	}
 	go func() {
 		if stop.Wait(ctx) {
+			log.E(ctx, "HUGUES STOP was fired")
 			if err := writeEndTrace(conn); err == nil {
-				time.Sleep(2 * time.Second)
+				time.Sleep(captureAppUnresponsiveTimeoutSec * time.Second)
 				writeErr <- errors.New("Traced application is unresponsive.")
 			} else {
 				writeErr <- err
