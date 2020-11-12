@@ -70,7 +70,7 @@ public class TabComposite extends Composite {
     this.manager = manager;
     this.theme = theme;
     this.group = horizontal ? new HorizontalGroup(1) : new VerticalGroup(1);
-    this.tooltip = new ToolTip(getShell(), SWT.BALLOON);
+    this.tooltip = new ToolTip(getShell(), SWT.ICON_INFORMATION);
 
     setLayout(new Layout() {
       @Override
