@@ -64,7 +64,6 @@ public interface Theme {
   @Icon(file = "check_circle.png") public Image check();
   @Icon(file = "clipboard.png") public Image clipboard();
   @Icon(file = "close.png") public Image close();
-  @Icon(file = "close_box.png") public Image closeHovered();
   @Icon(file = "color_buffer0.png") public Image colorBuffer0();
   @Icon(file = "color_buffer1.png") public Image colorBuffer1();
   @Icon(file = "color_buffer2.png") public Image colorBuffer2();

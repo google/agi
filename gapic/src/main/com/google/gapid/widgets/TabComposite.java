@@ -33,21 +33,20 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Layout;
 import org.eclipse.swt.widgets.Shell;
-import org.eclipse.swt.widgets.ToolTip;
 
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Collectors;
+import java.util.function.IntConsumer;
 
 public class TabComposite extends Composite {
   private static final int SEP_HEIGHT = 2;
   private static final int BAR_MARGIN = 6;
-  private static final int TAB_MARGIN = 6;
+  private static final int TAB_MARGIN = 10;
   private static final int FOLDER_MARGIN = 5; // needs to be odd.
   private static final int ICON_SIZE = 24;
   private static final int MIN_WIDTH = 50;
@@ -58,19 +57,18 @@ public class TabComposite extends Composite {
   protected final Theme theme;
   private final Group group;
   private final Events.ListenerCollection<Listener> listeners = Events.listeners(Listener.class);
-  private final ToolTip tooltip;
 
   private Folder maximizedFolder = null;
   protected Hover hovered = Hover.NONE;
   private Hover mouseDown = Hover.NONE;
   protected Dragger dragger = null;
+  private Folder barDropdownFolder = null;
 
   public TabComposite(Composite parent, TabManager manager, Theme theme, boolean horizontal) {
     super(parent, SWT.BORDER | SWT.DOUBLE_BUFFERED);
     this.manager = manager;
     this.theme = theme;
     this.group = horizontal ? new HorizontalGroup(1) : new VerticalGroup(1);
-    this.tooltip = new ToolTip(getShell(), SWT.ICON_INFORMATION);
 
     setLayout(new Layout() {
       @Override
@@ -97,6 +95,9 @@ public class TabComposite extends Composite {
       if (e.button == 1) {
         mouseDown = hovered;
         switch (mouseDown.type) {
+          case Close:
+            manager.closeTab(mouseDown.tab.info.id);
+            break;
           case Maximize:
             if (maximizedFolder == null) {
               mouseDown.folder.maximized = true;
@@ -115,13 +116,12 @@ public class TabComposite extends Composite {
 
     addListener(SWT.MouseMove, e -> {
       switch (mouseDown.type) {
-        case Close:
-          mouseDown = Hover.tab(mouseDown.folder, mouseDown.tab);
-          //$FALL-THROUGH$
         case Tab:
           if (dragger == null) {
             dragger = new Dragger(theme, getShell(), getDisplay().map(this, null, getClientArea()),
                 theme.tabFolderPlaceholderFill(), mouseDown);
+            // Keep bar drop down open while dragging to avoid losing input focus
+            barDropdownFolder = null;
             setCursor(getDisplay().getSystemCursor(SWT.CURSOR_SIZEALL));
             mouseDown.folder.redrawBar();
           }
@@ -131,7 +131,8 @@ public class TabComposite extends Composite {
           dragger.location.x = e.x;
           dragger.location.y = e.y;
 
-          Hover current = group.find(group, 0, e.x, e.y, false);
+          Hover current = group.find(group, 0, e.x, e.y);
+          updateBarDropdown(current);
           if (current.isFolder()) {
             Location location = getLocation(current.folder, e.x, e.y);
             if (location != null) {
@@ -155,16 +156,13 @@ public class TabComposite extends Composite {
           update();
           break;
         default:
-          updateHover(getElement().find(group, 0, e.x, e.y, false));
+          updateHover(getElement().find(group, 0, e.x, e.y));
       }
     });
 
     addListener(SWT.MouseUp, e -> {
       if (e.button == 1 && dragger == null) {
         switch (mouseDown.type) {
-          case Close:
-            manager.closeTab(mouseDown.tab.info.id);
-            break;
           case Tab:
             if (mouseDown.folder.updateCurrent(mouseDown.tab.control)) {
               listeners.fire().onTabShown(mouseDown.tab.info);
@@ -177,31 +175,39 @@ public class TabComposite extends Composite {
       mouseDown = Hover.NONE;
       if (dragger != null) {
         Hover src = dragger.tab;
-        Hover dst = getElement().find(group, 0, e.x, e.y, true);
+        Hover dst = getElement().find(group, 0, e.x, e.y);
 
+        if (dragger.tab.folder != barDropdownFolder) {
+          dragger.tab.folder.hideBarDropdown();
+        }
         dragger.close();
         setCursor(null);
         dragger = null;
 
         switch (dst.type) {
+          case Bar:
+            listeners.fire().onTabMoved(src.tab.info);
+            if (src.folder != dst.folder) {
+              src.folder.removeTab(src.tab);
+              dst.folder.addTab(src.tab, dst.index);
+              src.folder.redrawBar();
+            } else {
+              dst.folder.moveTab(src.tab, dst.index);
+            }
+            dst.folder.redrawBar();
+            group.merge();
+            dst.folder.updateCurrent(src.tab.control);
+            break;
           case Tab:
             listeners.fire().onTabMoved(src.tab.info);
-            if (dst.tab == null) {
-              src.folder.removeTab(src.tab);
-              dst.folder.addTab(src.tab);
-              src.folder.redrawBar();
-              if (src.folder != dst.folder) {
-                dst.folder.redrawBar();
-              }
-            } else if (src.folder != dst.folder) {
+            if (src.folder != dst.folder) {
               src.folder.removeTab(src.tab);
               dst.folder.addTab(src.tab, dst.tab);
               src.folder.redrawBar();
-              dst.folder.redrawBar();
             } else {
               dst.folder.moveTab(src.tab, dst.tab);
-              src.folder.redrawBar();
             }
+            dst.folder.redrawBar();
             group.merge();
             dst.folder.updateCurrent(src.tab.control);
             break;
@@ -221,10 +227,10 @@ public class TabComposite extends Composite {
             // Do nothing.
         }
       }
-      updateHover(getElement().find(group, 0, e.x, e.y, false));
+      updateHover(getElement().find(group, 0, e.x, e.y));
     });
 
-    addListener(SWT.MouseExit, e -> updateHover(Hover.NONE));
+    addListener(SWT.MouseExit, e -> updateHover(getElement().find(group, 0, e.x, e.y)));
   }
 
   private static Location getLocation(Folder folder, int x, int y) {
@@ -262,19 +268,19 @@ public class TabComposite extends Composite {
       setCursor(null);
     }
 
-    if (mouseDown == Hover.NONE && dragger == null &&
-        hovered.tab != null && hovered.folder != null &&
-        hovered.tab.currentWidth < hovered.tab.titleSize.x + TAB_MARGIN) {
-      Point loc = hovered.folder.getToolTipLocation(hovered.tab);
-      if (loc != null) {
-        tooltip.setText(hovered.tab.info.label);
-        tooltip.setLocation(toDisplay(loc));
-        tooltip.setVisible(true);
-      } else {
-        tooltip.setVisible(false);
+    updateBarDropdown(hovered);
+  }
+
+  private void updateBarDropdown(Hover currentHover) {
+    if (barDropdownFolder == null) {
+      if (currentHover.type == Hover.Type.Dropdown && currentHover.folder.showBarDropdown()) {
+        barDropdownFolder = currentHover.folder;
       }
     } else {
-      tooltip.setVisible(false);
+      if (!currentHover.isBar() || barDropdownFolder != currentHover.folder) {
+        barDropdownFolder.hideBarDropdown();
+        barDropdownFolder = null;
+      }
     }
   }
 
@@ -405,7 +411,8 @@ public class TabComposite extends Composite {
 
     protected abstract void draw(GC gc);
 
-    protected abstract Hover find(Group parent, int index, int mx, int my, boolean includeTrailing);
+    protected abstract Hover find(Group parent, int index, int mx, int my);
+
     protected abstract void redrawBar(int x1, int y1, int x2, int y2);
 
     protected abstract MergeState merge();
@@ -542,12 +549,12 @@ public class TabComposite extends Composite {
     }
 
     @Override
-    protected Hover find(Group parent, int index, int mx, int my, boolean includeTrailing) {
+    protected Hover find(Group parent, int index, int mx, int my) {
       for (int i = 0; i < children.size(); i++) {
         Element child = children.get(i);
         if (mx >= child.x && mx < child.x + child.w &&
             my >= child.y && my < child.y + child.h) {
-          return child.find(this, i, mx, my, includeTrailing);
+          return child.find(this, i, mx, my);
         }
       }
       return Hover.NONE;
@@ -691,8 +698,8 @@ public class TabComposite extends Composite {
     }
 
     @Override
-    protected Hover find(Group parent, int index, int mx, int my, boolean includeTrailing) {
-      Hover result = super.find(parent, index, mx, my, includeTrailing);
+    protected Hover find(Group parent, int index, int mx, int my) {
+      Hover result = super.find(parent, index, mx, my);
       if (result == Hover.NONE && children.size() > 1) {
         Element before = children.get(0);
         for (int i = 1; i < children.size(); i++) {
@@ -811,8 +818,8 @@ public class TabComposite extends Composite {
 
 
     @Override
-    protected Hover find(Group parent, int index, int mx, int my, boolean includeTrailing) {
-      Hover result = super.find(parent, index, mx, my, includeTrailing);
+    protected Hover find(Group parent, int index, int mx, int my) {
+      Hover result = super.find(parent, index, mx, my);
       if (result == Hover.NONE && children.size() > 1) {
         Element before = children.get(0);
         for (int i = 1; i < children.size(); i++) {
@@ -849,22 +856,26 @@ public class TabComposite extends Composite {
   }
 
   public class Folder extends Element {
-    private final List<Tab> tabs = Lists.newArrayList();
+    private final List<Tab> tabs = new ArrayList<>();
+    private final List<Integer> rowTitleEnds = new ArrayList<>();  // past-end indices of each row
     private int titleHeight;
     private Control current;
     protected boolean maximized;
+    private Shell barDropdownShell = null;
 
     public Folder(int weight) {
       this.weight = weight;
+      rowTitleEnds.add(0);
     }
 
     public void newTab(TabInfo info) {
       GC gc = new GC(TabComposite.this);
-      gc.setFont(theme.selectedTabTitleFont());
       Point size = gc.textExtent(info.label);
+      gc.setFont(theme.selectedTabTitleFont());
+      Point selectSize = gc.textExtent(info.label);
       gc.dispose();
 
-      addTab(new Tab(info, info.contentFactory.apply(TabComposite.this), size));
+      addTab(new Tab(info, info.contentFactory.apply(TabComposite.this), size, selectSize));
     }
 
     @Override
@@ -905,80 +916,93 @@ public class TabComposite extends Composite {
       redrawBar(); // redraw the old area
 
       setBounds(x, y, w, h);
-      this.titleHeight = getMaxTitleHeight();
-
+      titleHeight = getMaxTitleHeight();
       int barH = BAR_MARGIN + titleHeight + BAR_MARGIN + SEP_HEIGHT + BAR_MARGIN;
-      int barW = 0;
+
       for (Tab tab : tabs) {
         tab.control.setBounds(x, y + barH, w, h - barH);
         tab.control.setVisible(tab.control == current);
         controls.remove(tab.control);
-        tab.currentWidth = Math.max(TAB_MARGIN + tab.titleSize.x + TAB_MARGIN, MIN_TAB_WIDTH);
-        barW += tab.currentWidth;
       }
 
-      int maxBarW = w - ICON_SIZE;
-      if (barW > maxBarW) {
-        // the default tab width doesn't fit, shrink the tabs with algorithm:
-        // 1. find the widest tab and all other tabs of the same width
-        // 2. reduce width until they fit or have the same size as the next widest tab
-        // 3. repeat from 1. until it fits or minimum width is reached
-        List<Tab> sortedTabs =
-            tabs.stream().sorted(Comparator.comparingInt(Tab::getCurrentWidth).reversed())
-            .collect(Collectors.toList());
-        int sameWidth = 1;
-        int widest = sortedTabs.get(0).currentWidth;
-        do {
-          while (sameWidth < sortedTabs.size() && sortedTabs.get(sameWidth).currentWidth == widest) {
-            ++sameWidth;
-          }
-          int minTabW = sameWidth < sortedTabs.size() ? sortedTabs.get(sameWidth).currentWidth
-              : MIN_TAB_WIDTH;
-          if (barW - sameWidth * (widest - minTabW) <= maxBarW) {
-            // tabs will fit after this reduction, fill up space
-            int space = maxBarW - (barW - sameWidth * (widest - minTabW));
-            int newWidth = minTabW + space / sameWidth;
-            int extraSpace = space % sameWidth;
-            for (int i = 0; i < sameWidth; i++) {
-              barW -= sortedTabs.get(i).currentWidth;
-              sortedTabs.get(i).currentWidth = newWidth;
-              if (extraSpace > 0) {
-                sortedTabs.get(i).currentWidth++;
-                extraSpace--;
-              }
-              barW += sortedTabs.get(i).currentWidth;
-            }
-          } else {
-            // tabs won't fit yet after this reduction, reduce to minimum
-            for (int i = 0; i < sameWidth; i++) {
-              sortedTabs.get(i).currentWidth = minTabW;
-            }
-            barW -= sameWidth * (widest - minTabW);
-            widest = minTabW;
-          }
-        } while (barW > maxBarW && sameWidth < sortedTabs.size());
-      }
-
-      redrawBar(); // redraw the new area
+      updateRowTitleEnds();
     }
 
-    public Point getToolTipLocation(Tab tab) {
-      Point loc = new Point(x, y + BAR_MARGIN + titleHeight);
-      for (Tab t : tabs) {
-        if (t.equals(tab)) {
-          loc.x += t.currentWidth / 2;
-          return loc;
-        } else {
-          loc.x += t.currentWidth;
+    private void updateRowTitleEnds() {
+      // Determine how many tabs will fit in the given width. Use multiple rows if required.
+      rowTitleEnds.clear();
+      int rowWidth = 0;
+      int index = 0;
+      while (index < tabs.size()) {
+        Tab tab = tabs.get(index);
+        int tabWidth = tab.getCurrentWidth(tab.control == current);
+        int maxRowWidth = w;
+        if (rowTitleEnds.isEmpty()) {
+          maxRowWidth -= ICON_SIZE; // reserve space for maximize button in first row
+          if (index < tabs.size() - 1) {
+            maxRowWidth -= ICON_SIZE; // reserve space for drop down icon if not the last tab
+          }
         }
+        if (index > 0 && rowWidth + tabWidth > maxRowWidth) {
+          rowTitleEnds.add(index);
+          rowWidth = 0;
+        }
+        rowWidth += tabWidth;
+        index++;
       }
-      return null;
+      rowTitleEnds.add(index);
+      updateBarDropdown();
+      redrawBar();
+    }
+
+    public boolean showBarDropdown() {
+      if (rowTitleEnds.size() < 2 || (barDropdownShell != null && barDropdownShell.isVisible())) {
+        return false;
+      }
+      if (barDropdownShell == null) {
+        barDropdownShell =
+            new Shell(getShell(), SWT.NO_TRIM | SWT.MODELESS | SWT.NO_FOCUS | SWT.ON_TOP);
+        barDropdownShell.setEnabled(true);
+        barDropdownShell.addListener(SWT.Paint, e -> {
+          for (int row = 1; row < rowTitleEnds.size(); row++) {
+            drawRow(e.gc, row);
+          }
+        });
+        IntConsumer forward = t -> {
+          barDropdownShell.addListener(t, e -> {
+            e.setBounds(getDisplay().map(barDropdownShell, TabComposite.this, e.getBounds()));
+            notifyListeners(t, e);
+          });
+        };
+        forward.accept(SWT.MouseDown);
+        forward.accept(SWT.MouseUp);
+        forward.accept(SWT.MouseMove);
+        forward.accept(SWT.MouseExit);
+      }
+      barDropdownShell.setVisible(true);
+      getShell().setActive();
+      updateBarDropdown();
+      return true;
+    }
+
+    public void hideBarDropdown() {
+      if (barDropdownShell != null) {
+        barDropdownShell.setVisible(false);
+      }
+    }
+
+    private void updateBarDropdown() {
+      if (barDropdownShell != null && barDropdownShell.isVisible()) {
+        int rowH = BAR_MARGIN + titleHeight + BAR_MARGIN + SEP_HEIGHT;
+        Rectangle bounds = new Rectangle(x, y + rowH, w, (rowTitleEnds.size() - 1) * rowH);
+        barDropdownShell.setBounds(getDisplay().map(TabComposite.this, null, bounds));
+      }
     }
 
     private int getMaxTitleHeight() {
       int height = 0;
       for (Tab tab : tabs) {
-        height = Math.max(height, tab.titleSize.y);
+        height = Math.max(height, Math.max(tab.titleSize.y, tab.selectTitleSize.y));
       }
       return height;
     }
@@ -988,24 +1012,48 @@ public class TabComposite extends Composite {
       if (current == null) {
         current = tab.control;
       }
+      updateRowTitleEnds();
+    }
+
+    protected void addTab(Tab tab, int row) {
+      if (row >= 0 && row < rowTitleEnds.size() && rowTitleEnds.get(row) < tabs.size()) {
+        tabs.add(rowTitleEnds.get(row), tab);
+        updateRowTitleEnds();
+      } else {
+        addTab(tab);
+      }
     }
 
     protected void addTab(Tab tab, Tab before) {
-      for (int i = 0; i < tabs.size(); i++) {
-        if (tabs.get(i) == before) {
-          tabs.add(i, tab);
-          return;
+      int dst = tabs.indexOf(before);
+      if (dst >= 0) {
+        tabs.add(dst, tab);
+      } else {
+        tabs.add(tab);
+      }
+      updateRowTitleEnds();
+    }
+
+    protected void moveTab(Tab from, int row) {
+      if (row >= 0 && row < rowTitleEnds.size()) {
+        if (rowTitleEnds.get(row) < tabs.size()) {
+          moveTab(from, tabs.get(rowTitleEnds.get(row)));
+        } else if (tabs.remove(from)) {
+          tabs.add(from);
+          updateRowTitleEnds();
         }
       }
     }
 
     protected void moveTab(Tab from, Tab to) {
-      for (int i = 0; i < tabs.size(); i++) {
-        if (tabs.get(i) == to) {
-          tabs.remove(from);
-          tabs.add(i, from);
-          return;
+      if (tabs.remove(from)) {
+        int dst = tabs.indexOf(to);
+        if (dst >= 0) {
+          tabs.add(dst, from);
+        } else {
+          tabs.add(from);
         }
+        updateRowTitleEnds();
       }
     }
 
@@ -1013,16 +1061,16 @@ public class TabComposite extends Composite {
       tabs.remove(tab);
       if (current == tab.control) {
         current = tabs.isEmpty() ? null : tabs.get(0).control;
-        requestLayout();
       }
-      redrawBar();
+      updateRowTitleEnds();
+      requestLayout();
     }
 
     protected boolean updateCurrent(Control newCurrent) {
       if (current != newCurrent) {
         current = newCurrent;
+        updateRowTitleEnds();
         requestLayout();
-        redrawBar();
         return true;
       }
       return false;
@@ -1030,91 +1078,128 @@ public class TabComposite extends Composite {
 
     @Override
     protected void redrawBar(int x1, int y1, int x2, int y2) {
-      int tabH = BAR_MARGIN + titleHeight + BAR_MARGIN;
-      if ((x1 >= x && x1 < x + w && y1 >= y && y1 < y + tabH) ||
-          (x2 >= x && x2 < x + w && y2 >= y && y2 < y + tabH)) {
+      int barH = BAR_MARGIN + titleHeight + BAR_MARGIN + SEP_HEIGHT;
+      if (barDropdownShell != null && barDropdownShell.isVisible()) {
+        barH *= rowTitleEnds.size();
+      }
+      if ((x1 >= x && x1 < x + w && y1 >= y && y1 < y + barH) ||
+          (x2 >= x && x2 < x + w && y2 >= y && y2 < y + barH)) {
         redrawBar();
       }
     }
 
     void redrawBar() {
       redraw(x, y, w, BAR_MARGIN + titleHeight + BAR_MARGIN + SEP_HEIGHT + BAR_MARGIN, false);
+      if (barDropdownShell != null && barDropdownShell.isVisible()) {
+        barDropdownShell.redraw();
+      }
     }
 
     @Override
     protected void draw(GC gc) {
+      drawRow(gc, 0);
+
       int tabH = BAR_MARGIN + titleHeight + BAR_MARGIN;
+      boolean hasDropdown = rowTitleEnds.size() > 1;
+
+      if (hasDropdown) {
+        if (hovered.type == Hover.Type.Dropdown && hovered.folder == this) {
+          gc.setBackground(theme.tabFolderHovered());
+          gc.fillRectangle(x + w - 2 * ICON_SIZE, y, ICON_SIZE, tabH + 1);
+        }
+        gc.drawImage(theme.expandMore(), x + w - 2 * ICON_SIZE, y + (tabH - ICON_SIZE) / 2);
+      }
+
+      if (hovered.type == Hover.Type.Maximize && hovered.folder == this) {
+        gc.setBackground(theme.tabFolderHovered());
+        gc.fillRectangle(x + w - ICON_SIZE, y, ICON_SIZE, tabH + 1);
+      }
+      gc.drawImage(maximized ? theme.fullscreenExit() : theme.fullscreen(), x + w - ICON_SIZE,
+          y + (tabH - ICON_SIZE) / 2);
+    }
+
+    private void drawRow(GC gc, int row) {
+      int tabH = BAR_MARGIN + titleHeight + BAR_MARGIN;
+      int rowH = BAR_MARGIN + titleHeight + BAR_MARGIN + SEP_HEIGHT;
+
+      int bx = row == 0 ? x : 0;                 // base x for drawing
+      int by = row == 0 ? y : (row - 1) * rowH;  // base y for drawing
+      int dx = x;                                // base x for dragging
+      int dy = y + row * rowH;                   // base y for dragging
 
       gc.setBackground(theme.tabBackgound());
-      gc.fillRectangle(x, y, w, tabH + SEP_HEIGHT);
+      gc.fillRectangle(bx, by, w, rowH);
 
       gc.setForeground(theme.tabFolderLine());
-      gc.drawLine(x, y + tabH + SEP_HEIGHT - 1, x + w, y + tabH + SEP_HEIGHT - 1);
+      gc.drawLine(bx, by + rowH - 1, bx + w, by + rowH - 1);
 
-      gc.setClipping(x, y, w - ICON_SIZE, h);
+      if (row == 0) {
+        boolean hasDropdown = rowTitleEnds.size() > 1;
+        gc.setClipping(bx, by, w - ICON_SIZE * (hasDropdown ? 2 : 1), rowH);
+      }
 
-      int maxX = x + w - ICON_SIZE;
-      int tabX = x;
-      for (Tab tab : tabs) {
-        int tabW = tab.getCurrentWidth();
+      int rowStart = row == 0 ? 0 : rowTitleEnds.get(row - 1);
+      int rowEnd = Math.min(rowTitleEnds.get(row), tabs.size());
+      int tabX = 0;
+      for (int index = rowStart; index < rowEnd; index++) {
+        Tab tab = tabs.get(index);
+        boolean isSelected = tab.control == current;
+        int tabW = tab.getCurrentWidth(isSelected);
 
         if (dragger != null) {
           if (dragger.tab.tab == tab) {
             continue;
-          } else if (dragger.contains(tabX, y, tabW, tabH)) {
-            drawPlaceholder(gc, tabX, y, tabW);
+          } else if (dragger.contains(dx + tabX, dy, tabW, rowH)) {
+            drawPlaceholder(gc, bx + tabX, by, tabW);
             tabX += tabW;
           }
         }
 
-        int clipW = Math.min(tabW, maxX - tabX) - TAB_MARGIN;
-        if (hovered != null && tab == hovered.tab) {
-          gc.setBackground(theme.tabFolderHovered());
-          gc.fillRectangle(tabX, y, tabW, tabH + 1);
-          if (tab.control == current) {
-            gc.drawImage(hovered.type == Hover.Type.Close ? theme.closeHovered() : theme.close(),
-                tabX + tabW - ICON_SIZE, y + (tabH - ICON_SIZE) / 2);
-            clipW = Math.min(tabW, maxX - tabX) - ICON_SIZE;
-          }
-        } else if (tab.control == current) {
+        if (isSelected) {
           gc.setBackground(theme.tabFolderSelected());
-          gc.fillRectangle(tabX, y, tabW, tabH + 1);
+          gc.fillRectangle(bx + tabX, by, tabW, tabH + 1);
+        }
+        if (tab == hovered.tab) {
+          gc.setBackground(theme.tabFolderHovered());
+          switch (hovered.type) {
+            case Tab:
+              int titleW = tabW;
+              if (isSelected) {
+                titleW -= ICON_SIZE; // close icon
+              }
+              gc.fillRectangle(bx + tabX, by, titleW, tabH + 1);
+              break;
+            case Close:
+              gc.fillRectangle(bx + tabX + tabW - ICON_SIZE, by, ICON_SIZE, tabH + 1);
+              break;
+            default:
+              // Do nothing.
+          }
         }
 
         gc.setForeground(theme.tabTitle());
-        if (tab.control == current) {
+        if (isSelected) {
+          gc.drawImage(theme.close(), bx + tabX + tabW - ICON_SIZE, by + (tabH - ICON_SIZE) / 2);
           gc.setBackground(theme.tabFolderLineSelected());
-          gc.fillRectangle(tabX, y + tabH, tabW, SEP_HEIGHT);
+          gc.fillRectangle(bx + tabX, by + tabH, tabW, SEP_HEIGHT);
           gc.setFont(theme.selectedTabTitleFont());
         }
-        gc.setClipping(tabX, y, clipW, h);
-        gc.drawText(tab.info.label, tabX + TAB_MARGIN, y + BAR_MARGIN, SWT.DRAW_TRANSPARENT);
-        gc.setClipping(x, y, w - ICON_SIZE, h);
-        if (tab.control == current) {
+        gc.drawText(tab.info.label, bx + tabX + TAB_MARGIN, by + BAR_MARGIN, SWT.DRAW_TRANSPARENT);
+        if (isSelected) {
           gc.setFont(null);
         }
 
         tabX += tabW;
-        if (tabX >= maxX) {
-          break;
-        }
       }
 
       if (dragger != null &&
-          dragger.location.x >= tabX && dragger.location.x < x + w &&
-          dragger.location.y >= y && dragger.location.y < y + tabH) {
-        int tabW = TAB_MARGIN + dragger.tab.tab.titleSize.x + ICON_SIZE;
-        drawPlaceholder(gc, tabX, y, tabW);
+          dragger.location.x >= dx + tabX && dragger.location.x < dx + w &&
+          dragger.location.y >= dy && dragger.location.y < dy + rowH) {
+        int tabW = dragger.tab.tab.getCurrentWidth(false);
+        drawPlaceholder(gc, bx + tabX, by, tabW);
       }
 
-      gc.setClipping((Rectangle)null);
-
-      if (hovered != null && hovered.type == Hover.Type.Maximize && hovered.folder == this) {
-        gc.setBackground(theme.tabFolderHovered());
-        gc.fillRectangle(x + w - ICON_SIZE, y, ICON_SIZE, tabH + 1);
-      }
-      gc.drawImage(maximized ? theme.fullscreenExit() : theme.fullscreen(),
-          x + w - ICON_SIZE, y + (tabH - ICON_SIZE) / 2);
+      gc.setClipping((Rectangle) null);
     }
 
     private void drawPlaceholder(GC gc, int px, int py, int pw) {
@@ -1125,30 +1210,49 @@ public class TabComposite extends Composite {
     }
 
     @Override
-    protected Hover find(Group parent, int index, int mx, int my, boolean includeTrailing) {
-      int tabH = BAR_MARGIN + titleHeight + BAR_MARGIN;
+    protected Hover find(Group parent, int index, int mx, int my) {
+      boolean hasDropdown = rowTitleEnds.size() > 1;
+      boolean showsDropdown = barDropdownShell != null && barDropdownShell.isVisible();
+
+      int rowH = BAR_MARGIN + titleHeight + BAR_MARGIN + SEP_HEIGHT;
+      int barH = rowH * (showsDropdown ? rowTitleEnds.size() : 1);
       if (mx < x || mx >= x + w || my < y || my >= y + h) {
         return Hover.NONE;
-      } else if (my >= y + tabH) {
+      } else if (my >= y + barH) {
         return Hover.folder(parent, index, this);
       }
 
-      if (mx >= x + w - ICON_SIZE) {
-        return Hover.maximize(this);
+      int row = Math.min((my - y) / rowH, rowTitleEnds.size() - 1);
+      if (row == 0) {
+        if (mx >= x + w - ICON_SIZE) {
+          return Hover.maximize(this);
+        } else if (hasDropdown && mx >= x + w - 2 * ICON_SIZE) {
+          return Hover.dropdown(this);
+        }
       }
 
+      int rowStart = row == 0 ? 0 : rowTitleEnds.get(row - 1);
+      int rowEnd = Math.min(rowTitleEnds.get(row), tabs.size());
       int tabX = x;
-      for (Tab tab : tabs) {
-        if (mx >= tabX && mx < tabX + tab.getCurrentWidth()) {
-          if (tab.control == current && mx >= tabX + tab.getCurrentWidth() - ICON_SIZE) {
+      for (int i = rowStart; i < rowEnd; i++) {
+        Tab tab = tabs.get(i);
+        boolean isSelected = tab.control == current;
+        int tabW = tab.getCurrentWidth(isSelected);
+
+        if (dragger != null && dragger.tab.tab == tab) {
+          continue;
+        }
+
+        if (mx >= tabX && mx < tabX + tabW) {
+          if (isSelected && mx >= tabX + tabW - ICON_SIZE) {
             return Hover.close(this, tab);
           } else {
             return Hover.tab(this, tab);
           }
         }
-        tabX += tab.getCurrentWidth();
+        tabX += tabW;
       }
-      return includeTrailing ? Hover.tab(this, null) : Hover.NONE;
+      return Hover.bar(this, row);
     }
 
     @Override
@@ -1168,24 +1272,26 @@ public class TabComposite extends Composite {
 
   public static interface Listener extends Events.Listener {
     public void onTabShown(TabInfo tab);
+
     public void onTabMoved(TabInfo tab);
   }
 
   private static class Tab {
     public final TabInfo info;
     public final Control control;
-    public final Point titleSize;
-    public int currentWidth;
+    public final Point titleSize, selectTitleSize;
 
-    public Tab(TabInfo info, Control control, Point titleSize) {
+    public Tab(TabInfo info, Control control, Point titleSize, Point selectTitleSize) {
       this.info = info;
       this.control = control;
       this.titleSize = titleSize;
-      this.currentWidth = -1;
+      this.selectTitleSize = selectTitleSize;
     }
 
-    public int getCurrentWidth() {
-      return currentWidth;
+    public int getCurrentWidth(boolean isSelected) {
+      return isSelected
+          ? Math.max(TAB_MARGIN + selectTitleSize.x + TAB_MARGIN + ICON_SIZE, MIN_TAB_WIDTH)
+          : Math.max(TAB_MARGIN + titleSize.x + TAB_MARGIN, MIN_TAB_WIDTH);
     }
   }
 
@@ -1216,12 +1322,20 @@ public class TabComposite extends Composite {
       return new Hover(Type.Close, null, 0, 0, folder, tab);
     }
 
+    public static Hover dropdown(Folder folder) {
+      return new Hover(Type.Dropdown, null, 0, 0, folder, null);
+    }
+
     public static Hover maximize(Folder folder) {
       return new Hover(Type.Maximize, null, 0, 0, folder, null);
     }
 
     public static Hover folder(Group parent, int index, Folder folder) {
       return new Hover(Type.Folder, parent, index, 0, folder, null);
+    }
+
+    public static Hover bar(Folder folder, int row) {
+      return new Hover(Type.Bar, null, row, 0, folder, null);
     }
 
     public static Hover tab(Folder folder, Tab tab) {
@@ -1237,11 +1351,12 @@ public class TabComposite extends Composite {
     }
 
     public boolean isBar() {
-      return type == Type.Close || type == Type.Maximize || type == Type.Tab;
+      return type == Type.Close || type == Type.Dropdown || type == Type.Maximize
+          || type == Type.Bar || type == Type.Tab;
     }
 
     public static enum Type {
-      None, Separator, Close, Maximize, Folder, Tab;
+      None, Separator, Close, Dropdown, Maximize, Folder, Bar, Tab;
     }
   }
 
