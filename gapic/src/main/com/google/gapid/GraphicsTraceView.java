@@ -163,7 +163,7 @@ public class GraphicsTraceView extends Composite
   @Override
   public void onShaderSelected(Service.Resource shader) {
     if (shader != null) {
-      tabs.showTab(MainTab.Type.ShaderView);
+      showTab(MainTab.Type.ShaderView);
     }
   }
 
