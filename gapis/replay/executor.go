@@ -117,7 +117,7 @@ func (e executor) HandleNotification(ctx context.Context, notification *gapir.No
 	// However notifications are handled, never survive a fatal error
 	errMsg := notification.GetErrorMsg()
 	if errMsg != nil && errMsg.Severity == severity.Severity_FatalLevel {
-		return log.Errf(ctx, fmt.Errorf("%s", errMsg.Msg), "Received a fatal error during replay")
+		return fmt.Errorf("Replay failed with a fatal error notification: %v", errMsg.Msg)
 	}
 	return nil
 }
