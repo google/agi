@@ -231,7 +231,7 @@ void Context::registerCallbacks(Interpreter* interpreter) {
           // drop them and try to create VkInstance again.
           if (Vulkan::hasValidationLayers(pCreateInfo->ppEnabledLayerNames,
                                           pCreateInfo->enabledLayerCount) ||
-              Vulkan::hasDebugReportOrDebugUtilsExtension(
+              Vulkan::hasDebugExtension(
                   pCreateInfo->ppEnabledExtensionNames,
                   pCreateInfo->enabledExtensionCount)) {
             onDebugMessage(
