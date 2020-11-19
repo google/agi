@@ -237,8 +237,7 @@ void Context::registerCallbacks(Interpreter* interpreter) {
             onDebugMessage(
                 LOG_LEVEL_WARNING, Vulkan::INDEX,
                 "Failed to create VkInstance with validation layers or "
-                "debug report or debug utils extension, drop them and "
-                "try again");
+                "debug extensions, dropping them and retrying");
             if (api->replayCreateVkInstanceImpl(stack, pCreateInfo, pAllocator,
                                                 pInstance, true, &result)) {
               // On Android, the replay happens in gapid APK, where any
