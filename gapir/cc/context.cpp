@@ -231,9 +231,8 @@ void Context::registerCallbacks(Interpreter* interpreter) {
           // drop them and try to create VkInstance again.
           if (Vulkan::hasValidationLayers(pCreateInfo->ppEnabledLayerNames,
                                           pCreateInfo->enabledLayerCount) ||
-              Vulkan::hasDebugExtension(
-                  pCreateInfo->ppEnabledExtensionNames,
-                  pCreateInfo->enabledExtensionCount)) {
+              Vulkan::hasDebugExtension(pCreateInfo->ppEnabledExtensionNames,
+                                        pCreateInfo->enabledExtensionCount)) {
             onDebugMessage(
                 LOG_LEVEL_WARNING, Vulkan::INDEX,
                 "Failed to create VkInstance with validation layers or "
