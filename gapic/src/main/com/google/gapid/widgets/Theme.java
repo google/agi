@@ -72,6 +72,7 @@ public interface Theme {
   @Icon(file = "culling_enabled.png") public Image cullingEnabled();
   @Icon(file = "depth_buffer.png") public Image depthBuffer();
   @Icon(file = "error.png") public Image error();
+  @Icon(file = "expand.png") public Image expand();
   @Icon(file = "expand_less.png") public Image expandLess();
   @Icon(file = "expand_more.png") public Image expandMore();
   @Icon(file = "faceted.png") public Image faceted();
