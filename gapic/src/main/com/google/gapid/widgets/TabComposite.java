@@ -1085,9 +1085,17 @@ public class TabComposite extends Composite {
     }
 
     protected void removeTab(Tab tab) {
-      tabs.remove(tab);
       if (current == tab.control) {
-        current = tabs.isEmpty() ? null : tabs.get(0).control;
+        int index = tabs.indexOf(tab);
+        if (index >= 0) {
+          tabs.remove(index);
+          if (index == tabs.size()) {
+            index--;
+          }
+          current = index >= 0 ? tabs.get(index).control : null;
+        }
+      } else {
+        tabs.remove(tab);
       }
       updateRowTitleEnds();
       requestLayout();
@@ -1096,26 +1104,28 @@ public class TabComposite extends Composite {
     protected boolean updateCurrent(Control newCurrent) {
       if (current != newCurrent) {
         current = newCurrent;
-
-        currentTitleRow = 0;
-        int index = 0;
-        while (currentTitleRow + 1 < rowTitleEnds.size()) {
-          while (index < rowTitleEnds.get(currentTitleRow)
-              && index < tabs.size() && tabs.get(index).control != current) {
-            index++;
-          }
-          if (index == rowTitleEnds.get(currentTitleRow)) {
-            currentTitleRow++;
-          } else {
-            break;
-          }
-        }
-
+        updateCurrentTitleRow();
         requestLayout();
         redrawBar();
         return true;
       }
       return false;
+    }
+
+    protected void updateCurrentTitleRow() {
+      currentTitleRow = 0;
+      int index = 0;
+      while (currentTitleRow + 1 < rowTitleEnds.size()) {
+        while (index < rowTitleEnds.get(currentTitleRow)
+            && index < tabs.size() && tabs.get(index).control != current) {
+          index++;
+        }
+        if (index == rowTitleEnds.get(currentTitleRow)) {
+          currentTitleRow++;
+        } else {
+          break;
+        }
+      }
     }
 
     @Override
