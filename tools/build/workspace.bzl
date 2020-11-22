@@ -145,8 +145,8 @@ def gapid_dependencies(android = True, mingw = True, locals = {}):
         locals = locals,
         organization = "KhronosGroup",
         project = "glslang",
-        commit = "8db9eccc0baf30c9d22c496ab28db0fe1e4e97c5",  # 8.13.3559
-        sha256 = "5c11a228d41ec011918b9c8beb60b6556745d30c8c856ec622beab5c5469152d",
+        commit = "3ee5f2f1d3316e228916788b300d786bb574d337",  # SDK-candidate-26-Jul-2020
+        sha256 = "8f4ebd7ff348a7f752e4646e43d4e41b4747323d635f5ae49096771d5c64fb31",
     )
 
     maybe_repository(
@@ -182,7 +182,7 @@ def gapid_dependencies(android = True, mingw = True, locals = {}):
         remote = "https://chromium.googlesource.com/linux-syscall-support",
         commit = "fd00dbbd0c06a309c657d89e9430143b179ff6db",
         build_file = "@gapid//tools/build/third_party:lss.BUILD",
-       shallow_since = "1583885669 +0000",
+        shallow_since = "1583885669 +0000",
     )
 
     maybe_repository(
@@ -351,6 +351,7 @@ def _grpc_deps(locals):
         locals = locals,
         # on the master-with-bazel branch
         url = "https://boringssl.googlesource.com/boringssl/+archive/afc30d43eef92979b05776ec0963c9cede5fb80f.tar.gz",
+        sha256 = "3a6f02a350be914dd9db98afe56463f22b5628c0952758eb9bde705ba786a527",
     )
 
     maybe_repository(github_repository,
