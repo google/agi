@@ -53,6 +53,7 @@ wget -q http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-libs-10.2.0-5-an
 %BUILD_ROOT%\msys64\usr\bin\bash --login -c "pacman -S --noconfirm git patch"
 %BUILD_ROOT%\msys64\usr\bin\bash --login -c "pacman -U --noconfirm /t/src/mingw-w64-x86_64-gcc-10.2.0-5-any.pkg.tar.zst /t/src/mingw-w64-x86_64-gcc-libs-10.2.0-5-any.pkg.tar.zst"
 set PATH=%BUILD_ROOT%\msys64\mingw64\bin;%BUILD_ROOT%\msys64\usr\bin;%PATH%
+set BAZEL_SH=%BUILD_ROOT%\msys64\usr\bin\bash
 
 REM Manually install only the required MSYS packages. Do NOT do a
 REM system update (pacman -Syu) because it is a moving target.
@@ -73,7 +74,7 @@ REM c:\tools\msys64\usr\bin\bash --login -c "pacman -U --noconfirm /t/src/mingw-
 REM wget -q http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-crt-git-9.0.0.6029.ecb4ff54-1-any.pkg.tar.zst
 REM c:\tools\msys64\usr\bin\bash --login -c "pacman -U --noconfirm /t/src/mingw-w64-x86_64-crt-git-9.0.0.6029.ecb4ff54-1-any.pkg.tar.zst"
 REM set PATH=c:\tools\msys64\mingw64\bin;c:\tools\msys64\usr\bin;%PATH%
-set BAZEL_SH=c:\tools\msys64\usr\bin\bash
+REM set BAZEL_SH=c:\tools\msys64\usr\bin\bash
 
 REM Get the JDK from our mirror.
 set JDK_BUILD=zulu8.46.0.19-ca
