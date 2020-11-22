@@ -44,15 +44,13 @@ wget -q https://github.com/wixtoolset/wix3/releases/download/wix311rtm/wix311-bi
 unzip -q -d wix wix311-binaries.zip
 set WIX=%cd%\wix
 
-wmic product get name
-
 wget -q https://github.com/msys2/msys2-installer/releases/download/2020-11-09/msys2-base-x86_64-20201109.sfx.exe
 .\msys2-base-x86_64-20201109.sfx.exe -y -o%BUILD_ROOT%\
 
 wget -q http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-10.2.0-5-any.pkg.tar.zst
 wget -q http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-libs-10.2.0-5-any.pkg.tar.zst
-%BUILDROOT%\msys64\usr\bin\bash --login -c "pacman -Q"
-%BUILDROOT%\msys64\usr\bin\bash --login -c "pacman -U --noconfirm /t/src/mingw-w64-x86_64-gcc-10.2.0-5-any.pkg.tar.zst /t/src/mingw-w64-x86_64-gcc-libs-10.2.0-5-any.pkg.tar.zst"
+%BUILD_ROOT%\msys64\usr\bin\bash --login -c "pacman -Q"
+%BUILD_ROOT%\msys64\usr\bin\bash --login -c "pacman -U --noconfirm /t/src/mingw-w64-x86_64-gcc-10.2.0-5-any.pkg.tar.zst /t/src/mingw-w64-x86_64-gcc-libs-10.2.0-5-any.pkg.tar.zst"
 set PATH=%BUILD_ROOT%\msys64\mingw64\bin;%BUILD_ROOT%\msys64\usr\bin;%PATH%
 
 REM Manually install only the required MSYS packages. Do NOT do a
