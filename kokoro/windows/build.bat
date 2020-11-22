@@ -16,9 +16,6 @@ limitations under the License.
 Windows Build Script.
 
 :start
-dir "%ProgramFiles(x86)%\WiX Toolset v3.11\bin"
-EXIT /B
-
 set BUILD_ROOT=%cd%
 set SRC=%cd%\github\agi
 
@@ -43,9 +40,10 @@ unzip -q android-ndk-r21d-windows-x86_64.zip
 set ANDROID_NDK_HOME=%CD%\android-ndk-r21d
 
 REM Install WiX Toolset.
-wget -q https://github.com/wixtoolset/wix3/releases/download/wix311rtm/wix311-binaries.zip
-unzip -q -d wix wix311-binaries.zip
-set WIX=%cd%\wix
+REM wget -q https://github.com/wixtoolset/wix3/releases/download/wix311rtm/wix311-binaries.zip
+REM unzip -q -d wix wix311-binaries.zip
+REM set WIX=%cd%\wix
+set WIX="%ProgramFiles(x86)%\WiX Toolset v3.11\bin"
 
 wget -q https://github.com/msys2/msys2-installer/releases/download/2020-11-09/msys2-base-x86_64-20201109.sfx.exe
 .\msys2-base-x86_64-20201109.sfx.exe -y -o%BUILD_ROOT%\
