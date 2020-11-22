@@ -351,7 +351,6 @@ def _grpc_deps(locals):
         locals = locals,
         # on the master-with-bazel branch
         url = "https://boringssl.googlesource.com/boringssl/+archive/afc30d43eef92979b05776ec0963c9cede5fb80f.tar.gz",
-        sha256 = "3a6f02a350be914dd9db98afe56463f22b5628c0952758eb9bde705ba786a527",
     )
 
     maybe_repository(github_repository,
