@@ -16,7 +16,7 @@ limitations under the License.
 Windows Build Script.
 
 :start
-dir "%ProgramFiles(x86)%\WiX Toolset v3.11"
+dir "%ProgramFiles(x86)%\WiX Toolset v3.11\bin"
 EXIT /B
 
 set BUILD_ROOT=%cd%
