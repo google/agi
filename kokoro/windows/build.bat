@@ -16,6 +16,10 @@ limitations under the License.
 Windows Build Script.
 
 :start
+dir "%ProgramFiles%"
+dir "%ProgramFiles(x86)%"
+EXIT /B
+
 set BUILD_ROOT=%cd%
 set SRC=%cd%\github\agi
 
