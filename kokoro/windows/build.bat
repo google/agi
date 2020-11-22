@@ -47,12 +47,13 @@ set WIX="%ProgramFiles(x86)%\WiX Toolset v3.11\bin"
 
 wget -q https://github.com/msys2/msys2-installer/releases/download/2020-11-09/msys2-base-x86_64-20201109.sfx.exe
 .\msys2-base-x86_64-20201109.sfx.exe -y -o%BUILD_ROOT%\
+%BUILD_ROOT%\msys64\usr\bin\bash -lc " "
+%BUILD_ROOT%\msys64\usr\bin\bash -lc "pacman -Q"
+%BUILD_ROOT%\msys64\usr\bin\bash -lc "pacman -S --noconfirm git patch zip unzip"
 
 wget -q http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-10.2.0-5-any.pkg.tar.zst
 wget -q http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-libs-10.2.0-5-any.pkg.tar.zst
-%BUILD_ROOT%\msys64\usr\bin\bash --login -c "pacman -Q"
-%BUILD_ROOT%\msys64\usr\bin\bash --login -c "pacman -S --noconfirm git patch"
-%BUILD_ROOT%\msys64\usr\bin\bash --login -c "pacman -U --noconfirm /t/src/mingw-w64-x86_64-gcc-10.2.0-5-any.pkg.tar.zst /t/src/mingw-w64-x86_64-gcc-libs-10.2.0-5-any.pkg.tar.zst"
+%BUILD_ROOT%\msys64\usr\bin\bash -lc "pacman -U --noconfirm /t/src/mingw-w64-x86_64-gcc-10.2.0-5-any.pkg.tar.zst /t/src/mingw-w64-x86_64-gcc-libs-10.2.0-5-any.pkg.tar.zst"
 set PATH=%BUILD_ROOT%\msys64\mingw64\bin;%BUILD_ROOT%\msys64\usr\bin;%PATH%
 set BAZEL_SH=%BUILD_ROOT%\msys64\usr\bin\bash
 
