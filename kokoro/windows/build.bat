@@ -39,44 +39,28 @@ wget -q https://dl.google.com/android/repository/android-ndk-r21d-windows-x86_64
 unzip -q android-ndk-r21d-windows-x86_64.zip
 set ANDROID_NDK_HOME=%CD%\android-ndk-r21d
 
-REM Install WiX Toolset.
-REM wget -q https://github.com/wixtoolset/wix3/releases/download/wix311rtm/wix311-binaries.zip
-REM unzip -q -d wix wix311-binaries.zip
-REM set WIX=%cd%\wix
-set WIX=%ProgramFiles(x86)%\WiX Toolset v3.11\bin
-
+REM Download and install MSYS2, because the pre-installed version is too old.
+REM Do NOT do a system update (pacman -Syu) because it is a moving target.
 wget -q https://github.com/msys2/msys2-installer/releases/download/2020-11-09/msys2-base-x86_64-20201109.sfx.exe
 .\msys2-base-x86_64-20201109.sfx.exe -y -o%BUILD_ROOT%\
+
+REM Start empty shell to initialize MSYS2.
 %BUILD_ROOT%\msys64\usr\bin\bash -lc " "
-%BUILD_ROOT%\msys64\usr\bin\bash -lc "pacman -Q"
+
+REM Uncomment the following line to list all packages and versions installed in MSYS2.
+REM %BUILD_ROOT%\msys64\usr\bin\bash -lc "pacman -Q"
+
+REM Install packages required by the build process.
 %BUILD_ROOT%\msys64\usr\bin\bash -lc "pacman -S --noconfirm git patch zip unzip"
 
+REM Download and install specific compiler version.
 wget -q http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-10.2.0-5-any.pkg.tar.zst
 wget -q http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-libs-10.2.0-5-any.pkg.tar.zst
 %BUILD_ROOT%\msys64\usr\bin\bash -lc "pacman -U --noconfirm /t/src/mingw-w64-x86_64-gcc-10.2.0-5-any.pkg.tar.zst /t/src/mingw-w64-x86_64-gcc-libs-10.2.0-5-any.pkg.tar.zst"
+
+REM Configure build process to use the now installed MSYS2.
 set PATH=%BUILD_ROOT%\msys64\mingw64\bin;%BUILD_ROOT%\msys64\usr\bin;%PATH%
 set BAZEL_SH=%BUILD_ROOT%\msys64\usr\bin\bash
-
-REM Manually install only the required MSYS packages. Do NOT do a
-REM system update (pacman -Syu) because it is a moving target.
-REM First update pacman to support packages compressed with zstd.
-REM c:\tools\msys64\usr\bin\bash --login -c "pacman -Sydd --noconfirm pacman"
-REM c:\tools\msys64\usr\bin\bash --login -c "pacman -R --noconfirm catgets libcatgets"
-REM Use an old version of patch known to work with the msys runtime
-REM version that comes on Kokoro. Temporarily getting it from an
-REM alternate mirror, since they msys host no longer carries this
-REM version.
-REM wget -q http://ftp.oregonstate.edu/pub/xbmc/build-deps/win32/msys2/repos/msys2/x86_64/patch-2.7.5-1-x86_64.pkg.tar.xz
-REM c:\tools\msys64\usr\bin\bash --login -c "pacman -v -U --noconfirm  /t/src/patch-2.7.5-1-x86_64.pkg.tar.xz"
-REM wget -q http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-binutils-2.35.1-3-any.pkg.tar.zst
-REM c:\tools\msys64\usr\bin\bash --login -c "pacman -U --noconfirm /t/src/mingw-w64-x86_64-binutils-2.35.1-3-any.pkg.tar.zst"
-REM wget -q http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-10.2.0-5-any.pkg.tar.zst
-REM wget -q http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-libs-10.2.0-5-any.pkg.tar.zst
-REM c:\tools\msys64\usr\bin\bash --login -c "pacman -U --noconfirm /t/src/mingw-w64-x86_64-gcc-10.2.0-5-any.pkg.tar.zst /t/src/mingw-w64-x86_64-gcc-libs-10.2.0-5-any.pkg.tar.zst"
-REM wget -q http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-crt-git-9.0.0.6029.ecb4ff54-1-any.pkg.tar.zst
-REM c:\tools\msys64\usr\bin\bash --login -c "pacman -U --noconfirm /t/src/mingw-w64-x86_64-crt-git-9.0.0.6029.ecb4ff54-1-any.pkg.tar.zst"
-REM set PATH=c:\tools\msys64\mingw64\bin;c:\tools\msys64\usr\bin;%PATH%
-REM set BAZEL_SH=c:\tools\msys64\usr\bin\bash
 
 REM Get the JDK from our mirror.
 set JDK_BUILD=zulu8.46.0.19-ca
@@ -126,6 +110,9 @@ echo %DATE% %TIME%
 REM Smoketests
 %SRC%\bazel-bin\cmd\smoketests\windows_amd64_stripped\smoketests -gapit bazel-bin\pkg\gapit -traces test\traces
 echo %DATE% %TIME%
+
+REM Configure package script to use the pre-installed WiX Toolset.
+set WIX=%ProgramFiles(x86)%\WiX Toolset v3.11\bin
 
 REM Build the release packages.
 mkdir %BUILD_ROOT%\out
