@@ -43,7 +43,7 @@ REM Install WiX Toolset.
 REM wget -q https://github.com/wixtoolset/wix3/releases/download/wix311rtm/wix311-binaries.zip
 REM unzip -q -d wix wix311-binaries.zip
 REM set WIX=%cd%\wix
-set WIX="%ProgramFiles(x86)%\WiX Toolset v3.11\bin"
+set WIX=%ProgramFiles(x86)%\WiX Toolset v3.11\bin
 
 wget -q https://github.com/msys2/msys2-installer/releases/download/2020-11-09/msys2-base-x86_64-20201109.sfx.exe
 .\msys2-base-x86_64-20201109.sfx.exe -y -o%BUILD_ROOT%\
