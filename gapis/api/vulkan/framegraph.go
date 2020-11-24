@@ -592,41 +592,41 @@ func (API) GetFramegraph(ctx context.Context, p *path.Capture) (*api.Framegraph,
 	return &api.Framegraph{Nodes: nodes, Edges: edges}, nil
 }
 
-// updateDependencies establishes dependencies between renderpasses.
+// updateDependencies establishes dependencies between workloads.
 func updateDependencies(workloadInfos []*workloadInfo, dependencyGraph dependencygraph2.DependencyGraph) {
-	// isInsideRenderpass: node -> renderpass it belongs to.
-	isInsideRenderpass := map[dependencygraph2.NodeID]uint64{}
+	// isInWorkload: node -> workload it belongs to.
+	isInWorkload := map[dependencygraph2.NodeID]uint64{}
 	for _, wlInfo := range workloadInfos {
 		for _, n := range wlInfo.nodes {
-			isInsideRenderpass[n] = wlInfo.id
+			isInWorkload[n] = wlInfo.id
 		}
 	}
-	// node2renderpasses: node -> set of renderpasses it depends on.
-	node2renderpasses := map[dependencygraph2.NodeID]map[uint64]struct{}{}
+	// node2workloads: node -> set of workloads it depends on.
+	node2workloads := map[dependencygraph2.NodeID]map[uint64]struct{}{}
 
-	// For a given renderpass RP, for each of its node, explore the dependency
-	// graph in reverse order to mark all the nodes dependending on RP until we
-	// hit the node of another renderpass, which then depends on RP.
+	// For a given workload WL, for each of its node, explore the dependency
+	// graph in reverse order to mark all the nodes dependending on WL until we
+	// hit the node of another workload, which then depends on WL.
 	for _, wlInfo := range workloadInfos {
 		// markNode is recursive, so declare it before initializing it.
 		var markNode func(dependencygraph2.NodeID) error
 		markNode = func(node dependencygraph2.NodeID) error {
-			if id, ok := isInsideRenderpass[node]; ok {
+			if id, ok := isInWorkload[node]; ok {
 				if id != wlInfo.id {
-					// Reached a node that is inside another renderpass, so this
-					// renderpass depends on wlInfo.
+					// Reached a node that is inside another workload, so this
+					// workload depends on wlInfo.
 					workloadInfos[id].deps[wlInfo.id] = struct{}{}
 				}
 				return nil
 			}
-			if _, ok := node2renderpasses[node]; !ok {
-				node2renderpasses[node] = map[uint64]struct{}{}
+			if _, ok := node2workloads[node]; !ok {
+				node2workloads[node] = map[uint64]struct{}{}
 			}
-			if _, ok := node2renderpasses[node][wlInfo.id]; ok {
+			if _, ok := node2workloads[node][wlInfo.id]; ok {
 				// Node already visited, stop recursion
 				return nil
 			}
-			node2renderpasses[node][wlInfo.id] = struct{}{}
+			node2workloads[node][wlInfo.id] = struct{}{}
 			return dependencyGraph.ForeachDependencyTo(node, markNode)
 		}
 		for _, node := range wlInfo.nodes {
