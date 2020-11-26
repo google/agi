@@ -112,7 +112,7 @@ func processGpuSlices(ctx context.Context, processor *perfetto.Processor, captur
 	slicesColumns := slicesQueryResult.GetColumns()
 	numSliceRows := slicesQueryResult.GetNumRecords()
 	slices := make([]*service.ProfilingData_GpuSlices_Slice, numSliceRows)
-	groups := make([]*service.ProfilingData_GpuSlices_Group, 0)
+	groupsMap := map[api.CmdSubmissionKey]*service.ProfilingData_GpuSlices_Group{}
 	groupIds := make([]int32, numSliceRows)
 	var tracks []*service.ProfilingData_GpuSlices_Track
 	// Grab all the column values. Depends on the order of columns selected in slicesQuery
@@ -144,10 +144,13 @@ func processGpuSlices(ctx context.Context, processor *perfetto.Processor, captur
 	subCommandGroupMap := make(map[api.CmdSubmissionKey]int)
 	for i, v := range submissionIds {
 		subOrder, ok := submissionOrdering[v]
+		groupId := int32(-1)
 		if ok {
 			cb := uint64(commandBuffers[i])
 			key := api.CmdSubmissionKey{subOrder, cb, uint64(renderPasses[i]), uint64(renderTargets[i])}
-			if indices, ok := syncData.SubmissionIndices[key]; ok {
+			if group, ok := groupsMap[key]; ok {
+				groupId = group.Id
+			} else if indices, ok := syncData.SubmissionIndices[key]; ok {
 				if names[i] == renderPassSliceName {
 					var idx []uint64
 					if c, ok := subCommandGroupMap[key]; ok {
@@ -157,11 +160,15 @@ func processGpuSlices(ctx context.Context, processor *perfetto.Processor, captur
 						subCommandGroupMap[key] = 0
 					}
 
+					parent := findParentGroup(ctx, subOrder, cb, groupsMap, syncData.SubmissionIndices, capture)
+					groupId = int32(len(groupsMap))
 					group := &service.ProfilingData_GpuSlices_Group{
-						Id:   int32(len(groups)),
-						Link: &path.Command{Capture: capture, Indices: idx},
+						Id:     groupId,
+						Name:   fmt.Sprintf("RenderPass %v", uint64(renderPasses[i])),
+						Parent: parent,
+						Link:   &path.Command{Capture: capture, Indices: idx},
 					}
-					groups = append(groups, group)
+					groupsMap[key] = group
 					subCommandGroupMap[key]++
 				}
 			}
@@ -169,7 +176,11 @@ func processGpuSlices(ctx context.Context, processor *perfetto.Processor, captur
 			log.W(ctx, "Encountered submission ID mismatch %v", v)
 		}
 
-		groupIds[i] = int32(len(groups)) - 1
+		groupIds[i] = groupId
+	}
+	groups := []*service.ProfilingData_GpuSlices_Group{}
+	for _, group := range groupsMap {
+		groups = append(groups, group)
 	}
 
 	for i := uint64(0); i < numSliceRows; i++ {
@@ -293,4 +304,36 @@ func processCounters(ctx context.Context, processor *perfetto.Processor, desc *d
 		}
 	}
 	return counters, nil
+}
+
+// For a renderPass leafy group, find its parent group and return it.
+// If the parent groups are not created yet, create them and store in the map.
+func findParentGroup(ctx context.Context, subOrder, cb uint64, groupsMap map[api.CmdSubmissionKey]*service.ProfilingData_GpuSlices_Group, links map[api.CmdSubmissionKey][]api.SubCmdIdx, capture *path.Capture) *service.ProfilingData_GpuSlices_Group {
+	commandBufferKey := api.CmdSubmissionKey{subOrder, cb, 0, 0}
+	if group, ok := groupsMap[commandBufferKey]; ok {
+		return group
+	} else {
+		submissionKey := api.CmdSubmissionKey{subOrder, 0, 0, 0}
+		var submissionGroup *service.ProfilingData_GpuSlices_Group
+		if g, ok := groupsMap[submissionKey]; ok {
+			submissionGroup = g
+		} else {
+			submissionGroup = &service.ProfilingData_GpuSlices_Group{
+				Id:     int32(len(groupsMap)),
+				Name:   fmt.Sprintf("Submission: %v", subOrder),
+				Parent: nil,
+				Link:   &path.Command{Capture: capture, Indices: links[submissionKey][0]},
+			}
+			groupsMap[submissionKey] = submissionGroup
+		}
+
+		commandBufferGroup := &service.ProfilingData_GpuSlices_Group{
+			Id:     int32(len(groupsMap)),
+			Name:   fmt.Sprintf("Command Buffer: %v", cb),
+			Parent: submissionGroup,
+			Link:   &path.Command{Capture: capture, Indices: links[commandBufferKey][0]},
+		}
+		groupsMap[commandBufferKey] = commandBufferGroup
+		return commandBufferGroup
+	}
 }
