@@ -145,8 +145,8 @@ def gapid_dependencies(android = True, mingw = True, locals = {}):
         locals = locals,
         organization = "KhronosGroup",
         project = "glslang",
-        commit = "3ee5f2f1d3316e228916788b300d786bb574d337",  # SDK-candidate-26-Jul-2020
-        sha256 = "8f4ebd7ff348a7f752e4646e43d4e41b4747323d635f5ae49096771d5c64fb31",
+        commit = "740ae9f60b009196662bad811924788cee56133a",  # 10-11.0.0
+        sha256 = "c015e7d81c0a248562c25a1e484fb8528eb6a765312cf5de3bdb658b03562b3f",
     )
 
     maybe_repository(
