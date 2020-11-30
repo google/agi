@@ -888,12 +888,11 @@ public class TabComposite extends Composite {
 
     public void newTab(TabInfo info) {
       GC gc = new GC(TabComposite.this);
-      Point size = gc.textExtent(info.label);
       gc.setFont(theme.selectedTabTitleFont());
-      Point selectSize = gc.textExtent(info.label);
+      Point size = gc.textExtent(info.label);
       gc.dispose();
 
-      addTab(new Tab(info, info.contentFactory.apply(TabComposite.this), size, selectSize));
+      addTab(new Tab(info, info.contentFactory.apply(TabComposite.this), size));
     }
 
     @Override
@@ -951,22 +950,18 @@ public class TabComposite extends Composite {
       int oldRowCount = rowTitleEnds.size();
       rowTitleEnds.clear();
       int rowWidth = 0;
-      int maxReserve = 0;  // reserve for maximum space needed by selection
       int index = 0;
       while (index < tabs.size()) {
         Tab tab = tabs.get(index);
-        int tabWidth = tab.getUnselectedWidth();
-        int reserve = tab.getMaximumWidth() - tabWidth;
+        int tabWidth = tab.getWidth();
         rowWidth += tabWidth;
-        maxReserve = Math.max(maxReserve, reserve);
         int maxRowWidth = w - ICON_SIZE;  // reserve space for maximize button
         if (!rowTitleEnds.isEmpty() || index < tabs.size() - 1) {
           maxRowWidth -= ICON_SIZE;  // reserve space for expand icon if last tab not in first row
         }
-        if (index > 0 && rowWidth + maxReserve > maxRowWidth) {
+        if (index > 0 && rowWidth > maxRowWidth) {
           rowTitleEnds.add(index);
           rowWidth = tabWidth;
-          maxReserve = reserve;
         }
         if (tab.control == current) {
           currentTitleRow = rowTitleEnds.size();
@@ -1029,7 +1024,7 @@ public class TabComposite extends Composite {
     private int getMaxTitleHeight() {
       int height = 0;
       for (Tab tab : tabs) {
-        height = Math.max(height, Math.max(tab.titleSize.y, tab.selectTitleSize.y));
+        height = Math.max(height, tab.titleSize.y);
       }
       return height;
     }
@@ -1189,7 +1184,7 @@ public class TabComposite extends Composite {
       for (int index = rowStart; index < rowEnd; index++) {
         Tab tab = tabs.get(index);
         boolean isSelected = tab.control == current;
-        int tabW = tab.getCurrentWidth(isSelected);
+        int tabW = tab.getWidth();
 
         if (dragger != null) {
           if (dragger.tab.tab == tab) {
@@ -1216,11 +1211,11 @@ public class TabComposite extends Composite {
             default:
               // Do nothing.
           }
+          gc.drawImage(theme.close(), b.x + tabX + tabW - ICON_SIZE, b.y + (tabH - ICON_SIZE) / 2);
         }
 
         gc.setForeground(theme.tabTitle());
         if (isSelected) {
-          gc.drawImage(theme.close(), b.x + tabX + tabW - ICON_SIZE, b.y + (tabH - ICON_SIZE) / 2);
           gc.setBackground(theme.tabFolderLineSelected());
           gc.fillRectangle(b.x + tabX, b.y + tabH, tabW, SEP_HEIGHT);
           gc.setFont(theme.selectedTabTitleFont());
@@ -1237,8 +1232,7 @@ public class TabComposite extends Composite {
       if (dragger != null &&
           dragger.location.x >= d.x + tabX && dragger.location.x < d.x + w &&
           dragger.location.y >= d.y && dragger.location.y < d.y + rowH) {
-        int tabW = dragger.tab.tab.getCurrentWidth(false);
-        drawPlaceholder(gc, b.x + tabX, b.y, tabW);
+        drawPlaceholder(gc, b.x + tabX, b.y, dragger.tab.tab.getWidth());
       }
 
       gc.setClipping((Rectangle) null);
@@ -1308,15 +1302,14 @@ public class TabComposite extends Composite {
       int tabX = x;
       for (int i = rowStart; i < rowEnd; i++) {
         Tab tab = tabs.get(i);
-        boolean isSelected = tab.control == current;
-        int tabW = tab.getCurrentWidth(isSelected);
+        int tabW = tab.getWidth();
 
         if (dragger != null && dragger.tab.tab == tab) {
           continue;
         }
 
         if (mx >= tabX && mx < tabX + tabW) {
-          if (isSelected && mx >= tabX + tabW - ICON_SIZE) {
+          if (mx >= tabX + tabW - ICON_SIZE) {
             return Hover.close(this, tab);
           } else {
             return Hover.tab(this, tab);
@@ -1351,26 +1344,16 @@ public class TabComposite extends Composite {
   private static class Tab {
     public final TabInfo info;
     public final Control control;
-    public final Point titleSize, selectTitleSize;
+    public final Point titleSize;
 
-    public Tab(TabInfo info, Control control, Point titleSize, Point selectTitleSize) {
+    public Tab(TabInfo info, Control control, Point titleSize) {
       this.info = info;
       this.control = control;
       this.titleSize = titleSize;
-      this.selectTitleSize = selectTitleSize;
     }
 
-    public int getUnselectedWidth() {
-      return Math.max(TAB_MARGIN + titleSize.x + TAB_MARGIN, MIN_TAB_WIDTH);
-    }
-
-    public int getMaximumWidth() {
-      return Math.max(TAB_MARGIN + selectTitleSize.x + TAB_MARGIN + ICON_SIZE, MIN_TAB_WIDTH);
-    }
-
-    public int getCurrentWidth(boolean isSelected) {
-      return !isSelected ? getUnselectedWidth()
-          : Math.max(TAB_MARGIN + selectTitleSize.x + TAB_MARGIN + ICON_SIZE, MIN_TAB_WIDTH);
+    public int getWidth() {
+      return Math.max(TAB_MARGIN + titleSize.x + TAB_MARGIN + ICON_SIZE, MIN_TAB_WIDTH);
     }
   }
 
