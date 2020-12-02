@@ -53,7 +53,6 @@ public class TabComposite extends Composite {
   private static final int MIN_HEIGHT = 75;
   private static final int MIN_TAB_WIDTH = 50;
 
-  protected final TabManager manager;
   protected final Theme theme;
   private final Group group;
   private final Events.ListenerCollection<Listener> listeners = Events.listeners(Listener.class);
@@ -64,9 +63,8 @@ public class TabComposite extends Composite {
   protected Dragger dragger = null;
   private Folder expandedBarFolder = null;
 
-  public TabComposite(Composite parent, TabManager manager, Theme theme, boolean horizontal) {
+  public TabComposite(Composite parent, Theme theme, boolean horizontal) {
     super(parent, SWT.BORDER | SWT.DOUBLE_BUFFERED);
-    this.manager = manager;
     this.theme = theme;
     this.group = horizontal ? new HorizontalGroup(1) : new VerticalGroup(1);
 
@@ -96,7 +94,7 @@ public class TabComposite extends Composite {
         mouseDown = hovered;
         switch (mouseDown.type) {
           case Close:
-            manager.closeTab(mouseDown.tab.info.id);
+            disposeTab(mouseDown.tab.info.id);
             break;
           case Maximize:
             if (maximizedFolder == null) {
@@ -299,15 +297,19 @@ public class TabComposite extends Composite {
 
   public void addTabToFirstFolder(TabInfo info) {
     group.addTabToFirstFolder(info);
+    listeners.fire().onTabCreated(info);
   }
 
   public void addTabToLargestFolder(TabInfo info) {
     group.addTabToLargestFolder(info);
+    listeners.fire().onTabCreated(info);
   }
 
   public boolean disposeTab(Object id) {
-    if (group.disposeTab(id)) {
+    TabInfo disposed = group.disposeTab(id);
+    if (disposed != null) {
       group.merge();
+      listeners.fire().onTabClosed(disposed);
       return true;
     }
     return false;
@@ -399,7 +401,7 @@ public class TabComposite extends Composite {
     public abstract boolean showTab(Object id);
     public abstract void addTabToFirstFolder(TabInfo tab);
     public abstract void addTabToLargestFolder(TabInfo tab);
-    public abstract boolean disposeTab(Object id);
+    public abstract TabInfo disposeTab(Object id);
 
     public abstract void setBounds(Set<Control> controls, int x, int y, int w, int h);
 
@@ -495,13 +497,14 @@ public class TabComposite extends Composite {
     }
 
     @Override
-    public boolean disposeTab(Object id) {
+    public TabInfo disposeTab(Object id) {
       for (Element child : children) {
-        if (child.disposeTab(id)) {
-          return true;
+        TabInfo disposed = child.disposeTab(id);
+        if (disposed != null) {
+          return disposed;
         }
       }
-      return false;
+      return null;
     }
 
     protected abstract Group createGroup(int newWeight);
@@ -917,15 +920,15 @@ public class TabComposite extends Composite {
     }
 
     @Override
-    public boolean disposeTab(Object id) {
+    public TabInfo disposeTab(Object id) {
       for (Tab tab : tabs) {
         if (Objects.equals(tab.info.id, id)) {
           removeTab(tab);
           tab.control.dispose();
-          return true;
+          return tab.info;
         }
       }
-      return false;
+      return null;
     }
 
     @Override
@@ -1211,6 +1214,9 @@ public class TabComposite extends Composite {
             default:
               // Do nothing.
           }
+        }
+
+        if (isSelected || tab == hovered.tab) {
           gc.drawImage(theme.close(), b.x + tabX + tabW - ICON_SIZE, b.y + (tabH - ICON_SIZE) / 2);
         }
 
@@ -1335,10 +1341,15 @@ public class TabComposite extends Composite {
     }
   }
 
+  @SuppressWarnings("unused")
   public static interface Listener extends Events.Listener {
-    public void onTabShown(TabInfo tab);
+    public default void onTabCreated(TabInfo tab) { /* do nothing */ }
 
-    public void onTabMoved(TabInfo tab);
+    public default void onTabClosed(TabInfo tab) { /* do nothing */ }
+
+    public default void onTabShown(TabInfo tab) { /* do nothing */ }
+
+    public default void onTabMoved(TabInfo tab) { /* do nothing */ }
   }
 
   private static class Tab {
@@ -1380,11 +1391,7 @@ public class TabComposite extends Composite {
     public boolean equals(Object o) {
       if (this == o) {
         return true;
-      }
-      if (o == null) {
-        return false;
-      }
-      if (getClass() != o.getClass()) {
+      } else if (!(o instanceof Hover)) {
         return false;
       }
       Hover other = (Hover)o;
@@ -1529,9 +1536,5 @@ public class TabComposite extends Composite {
       overlay.close();
       shell.dispose();
     }
-  }
-
-  public interface TabManager {
-    public void closeTab(Object id);
   }
 }

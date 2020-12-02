@@ -34,13 +34,22 @@ import java.util.List;
  * with movable dividers.
  */
 public class TabArea extends TabComposite {
-  public TabArea(Composite parent, Analytics analytics, TabManager manager, Theme theme,
-      Persistance persistance) {
-    super(parent, manager, theme, false);
+  public TabArea(Composite parent, Analytics analytics, Theme theme, Persistance persistance) {
+    super(parent, theme, false);
 
     restore(getRoot(), persistance.restore());
 
     TabComposite.Listener listener = new TabComposite.Listener() {
+      @Override
+      public void onTabCreated(TabInfo tab) {
+        analytics.postInteraction(tab.view, ClientAction.Enable);
+      }
+
+      @Override
+      public void onTabClosed(TabInfo tab) {
+        analytics.postInteraction(tab.view, ClientAction.Disable);
+      }
+
       @Override
       public void onTabShown(TabInfo tab) {
         analytics.postInteraction(tab.view, ClientAction.Show);
