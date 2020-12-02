@@ -156,7 +156,7 @@ public class GraphicsTraceView extends Composite
   @Override
   public void onTextureSelected(Service.Resource texture) {
     if (texture != null) {
-      tabs.showTab(MainTab.Type.TextureView);
+      showTab(MainTab.Type.TextureView);
     }
   }
 
@@ -175,6 +175,22 @@ public class GraphicsTraceView extends Composite
     tabs.showTab(MainTab.Type.Framebuffer);
   }
 
+  private void showTab(MainTab.Type type) {
+    if (!tabs.showTab(MainTab.Type.TextureView)) {
+      TabInfo tabInfo = new MainTab(type, parent -> {
+        Tab tab = type.factory.create(parent, models, widgets);
+        tab.reinitialize();
+        return tab.getControl();
+      });
+      if (type.position == MainTab.DefaultPosition.Top) {
+        tabs.addTabToFirstFolder(tabInfo);
+      } else {
+        tabs.addTabToLargestFolder(tabInfo);
+      }
+      tabs.showTab(type);
+    }
+  }
+
   private MenuManager createViewTabsMenu() {
     MenuManager manager = new MenuManager("&Tabs");
     for (MainTab.Type type : MainTab.Type.values()) {
@@ -183,23 +199,10 @@ public class GraphicsTraceView extends Composite
       }
       Action action = type.createAction(shown -> {
         if (shown) {
-          TabInfo tabInfo = new MainTab(type, parent -> {
-            Tab tab = type.factory.create(parent, models, widgets);
-            tab.reinitialize();
-            return tab.getControl();
-          });
-          if (type.position == MainTab.DefaultPosition.Top) {
-            tabs.addTabToFirstFolder(tabInfo);
-          } else {
-            tabs.addTabToLargestFolder(tabInfo);
-          }
-          tabs.showTab(type);
+          showTab(type);
         } else {
           tabs.disposeTab(type);
         }
-        models.settings.writeTabs()
-            .clearHidden()
-            .addAllHidden(hiddenTabs.stream().map(MainTab.Type::name).collect(toList()));
       });
       action.setChecked(!hiddenTabs.contains(type));
       manager.add(action);
@@ -217,6 +220,9 @@ public class GraphicsTraceView extends Composite
       } else {
         hiddenTabs.add(type);
       }
+      models.settings.writeTabs()
+          .clearHidden()
+          .addAllHidden(hiddenTabs.stream().map(MainTab.Type::name).collect(toList()));
     }
   }
 
