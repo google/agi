@@ -214,9 +214,12 @@ func ParseAllDescriptorSets(shader []uint32) (map[string]DescriptorSets, error) 
 	defer C.spvReflectDestroyShaderModule(&module)
 
 	nEntryPoints := module.entry_point_count
+	entryPoints := module.entry_points
 
 	for i := uint32(0); i < uint32(nEntryPoints); i++ {
-		entryPointStruct := module.entry_points
+		// Access module.entry_points[i]: use C pointer as array, do pointer
+		// arithmetic as documented in https://golang.org/pkg/unsafe/#Pointer
+		entryPointStruct := (*C.SpvReflectEntryPoint)(unsafe.Pointer(uintptr(unsafe.Pointer(entryPoints)) + uintptr(i)*unsafe.Sizeof(*(entryPoints))))
 
 		setCount := C.uint32_t(0)
 		if err := spvReflectErr(C.spvReflectEnumerateEntryPointDescriptorSets(
