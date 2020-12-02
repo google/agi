@@ -176,7 +176,7 @@ public class GraphicsTraceView extends Composite
   }
 
   private void showTab(MainTab.Type type) {
-    if (!tabs.showTab(MainTab.Type.TextureView)) {
+    if (!tabs.showTab(type)) {
       TabInfo tabInfo = new MainTab(type, parent -> {
         Tab tab = type.factory.create(parent, models, widgets);
         tab.reinitialize();
