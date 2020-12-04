@@ -523,6 +523,8 @@ message FramegraphBuffer {
   bool index = 10;
   bool vertex = 11;
   bool indirect = 12;
+  bool coherentMemory = 13;
+  bool memoryMapped = 14;
 }
 
 message FramegraphImage {
@@ -540,6 +542,8 @@ message FramegraphImage {
   bool transientAttachment = 11;
   bool inputAttachment = 12;
   bool swapchain = 13;
+  bool coherentMemory = 14;
+  bool memoryMapped = 15;
 }
 
 enum LoadStoreOp {
