@@ -108,7 +108,6 @@ public class GraphicsTraceView extends Composite
 
     tabs.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
-    @SuppressWarnings("synthetic-access")
     TabComposite.Listener listener = new TabComposite.Listener() {
       @Override
       public void onTabCreated(TabInfo tab) {
@@ -211,7 +210,7 @@ public class GraphicsTraceView extends Composite
     return manager;
   }
 
-  private void syncTabMenuItem(MainTab.Type type, boolean shown) {
+  protected void syncTabMenuItem(MainTab.Type type, boolean shown) {
     Action action = typeActions.get(type);
     if (action != null && action.isChecked() != shown) {
       action.setChecked(shown);
