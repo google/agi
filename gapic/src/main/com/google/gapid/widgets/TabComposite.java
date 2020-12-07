@@ -37,6 +37,7 @@ import org.eclipse.swt.widgets.Shell;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Objects;
@@ -912,7 +913,7 @@ public class TabComposite extends Composite {
     private final List<Tab> tabs = new ArrayList<>();
     private final List<Integer> rowTitleEnds = new ArrayList<>();  // past-end indices of each row
     private int titleHeight, currentTitleRow = 0;
-    private TabContent current;
+    private final LinkedList<TabContent> selectionHistory = new LinkedList<>();
     protected boolean maximized;
     private Shell expandedBarShell = null;
 
@@ -975,21 +976,17 @@ public class TabComposite extends Composite {
       while (index < tabs.size()) {
         Tab tab = tabs.get(index);
         if (tab.info.id == tab.content) {
-          if (current == tab.content) {
-            current = null;
-          }
+          selectionHistory.remove(tab.content);
           tabs.remove(index);
           tab.content.dispose();
         } else {
           index++;
         }
       }
-      if (current == null) {
-        if (!tabs.isEmpty()) {
-          current = tabs.get(0).content;
-        }
-        requestLayout();
+      if (selectionHistory.isEmpty() && !tabs.isEmpty()) {
+        selectionHistory.add(tabs.get(0).content);
       }
+      requestLayout();
     }
 
     @Override
@@ -1015,7 +1012,7 @@ public class TabComposite extends Composite {
       for (Tab tab : tabs) {
         Control control = tab.content.getControl();
         control.setBounds(x, y + barH, w, h - barH);
-        control.setVisible(tab.content == current);
+        control.setVisible(tab.content == selectionHistory.getLast());
         controls.remove(control);
       }
 
@@ -1040,7 +1037,7 @@ public class TabComposite extends Composite {
           rowTitleEnds.add(index);
           rowWidth = tabWidth;
         }
-        if (tab.content == current) {
+        if (tab.content == selectionHistory.getLast()) {
           currentTitleRow = rowTitleEnds.size();
         }
         index++;
@@ -1108,8 +1105,8 @@ public class TabComposite extends Composite {
 
     protected void addTab(Tab tab) {
       tabs.add(tab);
-      if (current == null) {
-        current = tab.content;
+      if (selectionHistory.isEmpty()) {
+        selectionHistory.add(tab.content);
       }
       updateRowTitleEnds();
     }
@@ -1157,25 +1154,19 @@ public class TabComposite extends Composite {
     }
 
     protected void removeTab(Tab tab) {
-      if (current == tab.content) {
-        int index = tabs.indexOf(tab);
-        if (index >= 0) {
-          tabs.remove(index);
-          if (index == tabs.size()) {
-            index--;
-          }
-          current = index >= 0 ? tabs.get(index).content : null;
-        }
-      } else {
-        tabs.remove(tab);
+      tabs.remove(tab);
+      selectionHistory.remove(tab.content);
+      if (selectionHistory.isEmpty() && !tabs.isEmpty()) {
+        selectionHistory.add(tabs.get(0).content);
       }
       updateRowTitleEnds();
       requestLayout();
     }
 
-    protected boolean updateCurrent(TabContent newCurrent) {
-      if (current != newCurrent) {
-        current = newCurrent;
+    protected boolean updateCurrent(TabContent current) {
+      if (selectionHistory.getLast() != current) {
+        selectionHistory.remove(current);
+        selectionHistory.add(current);
         updateCurrentTitleRow();
         requestLayout();
         redrawBar();
@@ -1189,7 +1180,7 @@ public class TabComposite extends Composite {
       int index = 0;
       while (currentTitleRow + 1 < rowTitleEnds.size()) {
         while (index < rowTitleEnds.get(currentTitleRow)
-            && index < tabs.size() && tabs.get(index).content != current) {
+            && index < tabs.size() && tabs.get(index).content != selectionHistory.getLast()) {
           index++;
         }
         if (index == rowTitleEnds.get(currentTitleRow)) {
@@ -1261,7 +1252,7 @@ public class TabComposite extends Composite {
         int rowEnd = Math.min(rowTitleEnds.get(row), tabs.size());
         for (int index = rowStart; index < rowEnd; index++) {
           Tab tab = tabs.get(index);
-          boolean isSelected = tab.content == current;
+          boolean isSelected = tab.content == selectionHistory.getLast();
           boolean isUnpinned = tab.content.supportsPinning() && !tab.content.isPinned();
           int tabW = tab.getWidth();
 
