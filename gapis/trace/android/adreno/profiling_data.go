@@ -27,6 +27,7 @@ import (
 	"github.com/google/gapid/gapis/service"
 	"github.com/google/gapid/gapis/service/path"
 	"github.com/google/gapid/gapis/trace/android/profile"
+	"github.com/google/gapid/gapis/trace/android/utils"
 )
 
 var (
@@ -160,7 +161,7 @@ func processGpuSlices(ctx context.Context, processor *perfetto.Processor, captur
 						subCommandGroupMap[key] = 0
 					}
 
-					parent := findParentGroup(ctx, subOrder, cb, groupsMap, syncData.SubmissionIndices, capture)
+					parent := utils.FindParentGroup(ctx, subOrder, cb, groupsMap, syncData.SubmissionIndices, capture)
 					groupId = int32(len(groupsMap))
 					group := &service.ProfilingData_GpuSlices_Group{
 						Id:     groupId,
@@ -304,36 +305,4 @@ func processCounters(ctx context.Context, processor *perfetto.Processor, desc *d
 		}
 	}
 	return counters, nil
-}
-
-// For a renderPass leafy group, find its parent group and return it.
-// If the parent groups are not created yet, create them and store in the map.
-func findParentGroup(ctx context.Context, subOrder, cb uint64, groupsMap map[api.CmdSubmissionKey]*service.ProfilingData_GpuSlices_Group, links map[api.CmdSubmissionKey][]api.SubCmdIdx, capture *path.Capture) *service.ProfilingData_GpuSlices_Group {
-	commandBufferKey := api.CmdSubmissionKey{subOrder, cb, 0, 0}
-	if group, ok := groupsMap[commandBufferKey]; ok {
-		return group
-	} else {
-		submissionKey := api.CmdSubmissionKey{subOrder, 0, 0, 0}
-		var submissionGroup *service.ProfilingData_GpuSlices_Group
-		if g, ok := groupsMap[submissionKey]; ok {
-			submissionGroup = g
-		} else {
-			submissionGroup = &service.ProfilingData_GpuSlices_Group{
-				Id:     int32(len(groupsMap)),
-				Name:   fmt.Sprintf("Submission: %v", subOrder),
-				Parent: nil,
-				Link:   &path.Command{Capture: capture, Indices: links[submissionKey][0]},
-			}
-			groupsMap[submissionKey] = submissionGroup
-		}
-
-		commandBufferGroup := &service.ProfilingData_GpuSlices_Group{
-			Id:     int32(len(groupsMap)),
-			Name:   fmt.Sprintf("Command Buffer: %v", cb),
-			Parent: submissionGroup,
-			Link:   &path.Command{Capture: capture, Indices: links[commandBufferKey][0]},
-		}
-		groupsMap[commandBufferKey] = commandBufferGroup
-		return commandBufferGroup
-	}
 }

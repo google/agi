@@ -107,7 +107,7 @@ public class PerformanceView extends Composite
     tree.getTree().addListener(SWT.Selection, e -> {
       TreeItem[] items = tree.getTree().getSelection();
       if (items.length > 0) {
-        PerfNode selection = cast(items[0].getData());
+        PerfNode selection = (PerfNode)items[0].getData();
         models.profile.linkGpuGroupToCommand(selection.getGroup());
       }
     });
@@ -226,7 +226,7 @@ public class PerformanceView extends Composite
     if (root == null || !(root.getData() instanceof PerfNode)) {
       return null;
     }
-    PerfNode rootNode = cast(root.getData());
+    PerfNode rootNode = (PerfNode)root.getData();
     if (requirement.test(rootNode)) {
       return root;
     }
@@ -243,9 +243,5 @@ public class PerformanceView extends Composite
       }
     }
     return null;
-  }
-
-  private PerfNode cast(Object o) {
-    return (PerfNode)o;
   }
 }
