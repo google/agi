@@ -13,9 +13,4 @@
 // limitations under the License.
 
 // Package task contains types that can be used to create cancelable tasks.
-//
-// This package builds on top of Go's standard "context" package. Before
-// touching this package internals, make sure to understand the standard Go
-// context. This article gives a good introduction:
-// https://blog.golang.org/context
 package task

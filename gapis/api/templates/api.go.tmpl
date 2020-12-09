@@ -219,8 +219,6 @@ var ( // Don't error if these packages aren't used.
   {{template "Go.GeneratedHeader" (Global "OutputDir")}}
 
 import (
-    "context"
-    "errors"
     "github.com/google/gapid/core/data/id"
     ϟapi "github.com/google/gapid/gapis/api"
 )
@@ -236,23 +234,13 @@ import (
     ϟapi.Register(API{})
   }
 ¶
-  // panicOnFatalError panics on errors that are not task cancellation errors.
-  // This function is used to avoid reporting errors and doing error checking
-  // across all generated code. However, we do not want to panic upon a task
-  // cancellation. This may happen if we have a task being cancelled while
-  // doing command mutations: in generated code, calls to e.g. MustRead or
-  // MustWrite trigger database accesses that then result in a task cancellation
-  // error. Hence, we filter out these errors here. Note that each Mutate
-  // function still catches task cancellation by returning task.StopReason().
-  func panicOnFatalError(err error) {
+  func panicOnError(err error) {
     if err != nil {
-      if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
-        return
-      }
       panic(err)
     }
   }
 {{end}}
+
 
 {{/*
 -------------------------------------------------------------------------------
@@ -1067,7 +1055,7 @@ import (
     // MustRead calls and returns Read, panicing if there was an error.
     func (s {{$slice_ty}}) MustReadʷ(ϟctx context.Context, ϟc ϟapi.Cmd, ϟg *ϟapi.GlobalState, ϟb *builder.Builder, ϟw ϟapi.StateWatcher) []{{$el_ty}} {
       vals, err := s.Readʷ(ϟctx, ϟc, ϟg, ϟb, ϟw)
-      panicOnFatalError(err)
+      panicOnError(err)
       return vals
     }
 
@@ -1098,7 +1086,7 @@ import (
     // MustWrite calls and returns Write, panicing if there was an error.
     func (s {{$slice_ty}}) MustWriteʷ(ϟctx context.Context, src []{{$el_ty}}, ϟc ϟapi.Cmd, ϟg *ϟapi.GlobalState, ϟb *builder.Builder, ϟw ϟapi.StateWatcher) uint64 {
       count, err := s.Writeʷ(ϟctx, src, ϟc, ϟg, ϟb, ϟw)
-      panicOnFatalError(err)
+      panicOnError(err)
       return count
     }
 
@@ -1174,7 +1162,7 @@ import (
           ϟb.StorePointer(dst, ptr)
           dst++
         }
-        panicOnFatalError(ϟd.Error())
+        panicOnError(ϟd.Error())
       {{else if IsClass ($s.To | Underlying)}}
         {{Template "ReadStructWithRemapping" $s.To}}
       {{else}}
@@ -1192,7 +1180,7 @@ import (
             ϟb.Store(ptr)
             ptr += step
           }
-          panicOnFatalError(ϟd.Error())
+          panicOnError(ϟd.Error())
         {{else}}
           ϟb.Write(s.Range(), s.ResourceID(ϟctx, ϟg))
         {{end}}
@@ -1236,7 +1224,7 @@ import (
           }
           ptr += step
         }
-        panicOnFatalError(ϟd.Error())
+        panicOnError(ϟd.Error())
       {{end}}
     }
     return s
@@ -1391,7 +1379,7 @@ import (
     // MustRead calls and returns Read, panicing if there was an error.
     func (p {{$ptr_ty}}) MustReadʷ(ϟctx context.Context, ϟc ϟapi.Cmd, ϟg *ϟapi.GlobalState, ϟb *builder.Builder, ϟw ϟapi.StateWatcher) {{$el_ty}} {
       val, err := p.Readʷ(ϟctx, ϟc, ϟg, ϟb, ϟw)
-      panicOnFatalError(err)
+      panicOnError(err)
       return val
     }
 
@@ -1413,7 +1401,7 @@ import (
 
     // MustWrite calls Write, panicing if there was an error.
     func (p {{$ptr_ty}}) MustWriteʷ(ϟctx context.Context, value {{$el_ty}}, ϟc ϟapi.Cmd, ϟg *ϟapi.GlobalState, ϟb *builder.Builder, ϟw ϟapi.StateWatcher) {
-      panicOnFatalError(p.Writeʷ(ϟctx, value, ϟc, ϟg, ϟb, ϟw))
+      panicOnError(p.Writeʷ(ϟctx, value, ϟc, ϟg, ϟb, ϟw))
     }
   {{end}}
 
@@ -2034,7 +2022,7 @@ import (
     for i, c := uint64(0), s.Count(); i < c; i++ {
       {{Template "ReadStructFieldsWithRemapping" $}}
     }
-    panicOnFatalError(ϟd.Error())
+    panicOnError(ϟd.Error())
   {{end}}
 {{end}}
 
