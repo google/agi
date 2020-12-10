@@ -43,6 +43,17 @@ func backedByCoherentMemory(state *State, mem DeviceMemoryObjectʳ) bool {
 
 func newFramegraphBuffer(state *State, buf *BufferObjectʳ) *api.FramegraphBuffer {
 	usage := uint32(buf.Info().Usage())
+	coherentMemory := backedByCoherentMemory(state, buf.Memory())
+	memoryMapped := !(buf.Memory().MappedLocation().IsNullptr())
+	// No need to scan sparse memory if both coherent/mapped are already true
+	if !coherentMemory || !memoryMapped {
+		for _, sparseMemBinding := range buf.SparseMemoryBindings().All() {
+			mem := state.DeviceMemories().Get(sparseMemBinding.Memory())
+			coherentMemory = coherentMemory || backedByCoherentMemory(state, mem)
+			memoryMapped = memoryMapped || !(mem.MappedLocation().IsNullptr())
+		}
+	}
+
 	return &api.FramegraphBuffer{
 		Handle:         uint64(buf.VulkanHandle()),
 		Size:           uint64(buf.Info().Size()),
@@ -56,8 +67,8 @@ func newFramegraphBuffer(state *State, buf *BufferObjectʳ) *api.FramegraphBuffe
 		Index:          usage&uint32(VkBufferUsageFlagBits_VK_BUFFER_USAGE_INDEX_BUFFER_BIT) != 0,
 		Vertex:         usage&uint32(VkBufferUsageFlagBits_VK_BUFFER_USAGE_VERTEX_BUFFER_BIT) != 0,
 		Indirect:       usage&uint32(VkBufferUsageFlagBits_VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT) != 0,
-		CoherentMemory: backedByCoherentMemory(state, buf.Memory()),
-		MemoryMapped:   !(buf.Memory().MappedLocation().IsNullptr()),
+		CoherentMemory: coherentMemory,
+		MemoryMapped:   memoryMapped,
 	}
 }
 
@@ -71,15 +82,28 @@ func newFramegraphImage(state *State, img *ImageObjectʳ) *api.FramegraphImage {
 	memoryMapped := false
 	for _, planeMemInfo := range img.PlaneMemoryInfo().All() {
 		mem := planeMemInfo.BoundMemory()
-		if backedByCoherentMemory(state, mem) {
-			coherentMemory = true
+		coherentMemory = coherentMemory || backedByCoherentMemory(state, mem)
+		memoryMapped = memoryMapped || !(mem.MappedLocation().IsNullptr())
+	}
+	// No need to scan sparse memory if both coherent/mapped are already true
+	if !coherentMemory || !memoryMapped {
+		for _, sparseMemBinding := range img.OpaqueSparseMemoryBindings().All() {
+			mem := state.DeviceMemories().Get(sparseMemBinding.Memory())
+			coherentMemory = coherentMemory || backedByCoherentMemory(state, mem)
+			memoryMapped = memoryMapped || !(mem.MappedLocation().IsNullptr())
 		}
-		if !mem.MappedLocation().IsNullptr() {
-			memoryMapped = true
-		}
-		// If both are set, no need to keep on iterating
-		if coherentMemory && memoryMapped {
-			break
+	}
+	if !coherentMemory || !memoryMapped {
+		for _, sparseImgMem := range img.SparseImageMemoryBindings().All() {
+			for _, layers := range sparseImgMem.Layers().All() {
+				for _, level := range layers.Levels().All() {
+					for _, blocks := range level.Blocks().All() {
+						mem := state.DeviceMemories().Get(blocks.Memory())
+						coherentMemory = coherentMemory || backedByCoherentMemory(state, mem)
+						memoryMapped = memoryMapped || !(mem.MappedLocation().IsNullptr())
+					}
+				}
+			}
 		}
 	}
 
