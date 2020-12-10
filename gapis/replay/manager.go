@@ -19,6 +19,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/gapid/core/app/crash"
 	"github.com/google/gapid/core/app/status"
 	"github.com/google/gapid/core/data/id"
 	"github.com/google/gapid/core/log"
@@ -52,11 +53,18 @@ type Manager interface {
 		forceNonSplitReplay bool) (val interface{}, err error)
 }
 
+type executeArgs struct {
+	exec         executor
+	key          *gapir.ReplayerKey
+	replayStatus *status.Replay
+}
+
 // Manager is used discover replay devices and to send replay requests to those
 // discovered devices.
 type manager struct {
 	gapir      *gapir.Client
 	schedulers map[id.ID]*scheduler.Scheduler
+	executors  map[id.ID](chan executeArgs)
 	mutex      sync.Mutex // guards schedulers
 }
 
@@ -76,6 +84,7 @@ func New(ctx context.Context) Manager {
 	out := &manager{
 		gapir:      gapir.New(ctx),
 		schedulers: make(map[id.ID]*scheduler.Scheduler),
+		executors:  make(map[id.ID](chan executeArgs)),
 	}
 	bind.GetRegistry(ctx).Listen(bind.NewDeviceListener(out.createScheduler, out.destroyScheduler))
 	return out
@@ -153,6 +162,23 @@ func (m *manager) createScheduler(ctx context.Context, device bind.Device) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 	m.schedulers[deviceID] = scheduler.New(ctx, deviceID, m.batch)
+	ch := make(chan executeArgs, 16)
+	m.executors[deviceID] = ch
+	crash.Go(
+		func () {
+			for {
+				args := <-ch
+				// TODO(pmuetschard): Make the "state reconstruction" an actual event status and have gapir let us
+				// know how far along it is in executing it. Also, there is technically still some server work
+				// happening after this (e.g. storing the payload in the db), but that is fast and passing things
+				// down isn't worth it.
+				// This transitions the status from building to executing.
+				args.replayStatus.Progress(ctx, 0, 1, 0)
+				ctx = status.Start(ctx, "Execute Replay")
+				args.exec.execute(ctx, m, args.key)
+				status.Finish(ctx)
+			}
+		})
 }
 
 func (m *manager) destroyScheduler(ctx context.Context, device bind.Device) {
@@ -160,6 +186,8 @@ func (m *manager) destroyScheduler(ctx context.Context, device bind.Device) {
 	log.I(ctx, "Destroying scheduler for device: %v", deviceID)
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
+	close(m.executors[deviceID])
+	delete(m.executors, deviceID)
 	delete(m.schedulers, deviceID)
 }
 

@@ -48,6 +48,8 @@ type executor struct {
 // called.
 func Execute(
 	ctx context.Context,
+	deviceID id.ID,
+	replayStatus *status.Replay,
 	dependent string,
 	payload gapir.Payload,
 	handlePost builder.PostDataHandler,
@@ -63,7 +65,7 @@ func Execute(
 
 	// The memoryLayout is specific to the ABI of the requested capture,
 	// while the OS is not. Thus a device.Configuration is not applicable here.
-	return executor{
+	e := executor{
 		payload:            payload,
 		dependent:          dependent,
 		handlePost:         handlePost,
@@ -72,7 +74,16 @@ func Execute(
 		memoryLayout:       memoryLayout,
 		OS:                 os,
 		finished:           make(chan error),
-	}.execute(ctx, m.(*manager), key)
+	}
+
+	args := executeArgs {
+		exec:         e,
+		key:          key,
+		replayStatus: replayStatus,
+	}
+
+	m.(*manager).executors[deviceID] <- args
+	return nil
 }
 
 func (e executor) execute(ctx context.Context, m *manager, key *gapirClient.ReplayerKey) error {
