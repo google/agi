@@ -975,7 +975,7 @@ public class TabComposite extends Composite {
       int index = 0;
       while (index < tabs.size()) {
         Tab tab = tabs.get(index);
-        if (tab.info.id == tab.content) {
+        if (tab.isPinned()) {
           selectionHistory.remove(tab.content);
           tabs.remove(index);
           tab.content.dispose();
@@ -1450,6 +1450,10 @@ public class TabComposite extends Composite {
       return Math.max(
           TAB_MARGIN + titleSize.x + TAB_MARGIN + ICON_SIZE * (content.supportsPinning() ? 2 : 1),
           MIN_TAB_WIDTH);
+    }
+
+    public boolean isPinned() {
+      return info.id == content;
     }
   }
 
