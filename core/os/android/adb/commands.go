@@ -515,7 +515,8 @@ func (b *binding) PrepareGpuProfiling(ctx context.Context, installedPackage *and
 		log.W(ctx, "Failed to query developer driver: %v, assuming no developer driver found.", err)
 	}
 
-	// Setup debug property.  The GPU driver may enable profiling only if the debug property is set.
+	// Setup debug property.  The GPU driver must enable profiling and have proper
+	// instrumentation if the debug property is set to 1.
 	err = b.SetSystemProperty(ctx, gpuDebugProperty, "1")
 	if err != nil {
 		return false, "", nil, err
