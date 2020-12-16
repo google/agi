@@ -77,7 +77,7 @@ import java.util.Set;
 import java.util.logging.Logger;
 import java.util.logging.Level;
 
-public class ProfileView extends Composite implements TabContent, Capture.Listener, Profile.Listener, State.Listener {
+public class ProfileView extends Composite implements Tab, Capture.Listener, Profile.Listener, State.Listener {
   private final Models models;
   protected static final Logger LOG = Logger.getLogger(ProfileView.class.getName());
 

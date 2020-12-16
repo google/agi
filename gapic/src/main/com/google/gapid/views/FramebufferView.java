@@ -99,7 +99,7 @@ import java.util.logging.Level;
  * View that displays the framebuffer at the current selection in an {@link ImagePanel}.
  */
 public class FramebufferView extends Composite
-    implements TabContent, Capture.Listener, Devices.Listener, CommandStream.Listener, Follower.Listener {
+    implements Tab, Capture.Listener, Devices.Listener, CommandStream.Listener, Follower.Listener {
   private static final Logger LOG = Logger.getLogger(FramebufferView.class.getName());
   private static final int MAX_SIZE = 0xffff;
 

@@ -65,7 +65,7 @@ import java.util.logging.Logger;
  * View that displays a selected texture resource of the current capture.
  */
 public class TextureView extends Composite
-    implements TabContent, Capture.Listener, Resources.Listener {
+    implements Tab, Capture.Listener, Resources.Listener {
   protected static final Logger LOG = Logger.getLogger(TextureView.class.getName());
 
   private final Models models;

@@ -94,7 +94,7 @@ import java.util.logging.Level;
  * View the displays the information for each stage of the pipeline.
  */
 public class PipelineView extends Composite
-    implements TabContent, Capture.Listener, CommandStream.Listener, Resources.Listener {
+    implements Tab, Capture.Listener, CommandStream.Listener, Resources.Listener {
   protected static final Logger LOG = Logger.getLogger(PipelineView.class.getName());
 
   protected final Models models;

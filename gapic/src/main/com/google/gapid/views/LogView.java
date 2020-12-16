@@ -41,7 +41,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * A view that shows log messages.
  */
-public class LogView extends Composite implements TabContent {
+public class LogView extends Composite implements Tab {
   private final Theme theme;
   private final Tree tree;
   private final AtomicBoolean dirty = new AtomicBoolean(false);

@@ -96,7 +96,6 @@ public interface Theme {
   @Icon(file = "open.png") public Image open();
   @Icon(file = "overdraw.png") public Image overdraw();
   @Icon(file = "pan_mode.png") public Image panMode();
-  @Icon(file = "pin.png") public Image pin();
   @Icon(file = "pin_active.png") public Image pinActiveLight();
   @Icon(file = "pin_inactive.png") public Image pinInactiveLight();
   @Icon(file = "pin_active.png", color = 0xFFFFFF) public Image pinActiveDark();

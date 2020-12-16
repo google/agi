@@ -44,13 +44,14 @@ import com.google.gapid.views.ProfileView;
 import com.google.gapid.views.ReportView;
 import com.google.gapid.views.ShaderView;
 import com.google.gapid.views.StateView;
-import com.google.gapid.views.TabContent;
+import com.google.gapid.views.Tab;
 import com.google.gapid.views.TextureList;
 import com.google.gapid.views.TextureView;
 import com.google.gapid.widgets.TabArea;
 import com.google.gapid.widgets.TabArea.FolderInfo;
 import com.google.gapid.widgets.TabArea.Persistance;
 import com.google.gapid.widgets.TabComposite;
+import com.google.gapid.widgets.TabComposite.TabContent;
 import com.google.gapid.widgets.TabComposite.TabInfo;
 import com.google.gapid.widgets.Widgets;
 
@@ -183,9 +184,9 @@ public class GraphicsTraceView extends Composite
   private void showTab(MainTab.Type type) {
     if (!tabs.showTab(type)) {
       TabInfo tabInfo = new MainTab(type, parent -> {
-        TabContent content = type.factory.create(parent, models, widgets);
-        content.reinitialize();
-        return content;
+        Tab tab = type.factory.create(parent, models, widgets);
+        tab.reinitialize();
+        return tab;
       });
       if (type.position == MainTab.DefaultPosition.Top) {
         tabs.addTabToFirstFolder(tabInfo);
@@ -463,7 +464,7 @@ public class GraphicsTraceView extends Composite
      * Factory to create the UI components of a tab.
      */
     public static interface TabFactory {
-      public TabContent create(Composite parent, Models models, Widgets widgets);
+      public Tab create(Composite parent, Models models, Widgets widgets);
     }
   }
 }

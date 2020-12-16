@@ -18,7 +18,6 @@ package com.google.gapid.widgets;
 import com.google.common.collect.Lists;
 import com.google.gapid.models.Analytics;
 import com.google.gapid.proto.service.Service.ClientAction;
-import com.google.gapid.views.TabContent;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CTabFolder;
@@ -49,7 +48,7 @@ public class TabArea extends TabComposite {
       @Override
       public void onTabClosed(TabInfo tab) {
         analytics.postInteraction(tab.view,
-            tab.id instanceof TabContent ? ClientAction.ClosePinned : ClientAction.Disable);
+            tab.isPinned() ? ClientAction.ClosePinned : ClientAction.Disable);
       }
 
       @Override

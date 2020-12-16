@@ -20,7 +20,6 @@ import com.google.common.collect.Sets;
 import com.google.gapid.models.Analytics;
 import com.google.gapid.models.Analytics.View;
 import com.google.gapid.util.Events;
-import com.google.gapid.views.TabContent;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Color;
@@ -381,7 +380,7 @@ public class TabComposite extends Composite {
    * Information about a single tab in a folder.
    */
   public static class TabInfo {
-    public final Object id;  // holds GraphicsTraceView.MainTab.Type or TabContent for pinned tabs
+    public final Object id;  // Externally provided ID or TabContent for pinned tabs
     public final Analytics.View view;
     public final String label;
     public final Function<Composite, TabContent> contentFactory;
@@ -392,6 +391,10 @@ public class TabComposite extends Composite {
       this.view = view;
       this.label = label;
       this.contentFactory = contentFactory;
+    }
+
+    public boolean isPinned() {
+      return id instanceof TabContent;
     }
   }
 
@@ -975,7 +978,7 @@ public class TabComposite extends Composite {
       int index = 0;
       while (index < tabs.size()) {
         Tab tab = tabs.get(index);
-        if (tab.isPinned()) {
+        if (tab.info.isPinned()) {
           selectionHistory.remove(tab.content);
           tabs.remove(index);
           tab.content.dispose();
@@ -1289,8 +1292,8 @@ public class TabComposite extends Composite {
           if (isSelected || tab == hovered.tab) {
             gc.drawImage(theme.close(), b.x + tabX + tabW - ICON_SIZE, b.y + (tabH - ICON_SIZE) / 2);
             if (tab.content.isPinnable()) {
-              gc.drawImage(theme.pin(),
-                  b.x + tabX + tabW - 2 * ICON_SIZE, b.y + (tabH - ICON_SIZE) / 2);
+              gc.drawImage(theme.pinInactiveLight(),
+                  b.x + tabX + tabW - 2 * ICON_SIZE + 4, b.y + (tabH - ICON_SIZE) / 2 + 4);
             }
           }
 
@@ -1451,10 +1454,28 @@ public class TabComposite extends Composite {
           TAB_MARGIN + titleSize.x + TAB_MARGIN + ICON_SIZE * (content.supportsPinning() ? 2 : 1),
           MIN_TAB_WIDTH);
     }
+  }
 
-    public boolean isPinned() {
-      return info.id == content;
+  public static interface TabContent {
+    public Control getControl();
+
+    public default void dispose() {
+      getControl().dispose();
     }
+
+    public default boolean supportsPinning() {
+      return false;
+    }
+
+    public default boolean isPinnable() {
+      return false;
+    }
+
+    public default boolean isPinned() {
+      return false;
+    }
+
+    public default void pin() { /* do nothing */ }
   }
 
   private static class Hover {

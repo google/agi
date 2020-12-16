@@ -80,7 +80,7 @@ import java.util.logging.Logger;
  * API command view displaying the commands with their hierarchy grouping in a tree.
  */
 public class CommandTree extends Composite
-    implements TabContent, Capture.Listener, CommandStream.Listener, Profile.Listener {
+    implements Tab, Capture.Listener, CommandStream.Listener, Profile.Listener {
   protected static final Logger LOG = Logger.getLogger(CommandTree.class.getName());
   private static final String COMMAND_INDEX_HOVER = "Double click to copy index. Use Ctrl+G to jump to a given command index.";
   private static final String COMMAND_INDEX_DSCRP = "Command index: ";
