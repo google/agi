@@ -59,7 +59,7 @@ import java.util.logging.Logger;
  * Displays a list of shader resources of the current capture.
  */
 public class ShaderList extends Composite
-    implements TabContent, Capture.Listener, Resources.Listener, CommandStream.Listener {
+    implements Tab, Capture.Listener, Resources.Listener, CommandStream.Listener {
   protected static final Logger LOG = Logger.getLogger(ShaderList.class.getName());
 
   protected final Models models;
