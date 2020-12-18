@@ -246,21 +246,21 @@ func newDevice(ctx context.Context, serial string, status bind.Status) (*binding
 
 		// If the VkRenderStagesProducer layer exist, we assume the render stages producer is
 		// implemented in the layer.
-		for _, l := range d.To.Configuration.GetDrivers().GetVulkan().GetLayers() {
-			if l.Name == "VkRenderStagesProducer" {
-				capability := d.To.Configuration.PerfettoCapability
-				if capability == nil {
-					capability = &device.PerfettoCapability{
-						GpuProfiling: &device.GPUProfiling{},
-					}
-					d.To.Configuration.PerfettoCapability = capability
-				}
-				gpu := capability.GpuProfiling
-				gpu.HasRenderStageProducerLayer = true
-				gpu.HasRenderStage = true
-				break
-			}
-		}
+		// for _, l := range d.To.Configuration.GetDrivers().GetVulkan().GetLayers() {
+		// 	if l.Name == "VkRenderStagesProducer" {
+		// 		capability := d.To.Configuration.PerfettoCapability
+		// 		if capability == nil {
+		// 			capability = &device.PerfettoCapability{
+		// 				GpuProfiling: &device.GPUProfiling{},
+		// 			}
+		// 			d.To.Configuration.PerfettoCapability = capability
+		// 		}
+		// 		gpu := capability.GpuProfiling
+		// 		gpu.HasRenderStageProducerLayer = true
+		// 		gpu.HasRenderStage = true
+		// 		break
+		// 	}
+		// }
 
 		if version, err := d.DriverVersionCode(ctx); err == nil {
 			d.To.Configuration.Drivers.Vulkan.Version = strconv.Itoa(version)
