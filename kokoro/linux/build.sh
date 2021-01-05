@@ -218,6 +218,14 @@ pushd ${SWARMING_DIR}
 SWARMING_FAILURE=0
 for TEST_NAME in triggered/*/*.json ; do
   set +e
+  cat ${TEST_NAME}
+  if test -e ${KOKORO_ARTIFACTS_DIR}/swarming/results.json
+  then
+    wc -l ${KOKORO_ARTIFACTS_DIR}/swarming/results.json
+    cat ${KOKORO_ARTIFACTS_DIR}/swarming/results.json
+  else
+    echo "No results.json file"
+  fi
   ./collect.py ${SWARMING_TIMESTAMP} ${KOKORO_GIT_COMMIT} `basename ${TEST_NAME} .json` ${TEST_NAME} ${KOKORO_ARTIFACTS_DIR}/swarming/results.json
   EXIT_CODE=$?
   set -e

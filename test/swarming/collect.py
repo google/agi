@@ -53,9 +53,16 @@ def main():
         cmd += [ os.environ['SWARMING_AUTH_FLAG'] ]
     # Do NOT check the return code, as collect returns the return code from the
     # task, so we must be robust to non-zero return code from this command.
-    subprocess.call(cmd)
+    try:
+        print("Request Swarming summary...")
+        subprocess.call(cmd, timeout=300)
+    except subprocess.TimeoutExpired:
+        print("Swarming Timeout")
+        return 1
     # The commmand must have produced a summary file
     assert os.path.exists(summary)
+
+    print("Swarming summary fetched")
 
     #### Extract test results
     with open(summary, 'r') as f:

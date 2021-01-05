@@ -141,6 +141,8 @@ def main():
             '${ISOLATED_OUTDIR}',
         ]
 
+        print("Trigger command:\n" + cmd, flush=True)
+
         # We expect this command to always succeed
         subprocess.run(cmd, check=True)
         # The task JSON file must be produced
