@@ -19,6 +19,8 @@ toc:
         url: docs/gpu-counters/arm
       - title: Qualcomm® Adreno™ Counters
         url: docs/gpu-counters/qualcomm
+      - title: IMG® Counters
+        url: docs/gpu-counters/img
   - title: System Requirements
     url: docs/requirements
     subnav:
