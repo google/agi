@@ -13,77 +13,109 @@
 // limitations under the License.
 
 #include <stdio.h>
+#include <string.h>
 
 #include "astc.h"
+#include "third_party/astc-encoder/Source/astcenccli_internal.h"
 
-#include "third_party/astc-encoder/Source/astc_codec_internals.h"
+int init_astc_for_decode(astcenc_profile profile,
+    astc_compressed_image& input_image, astcenc_config& config, loggerFunc logger) {
+    unsigned int block_x = input_image.block_x;
+	unsigned int block_y = input_image.block_y;
+	unsigned int block_z = input_image.block_z;
 
-// astc-encoder global variables... *sigh*
-int alpha_force_use_of_hdr = 0;
-int perform_srgb_transform = 0;
-int rgb_force_use_of_hdr = 0;
-int print_diagnostics = 0;
-
-// Functions that are used in compilation units we depend on, but don't actually
-// use.
-int astc_codec_unlink(const char *filename) { return 0; }
-void astc_codec_internal_error(const char *filename, int linenum) {
-    printf("ASTC error: %s:%d\n", filename, linenum);
-    exit(1);
-}
-astc_codec_image *load_ktx_uncompressed_image(const char *filename, int padding, int *result) { return 0; }
-astc_codec_image *load_dds_uncompressed_image(const char *filename, int padding, int *result) { return 0; }
-astc_codec_image *load_tga_image(const char *tga_filename, int padding, int *result) { return 0; }
-astc_codec_image *load_image_with_stb(const char *filename, int padding, int *result) { return 0; }
-int store_ktx_uncompressed_image(const astc_codec_image * img, const char *filename, int bitness) { return 0; }
-int store_dds_uncompressed_image(const astc_codec_image * img, const char *filename, int bitness) { return 0; }
-int store_tga_image(const astc_codec_image * img, const char *tga_filename, int bitness) { return 0; }
-
-uint8_t float2byte(float f) {
-    if (f > 1.0f) { return 255; }
-    if (f < 0.0f) { return 0; }
-    return (uint8_t)(f * 255.0f + 0.5f);
-}
-
-extern "C" void init_astc() {
-    build_quantization_mode_table();
+    astcenc_preset preset = ASTCENC_PRE_FASTEST;
+    unsigned int flags = 0;
+    astcenc_error status = astcenc_config_init(profile, block_x, block_y, block_z, preset, flags, config);
+    if (status == ASTCENC_ERR_BAD_BLOCK_SIZE) {
+        logger("ERROR: Block size is invalid\n");
+		return 1;
+	} else if (status == ASTCENC_ERR_BAD_CPU_ISA) {
+		logger("ERROR: Required SIMD ISA support missing on this CPU\n");
+		return 1;
+	} else if (status == ASTCENC_ERR_BAD_CPU_FLOAT) {
+		logger("ERROR: astcenc must not be compiled with -ffast-math\n");
+		return 1;
+	} else if (status != ASTCENC_SUCCESS) {
+        char error[255]{0};
+		sprintf(error, "ERROR: Init config failed with %s\n", astcenc_get_error_string(status));
+        logger(error);
+		return 1;
+	}
+    return 0;
 }
 
-extern "C" void decompress_astc(
-        uint8_t* in,
-        uint8_t* out,
-        uint32_t width,
-        uint32_t height,
-        uint32_t block_width,
-        uint32_t block_height) {
+astc_compressed_image create_astc_compressed_image(uint8_t* data, uint32_t width, uint32_t height,
+    uint32_t block_width, uint32_t block_height) {
+    uint32_t block_x = (width + block_width - 1) / block_width;
+    uint32_t block_y = (height + block_height - 1) / block_height;
 
-    uint32_t blocks_x = (width + block_width - 1) / block_width;
-    uint32_t blocks_y = (height + block_height - 1) / block_height;
+    astc_compressed_image image{};
+    image.dim_x = width;
+    image.dim_y = height;
+    image.dim_z = 1;
+    image.block_x = block_width;
+    image.block_y = block_height;
+    image.block_z = 1;
+    image.data = data;
+	image.data_len = block_x * block_y * 16;
+    return image;
+}
 
-    imageblock pb;
-    for (uint32_t by = 0; by < blocks_y; by++) {
-        for (uint32_t bx = 0; bx < blocks_x; bx++) {
-            physical_compressed_block pcb = *(physical_compressed_block*) in;
-            symbolic_compressed_block scb;
-            physical_to_symbolic(block_width, block_height, 1, pcb, &scb);
-            decompress_symbolic_block(DECODE_LDR, block_width, block_height, 1, 0, 0, 0, &scb, &pb);
-            in += 16;
+void write_image(uint8_t* buf, astcenc_image* img) {
+    uint8_t*** data8 = static_cast<uint8_t***>(img->data);
+    for (unsigned int y = 0; y < img->dim_y; y++) {
+        const uint8_t* src = data8[0][y + img->dim_pad] + (4 * img->dim_pad);
+        uint8_t* dst = buf + y * img->dim_x * 4;
 
-            const float* data = pb.orig_data;
-            for (uint32_t dy = 0; dy < block_height; dy++) {
-                uint32_t y = by*block_height + dy;
-                for (uint32_t dx = 0; dx < block_width; dx++) {
-                    uint32_t x = bx*block_width + dx;
-                    if (x < width && y < height) {
-                        uint8_t* pxl = &out[(width*y+x)*4];
-                        pxl[0] = float2byte(data[0]);
-                        pxl[1] = float2byte(data[1]);
-                        pxl[2] = float2byte(data[2]);
-                        pxl[3] = float2byte(data[3]);
-                    }
-                    data += 4;
-                }
-            }
+        for (unsigned int x = 0; x < img->dim_x; x++) {
+            dst[4 * x]     = src[4 * x];
+            dst[4 * x + 1] = src[4 * x + 1];
+            dst[4 * x + 2] = src[4 * x + 2];
+            dst[4 * x + 3] = src[4 * x + 3];
         }
     }
+}
+
+extern "C" int decompress_astc(uint8_t* input_image_raw, uint8_t* output_image_raw,
+    uint32_t width, uint32_t height, uint32_t block_width, uint32_t block_height, loggerFunc logger) {
+
+    astc_compressed_image input_image = create_astc_compressed_image(input_image_raw,
+        width, height, block_width, block_height);
+
+    astcenc_profile profile = ASTCENC_PRF_LDR;
+    astcenc_config config {};
+    if (init_astc_for_decode(profile, input_image, config, logger) != 0) {
+        logger("ASTC initialisation failed");
+        return 1;
+    }
+
+    unsigned int thread_count = get_cpu_count();
+	astcenc_context* codec_context;
+	astcenc_error codec_status = astcenc_context_alloc(config, thread_count, &codec_context);
+	if (codec_status != ASTCENC_SUCCESS) {
+        char error[255]{0};
+		sprintf(error,"ERROR: Codec context alloc failed: %s\n", astcenc_get_error_string(codec_status));
+		logger(error);
+        return 1;
+	}
+
+    unsigned int bitness = 8;
+    astcenc_image* output_image = alloc_image(bitness,
+        input_image.dim_x, input_image.dim_y, input_image.dim_z, 0);
+
+    astcenc_swizzle swz_decode{ ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A };
+    codec_status = astcenc_decompress_image(codec_context, input_image.data, input_image.data_len,
+		                                        *output_image, swz_decode);
+    if (codec_status != ASTCENC_SUCCESS) {
+        char error[255]{0};
+        sprintf(error, "ERROR: Codec decompress failed: %s\n", astcenc_get_error_string(codec_status));
+        logger(error);
+        return 1;
+    }
+
+    write_image(output_image_raw, output_image);
+    free_image(output_image);
+	astcenc_context_free(codec_context);
+    return 0;
 }

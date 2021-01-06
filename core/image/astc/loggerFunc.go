@@ -1,4 +1,4 @@
-// Copyright (C) 2017 Google Inc.
+// Copyright (C) 2021 Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,22 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ASTC_H_
-#define ASTC_H_
+// Package astc implements ASTC texture decompression.
+//
+// astc is in a separate package from image as it contains cgo code that can
+// slow builds.
+package astc
 
-#include <stdint.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-typedef void (*loggerFunc)(const char*);
-
-int decompress_astc(uint8_t* in, uint8_t* out, uint32_t width, uint32_t height,
-                     uint32_t block_width, uint32_t block_height, loggerFunc logger);
-
-#ifdef __cplusplus
-}  // extern "C"
-#endif
-
-#endif
+/*
+// The gateway function
+void errorCallback_cgo(char* err) {
+	void errorCallback(char*);
+	errorCallback(err);
+}
+*/
+import "C"

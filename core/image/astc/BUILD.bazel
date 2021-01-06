@@ -20,6 +20,7 @@ go_library(
         "astc.cc",
         "astc.go",
         "astc.h",
+        "loggerFunc.go",
     ],
     cdeps = ["@astc_encoder//:astc-encoder"],
     cgo = True,
