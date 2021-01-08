@@ -9,3 +9,4 @@ details on the available counters of your device's GPU.
 
 * [ARM Counters](arm)
 * [Qualcomm Counters](qualcomm)
+* [Imagination Counters](img)
