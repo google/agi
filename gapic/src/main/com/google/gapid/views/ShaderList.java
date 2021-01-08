@@ -33,7 +33,7 @@ import com.google.gapid.models.Models;
 import com.google.gapid.models.Resources;
 import com.google.gapid.proto.service.Service;
 import com.google.gapid.proto.service.Service.ClientAction;
-import com.google.gapid.proto.service.api.API;
+import com.google.gapid.proto.service.path.Path;
 import com.google.gapid.util.Loadable;
 import com.google.gapid.util.Messages;
 import com.google.gapid.widgets.LoadablePanel;
@@ -204,8 +204,7 @@ public class ShaderList extends Composite
     } else if (models.commands.getSelectedCommands() == null) {
       loading.showMessage(Info, Messages.SELECT_COMMAND);
     } else {
-      Resources.ResourceList resources =
-          models.resources.getResources(API.ResourceType.ShaderResource);
+      Resources.ResourceList resources = models.resources.getResources(Path.ResourceType.Shader);
 
       if (!lastUpdateContainedAllShaders || !resources.complete) {
         List<Data> shaders = new ArrayList<Data>();

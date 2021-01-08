@@ -30,7 +30,6 @@ import com.google.gapid.models.Resources;
 import com.google.gapid.proto.service.Service;
 import com.google.gapid.proto.service.Service.ClientAction;
 import com.google.gapid.proto.service.api.API;
-import com.google.gapid.proto.service.path.Path;
 import com.google.gapid.rpc.Rpc;
 import com.google.gapid.rpc.RpcException;
 import com.google.gapid.rpc.SingleInFlight;
@@ -166,6 +165,11 @@ public class ShaderView extends Composite
   }
 
   @Override
+  public boolean supportsPinning() {
+    return true;
+  }
+
+  @Override
   public boolean isPinnable() {
     return shaderResource != null;
   }
@@ -199,7 +203,7 @@ public class ShaderView extends Composite
   @Override
   public void onResourcesLoaded() {
     if (!pinned) {
-      loading.showMessage(Info, Messages.SELECT_TEXTURE);
+      loading.showMessage(Info, Messages.SELECT_SHADER);
       clear();
     }
   }
