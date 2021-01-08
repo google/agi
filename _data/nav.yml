@@ -19,7 +19,7 @@ toc:
         url: docs/gpu-counters/arm
       - title: Qualcomm® Adreno™ Counters
         url: docs/gpu-counters/qualcomm
-      - title: IMG® Counters
+      - title: Imagination® PowerVR™ Counters
         url: docs/gpu-counters/img
   - title: System Requirements
     url: docs/requirements
