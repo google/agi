@@ -20,8 +20,6 @@ package astc
 
 /*
 #include "astc.h"
-void errorCallback_cgo(char* err); // Forward declaration.
-
 */
 import "C"
 
@@ -136,6 +134,7 @@ func init() {
 				out := (unsafe.Pointer)(&dst[0])
 				blockW := f.src.GetAstc().BlockWidth
 				blockH := f.src.GetAstc().BlockHeight
+
 				result := C.decompress_astc(
 					(*C.uint8_t)(in),
 					(*C.uint8_t)(out),
@@ -146,7 +145,8 @@ func init() {
 				)
 
 				if result != 0 {
-					return nil, fmt.Errorf("ASTC decompression failed")
+					return nil, fmt.Errorf("ASTC decompression failed : %s",
+						C.GoString(C.get_error_string(result)))
 				}
 			}
 			return dst, nil

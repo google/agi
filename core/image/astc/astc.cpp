@@ -12,19 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <stdio.h>
-#include <string.h>
-
 #include "astc.h"
 #include "third_party/astc-encoder/Source/astcenccli_internal.h"
 
-/*
-ASTCENC_ERR_BAD_BLOCK_SIZE : "ERROR: Block size is invalid"
-ASTCENC_ERR_BAD_CPU_ISA : "ERROR: Required SIMD ISA support missing on this CPU"
-ASTCENC_ERR_BAD_CPU_FLOAT : "ERROR: astcenc must not be compiled with -ffast-math"
-
-or else : failed with astcenc_get_error_string
-*/
+static_assert(sizeof(astc_error) >= sizeof(astcenc_error), "astc_error should superset of astcenc_error");
 
 astcenc_error init_astc_for_decode(astcenc_profile profile,
     astc_compressed_image& input_image, astcenc_config& config) {
@@ -69,7 +60,7 @@ void write_image(uint8_t* buf, astcenc_image* img) {
     }
 }
 
-extern "C" int decompress_astc(uint8_t* input_image_raw, uint8_t* output_image_raw,
+extern "C" astc_error decompress_astc(uint8_t* input_image_raw, uint8_t* output_image_raw,
     uint32_t width, uint32_t height, uint32_t block_width, uint32_t block_height) {
 
     astc_compressed_image input_image = create_astc_compressed_image(input_image_raw,
@@ -104,4 +95,13 @@ extern "C" int decompress_astc(uint8_t* input_image_raw, uint8_t* output_image_r
     free_image(output_image);
 	astcenc_context_free(codec_context);
     return ASTCENC_SUCCESS;
+}
+
+const char* get_error_string(astc_error error_code) {
+    switch(error_code) {
+        case ASTCENC_ERR_BAD_BLOCK_SIZE: return "ERROR: Block size is invalid";
+        case ASTCENC_ERR_BAD_CPU_ISA : return "ERROR: Required SIMD ISA support missing on this CPU";
+        case ASTCENC_ERR_BAD_CPU_FLOAT : return "ERROR: astcenc must not be compiled with -ffast-math";
+        default: return astcenc_get_error_string(static_cast<astcenc_error>(error_code));
+    }
 }
