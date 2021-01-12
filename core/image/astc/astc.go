@@ -143,7 +143,6 @@ func init() {
 					(C.uint32_t)(h),
 					(C.uint32_t)(blockW),
 					(C.uint32_t)(blockH),
-					(C.loggerFunc)(unsafe.Pointer(C.errorCallback_cgo)),
 				)
 
 				if result != 0 {
@@ -153,10 +152,4 @@ func init() {
 			return dst, nil
 		})
 	}
-}
-
-//export errorCallback
-func errorCallback(err *C.char) {
-	errString := C.GoString(err)
-	fmt.Println("ASTC decompression failed: ", errString)
 }

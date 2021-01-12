@@ -21,11 +21,8 @@
 extern "C" {
 #endif
 
-typedef void (*loggerFunc)(const char*);
-
 int decompress_astc(uint8_t* in, uint8_t* out, uint32_t width, uint32_t height,
-                    uint32_t block_width, uint32_t block_height,
-                    loggerFunc logger);
+                    uint32_t block_width, uint32_t block_height);
 
 #ifdef __cplusplus
 }  // extern "C"

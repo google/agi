@@ -18,31 +18,23 @@
 #include "astc.h"
 #include "third_party/astc-encoder/Source/astcenccli_internal.h"
 
-int init_astc_for_decode(astcenc_profile profile,
-    astc_compressed_image& input_image, astcenc_config& config, loggerFunc logger) {
+/*
+ASTCENC_ERR_BAD_BLOCK_SIZE : "ERROR: Block size is invalid"
+ASTCENC_ERR_BAD_CPU_ISA : "ERROR: Required SIMD ISA support missing on this CPU"
+ASTCENC_ERR_BAD_CPU_FLOAT : "ERROR: astcenc must not be compiled with -ffast-math"
+
+or else : failed with astcenc_get_error_string
+*/
+
+astcenc_error init_astc_for_decode(astcenc_profile profile,
+    astc_compressed_image& input_image, astcenc_config& config) {
     unsigned int block_x = input_image.block_x;
 	unsigned int block_y = input_image.block_y;
 	unsigned int block_z = input_image.block_z;
 
     astcenc_preset preset = ASTCENC_PRE_FASTEST;
     unsigned int flags = 0;
-    astcenc_error status = astcenc_config_init(profile, block_x, block_y, block_z, preset, flags, config);
-    if (status == ASTCENC_ERR_BAD_BLOCK_SIZE) {
-        logger("ERROR: Block size is invalid\n");
-		return 1;
-	} else if (status == ASTCENC_ERR_BAD_CPU_ISA) {
-		logger("ERROR: Required SIMD ISA support missing on this CPU\n");
-		return 1;
-	} else if (status == ASTCENC_ERR_BAD_CPU_FLOAT) {
-		logger("ERROR: astcenc must not be compiled with -ffast-math\n");
-		return 1;
-	} else if (status != ASTCENC_SUCCESS) {
-        char error[255]{0};
-		sprintf(error, "ERROR: Init config failed with %s\n", astcenc_get_error_string(status));
-        logger(error);
-		return 1;
-	}
-    return 0;
+    return astcenc_config_init(profile, block_x, block_y, block_z, preset, flags, config);
 }
 
 astc_compressed_image create_astc_compressed_image(uint8_t* data, uint32_t width, uint32_t height,
@@ -78,44 +70,38 @@ void write_image(uint8_t* buf, astcenc_image* img) {
 }
 
 extern "C" int decompress_astc(uint8_t* input_image_raw, uint8_t* output_image_raw,
-    uint32_t width, uint32_t height, uint32_t block_width, uint32_t block_height, loggerFunc logger) {
+    uint32_t width, uint32_t height, uint32_t block_width, uint32_t block_height) {
 
     astc_compressed_image input_image = create_astc_compressed_image(input_image_raw,
         width, height, block_width, block_height);
 
     astcenc_profile profile = ASTCENC_PRF_LDR;
     astcenc_config config {};
-    if (init_astc_for_decode(profile, input_image, config, logger) != 0) {
-        logger("ASTC initialisation failed");
-        return 1;
+    astcenc_error result = init_astc_for_decode(profile, input_image, config);
+    if(result != ASTCENC_SUCCESS) {
+        return result;
     }
 
     unsigned int thread_count = get_cpu_count();
 	astcenc_context* codec_context;
-	astcenc_error codec_status = astcenc_context_alloc(config, thread_count, &codec_context);
-	if (codec_status != ASTCENC_SUCCESS) {
-        char error[255]{0};
-		sprintf(error,"ERROR: Codec context alloc failed: %s\n", astcenc_get_error_string(codec_status));
-		logger(error);
-        return 1;
-	}
+	result = astcenc_context_alloc(config, thread_count, &codec_context);
+	if(result != ASTCENC_SUCCESS) {
+        return result;
+    }
 
     unsigned int bitness = 8;
     astcenc_image* output_image = alloc_image(bitness,
         input_image.dim_x, input_image.dim_y, input_image.dim_z, 0);
 
     astcenc_swizzle swz_decode{ ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A };
-    codec_status = astcenc_decompress_image(codec_context, input_image.data, input_image.data_len,
+    result = astcenc_decompress_image(codec_context, input_image.data, input_image.data_len,
 		                                        *output_image, swz_decode);
-    if (codec_status != ASTCENC_SUCCESS) {
-        char error[255]{0};
-        sprintf(error, "ERROR: Codec decompress failed: %s\n", astcenc_get_error_string(codec_status));
-        logger(error);
-        return 1;
+    if(result != ASTCENC_SUCCESS) {
+        return result;
     }
 
     write_image(output_image_raw, output_image);
     free_image(output_image);
 	astcenc_context_free(codec_context);
-    return 0;
+    return ASTCENC_SUCCESS;
 }
