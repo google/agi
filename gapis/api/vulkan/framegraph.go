@@ -150,7 +150,6 @@ func newFramegraphImage(state *State, img *ImageObjectʳ) *api.FramegraphImage {
 						mem := state.DeviceMemories().Get(block.Memory())
 						if mem != NilDeviceMemoryObjectʳ {
 							coherentMemory = coherentMemory || backedByCoherentMemory(state, mem)
-							// memoryMapped = memoryMapped || !(mem.MappedLocation().IsNullptr())
 							if !(mem.MappedLocation().IsNullptr()) {
 								memRange := memory.Range{
 									Base: uint64(block.MemoryOffset()),
