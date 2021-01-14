@@ -76,6 +76,7 @@ public class ShaderView extends Composite
   private final Group spirvGroup;
   private final Group sourceGroup;
   private final Label crossCompileLabel;
+  private final GridData crossCompileGridData;
   private final SourceViewer spirvViewer;
   private final SourceViewer sourceViewer;
   private final Button pushButton;
@@ -116,8 +117,10 @@ public class ShaderView extends Composite
     spirvTab.setControl(spirvGroup);
 
     sourceGroup = createGroup(tabFolder, "", new GridLayout(1, false));
+    crossCompileGridData = new GridData(SWT.LEFT, SWT.TOP, false, false);
     crossCompileLabel =
         createBoldLabel(sourceGroup, "Source code was decompiled using SPIRV-Cross");
+    crossCompileLabel.setLayoutData(crossCompileGridData);
     sourceViewer =
         new SourceViewer(sourceGroup, null, SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL | SWT.BORDER);
     sourceViewer.setEditable(true);
@@ -233,12 +236,14 @@ public class ShaderView extends Composite
     if (!source.isEmpty()) {
       sourceViewer.setDocument(GlslSourceConfiguration.createDocument(source));
       crossCompileLabel.setVisible(shaderMessage.getCrossCompiled());
+      crossCompileGridData.exclude = !crossCompileLabel.isVisible();
       if (sourceTab != null) {
         sourceTab.setText(shaderMessage.getSourceLanguage());
       } else {
         sourceTab = createStandardTabItem(tabFolder, shaderMessage.getSourceLanguage());
         sourceTab.setControl(sourceGroup);
       }
+      sourceGroup.layout();
     } else {
       if (sourceTab != null) {
         sourceTab.dispose();
