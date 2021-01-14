@@ -19,8 +19,9 @@ import static com.google.gapid.util.Loadable.MessageType.Error;
 import static com.google.gapid.util.Loadable.MessageType.Info;
 import static com.google.gapid.widgets.Widgets.createBoldLabel;
 import static com.google.gapid.widgets.Widgets.createComposite;
-import static com.google.gapid.widgets.Widgets.createLabel;
 import static com.google.gapid.widgets.Widgets.createGroup;
+import static com.google.gapid.widgets.Widgets.createStandardTabFolder;
+import static com.google.gapid.widgets.Widgets.createStandardTabItem;
 
 import com.google.gapid.lang.glsl.GlslSourceConfiguration;
 import com.google.gapid.models.Analytics.View;
@@ -52,6 +53,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Group;
+import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.TabFolder;
 import org.eclipse.swt.widgets.TabItem;
 
@@ -114,8 +116,9 @@ public class ShaderView extends Composite
     spirvTab.setControl(spirvGroup);
 
     sourceGroup = createGroup(tabFolder, "", new GridLayout(1, false));
-    crossCompileLabel = createBoldLabel(sourceGroup, "Source code was decompiled using SPIRV-Cross");
-    SourceViewer sourceViewer =
+    crossCompileLabel =
+        createBoldLabel(sourceGroup, "Source code was decompiled using SPIRV-Cross");
+    sourceViewer =
         new SourceViewer(sourceGroup, null, SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL | SWT.BORDER);
     sourceViewer.setEditable(true);
     sourceViewer.configure(new GlslSourceConfiguration(widgets.theme));
@@ -219,8 +222,7 @@ public class ShaderView extends Composite
     loading.stopLoading();
     shaderMessage = shader;
     pushButton.setEnabled(true);
-    String label = shaderMessage.getType() + " "
-        + (shaderResource != null ? shaderResource.getHandle() : "Shader");
+    String label = shaderResource != null ? shaderResource.getHandle() : "Shader";
     spirvGroup.setText(label);
     String spirvSource = shaderMessage.getSpirvSource();
     if (spirvSource.isEmpty()) {
