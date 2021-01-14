@@ -97,6 +97,8 @@ extern "C" astc_error decompress_astc(uint8_t* input_image_raw,
       astcenc_decompress_image(codec_context, input_image.data,
                                input_image.data_len, *output_image, swz_decode);
   if (result != ASTCENC_SUCCESS) {
+    free_image(output_image);
+    astcenc_context_free(codec_context);
     return result;
   }
 
