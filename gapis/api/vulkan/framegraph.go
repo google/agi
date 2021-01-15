@@ -76,6 +76,9 @@ func newFramegraphBuffer(state *State, buf *BufferObjectʳ) *api.FramegraphBuffe
 				}
 				memoryMapped = memoryMapped || memRange.Overlaps(mappedRange)
 			}
+			if coherentMemory && memoryMapped {
+				break
+			}
 		}
 	}
 
@@ -121,6 +124,9 @@ func newFramegraphImage(state *State, img *ImageObjectʳ) *api.FramegraphImage {
 				memoryMapped = memoryMapped || memRange.Overlaps(mappedRange)
 			}
 		}
+		if coherentMemory && memoryMapped {
+			break
+		}
 	}
 	// No need to scan sparse memory if both coherent/mapped are already true
 	if !coherentMemory || !memoryMapped {
@@ -140,9 +146,13 @@ func newFramegraphImage(state *State, img *ImageObjectʳ) *api.FramegraphImage {
 					memoryMapped = memoryMapped || memRange.Overlaps(mappedRange)
 				}
 			}
+			if coherentMemory && memoryMapped {
+				break
+			}
 		}
 	}
 	if !coherentMemory || !memoryMapped {
+	SPARSE_IMG_LOOP: // Label for early break of nested loops
 		for _, sparseImgMem := range img.SparseImageMemoryBindings().All() {
 			for _, layer := range sparseImgMem.Layers().All() {
 				for _, level := range layer.Levels().All() {
@@ -161,6 +171,9 @@ func newFramegraphImage(state *State, img *ImageObjectʳ) *api.FramegraphImage {
 								}
 								memoryMapped = memoryMapped || memRange.Overlaps(mappedRange)
 							}
+						}
+						if coherentMemory && memoryMapped {
+							break SPARSE_IMG_LOOP
 						}
 					}
 				}
