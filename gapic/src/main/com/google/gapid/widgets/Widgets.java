@@ -408,6 +408,14 @@ public class Widgets {
     return result;
   }
 
+  public static Button createButton(Composite parent, String text, int style, Color color, Listener listener) {
+    Button result = new Button(parent, style);
+    result.setText(text);
+    result.setBackground(color);
+    result.addListener(SWT.Selection, listener);
+    return result;
+  }
+
   public static Button createButtonWithImage(Composite parent, Image image, Listener listener) {
     Button result = new Button(parent, SWT.PUSH);
     result.setImage(image);

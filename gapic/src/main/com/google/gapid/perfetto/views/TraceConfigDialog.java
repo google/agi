@@ -426,7 +426,7 @@ public class TraceConfigDialog extends DialogBase {
     }
   }
 
-  private static class BasicInputArea extends Composite implements InputArea {
+  public static class BasicInputArea extends Composite implements InputArea {
     private static final int GROUP_INDENT = 20;
 
     private final Button cpu;
@@ -541,7 +541,8 @@ public class TraceConfigDialog extends DialogBase {
           gpuCountersLabels[0] = createLabel(counterGroup, count + " of " + total + " selected");
           gpuCountersSelect = Widgets.createButton(counterGroup, "Select", e -> {
             List<Integer> currentIds = settings.perfetto().getGpuOrBuilder().getCounterIdsList();
-            GpuCountersDialog dialog = new GpuCountersDialog(getShell(), theme, caps, currentIds);
+            GpuCountersDialog dialog = new GpuCountersDialog(getShell(), theme,
+                caps.getGpuProfiling().getGpuCounterDescriptor().getSpecsList(), currentIds);
             if (dialog.open() == Window.OK) {
               List<Integer> newIds = dialog.getSelectedIds();
               settings.writePerfetto().getGpuBuilder()
@@ -821,25 +822,30 @@ public class TraceConfigDialog extends DialogBase {
       }
     }
 
-    private static class GpuCountersDialog extends DialogBase {
+    public static class GpuCountersDialog extends DialogBase {
       private static final Predicate<GpuProfiling.GpuCounterDescriptor.GpuCounterSpec>
           SELECT_DEFAULT = GpuProfiling.GpuCounterDescriptor.GpuCounterSpec::getSelectByDefault;
 
-      private final Device.PerfettoCapability caps;
+      private final List<GpuProfiling.GpuCounterDescriptor.GpuCounterSpec> specs;
       private final Set<Integer> currentIds;
 
-      private CheckboxTableViewer table;
+      protected CheckboxTableViewer table;
       private List<Integer> selectedIds;
-      private Set<Object> checkedElements;
+      protected Set<Object> checkedElements;
       private boolean hasFilters;
 
       public GpuCountersDialog(
-          Shell shell, Theme theme, Device.PerfettoCapability caps, List<Integer> currentIds) {
+          Shell shell, Theme theme, List<GpuProfiling.GpuCounterDescriptor.GpuCounterSpec> specs,
+          List<Integer> currentIds) {
         super(shell, theme);
-        this.caps = caps;
+        this.specs = specs;
         this.currentIds = Sets.newHashSet(currentIds);
         this.checkedElements = Sets.newHashSet();
         this.hasFilters = false;
+      }
+
+      public List<GpuProfiling.GpuCounterDescriptor.GpuCounterSpec> getSpecs() {
+        return specs;
       }
 
       public List<Integer> getSelectedIds() {
@@ -854,6 +860,11 @@ public class TraceConfigDialog extends DialogBase {
       @Override
       protected Control createDialogArea(Composite parent) {
         Composite area = (Composite)super.createDialogArea(parent);
+        createGpuCounterTable(area);
+        return area;
+      }
+
+      protected void createGpuCounterTable(Composite area) {
         Text search = new Text(area, SWT.SINGLE | SWT.SEARCH | SWT.ICON_SEARCH | SWT.ICON_CANCEL);
         search.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
 
@@ -864,9 +875,9 @@ public class TraceConfigDialog extends DialogBase {
         Widgets.<GpuProfiling.GpuCounterDescriptor.GpuCounterSpec>createTableColumn(
             table, "Description", counter -> counter.getDescription());
         table.setContentProvider(new ArrayContentProvider());
-        table.setInput(caps.getGpuProfiling().getGpuCounterDescriptor().getSpecsList());
+        table.setInput(specs);
         table.setCheckedElements(
-            caps.getGpuProfiling().getGpuCounterDescriptor().getSpecsList().stream()
+            specs.stream()
                 .filter(c -> currentIds.contains(c.getCounterId()))
                 .toArray(GpuProfiling.GpuCounterDescriptor.GpuCounterSpec[]::new));
         table.getTable().getColumn(0).pack();
@@ -892,7 +903,7 @@ public class TraceConfigDialog extends DialogBase {
               break;
             case "default":
               table.setCheckedElements(
-                  caps.getGpuProfiling().getGpuCounterDescriptor().getSpecsList().stream()
+                  specs.stream()
                       .filter(SELECT_DEFAULT)
                       .toArray(GpuProfiling.GpuCounterDescriptor.GpuCounterSpec[]::new));
               if (hasFilters) {
@@ -928,7 +939,6 @@ public class TraceConfigDialog extends DialogBase {
           hasFilters = true;
           resumeCheckedElements();
         });
-        return area;
       }
 
       @Override
