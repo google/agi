@@ -19,12 +19,12 @@ static_assert(sizeof(astc_error) >= sizeof(astcenc_error),
               "astc_error should superset of astcenc_error");
 
 struct compression_workload {
-	astcenc_context* context;
-	astcenc_image* image;
-	astcenc_swizzle swizzle;
-	uint8_t* data_out;
-	size_t data_len;
-	astcenc_error error;
+  astcenc_context* context;
+  astcenc_image* image;
+  astcenc_swizzle swizzle;
+  uint8_t* data_out;
+  size_t data_len;
+  astcenc_error error;
 };
 
 astc_compressed_image create_astc_compressed_image(uint8_t* data,
@@ -64,34 +64,32 @@ void write_image(uint8_t* buf, const astcenc_image* img) {
   }
 }
 
-astcenc_image* read_image(const uint8_t* buf, uint32_t width, uint32_t height, uint32_t padding) {
+astcenc_image* read_image(const uint8_t* buf, uint32_t width, uint32_t height,
+                          uint32_t padding) {
   return astc_img_from_unorm8x4_array(buf, width, height, padding, false);
 }
 
-void compression_workload_runner(
-	int thread_count,
-	int thread_id,
-	void* payload
-) {
+void compression_workload_runner(int thread_count, int thread_id,
+                                 void* payload) {
+  compression_workload* work = static_cast<compression_workload*>(payload);
+  astcenc_error error =
+      astcenc_compress_image(work->context, *work->image, work->swizzle,
+                             work->data_out, work->data_len, thread_id);
 
-	compression_workload* work = static_cast<compression_workload*>(payload);
-	astcenc_error error = astcenc_compress_image(
-	                       work->context, *work->image, work->swizzle,
-	                       work->data_out, work->data_len, thread_id);
-
-	if (error != ASTCENC_SUCCESS) {
-		work->error = error;
-	}
+  if (error != ASTCENC_SUCCESS) {
+    work->error = error;
+  }
 }
 
-extern "C" int compress_astc(uint8_t* input_image_raw, uint8_t* output_image_raw,
-                             uint32_t width, uint32_t height, uint32_t block_width,
+extern "C" int compress_astc(uint8_t* input_image_raw,
+                             uint8_t* output_image_raw, uint32_t width,
+                             uint32_t height, uint32_t block_width,
                              uint32_t block_height, uint32_t is_srgb) {
   astcenc_profile profile = is_srgb ? ASTCENC_PRF_LDR_SRGB : ASTCENC_PRF_LDR;
   astcenc_config config{};
 
-  astcenc_error result = astcenc_config_init(profile, block_width,
-    block_height, 1, ASTCENC_PRE_FASTEST, 0, config);
+  astcenc_error result = astcenc_config_init(profile, block_width, block_height,
+                                             1, ASTCENC_PRE_FASTEST, 0, config);
   if (result != ASTCENC_SUCCESS) {
     return result;
   }
@@ -103,12 +101,16 @@ extern "C" int compress_astc(uint8_t* input_image_raw, uint8_t* output_image_raw
     return result;
   }
 
-	astcenc_image* uncompressed_image = read_image(input_image_raw, width, height,
-  MAX(config.v_rgba_radius, config.a_scale_radius));
+  astcenc_image* uncompressed_image =
+      read_image(input_image_raw, width, height,
+                 MAX(config.v_rgba_radius, config.a_scale_radius));
 
-  astcenc_swizzle swz_encode{ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A};
-  uint32_t blocks_x = (uncompressed_image->dim_x + config.block_x - 1) / config.block_x;
-  uint32_t blocks_y = (uncompressed_image->dim_y + config.block_y - 1) / config.block_y;
+  astcenc_swizzle swz_encode{ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B,
+                             ASTCENC_SWZ_A};
+  uint32_t blocks_x =
+      (uncompressed_image->dim_x + config.block_x - 1) / config.block_x;
+  uint32_t blocks_y =
+      (uncompressed_image->dim_y + config.block_y - 1) / config.block_y;
   size_t buffer_size = blocks_x * blocks_y * 16;
 
   compression_workload work;
@@ -119,7 +121,7 @@ extern "C" int compress_astc(uint8_t* input_image_raw, uint8_t* output_image_raw
   work.data_len = buffer_size;
   work.error = ASTCENC_SUCCESS;
 
-	launch_threads(thread_count, compression_workload_runner, &work);
+  launch_threads(thread_count, compression_workload_runner, &work);
   if (work.error != ASTCENC_SUCCESS) {
     free_image(uncompressed_image);
     astcenc_context_free(codec_context);
@@ -137,8 +139,9 @@ extern "C" astc_error decompress_astc(uint8_t* input_image_raw,
                                       uint32_t height, uint32_t block_width,
                                       uint32_t block_height) {
   astcenc_config config{};
-  astcenc_error result = astcenc_config_init(ASTCENC_PRF_LDR,
-    block_width, block_height, 1, ASTCENC_PRE_FASTEST, 0, config);
+  astcenc_error result =
+      astcenc_config_init(ASTCENC_PRF_LDR, block_width, block_height, 1,
+                          ASTCENC_PRE_FASTEST, 0, config);
   if (result != ASTCENC_SUCCESS) {
     return result;
   }
