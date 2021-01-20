@@ -23,7 +23,7 @@ extern "C" {
 
 typedef int astc_error;
 
-int compress_astc(uint8_t* in, uint8_t* out, uint32_t width, uint32_t height,
+astc_error compress_astc(uint8_t* in, uint8_t* out, uint32_t width, uint32_t height,
                   uint32_t block_width, uint32_t block_height,
                   uint32_t is_srgb);
 

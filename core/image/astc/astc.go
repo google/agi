@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package astc implements ASTC texture decompression.
+// Package astc implements ASTC texture compression and decompression.
 //
 // astc is in a separate package from image as it contains cgo code that can
 // slow builds.
@@ -193,13 +193,13 @@ func init() {
 		// Intentional local copy
 		conv := conversion
 		image.RegisterConverter(conv.src, conv.dst, func(src []byte, width, height, depth int) ([]byte, error) {
-			return compressorFunc(src, width, height, depth, conv.dst)
+			return compress(src, width, height, depth, conv.dst)
 		})
 	}
 }
 
-func compressorFunc(src []byte, width int, height int, depth int, compressionFormat *image.Format) ([]byte, error) {
-	astcFormat := compressionFormat.GetAstc()
+func compress(src []byte, width int, height int, depth int, format *image.Format) ([]byte, error) {
+	astcFormat := format.GetAstc()
 	blockWidth := astcFormat.GetBlockWidth()
 	blockHeight := astcFormat.GetBlockHeight()
 	isSrgb := 0
@@ -208,7 +208,7 @@ func compressorFunc(src []byte, width int, height int, depth int, compressionFor
 	}
 
 	srcSliceSize := width * height * 4
-	dstSliceSize := compressionFormat.Size(width, height, 1)
+	dstSliceSize := format.Size(width, height, 1)
 	dst := make([]byte, dstSliceSize*depth)
 
 	for z := 0; z < depth; z++ {

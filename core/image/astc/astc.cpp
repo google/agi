@@ -81,7 +81,7 @@ void compression_workload_runner(int thread_count, int thread_id,
   }
 }
 
-extern "C" int compress_astc(uint8_t* input_image_raw,
+extern "C" astc_error compress_astc(uint8_t* input_image_raw,
                              uint8_t* output_image_raw, uint32_t width,
                              uint32_t height, uint32_t block_width,
                              uint32_t block_height, uint32_t is_srgb) {
