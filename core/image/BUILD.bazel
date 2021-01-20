@@ -19,7 +19,7 @@ load("@rules_proto//proto:defs.bzl", "proto_library")
 go_library(
     name = "go_default_library",
     srcs = [
-        "astc_format.go",
+        "astc.go",
         "atc.go",
         "convert.go",
         "convertable.go",
