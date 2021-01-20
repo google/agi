@@ -46,7 +46,7 @@ func (*FmtASTC) channels() stream.Channels {
 	return stream.Channels{stream.Channel_Red, stream.Channel_Green, stream.Channel_Blue, stream.Channel_Alpha}
 }
 
-// ASTCFrom reads a raw astc image, extracts the header and creates an
+// ASTCFrom reads a raw astc image(with header), extracts the header and creates an
 // ASTC image format object.
 func ASTCFrom(data []byte) (*Data, error) {
 	r := endian.Reader(bytes.NewBuffer(data), device.LittleEndian)
