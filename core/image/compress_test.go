@@ -38,7 +38,7 @@ func TestCompressors(t *testing.T) {
 	}
 
 	for _, testImage := range testImageInfos {
-		plainImg, err := getPlainImage(testImage.fmt.Name)
+		plainImg, err := getUncompressedImage(testImage.fmt.Name)
 		if err != nil {
 			t.Error(err)
 			continue
@@ -82,7 +82,7 @@ func getRefImage(name string) (*image.Data, error) {
 	return imageASTC, nil
 }
 
-func getPlainImage(name string) (*image.Data, error) {
+func getUncompressedImage(name string) (*image.Data, error) {
 	imagePath := filepath.Join("test_data", name+".png")
 
 	imagePNGData, err := ioutil.ReadFile(imagePath)
