@@ -82,9 +82,9 @@ void compression_workload_runner(int thread_count, int thread_id,
 }
 
 extern "C" astc_error compress_astc(uint8_t* input_image_raw,
-                             uint8_t* output_image_raw, uint32_t width,
-                             uint32_t height, uint32_t block_width,
-                             uint32_t block_height, uint32_t is_srgb) {
+                                    uint8_t* output_image_raw, uint32_t width,
+                                    uint32_t height, uint32_t block_width,
+                                    uint32_t block_height, uint32_t is_srgb) {
   astcenc_profile profile = is_srgb ? ASTCENC_PRF_LDR_SRGB : ASTCENC_PRF_LDR;
   astcenc_config config{};
 
