@@ -91,8 +91,8 @@ func NewSRGB8_ALPHA8_12x10(name string) *image.Format { return image.NewASTC(nam
 func NewSRGB8_ALPHA8_12x12(name string) *image.Format { return image.NewASTC(name, 12, 12, true) }
 
 type converterLayout struct {
-	uncompressed      *image.Format
-	compressed *image.Format
+	uncompressed *image.Format
+	compressed   *image.Format
 }
 
 func init() {
