@@ -17,8 +17,8 @@ _URL_LINUX = "https://download.eclipse.org/eclipse/downloads/drops4/R-4.15-20200
 _SHA_LINUX = "b64caa701e41627b6a442898f0d8d76f995b6cf3c409569bce1c3c1f9238d381"
 _URL_WIN = "https://download.eclipse.org/eclipse/downloads/drops4/R-4.15-202003050155/swt-4.15-win32-win32-x86_64.zip"
 _SHA_WIN = "df74b98238c949dd30fa2f56d762fab03e3bf78a008c580186d32e7878da89d6"
-_URL_OSX = "https://download.eclipse.org/eclipse/downloads/drops4/R-4.15-202003050155/swt-4.15-cocoa-macosx-x86_64.zip"
-_SHA_OSX = "23ffbcf7a4b020a3a7ce6ce3cfc16a27c7724f6b4173ee01f9285d61ad996f2d"
+_URL_OSX = "https://download.eclipse.org/eclipse/downloads/drops4/R-4.18-202012021800/swt-4.18-cocoa-macosx-x86_64.zip"
+_SHA_OSX = "ae37d150caded21e94731a0a6662403d97918df57c36da2a5d257eabf10d76a2"
 
 def _swt_impl(repository_ctx):
     url = ""
