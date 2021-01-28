@@ -113,6 +113,7 @@ import "extensions/khr_shader_float16_int8.api"
 import "extensions/khr_shader_atomic_int64.api"
 import "extensions/khr_driver_properties.api"
 import "extensions/khr_timeline_semaphore.api"
+import "extensions/ext_frame_boundary.api"
 
 import "android/vulkan_android.api"
 import "linux/vulkan_linux.api"
@@ -281,6 +282,7 @@ sub ref!ExtensionSet supportedDeviceExtensions() {
   supported.ExtensionNames["VK_KHR_shader_float16_int8"] = true
   supported.ExtensionNames["VK_KHR_shader_atomic_int64"] = true
   supported.ExtensionNames["VK_KHR_driver_properties"] = true
+  supported.ExtensionNames["VK_EXT_frame_boundary"] = true
   return supported
 }
 

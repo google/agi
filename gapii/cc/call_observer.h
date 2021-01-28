@@ -182,6 +182,12 @@ class CallObserver : public context_t {
   // observeTimestamp encodes a timestamp extra in the trace
   void observeTimestamp();
 
+  // setEndOfFrame marks this call as being an end of frame.
+  void setEndOfFrame() { mEndOfFrame = true; };
+
+  // getEndOfFrame returns true if this call is marked as an end of frame.
+  bool getEndOfFrame() { return mEndOfFrame; };
+
  private:
   // shouldObserve returns true if the given slice is located in application
   // pool and we are supposed to observe application pool.
@@ -229,6 +235,9 @@ class CallObserver : public context_t {
 
   // Callback invoked whenever slice_encoded() is called.
   OnSliceEncodedCallback mOnSliceEncoded;
+
+  // True if this call marks the end of a frame
+  bool mEndOfFrame;
 };
 
 template <typename T>

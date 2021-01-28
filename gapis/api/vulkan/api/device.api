@@ -52,6 +52,7 @@
   @unused VkDevice                   VulkanHandle
   @unused ref!VulkanDebugMarkerInfo  DebugInfo
   @unused bool                       CreatedWithDeviceGroup
+  @unused bool                       UseFrameBoundaryExt
   @unused VkBool32                   HostQueryReset
 
   // Vulkan 1.1
@@ -278,6 +279,9 @@ sub ref!DeviceObject createDeviceObject(const VkDeviceCreateInfo* data) {
     ext := as!string(extensionNames[i])
     if !(ext in supported.ExtensionNames) { vkErrorUnrecognizedExtension(extensionNames[i]) }
     object.EnabledExtensions[i] = ext
+    if ext == "VK_EXT_frame_boundary" {
+      object.UseFrameBoundaryExt = true
+    }
   }
 
   if info.pEnabledFeatures != null {

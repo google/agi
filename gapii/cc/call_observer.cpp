@@ -50,7 +50,8 @@ CallObserver::CallObserver(SpyBase* spy, CallObserver* parent, uint8_t api)
       mObserveApplicationPool(spy->shouldObserveApplicationPool()),
       mApi(api),
       mShouldTrace(false),
-      mCurrentThread(core::Thread::current().id()) {
+      mCurrentThread(core::Thread::current().id()),
+      mEndOfFrame(false) {
   // context_t initialization.
   this->context_t::id = 0;
   this->context_t::next_pool_id = &spy->next_pool_id();

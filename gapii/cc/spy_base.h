@@ -161,7 +161,7 @@ class SpyBase {
   inline virtual void onPreEndOfFrame(CallObserver*, uint8_t) {}
 
   // onPostEndOfFrame is after any command annotated with @frame_end
-  inline virtual void onPostEndOfFrame() {}
+  inline virtual void onPostEndOfFrame(CallObserver* observer) {}
 
   // onPostFence is called immediately after the driver call.
   inline virtual void onPostFence(CallObserver* observer) {}

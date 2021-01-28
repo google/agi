@@ -326,6 +326,13 @@ cmd VkResult vkQueuePresentKHR(
   LastPresentInfo.PresentImageCount = 0
   LastPresentInfo.Queue = queue
 
+  // If the device does not use VK_EXT_frame_boundary, then vkQueuePresentKHR
+  // is the default frame boundary.
+  device := LastBoundQueue.Device
+  if !(device in Devices) { vkErrorInvalidDevice(device) }
+  if !(Devices[device].UseFrameBoundaryExt) {
+    frameBoundary()
+  }
 
   info := pPresentInfo[0]
 
@@ -335,7 +342,6 @@ cmd VkResult vkQueuePresentKHR(
     next := MutableVoidPtr(as!void*(info.pNext))
     for i in (0 .. numPNext) {
       sType := as!const VkStructureType*(next.Ptr)[0:1][0]
-      _ = sType
       // TODO: handle extensions for queue present
       // Example: Device Gropu Extension
       // switch sType {
@@ -343,6 +349,12 @@ cmd VkResult vkQueuePresentKHR(
       //   ext := as!VkDeviceGroupPresentInfoKHR*(next.Ptr)[0]
       //  }
       // }
+      switch sType {
+        case VK_STRUCTURE_TYPE_FRAME_BOUNDARY_EXT: {
+          frameBoundary()
+        }
+        default: {}
+      }
       next.Ptr = as!VulkanStructHeader*(next.Ptr)[0:1][0].PNext
     }
   }
@@ -407,6 +419,7 @@ cmd VkResult vkQueuePresentKHR(
             results[i] = result
         }*/
   }
+
   return ?
 }
 

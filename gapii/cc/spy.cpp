@@ -328,7 +328,12 @@ void Spy::onPreEndOfFrame(CallObserver* observer, uint8_t api) {
   mNumDrawsPerFrame = 0;
 }
 
-void Spy::onPostEndOfFrame() {
+void Spy::onPostEndOfFrame(CallObserver* observer) {
+  if (!observer->getEndOfFrame()) {
+    // Just a queue submission that does not mark the end of frame
+    return;
+  }
+
   mFrameNumber++;
   if (should_record_timestamps()) {
     std::stringstream fn;

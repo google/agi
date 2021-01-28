@@ -85,6 +85,7 @@ cmd void vkGetDeviceQueue(
 @threadSafety("app")
 @indirect("VkQueue", "VkDevice")
 @submission
+@frame_end
 cmd VkResult vkQueueSubmit(
     VkQueue             queue,
     u32                 submitCount,
@@ -96,6 +97,7 @@ cmd VkResult vkQueueSubmit(
   LastBoundQueue = Queues[queue]
   clear(LastBoundQueue.ReadCoherentBuffers)
   enterSubcontext()
+
   for i in (0 .. submitCount) {
     info := submitInfo[i]
 
@@ -127,6 +129,9 @@ cmd VkResult vkQueueSubmit(
                 vkErrUnsupported("Multiple devices in a group not supported yet")
               }
             }
+          }
+          case VK_STRUCTURE_TYPE_FRAME_BOUNDARY_EXT: {
+            frameBoundary()
           }
           default: {}
         }
@@ -190,9 +195,9 @@ cmd VkResult vkQueueSubmit(
     fenceObj.Signaled = true
     recordFenceSignal(fence)
   }
+
   return ?
 }
-
 
 @threadSafety("system")
 @indirect("VkQueue", "VkDevice")

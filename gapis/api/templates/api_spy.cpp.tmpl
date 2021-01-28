@@ -274,7 +274,7 @@
       observer->observePending();
       observer->exit();
 
-      {{if GetAnnotation $ "frame_end"}}onPostEndOfFrame();{{end}}
+      {{if GetAnnotation $ "frame_end"}}onPostEndOfFrame(observer);{{end}}
       {{if not (IsVoid $.Return.Type)}}¶
         return result;
       {{end}}

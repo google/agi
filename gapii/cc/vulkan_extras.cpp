@@ -472,6 +472,7 @@ void VulkanSpy::recordFenceReset(CallObserver*, uint64_t) {}
 void VulkanSpy::recordAcquireNextImage(CallObserver*, uint64_t, uint32_t) {}
 void VulkanSpy::recordPresentSwapchainImage(CallObserver*, uint64_t, uint32_t) {
 }
+
 void VulkanSpy::recordBeginCommandBuffer(CallObserver*, VkCommandBuffer) {}
 void VulkanSpy::recordEndCommandBuffer(CallObserver*, VkCommandBuffer) {}
 
@@ -842,6 +843,12 @@ uint32_t VulkanSpy::SpyOverride_vkEnumerateDeviceExtensionProperties(
     }
   }
 
+  // AGI implements VK_EXT_frame_boundary itself
+  char frame_boundary_extension_name[] = "VK_EXT_frame_boundary";
+  uint32_t frame_boundary_spec_version = 1;
+  all_properties.push_back(VkExtensionProperties{frame_boundary_extension_name,
+                                                 frame_boundary_spec_version});
+
   if (pProperties == NULL) {
     *pCount = all_properties.size();
     return VkResult::VK_SUCCESS;
@@ -1015,6 +1022,10 @@ void VulkanSpy::recordWaitedFences(CallObserver* observer, VkDevice device,
   }
 
   observer->encode_message(&state);
+}
+
+void VulkanSpy::frameBoundary(CallObserver* observer) {
+  observer->setEndOfFrame();
 }
 
 }  // namespace gapii

@@ -394,6 +394,11 @@ enum VkStructureType: u32 {
 
   // @extension("VK_KHR_driver_properties")
   VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES_KHR = 1000196000,
+
+  // @extension("VK_EXT_frame_boundary")
+  // TODO(b/156105650): This is a temporary value for the early implementation
+  // of this extension that is still being discussed in Khronos.
+  VK_STRUCTURE_TYPE_FRAME_BOUNDARY_EXT = 1000123456,
 }
 
 enum VkObjectType: u32 {
