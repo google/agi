@@ -300,10 +300,7 @@ func processCounters(ctx context.Context, processor *perfetto.Processor, desc *d
 		}
 		values := countersColumns[1].GetDoubleValues()
 
-		var spec *device.GpuCounterDescriptor_GpuCounterSpec
-		if s, ok := nameToSpec[names[i]]; ok {
-			spec = s
-		}
+		spec, _ := nameToSpec[names[i]]
 		// TODO(apbodnar) Populate the `default` field once the trace processor supports it (b/147432390)
 		counters[i] = &service.ProfilingData_Counter{
 			Id:          uint32(trackIds[i]),

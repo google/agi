@@ -37,7 +37,7 @@ import com.google.gapid.models.Profile.PerfNode;
 import com.google.gapid.models.Settings;
 import com.google.gapid.perfetto.Unit;
 import com.google.gapid.perfetto.models.CounterInfo;
-import com.google.gapid.perfetto.views.TraceConfigDialog.BasicInputArea.GpuCountersDialog;
+import com.google.gapid.perfetto.views.TraceConfigDialog.GpuCountersDialog;
 import com.google.gapid.proto.SettingsProto;
 import com.google.gapid.proto.SettingsProto.UI.PerformancePreset;
 import com.google.gapid.proto.device.GpuProfiling;
@@ -103,12 +103,12 @@ public class PerformanceView extends Composite
     Composite buttonsComposite = createComposite(composite, new GridLayout(3, false));
     buttonsComposite.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, false));
 
-    Button toggleButton = createButton(buttonsComposite, "Estimate / Confidence Range",
-        SWT.FLAT, buttonColor, e -> toggleEstimateOrRange());
+    Button toggleButton = createButton(buttonsComposite, SWT.FLAT, "Estimate / Confidence Range",
+        buttonColor, e -> toggleEstimateOrRange());
     toggleButton.setImage(widgets.theme.swap());
     toggleButton.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false));
 
-    Button filterButton = createButton(buttonsComposite, "Filter Counters", SWT.FLAT, buttonColor, e -> {
+    Button filterButton = createButton(buttonsComposite, SWT.FLAT, "Filter Counters", buttonColor, e -> {
       GpuCountersDialog dialog = new GpuCountersDialog(
           getShell(), widgets.theme, getCounterSpecs(), Lists.newArrayList(visibleMetrics));
       if (dialog.open() == Window.OK) {
@@ -353,7 +353,7 @@ public class PerformanceView extends Composite
         return;
       }
 
-      Button addButton = createButton(this, "Add New Preset", SWT.FLAT, buttonColor, e -> {
+      Button addButton = createButton(this, SWT.FLAT, "Add New Preset", buttonColor, e -> {
         AddPresetDialog dialog = new AddPresetDialog(
             getShell(), theme, getCounterSpecs(), Lists.newArrayList());
         if (dialog.open() == Window.OK) {
@@ -375,7 +375,7 @@ public class PerformanceView extends Composite
         if (!preset.getDeviceName().equals(models.devices.getSelectedReplayDevice().getName())) {
           continue;
         }
-        buttons.add(createButton(this, preset.getPresetName(), SWT.FLAT, buttonColor, e -> {
+        buttons.add(createButton(this, SWT.FLAT, preset.getPresetName(), buttonColor, e -> {
           visibleMetrics = Sets.newHashSet(preset.getCounterIdsList());
           updateTree(false);
         }));
@@ -519,7 +519,7 @@ public class PerformanceView extends Composite
         createGpuCounterTable(tableArea);
 
         // Create the delete button.
-        Widgets.createButton(area, "Delete", SWT.FLAT, buttonColor, e -> {
+        Widgets.createButton(area, SWT.FLAT, "Delete", buttonColor, e -> {
           IStructuredSelection selection = viewer.getStructuredSelection();
           if (selection == null || selection.getFirstElement() == null) {
             return;
