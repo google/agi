@@ -183,10 +183,10 @@ class CallObserver : public context_t {
   void observeTimestamp();
 
   // setEndOfFrame marks this call as being an end of frame.
-  void setEndOfFrame() { mEndOfFrame = true; };
+  void setEndOfFrame() { mEndOfFrame = true; }
 
   // getEndOfFrame returns true if this call is marked as an end of frame.
-  bool getEndOfFrame() { return mEndOfFrame; };
+  bool getEndOfFrame() { return mEndOfFrame; }
 
  private:
   // shouldObserve returns true if the given slice is located in application
