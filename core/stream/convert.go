@@ -301,15 +301,7 @@ func intCollapse(count int, dst, src buf) error {
 	min, max := maxPossibleValue, float64(0)
 	if src.component.Channel == Channel_Depth {
 		for i := 0; i < count; i++ {
-			f := float64(0)
-
-			if srcTy.Signed && !dstTy.Signed {
-				f = float64(sourceStream.Read(srcBitsIncSign))
-				f = (f + ((maxWithSign + 1) / 2)) / maxWithSign
-			} else {
-				f = float64(sourceStream.Read(srcBitsExcSign)) / maxPossibleValue
-			}
-
+			f := float64(sourceStream.Read(srcBitsExcSign)) / maxPossibleValue
 			if f < min {
 				min = f
 			}
@@ -328,29 +320,20 @@ func intCollapse(count int, dst, src buf) error {
 			v = uint64(float64(v) + ((maxWithSign + 1) / 2))
 		} else {
 			v = sourceStream.Read(srcBitsExcSign)
-		}
 
-		if src.component.Channel == Channel_Depth {
-			f := float64(v)
+			if src.component.Channel == Channel_Depth {
+				f := float64(v) / maxPossibleValue
 
-			if srcTy.Signed && !dstTy.Signed {
-				f = f / maxWithSign
-			} else {
-				f = f / maxPossibleValue
-			}
+				if max != min {
+					f = (f - min) * (1 / (max - min))
+				} else {
+					f = 0
+				}
 
-			if max != min {
-				f = (f - min) * (1 / (max - min))
-			} else {
-				f = 0
-			}
-
-			if srcTy.Signed && !dstTy.Signed {
-				v = uint64(f * maxWithSign)
-			} else {
 				v = uint64(f * maxPossibleValue)
 			}
 		}
+
 		v >>= shift
 		destStream.Write(uint64(v), dstBitsExcSign)
 		if dstTy.Signed {
