@@ -15,6 +15,7 @@
 cc_library(
     name = "etc2codec_deps",
     srcs = [
+        "EtcLib/Etc/EtcMath.cpp",
     ],
     hdrs = [
         "EtcLib/Etc/EtcColor.h",
@@ -75,7 +76,6 @@ cc_library(
         "EtcLib/Etc/EtcFilter.h",
         "EtcLib/Etc/EtcImage.cpp",
         "EtcLib/Etc/EtcImage.h",
-        "EtcLib/Etc/EtcMath.cpp",
     ],
     hdrs = [
         "EtcLib/Etc/Etc.h",
