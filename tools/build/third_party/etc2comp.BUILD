@@ -23,14 +23,15 @@ cc_library(
         "EtcLib/Etc/EtcImage.h",
         "EtcLib/Etc/EtcMath.h",
     ],
-    copts = [], # keep
-    visibility = ["//visibility:private"],
+    copts = [],  # keep
     strip_include_prefix = "EtcLib/Etc",
+    visibility = ["//visibility:private"],
 )
 
 cc_library(
     name = "etc2codec",
     srcs = [
+        "EtcLib/EtcCodec/EtcBlock4x4.cpp",
         "EtcLib/EtcCodec/EtcBlock4x4Encoding.cpp",
         "EtcLib/EtcCodec/EtcBlock4x4Encoding_ETC1.cpp",
         "EtcLib/EtcCodec/EtcBlock4x4Encoding_ETC1.h",
@@ -40,16 +41,15 @@ cc_library(
         "EtcLib/EtcCodec/EtcBlock4x4Encoding_RG11.h",
         "EtcLib/EtcCodec/EtcBlock4x4Encoding_RGB8.cpp",
         "EtcLib/EtcCodec/EtcBlock4x4Encoding_RGB8.h",
-        "EtcLib/EtcCodec/EtcBlock4x4Encoding_RGBA8.cpp",
-        "EtcLib/EtcCodec/EtcBlock4x4Encoding_RGBA8.h",
         "EtcLib/EtcCodec/EtcBlock4x4Encoding_RGB8A1.cpp",
         "EtcLib/EtcCodec/EtcBlock4x4Encoding_RGB8A1.h",
-        "EtcLib/EtcCodec/EtcSortedBlockList.cpp",
-        "EtcLib/EtcCodec/EtcBlock4x4.cpp",
+        "EtcLib/EtcCodec/EtcBlock4x4Encoding_RGBA8.cpp",
+        "EtcLib/EtcCodec/EtcBlock4x4Encoding_RGBA8.h",
         "EtcLib/EtcCodec/EtcDifferentialTrys.cpp",
         "EtcLib/EtcCodec/EtcDifferentialTrys.h",
         "EtcLib/EtcCodec/EtcIndividualTrys.cpp",
         "EtcLib/EtcCodec/EtcIndividualTrys.h",
+        "EtcLib/EtcCodec/EtcSortedBlockList.cpp",
     ],
     hdrs = [
         "EtcLib/EtcCodec/EtcBlock4x4.h",
@@ -58,9 +58,9 @@ cc_library(
         "EtcLib/EtcCodec/EtcErrorMetric.h",
         "EtcLib/EtcCodec/EtcSortedBlockList.h",
     ],
-    copts = [], # keep
-    visibility = ["//visibility:private"],
+    copts = [],  # keep
     strip_include_prefix = "EtcLib/EtcCodec",
+    visibility = ["//visibility:private"],
     deps = ["etc2codec_deps"],
 )
 
@@ -69,22 +69,22 @@ cc_library(
     srcs = [
         "EtcLib/Etc/Etc.cpp",
         "EtcLib/Etc/Etc.h",
+        "EtcLib/Etc/EtcColor.h",
+        "EtcLib/Etc/EtcColorFloatRGBA.h",
         "EtcLib/Etc/EtcConfig.h",
+        "EtcLib/Etc/EtcFilter.h",
         "EtcLib/Etc/EtcImage.cpp",
         "EtcLib/Etc/EtcImage.h",
-        "EtcLib/Etc/EtcColorFloatRGBA.h",
-        "EtcLib/Etc/EtcColor.h",
-        "EtcLib/Etc/EtcFilter.h",
         "EtcLib/Etc/EtcMath.cpp",
     ],
     hdrs = [
         "EtcLib/Etc/Etc.h",
+        "EtcLib/Etc/EtcColor.h",
+        "EtcLib/Etc/EtcColorFloatRGBA.h",
         "EtcLib/Etc/EtcConfig.h",
         "EtcLib/Etc/EtcImage.h",
-        "EtcLib/Etc/EtcColorFloatRGBA.h",
-        "EtcLib/Etc/EtcColor.h",
     ],
-    copts = [], # keep
+    copts = [],  # keep
     include_prefix = "third_party/etc2comp",
     visibility = ["//visibility:public"],
     deps = ["etc2codec"],

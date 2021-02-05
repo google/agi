@@ -48,24 +48,24 @@ var (
 
 	// ETC 1
 	ETC1_RGB_U8_NORM = image.NewETC1_RGB_U8_NORM("ETC1_RGB_U8_NORM")
-	formatToCEnum = map[interface{}]C.enum_etc_format{
-		ETC2_RGB_U8_NORM: C.ETC2_RGB_U8_NORM,
-		ETC2_RGBA_U8_NORM: C.ETC2_RGBA_U8_NORM,
-		ETC2_RGBA_U8U8U8U1_NORM: C.ETC2_RGBA_U8U8U8U1_NORM,
-		ETC2_SRGB_U8_NORM: C.ETC2_SRGB_U8_NORM,
-		ETC2_SRGBA_U8_NORM: C.ETC2_SRGBA_U8_NORM,
+	formatToCEnum    = map[interface{}]C.enum_etc_format{
+		ETC2_RGB_U8_NORM:         C.ETC2_RGB_U8_NORM,
+		ETC2_RGBA_U8_NORM:        C.ETC2_RGBA_U8_NORM,
+		ETC2_RGBA_U8U8U8U1_NORM:  C.ETC2_RGBA_U8U8U8U1_NORM,
+		ETC2_SRGB_U8_NORM:        C.ETC2_SRGB_U8_NORM,
+		ETC2_SRGBA_U8_NORM:       C.ETC2_SRGBA_U8_NORM,
 		ETC2_SRGBA_U8U8U8U1_NORM: C.ETC2_SRGBA_U8U8U8U1_NORM,
-		ETC2_R_U11_NORM: C.ETC2_R_U11_NORM,
-		ETC2_RG_U11_NORM: C.ETC2_RG_U11_NORM,
-		ETC2_R_S11_NORM: C.ETC2_R_S11_NORM,
-		ETC2_RG_S11_NORM: C.ETC2_RG_S11_NORM,
-		ETC1_RGB_U8_NORM: C.ETC1_RGB_U8_NORM,
+		ETC2_R_U11_NORM:          C.ETC2_R_U11_NORM,
+		ETC2_RG_U11_NORM:         C.ETC2_RG_U11_NORM,
+		ETC2_R_S11_NORM:          C.ETC2_R_S11_NORM,
+		ETC2_RG_S11_NORM:         C.ETC2_RG_S11_NORM,
+		ETC1_RGB_U8_NORM:         C.ETC1_RGB_U8_NORM,
 	}
 )
 
 type converterLayout struct {
-	uncompressed      *image.Format
-	compressed *image.Format
+	uncompressed *image.Format
+	compressed   *image.Format
 }
 
 type etcLayout struct {
@@ -244,5 +244,5 @@ func compress(src []byte, width, height, depth int, format *image.Format, bytesP
 		}
 	}
 
-	return dst, nil;
+	return dst, nil
 }
