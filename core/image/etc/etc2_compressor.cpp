@@ -21,7 +21,8 @@
 #include <vector>
 
 static_assert(sizeof(etc_error) >= sizeof(Etc::Image::EncodingStatus),
-              "etc_error should superset of Etc::Image::EncodingStatus to protect against overflow");
+              "etc_error should superset of Etc::Image::EncodingStatus to "
+              "protect against overflow");
 
 namespace {
 const uint32_t MIN_JOBS = 8;
@@ -65,8 +66,8 @@ void read_image(const uint8_t* input_image, uint32_t width, uint32_t height,
   for (uint32_t h = 0; h < height; ++h) {
     const uint8_t* src = &input_image[(h * width) * BYTE_PER_PIXEL];
     for (uint32_t w = 0; w < width; ++w) {
-      output.push_back(std::move(
-        Etc::ColorFloatRGBA::ConvertFromRGBA8(src[0], src[1], src[2], src[3])));
+      output.push_back(std::move(Etc::ColorFloatRGBA::ConvertFromRGBA8(
+          src[0], src[1], src[2], src[3])));
       src += BYTE_PER_PIXEL;
     }
   }
@@ -91,9 +92,9 @@ extern "C" etc_error compress_etc(const uint8_t* input_image,
 
   auto status =
       image.Encode(image_format, ERROR_METRIC, EFFORT, MIN_JOBS, MAX_JOBS);
-  // We don't need to care about warnings as compression only used for experiments.
-  // The users can act on warnings when they actually compress their textures with
-  // an appropiate compression tool.
+  // We don't need to care about warnings as compression only used for
+  // experiments. The users can act on warnings when they actually compress
+  // their textures with an appropiate compression tool.
   if (status > Etc::Image::EncodingStatus::ERROR_THRESHOLD) {
     return static_cast<etc_error>(status);
   }
@@ -106,8 +107,8 @@ extern "C" char* get_etc_error_string(etc_error error_code) {
   // This function will cause a minor memory leak to be able to return all the
   // errors produced. This function will never be called in a well behaving
   // scenario. If this method is called, compression, therefore the underlying
-  // operation e.g. experiments will fail and program is likely to be closed soon
-  // after.
+  // operation e.g. experiments will fail and program is likely to be closed
+  // soon after.
 
   char* error_string = (char*)calloc(512, sizeof(char));
   auto status = static_cast<Etc::Image::EncodingStatus>(error_code);
