@@ -14,11 +14,6 @@
 
 package etc
 
-/*
-#include "etc2.h"
-*/
-import "C"
-
 import (
 	"bytes"
 

@@ -40,7 +40,7 @@ enum etc_format {
   ETC1_RGB_U8_NORM,
 };
 
-typedef int64_t etc_error;
+typedef uint32_t etc_error;
 
 etc_error compress_etc(const uint8_t* input_image, uint8_t* output_image,
                        uint32_t width, uint32_t height, enum etc_format format);

@@ -18,11 +18,12 @@
 #include "etc2.h"
 #include "third_party/etc2comp/EtcLib/Etc/EtcImage.h"
 
+#include <vector>
+
 static_assert(sizeof(etc_error) >= sizeof(Etc::Image::EncodingStatus),
-              "astc_error should superset of astcenc_error");
+              "etc_error should superset of Etc::Image::EncodingStatus to protect against overflow");
 
 namespace {
-const int64_t ETC_ALLOCATION_FAILED = -1;
 const uint32_t MIN_JOBS = 8;
 const uint32_t MAX_JOBS = 1024;
 const float EFFORT = 10.0f;
@@ -59,15 +60,13 @@ Etc::Image::Format convert_etc_format(etc_format format) {
 }
 
 void read_image(const uint8_t* input_image, uint32_t width, uint32_t height,
-                Etc::ColorFloatRGBA* output) {
+                std::vector<Etc::ColorFloatRGBA>& output) {
   const uint8_t BYTE_PER_PIXEL = 4;
   for (uint32_t h = 0; h < height; ++h) {
     const uint8_t* src = &input_image[(h * width) * BYTE_PER_PIXEL];
-    Etc::ColorFloatRGBA* dst = &output[h * width];
     for (uint32_t w = 0; w < width; ++w) {
-      *dst =
-          Etc::ColorFloatRGBA::ConvertFromRGBA8(src[0], src[1], src[2], src[3]);
-      dst++;
+      output.push_back(std::move(
+        Etc::ColorFloatRGBA::ConvertFromRGBA8(src[0], src[1], src[2], src[3])));
       src += BYTE_PER_PIXEL;
     }
   }
@@ -76,12 +75,11 @@ void read_image(const uint8_t* input_image, uint32_t width, uint32_t height,
 extern "C" etc_error compress_etc(const uint8_t* input_image,
                                   uint8_t* output_image, uint32_t width,
                                   uint32_t height, etc_format format) {
-  auto* source_image = new Etc::ColorFloatRGBA[width * height];
-  if (!source_image) {
-    return ETC_ALLOCATION_FAILED;
-  }
+  std::vector<Etc::ColorFloatRGBA> source_image;
+  source_image.reserve(width * height);
+
   read_image(input_image, width, height, source_image);
-  Etc::Image image(reinterpret_cast<float*>(source_image), width, height,
+  Etc::Image image(reinterpret_cast<float*>(source_image.data()), width, height,
                    ERROR_METRIC);
   image.m_bVerboseOutput = false;
 
@@ -93,24 +91,25 @@ extern "C" etc_error compress_etc(const uint8_t* input_image,
 
   auto status =
       image.Encode(image_format, ERROR_METRIC, EFFORT, MIN_JOBS, MAX_JOBS);
-  // We don't need to care about warnings.
+  // We don't need to care about warnings as compression only used for experiments.
+  // The users can act on warnings when they actually compress their textures with
+  // an appropiate compression tool.
   if (status > Etc::Image::EncodingStatus::ERROR_THRESHOLD) {
-    delete[] source_image;
     return static_cast<etc_error>(status);
   }
 
   memcpy(output_image, image.GetEncodingBits(), image.GetEncodingBitsBytes());
-  delete[] source_image;
   return static_cast<etc_error>(Etc::Image::EncodingStatus::SUCCESS);
 }
 
 extern "C" char* get_etc_error_string(etc_error error_code) {
-  char* error_string = (char*)calloc(512, sizeof(char));
-  if (error_code == ETC_ALLOCATION_FAILED) {
-    strcpy(error_string, "Allocation Failed");
-    return error_string;
-  }
+  // This function will cause a minor memory leak to be able to return all the
+  // errors produced. This function will never be called in a well behaving
+  // scenario. If this method is called, compression, therefore the underlying
+  // operation e.g. experiments will fail and program is likely to be closed soon
+  // after.
 
+  char* error_string = (char*)calloc(512, sizeof(char));
   auto status = static_cast<Etc::Image::EncodingStatus>(error_code);
   if (status == Etc::Image::EncodingStatus::SUCCESS) {
     strcpy(error_string, "Compression Succeed");
@@ -122,12 +121,12 @@ extern "C" char* get_etc_error_string(etc_error error_code) {
   current += written;
 
   if (status > Etc::Image::EncodingStatus::ERROR_THRESHOLD) {
-    if (status & Etc::Image::EncodingStatus::ERROR_ZERO_WIDTH_OR_HEIGHT) {
-      written = sprintf(current, "\"Error: Image width or height is zero\"");
+    if (status & Etc::Image::EncodingStatus::ERROR_UNKNOWN_FORMAT) {
+      written = sprintf(current, "\"Error: Unknown Image Format\"");
       current += written;
     }
-    if (status & Etc::Image::EncodingStatus::ERROR_ZERO_WIDTH_OR_HEIGHT) {
-      written = sprintf(current, "\"Error: Image width or height is zero\"");
+    if (status & Etc::Image::EncodingStatus::ERROR_UNKNOWN_ERROR_METRIC) {
+      written = sprintf(current, "\"Error: Unknown Error Metric\"");
       current += written;
     }
     if (status & Etc::Image::EncodingStatus::ERROR_ZERO_WIDTH_OR_HEIGHT) {

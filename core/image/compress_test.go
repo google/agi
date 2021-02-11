@@ -112,11 +112,8 @@ func getRefImage(testImage testImageInfo) (*image.Data, error) {
 
 		return imageKTX, nil
 	default:
-		panic("Unknown extension: " + testImage.ext)
+		return nil, fmt.Errorf("This should not happen: Unknown Format")
 	}
-
-	panic("This should not happen")
-	return nil, fmt.Errorf("This should not happen")
 }
 
 func getUncompressedImage(testImage testImageInfo) (*image.Data, error) {
