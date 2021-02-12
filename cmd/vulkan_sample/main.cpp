@@ -41,6 +41,10 @@
 
 #include "vulkan/vulkan.h"
 
+#if defined(__ANDROID__)
+typedef void (VKAPI_PTR *PFN_vkFrameBoundaryANDROID)(VkDevice device, VkSemaphore semaphore, VkImage image, AHardwareBuffer* buffer);
+#endif
+
 const uint32_t kBufferingCount = 2;
 
 namespace cube {
@@ -599,7 +603,11 @@ int main(int argc, const char** argv) {
         &priority,
     };
 
-    const char* device_extensions[] = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+    std::vector<const char*> device_extensions;
+    device_extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+#if defined(__ANDROID__)
+    device_extensions.push_back("VK_ANDROID_frame_boundary");
+#endif
 
     VkDeviceCreateInfo create_info{
         VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
@@ -609,8 +617,8 @@ int main(int argc, const char** argv) {
         &queue_create_info,
         0,
         nullptr,
-        1,
-        device_extensions,
+        (uint32_t)device_extensions.size(),
+        &device_extensions[0],
         nullptr,
     };
     REQUIRE_SUCCESS(
@@ -716,6 +724,9 @@ int main(int argc, const char** argv) {
   LOAD_DEVICE_FUNCTION(vkCreateFramebuffer);
   LOAD_DEVICE_FUNCTION(vkAcquireNextImageKHR);
   LOAD_DEVICE_FUNCTION(vkQueuePresentKHR);
+#if defined(__ANDROID__)
+  LOAD_DEVICE_FUNCTION(vkFrameBoundaryANDROID);
+#endif
 #undef LOAD_DEVICE_FUNCTION
   // Immutable Data
   VkBuffer vertex_buffer;
@@ -749,6 +760,9 @@ int main(int argc, const char** argv) {
   VkFence ready_fences[kBufferingCount];
   VkSemaphore swapchain_image_ready_semaphores[kBufferingCount];
   VkSemaphore render_done_semaphores[kBufferingCount];
+#if defined(__ANDROID__)
+  VkSemaphore frame_boundary_done_semaphores[kBufferingCount];
+#endif
 
   // Per swapchain image mutableData;
   std::vector<VkImageView> swapchain_views;
@@ -1331,6 +1345,10 @@ int main(int argc, const char** argv) {
                                         &swapchain_image_ready_semaphores[i]));
       REQUIRE_SUCCESS(vkCreateSemaphore(device, &create_info, nullptr,
                                         &render_done_semaphores[i]));
+#if defined(__ANDROID__)
+      REQUIRE_SUCCESS(vkCreateSemaphore(device, &create_info, nullptr,
+                                        &frame_boundary_done_semaphores[i]));
+#endif
     }
   }
 
@@ -1690,6 +1708,13 @@ int main(int argc, const char** argv) {
     REQUIRE_SUCCESS(vkEndCommandBuffer(render_command_buffers[frame_parity]));
     VkPipelineStageFlags flags = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 
+#if defined(__ANDROID__)
+    VkSemaphore signalSemaphores[] = {
+      render_done_semaphores[frame_parity],
+      frame_boundary_done_semaphores[frame_parity],
+      };
+#endif
+
     VkSubmitInfo submit{VK_STRUCTURE_TYPE_SUBMIT_INFO,
                         nullptr,
                         1,
@@ -1697,10 +1722,21 @@ int main(int argc, const char** argv) {
                         &flags,
                         1,
                         &render_command_buffers[frame_parity],
+                        #if defined(__ANDROID__)
+                        2,
+                        signalSemaphores
+                        #else
                         1,
-                        &render_done_semaphores[frame_parity]};
+                        &render_done_semaphores[frame_parity]
+                        #endif
+                        };
     REQUIRE_SUCCESS(
         vkQueueSubmit(queue, 1, &submit, ready_fences[frame_parity]));
+
+#if defined(__ANDROID__)
+    vkFrameBoundaryANDROID(device, frame_boundary_done_semaphores[frame_parity], (VkImage)0, nullptr);
+#endif
+
     VkResult result;
     VkPresentInfoKHR present_info{VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
                                   nullptr,
