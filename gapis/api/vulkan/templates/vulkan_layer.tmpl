@@ -72,6 +72,10 @@
 #include "vulkan/vulkan.h"
 #include "core/vulkan/layer_helpers/vulkan_layer_helpers.h"
 
+// Support VK_ANDROID_frame_boundary, which is not defined by Khronos
+struct AHardwareBuffer;
+typedef void (VKAPI_PTR *PFN_vkFrameBoundaryANDROID)(VkDevice device, VkSemaphore semaphore, VkImage image, AHardwareBuffer* buffer);
+
 #include "core/vulkan/layer_helpers/threading.h"
 
 
