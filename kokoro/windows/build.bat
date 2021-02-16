@@ -19,6 +19,14 @@ Windows Build Script.
 set BUILD_ROOT=%cd%
 set SRC=%cd%\github\agi
 
+REM Install WiX (https://wixtoolset.org/, used in package.bat to create ".msi")
+mkdir wix
+cd wix
+wget -q https://github.com/wixtoolset/wix3/releases/download/wix3112rtm/wix311-binaries.zip
+unzip -q wix311-binaries.zip
+set WIX=%cd%
+cd ..
+
 REM Use a fixed JDK.
 set JAVA_HOME=c:\Program Files\Java\jdk1.8.0_152
 
@@ -114,9 +122,6 @@ echo %DATE% %TIME%
 REM Smoketests
 %SRC%\bazel-bin\cmd\smoketests\windows_amd64_stripped\smoketests -gapit bazel-bin\pkg\gapit -traces test\traces
 echo %DATE% %TIME%
-
-REM Configure package script to use the pre-installed WiX Toolset.
-set WIX=%ProgramFiles(x86)%\WiX Toolset v3.11\bin
 
 REM Build the release packages.
 mkdir %BUILD_ROOT%\out
