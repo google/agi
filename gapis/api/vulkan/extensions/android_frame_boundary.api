@@ -31,7 +31,7 @@
 // Structs //
 /////////////
 
-// In due time, this will be declared in the implementation of
+// TODO: In due time, this will be declared in the implementation of
 // VK_ANDROID_external_memory_android_hardware_buffer
 @platform("VK_USE_PLATFORM_ANDROID_KHR")
 @extension("VK_ANDROID_external_memory_android_hardware_buffer")
@@ -42,6 +42,7 @@ class AHardwareBuffer {}
 // Commands //
 //////////////
 
+@platform("VK_USE_PLATFORM_ANDROID_KHR")
 @extension("VK_ANDROID_frame_boundary")
 @indirect("VkDevice")
 @override
