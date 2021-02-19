@@ -187,7 +187,7 @@ Spy::Spy()
     core::Debugger::waitForAttach();
   }
 
-  auto context = enter("init", 0);
+  auto context = enter("init", VulkanSpy::kApiIndex);
   VulkanSpy::init();
   SpyBase::init(context);
   exit();
@@ -348,7 +348,7 @@ void Spy::onPostEndOfFrame() {
         set_suspended(false);
         exit();
         saveInitialState();
-        enter("RecreateState", 2);
+        enter("RecreateState", VulkanSpy::kApiIndex);
       }
     }
   } else {
