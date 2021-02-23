@@ -204,7 +204,7 @@ public class Memory extends DeviceDependentModel<Memory.Data, Memory.Source, Voi
       List<ListenableFuture<Segment>> futures = Lists.newArrayList();
       futures.add(getPage(firstPage, getOffsetInPage(offset), PAGE_SIZE - getOffsetInPage(offset)));
       for (long page = firstPage + 1, left = length - PAGE_SIZE + getOffsetInPage(offset);
-          page <= lastPage; page++, left -= PAGE_SIZE) {
+          page <= lastPage && left >= 0; page++, left -= PAGE_SIZE) {
         futures.add(getPage(page, 0, (int)Math.min(left, PAGE_SIZE)));
       }
 
