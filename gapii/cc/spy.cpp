@@ -65,7 +65,7 @@ const uint32_t kMaxFramebufferObservationHeight = 2560;
 
 const int32_t kSuspendIndefinitely = -1;
 
-thread_local gapii::CallObserver* tl_callObserver = nullptr;
+thread_local std::unique_ptr<gapii::CallObserver> tl_callObserver;
 
 }  // anonymous namespace
 
@@ -243,11 +243,11 @@ CallObserver* Spy::enter(const char* name, uint32_t api) {
   // case in AGI, which only handles Vulkan): it creates a fresh observer
   // (per-thread, since tl_callObserver is thread_local) for that API the first
   // time and reuses it in subsequent calls.
-  if (tl_callObserver == nullptr) {
-    tl_callObserver = new CallObserver(this, api);
+  if (!tl_callObserver) {
+    tl_callObserver.set(new CallObserver(this, api));
   }
   tl_callObserver->beginCommand(name);
-  return tl_callObserver;
+  return tl_callObserver.get();
 }
 
 void Spy::exit() { unlock(); }
