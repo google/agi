@@ -244,7 +244,7 @@ CallObserver* Spy::enter(const char* name, uint32_t api) {
   // (per-thread, since tl_callObserver is thread_local) for that API the first
   // time and reuses it in subsequent calls.
   if (!tl_callObserver) {
-    tl_callObserver.set(new CallObserver(this, api));
+    tl_callObserver.reset(new CallObserver(this, api));
   }
   tl_callObserver->beginCommand(name);
   return tl_callObserver.get();
