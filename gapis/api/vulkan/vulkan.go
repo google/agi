@@ -98,14 +98,14 @@ func (s *State) TrimInitialState(ctx context.Context, capturePath *path.Capture)
 	pipelines := map[VkPipeline]struct{}{}
 
 	// Record usage in initial state.
-	for _, i := range s.LastComputeInfos().All() {
-		pipelines[i.ComputePipeline().VulkanHandle()] = struct{}{}
+	for _, ci := range s.LastComputeInfos().All() {
+		pipelines[ci.ComputePipeline().VulkanHandle()] = struct{}{}
 	}
-	for _, i := range s.LastDrawInfos().All() {
-		for _, d := range i.DescriptorSets().All() {
+	for _, di := range s.LastDrawInfos().All() {
+		for _, d := range di.DescriptorSets().All() {
 			descriptorSets[d.VulkanHandle()] = struct{}{}
 		}
-		pipelines[i.GraphicsPipeline().VulkanHandle()] = struct{}{}
+		pipelines[di.GraphicsPipeline().VulkanHandle()] = struct{}{}
 	}
 
 	// Record usage in the trace commands
