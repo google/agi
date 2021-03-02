@@ -109,12 +109,12 @@ func filterTypedRanges(ranges []*service.TypedMemoryRange) ([]*service.TypedMemo
 				dups = append(dups, right)
 			}
 			mostPreciseIndex := index
-			mostPreciseLevel, err := pnextPreciseLevel(newRanges[index].Type.TypeIndex)
+			mostPreciseLevel, err := pNextPrecision(newRanges[index].Type.TypeIndex)
 			if err != nil {
 				return nil, err
 			}
 			for _, i := range dups {
-				preciseLevel, err := pnextPreciseLevel(newRanges[i].Type.TypeIndex)
+				preciseLevel, err := pNextPrecision(newRanges[i].Type.TypeIndex)
 				if err != nil {
 					return nil, err
 				}
@@ -142,12 +142,12 @@ func filterTypedRanges(ranges []*service.TypedMemoryRange) ([]*service.TypedMemo
 	return filteredRanges, nil
 }
 
-// Return the pnext pointer derived struct's precise level.
+// pNextPrecision returns the precision of a pnext pointer derived struct.
 // The larger the number, the more precise and specific the struct is. Return -1
 // for irrelevant structs.
 // The ranking is based on how the pnext pointers are type casted in api files,
 // a typical casting chain could be found at gapis/api/vulkan/api/device.api.
-func pnextPreciseLevel(typeIndex uint64) (int, error) {
+func pNextPrecision(typeIndex uint64) (int, error) {
 	ty, err := types.GetType(typeIndex)
 	if err != nil {
 		return -1, err
