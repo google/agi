@@ -115,17 +115,28 @@ func CommandTreeNode(ctx context.Context, c *path.CommandTreeNode, r *path.Resol
 	rawItem, absID := cmdTree.index(c.Indices)
 	switch item := rawItem.(type) {
 	case api.SubCmdIdx:
+		cmdPath := cmdTree.path.Capture.Command(item[0], item[1:]...)
+		cmd, err := Cmd(ctx, cmdPath, r)
+		if err != nil {
+			return nil, err
+		}
+
+		experimentalCmds := []*path.Command{}
+		if cmd.CmdFlags().IsExecutedDraw() || cmd.CmdFlags().IsExecutedDispatch() {
+			experimentalCmds = []*path.Command{&path.Command{Indices: cmdPath.Indices}}
+		}
+
 		return &service.CommandTreeNode{
-			Representation: cmdTree.path.Capture.Command(item[0], item[1:]...),
-			NumChildren:    0, // TODO: Subcommands
-			Commands:       cmdTree.path.Capture.SubCommandRange(item, item),
+			Representation:       cmdPath,
+			NumChildren:          0, // TODO: Subcommands
+			Commands:             cmdTree.path.Capture.SubCommandRange(item, item),
+			ExperimentalCommands: experimentalCmds,
 		}, nil
 	case api.CmdIDGroup:
 		representation := cmdTree.path.Capture.Command(uint64(item.Range.Last()))
 		if data, ok := item.UserData.(*CmdGroupData); ok {
 			representation = cmdTree.path.Capture.Command(uint64(data.Representation))
 		}
-
 		if len(absID) == 0 {
 			// Not a CmdIDGroup under SubCmdRoot, does not contain Subcommands
 			return &service.CommandTreeNode{
@@ -140,12 +151,19 @@ func CommandTreeNode(ctx context.Context, c *path.CommandTreeNode, r *path.Resol
 		startID := append(absID, uint64(item.Range.First()))
 		endID := append(absID, uint64(item.Range.Last()))
 		representation = cmdTree.path.Capture.Command(endID[0], endID[1:]...)
+
+		experimentalCmds := []*path.Command{}
+		for _, e := range item.ExperimentableCmds {
+			experimentalCmds = append(experimentalCmds, &path.Command{Indices: e})
+		}
+
 		return &service.CommandTreeNode{
-			Representation: representation,
-			NumChildren:    item.Count(),
-			Commands:       cmdTree.path.Capture.SubCommandRange(startID, endID),
-			Group:          item.Name,
-			NumCommands:    item.DeepCount(func(g api.CmdIDGroup) bool { return true /* TODO: Subcommands */ }),
+			Representation:       representation,
+			NumChildren:          item.Count(),
+			Commands:             cmdTree.path.Capture.SubCommandRange(startID, endID),
+			Group:                item.Name,
+			NumCommands:          item.DeepCount(func(g api.CmdIDGroup) bool { return true /* TODO: Subcommands */ }),
+			ExperimentalCommands: experimentalCmds,
 		}, nil
 
 	case api.SubCmdRoot:
@@ -155,12 +173,22 @@ func CommandTreeNode(ctx context.Context, c *path.CommandTreeNode, r *path.Resol
 			g = fmt.Sprintf("%v", item.SubGroup.Name)
 			count = uint64(item.SubGroup.Count())
 		}
+
+		experimentalCmds := []*path.Command{}
+		cmdPath := cmdTree.path.Capture.Command(item.Id[0], item.Id[1:]...)
+		if cmd, _ := Cmd(ctx, cmdPath, r); cmd != nil {
+			if cmd.CmdFlags().IsExecutedCommandBuffer() {
+				experimentalCmds = []*path.Command{&path.Command{Indices: cmdPath.Indices}}
+			}
+		}
+
 		return &service.CommandTreeNode{
-			Representation: cmdTree.path.Capture.Command(item.Id[0], item.Id[1:]...),
-			NumChildren:    item.SubGroup.Count(),
-			Commands:       cmdTree.path.Capture.SubCommandRange(item.Id, item.Id),
-			Group:          g,
-			NumCommands:    count,
+			Representation:       cmdPath,
+			NumChildren:          item.SubGroup.Count(),
+			Commands:             cmdTree.path.Capture.SubCommandRange(item.Id, item.Id),
+			Group:                g,
+			NumCommands:          count,
+			ExperimentalCommands: experimentalCmds,
 		}, nil
 	default:
 		panic(fmt.Errorf("Unexpected type: %T, cmdTree.index(c.Indices): (%v, %v), indices: %v",
@@ -257,7 +285,7 @@ func (r *CommandTreeResolvable) Resolve(ctx context.Context) (interface{}, error
 	}
 	for _, g := range groupers {
 		for _, l := range g.Build(api.CmdID(len(c.Commands))) {
-			if group, err := out.root.AddGroup(l.Start, l.End, l.Name); err == nil {
+			if group, err := out.root.AddGroup(l.Start, l.End, l.Name, []api.SubCmdIdx{}); err == nil {
 				group.UserData = l.UserData
 			}
 		}
@@ -396,7 +424,7 @@ func addFrameEventGroups(
 				start--
 			}
 
-			t.root.AddGroup(start, i+1, fmt.Sprintf("%v %v", prefix, count+1))
+			t.root.AddGroup(start, i+1, fmt.Sprintf("%v %v", prefix, count+1), []api.SubCmdIdx{})
 			count++
 
 		case service.EventKind_LastInFrame:
@@ -449,7 +477,7 @@ func addContainingGroups(
 			end := i
 			lastLeft = end
 			if start < end {
-				t.root.AddGroup(start, end, label)
+				t.root.AddGroup(start, end, label, []api.SubCmdIdx{})
 			}
 		}
 	}
@@ -463,7 +491,7 @@ type frame struct {
 }
 
 func (f frame) addGroup(t *commandTree) {
-	group, _ := t.root.AddGroup(f.start, f.end+1, fmt.Sprintf("Frame %v", f.index))
+	group, _ := t.root.AddGroup(f.start, f.end+1, fmt.Sprintf("Frame %v", f.index), []api.SubCmdIdx{})
 	if group != nil {
 		group.UserData = &CmdGroupData{Representation: f.repr}
 	}
@@ -522,7 +550,7 @@ func addFrameGroups(ctx context.Context, events *service.Events, p *path.Command
 		if firstFrame.end != 0 {
 			firstFrame.addGroup(t)
 		}
-		t.root.AddGroup(curFrame.start, last, "Incomplete Frame")
+		t.root.AddGroup(curFrame.start, last, "Incomplete Frame", []api.SubCmdIdx{})
 	}
 }
 

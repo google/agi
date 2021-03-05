@@ -47,6 +47,7 @@ import com.google.gapid.util.Ranges;
 
 import org.eclipse.swt.widgets.Shell;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -72,7 +73,7 @@ public class Profile
 
   @Override
   protected Source getSource(Capture.Data data) {
-    return new Source(data.path, new ProfileExperiments());
+    return new Source(data.path, new ProfileExperiments(false, new ArrayList<>()));
   }
 
   @Override

@@ -19,6 +19,8 @@ import static com.google.gapid.util.Paths.lastCommand;
 
 import com.google.gapid.models.CommandStream;
 import com.google.gapid.models.Models;
+import com.google.gapid.models.Profile;
+import com.google.gapid.proto.service.path.Path;
 import com.google.gapid.util.Experimental;
 import com.google.gapid.views.CommandTree.Tree;
 import com.google.gapid.widgets.Widgets;
@@ -28,7 +30,15 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
+
 public class CommandOptions {
+  private static final Logger LOG = Logger.getLogger(Profile.class.getName());
+
   private CommandOptions() {
   }
 
@@ -44,24 +54,65 @@ public class CommandOptions {
       }
     });
 
+    MenuItem disableMenuItem;
+    MenuItem isolateMenuItem;
     if (Experimental.enableProfileExperiments(models.settings)) {
-      MenuItem experimentMenuItem = Widgets.createMenuItem(optionsMenu, "Ex&periments", SWT.MOD1 + 'P', e -> {
+      disableMenuItem = Widgets.createCheckMenuItem(optionsMenu, "Disable Command", SWT.MOD1 + 'D', e -> {
         CommandStream.Node node = tree.getSelection();
         if (node != null && node.getData() != null) {
-          widgets.experiments.showExperimentsPopup(experimentsMenu.getShell());
+          List<Path.Command> experimentalCommands = node.getData().getExperimentalCommandsList();
+          if (widgets.experiments.isAnyCommandDisabled(experimentalCommands)) {
+            widgets.experiments.enableCommands(experimentalCommands);
+          } else {
+            widgets.experiments.disableCommands(experimentalCommands);
+          }
         }
       });
+
+      isolateMenuItem = Widgets.createMenuItem(optionsMenu, "Isolate Command", SWT.MOD1 + 'I', e -> {
+        CommandStream.Node node = tree.getSelection();
+        if (node != null && node.getData() != null) {
+         List<Path.Command> commands = getSiblings(node);
+          if (widgets.experiments.isAnyCommandDisabled(commands)) {
+            widgets.experiments.enableCommands(commands);
+          } else {
+            widgets.experiments.disableCommands(commands);
+          }
+        }
+      });
+    } else {
+      disableMenuItem = null;
+      isolateMenuItem = null;
     }
 
     tree.setPopupMenu(optionsMenu, node -> {
       if (node.getData() == null) {
         return false;
       }
+
       editMenuItem.setEnabled(false);
       if (node.getCommand() != null && CommandEditor.shouldShowEditPopup(node.getCommand())) {
         editMenuItem.setEnabled(true);
       }
+
+      if (disableMenuItem != null && isolateMenuItem != null) {
+        boolean CanBeDisabled = node.getData().getExperimentalCommandsCount() > 0;
+        boolean hasDisabledChild = widgets.experiments.isAnyCommandDisabled(
+            node.getData().getExperimentalCommandsList());
+        disableMenuItem.setEnabled(CanBeDisabled);
+        disableMenuItem.setSelection(hasDisabledChild);
+        isolateMenuItem.setEnabled(CanBeDisabled &&
+            node.getParent().getData().getExperimentalCommandsCount() > 1);
+      }
       return true;
     });
+  }
+
+  private static List<Path.Command> getSiblings(CommandStream.Node node) {
+    return Arrays.asList(node.getParent().getChildren()).stream()
+        .filter(n -> n.getData().getExperimentalCommandsCount() > 0 && !n.equals(node))
+        .map(n -> n.getData().getExperimentalCommandsList())
+        .flatMap(Collection::stream)
+        .collect(Collectors.toList());
   }
 }

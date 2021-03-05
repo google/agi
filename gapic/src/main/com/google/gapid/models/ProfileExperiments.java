@@ -16,21 +16,23 @@
 package com.google.gapid.models;
 
 import com.google.gapid.proto.service.Service;
+import com.google.gapid.proto.service.path.Path;
+
+import java.util.List;
 
 public final class ProfileExperiments {
   public final boolean disableAnisotropicFiltering;
+  public final List<Path.Command> disabledCommands;
 
-  public ProfileExperiments() {
-    this(false);
-  }
-
-  public ProfileExperiments(boolean disableAnisotropicFiltering) {
+  public ProfileExperiments(boolean disableAnisotropicFiltering, List<Path.Command> disabledCommands) {
     this.disableAnisotropicFiltering = disableAnisotropicFiltering;
+    this.disabledCommands = disabledCommands;
   }
 
   public final Service.ProfileExperiments toProto() {
     return Service.ProfileExperiments.newBuilder()
       .setDisableAnisotropicFiltering(disableAnisotropicFiltering)
+      .addAllDisabledCommands(disabledCommands)
       .build();
   }
 }
