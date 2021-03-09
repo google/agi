@@ -777,7 +777,8 @@ enum ClientAction {
   ClosePinned = 57;
   ShowExperiments = 58;
   UpdateExperiments = 59;
-  DisableAnisotropicFiltering = 60;
+  DisableCommand = 60;
+  EnableCommand = 61;
 }
 
 message DCECaptureRequest {
