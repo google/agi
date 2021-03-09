@@ -23,18 +23,18 @@ import (
 	"github.com/google/gapid/core/log"
 )
 
-type trimInitialStateVerb struct{ TrimInitialStateFlags }
+type trimStateVerb struct{ TrimStateFlags }
 
 func init() {
-	verb := &trimInitialStateVerb{}
+	verb := &trimStateVerb{}
 	app.AddVerb(&app.Verb{
-		Name:      "trim_initial_state",
-		ShortHelp: "(WIP) Trims a gfx trace's initial state to the resources actually used by the commands",
+		Name:      "trim_state",
+		ShortHelp: "Trims a gfx trace's initial state to the resources actually used by the commands",
 		Action:    verb,
 	})
 }
 
-func (verb *trimInitialStateVerb) Run(ctx context.Context, flags flag.FlagSet) error {
+func (verb *trimStateVerb) Run(ctx context.Context, flags flag.FlagSet) error {
 	if flags.NArg() != 1 {
 		app.Usage(ctx, "Exactly one gfx trace file expected, got %d", flags.NArg())
 		return nil

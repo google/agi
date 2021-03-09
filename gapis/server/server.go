@@ -310,11 +310,17 @@ func (s *server) TrimCaptureInitialState(ctx context.Context, p *path.Capture) (
 		return nil, err
 	}
 
-	for _, api := range c.APIs {
-		c.InitialState.APIs[api].TrimInitialState(ctx, p)
+	initialState := c.CloneInitialState()
+	for _, state := range initialState.APIs {
+		state.TrimInitialState(ctx, p)
 	}
 
-	return c.Path(ctx)
+	newCapture, err := capture.NewGraphicsCapture(ctx, c.Name(), c.Header, initialState, c.Commands)
+	if err != nil {
+		return nil, err
+	}
+
+	return newCapture.Path(ctx)
 }
 
 func (s *server) GetGraphVisualization(ctx context.Context, p *path.Capture, format service.GraphFormat) ([]byte, error) {

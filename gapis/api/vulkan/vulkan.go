@@ -113,13 +113,31 @@ func (s *State) TrimInitialState(ctx context.Context, capturePath *path.Capture)
 	postCmdCb := func(s *api.GlobalState, subCmdIdx api.SubCmdIdx, cmd api.Cmd) {
 		switch cmd := cmd.(type) {
 		case *VkFreeDescriptorSets:
-			count := cmd.DescriptorSetCount()
-			ds, err := cmd.PDescriptorSets().Slice(0, (uint64)(count), s.MemoryLayout).Read(ctx, cmd, s, nil)
+			ds, err := cmd.PDescriptorSets().Slice(0, (uint64)(cmd.DescriptorSetCount()), s.MemoryLayout).Read(ctx, cmd, s, nil)
 			if err != nil {
-				panic("Read error")
+				panic(err)
 			}
 			for _, d := range ds {
 				descriptorSets[d] = struct{}{}
+			}
+
+		case *VkUpdateDescriptorSets:
+			// VkWriteDescriptorSet
+			writeinfos, err := cmd.PDescriptorWrites().Slice(0, (uint64)(cmd.DescriptorWriteCount()), s.MemoryLayout).Read(ctx, cmd, s, nil)
+			if err != nil {
+				panic(err)
+			}
+			for _, wi := range writeinfos {
+				descriptorSets[wi.DstSet()] = struct{}{}
+			}
+			// VkCopyDescriptorSet
+			copyinfos, err := cmd.PDescriptorCopies().Slice(0, (uint64)(cmd.DescriptorCopyCount()), s.MemoryLayout).Read(ctx, cmd, s, nil)
+			if err != nil {
+				panic(err)
+			}
+			for _, ci := range copyinfos {
+				descriptorSets[ci.SrcSet()] = struct{}{}
+				descriptorSets[ci.DstSet()] = struct{}{}
 			}
 
 		case *VkDestroyPipeline:

@@ -413,7 +413,7 @@ type (
 		CommandFilterFlags
 		CaptureFileFlags
 	}
-	TrimInitialStateFlags struct {
+	TrimStateFlags struct {
 		Gapis GapisFlags
 		Gapir GapirFlags
 		Out   string `help:"gfxtrace file to save the trimmed capture"`
