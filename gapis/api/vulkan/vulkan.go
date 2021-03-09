@@ -158,6 +158,7 @@ const (
 	DebugMarker = iota
 	RenderPassMarker
 	DrawGroupMarker
+	otherGroupMarker
 )
 
 type markerInfo struct {
@@ -187,6 +188,7 @@ func (API) ResolveSynchronization(ctx context.Context, d *sync.Data, c *path.Cap
 	// Prepare for collect marker groups
 	// Stacks of open markers for each VkQueue
 	markerStack := []*markerInfo{}
+	experimentalCmds := []api.SubCmdIdx{}
 
 	commandMap := make(map[api.Cmd]api.CmdID)
 	st.AddCommand = func(a interface{}) {
@@ -194,6 +196,16 @@ func (API) ResolveSynchronization(ctx context.Context, d *sync.Data, c *path.Cap
 		if initialCommands, ok := st.initialCommands[data.Buffer()]; ok {
 			commandMap[initialCommands[data.CommandIndex()]] = i
 		}
+	}
+
+	mergeExperimentalCmds := func(executeCmdID api.SubCmdIdx) {
+		for len(experimentalCmds) > 0 {
+			if !executeCmdID.Contains(experimentalCmds[len(experimentalCmds)-1]) {
+				break
+			}
+			experimentalCmds = experimentalCmds[:len(experimentalCmds)-1]
+		}
+		experimentalCmds = append(experimentalCmds, executeCmdID)
 	}
 
 	pushMarker := func(name string, ty MarkerType, commandIndex int, parent api.SubCmdIdx) {
@@ -204,12 +216,24 @@ func (API) ResolveSynchronization(ctx context.Context, d *sync.Data, c *path.Cap
 				start:  uint64(commandIndex),
 				parent: parent,
 			})
+
+		if ty == RenderPassMarker {
+			experimentalCmds = []api.SubCmdIdx{}
+		}
 	}
 
 	popMarkerWithNewGroupName := func(ty MarkerType, id uint64, name string) {
 		if len(markerStack) > 0 {
 			marker := markerStack[len(markerStack)-1]
-			d.SubCommandMarkerGroups.NewMarkerGroup(marker.parent, name, marker.start, id+1)
+			currentExperimentalCmds := []api.SubCmdIdx{}
+			if ty == DrawGroupMarker {
+				currentExperimentalCmds = []api.SubCmdIdx{append(marker.parent, id)}
+				experimentalCmds = append(experimentalCmds, currentExperimentalCmds...)
+			} else if ty == RenderPassMarker {
+				currentExperimentalCmds = experimentalCmds
+			}
+
+			d.SubCommandMarkerGroups.NewMarkerGroup(marker.parent, name, marker.start, id+1, currentExperimentalCmds)
 			markerStack = markerStack[0 : len(markerStack)-1]
 		}
 	}
@@ -274,7 +298,7 @@ func (API) ResolveSynchronization(ctx context.Context, d *sync.Data, c *path.Cap
 			} else if !isStateSettingCmd && !isDrawCmd && !canStartDrawGrouping {
 				// Handle an edge case where a group of state setting commands are
 				// followed by something other than a drawing command.
-				popMarker(DrawGroupMarker, uint64(i-1))
+				popMarker(otherGroupMarker, uint64(i-1))
 				canStartDrawGrouping = true
 			}
 
@@ -293,6 +317,7 @@ func (API) ResolveSynchronization(ctx context.Context, d *sync.Data, c *path.Cap
 						subgroups = append(subgroups, append(idx, uint64(i), uint64(j), uint64(cbo.CommandReferences().Len())))
 						d.SubcommandNames.SetValue(append(idx, uint64(i), j), fmt.Sprintf("Command Buffer: %v", cbo.VulkanHandle()))
 					}
+					mergeExperimentalCmds(append(idx, uint64(i)))
 				}
 			case VkCmdBeginRenderPassArgsʳ:
 				rp := st.RenderPasses().Get(args.RenderPass())
@@ -350,7 +375,8 @@ func (API) ResolveSynchronization(ctx context.Context, d *sync.Data, c *path.Cap
 				break
 			}
 			marker := markerStack[len(markerStack)-1]
-			d.SubCommandMarkerGroups.NewMarkerGroup(marker.parent, marker.name, marker.start, uint64(cb.CommandReferences().Len()))
+			d.SubCommandMarkerGroups.NewMarkerGroup(marker.parent, marker.name, marker.start,
+				uint64(cb.CommandReferences().Len()), []api.SubCmdIdx{})
 			markerStack = markerStack[0 : len(markerStack)-1]
 		}
 		return refs, subgroups
