@@ -181,7 +181,6 @@ message CommandTreeNode {
   uint64 num_commands = 5;
   // these commands can be disabled for experiments.
   repeated path.Command experimental_commands = 6;
-
 }
 
 message Commands {
