@@ -33,8 +33,6 @@ import (
 // field.
 type CmdGroupData struct {
 	Representation api.CmdID
-	// If true, then children frame event groups should not be added to this group.
-	NoFrameEventGroups bool
 }
 
 // CommandTree resolves the specified command tree path.
@@ -386,10 +384,6 @@ func addFrameEventGroups(
 				break
 			}
 
-			if data, ok := group.UserData.(*CmdGroupData); ok && data.NoFrameEventGroups {
-				continue
-			}
-
 			// Start with group of size 1 and grow it backward as long as nothing gets in the way.
 			start := i
 			for start >= group.Bounds().Start+1 && group.Spans.IndexOf(start-1) == -1 {
@@ -432,10 +426,6 @@ func addContainingGroups(
 					}
 				}
 				break
-			}
-
-			if data, ok := group.UserData.(*CmdGroupData); ok && data.NoFrameEventGroups {
-				continue
 			}
 
 			// Start with group of size 1 and grow it backward as long as nothing gets in the way.
