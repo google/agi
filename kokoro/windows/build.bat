@@ -23,8 +23,8 @@ REM Install WiX (https://wixtoolset.org/, used in package.bat to create ".msi")
 mkdir wix
 cd wix
 wget -q https://github.com/wixtoolset/wix3/releases/download/wix3112rtm/wix311-binaries.zip
-echo | set /p dummy="2c1888d5d1dba377fc7fa14444cf556963747ff9a0a289a3599cf09da03b9e2e wix311-binaries.zip" | sha256sum --check || exit /b
-echo | set /p dummy="3c1888d5d1dba377fc7fa14444cf556963747ff9a0a289a3599cf09da03b9e2e wix311-binaries.zip" | sha256sum --check || exit /b
+echo | set /p dummy="2c1888d5d1dba377fc7fa14444cf556963747ff9a0a289a3599cf09da03b9e2e wix311-binaries.zip" | sha256sum --check || exit /b 1
+echo | set /p dummy="3c1888d5d1dba377fc7fa14444cf556963747ff9a0a289a3599cf09da03b9e2e wix311-binaries.zip" | sha256sum --check || exit /b 1
 unzip -q wix311-binaries.zip
 set WIX=%cd%
 cd ..
