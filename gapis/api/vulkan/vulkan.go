@@ -198,6 +198,18 @@ func (API) ResolveSynchronization(ctx context.Context, d *sync.Data, c *path.Cap
 		}
 	}
 
+	getDebugGroupExperimentalCmds := func(executeCmdID api.SubCmdIdx, startID api.SubCmdIdx) []api.SubCmdIdx {
+		currentExperimentalCmds := []api.SubCmdIdx{}
+		for index := len(experimentalCmds) - 1; index >= 0; index-- {
+			if !startID.LessThan(experimentalCmds[index]) {
+				break
+			}
+			currentExperimentalCmds = append(currentExperimentalCmds, experimentalCmds[index])
+		}
+
+		return currentExperimentalCmds
+	}
+
 	mergeExperimentalCmds := func(executeCmdID api.SubCmdIdx) {
 		for len(experimentalCmds) > 0 {
 			if !executeCmdID.Contains(experimentalCmds[len(experimentalCmds)-1]) {
@@ -231,6 +243,8 @@ func (API) ResolveSynchronization(ctx context.Context, d *sync.Data, c *path.Cap
 				experimentalCmds = append(experimentalCmds, currentExperimentalCmds...)
 			} else if ty == RenderPassMarker {
 				currentExperimentalCmds = experimentalCmds
+			} else if ty == DebugMarker {
+				currentExperimentalCmds = getDebugGroupExperimentalCmds(append(marker.parent, id), append(marker.parent, marker.start))
 			}
 
 			d.SubCommandMarkerGroups.NewMarkerGroup(marker.parent, name, marker.start, id+1, currentExperimentalCmds)
