@@ -92,12 +92,12 @@ public class CommandOptions {
       }
 
       if (disableMenuItem != null && isolateMenuItem != null) {
-        boolean CanBeDisabled = node.getData().getExperimentalCommandsCount() > 0;
+        boolean canBeDisabled = node.getData().getExperimentalCommandsCount() > 0;
         boolean hasDisabledChild = widgets.experiments.isAnyCommandDisabled(
             node.getData().getExperimentalCommandsList());
-        disableMenuItem.setEnabled(CanBeDisabled);
+        disableMenuItem.setEnabled(canBeDisabled);
         disableMenuItem.setSelection(hasDisabledChild);
-        isolateMenuItem.setEnabled(CanBeDisabled &&
+        isolateMenuItem.setEnabled(canBeDisabled &&
             node.getParent().getData().getExperimentalCommandsCount() > 1);
       }
       return true;

@@ -35,9 +35,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Shell;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Logger;
 
 public class Experiments {
   private final Models models;
@@ -47,7 +45,7 @@ public class Experiments {
   public Experiments(Models models, Theme theme) {
     this.models = models;
     this.theme = theme;
-    this.experiment = new ProfileExperiments(false, new ArrayList<>());
+    this.experiment = new ProfileExperiments();
   }
 
   public void showExperimentsPopup(Shell parent) {

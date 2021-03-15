@@ -15,18 +15,24 @@
  */
 package com.google.gapid.models;
 
+import com.google.common.collect.ImmutableList;
 import com.google.gapid.proto.service.Service;
 import com.google.gapid.proto.service.path.Path;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public final class ProfileExperiments {
   public final boolean disableAnisotropicFiltering;
-  public final List<Path.Command> disabledCommands;
+  public final ImmutableList<Path.Command> disabledCommands;
+
+  public ProfileExperiments() {
+    this(false, new ArrayList<>());
+  }
 
   public ProfileExperiments(boolean disableAnisotropicFiltering, List<Path.Command> disabledCommands) {
     this.disableAnisotropicFiltering = disableAnisotropicFiltering;
-    this.disabledCommands = disabledCommands;
+    this.disabledCommands = ImmutableList.copyOf(disabledCommands);
   }
 
   public final Service.ProfileExperiments toProto() {
