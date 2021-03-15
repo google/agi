@@ -28,9 +28,10 @@ import (
 	"strings"
 	"time"
 
+	perfetto_pb "protos/perfetto/config"
+
 	"github.com/google/gapid/gapis/api/sync"
 	"github.com/google/gapid/gapis/service/path"
-	perfetto_pb "protos/perfetto/config"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/google/gapid/core/app"
@@ -257,6 +258,7 @@ func (t *androidTracer) GetPackages(ctx context.Context, isRoot bool, iconDensit
 		}
 
 		for _, p := range packages.Packages {
+			log.E(ctx, "HUGUES androidTracer.GetPackages pkg: %v", p)
 			for _, activity := range p.Activities {
 				if len(activity.Actions) > 0 {
 					pkgList.Packages = append(pkgList.Packages, p)
@@ -336,6 +338,10 @@ func (t *androidTracer) GetTraceTargetNode(ctx context.Context, uri string, icon
 		activityName = ap[1]
 	}
 
+	log.E(ctx, "HUGUES androidTracer.GetTraceTargetNode pkgName: %v", pkgName)
+	log.E(ctx, "HUGUES androidTracer.GetTraceTargetNode actionName: %v", actionName)
+	log.E(ctx, "HUGUES androidTracer.GetTraceTargetNode activityName: %v", activityName)
+
 	pkg := packages.FindByName(pkgName)
 	if pkg == nil {
 		return nil, log.Errf(ctx, nil, "Could not find package %s", pkgName)
@@ -397,6 +403,7 @@ func (t *androidTracer) GetTraceTargetNode(ctx context.Context, uri string, icon
 	var defaultAction string
 	sort.Slice(pkg.Activities, func(i, j int) bool { return pkg.Activities[i].Name < pkg.Activities[j].Name })
 	for _, activity := range pkg.Activities {
+		log.E(ctx, "HUGUES androidTracer.GetTraceTargetNode activity:%v actions:%v", activity.Name, activity.Actions)
 		if len(activity.Actions) > 0 {
 			r.Children = append(r.Children, fmt.Sprintf("%s/%s", pkgName, activity.Name))
 			if action := findBestAction(activity.Actions); action != nil && action.IsLaunch {

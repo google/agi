@@ -75,6 +75,8 @@ func (verb *packagesVerb) Run(ctx context.Context, flags flag.FlagSet) error {
 		}
 		c := cfg.(*service.DeviceTraceConfiguration)
 
+		log.E(ctx, "HUGUES c.PreferredRootUri: %v", c.PreferredRootUri)
+
 		fmt.Fprintf(os.Stdout, "Device %v\n", d.Name)
 		if err := verb.traversePackageTree(ctx, client, p, 0, c.PreferredRootUri, "", false); err != nil {
 			fmt.Fprintf(os.Stdout, "%v\n", err)
