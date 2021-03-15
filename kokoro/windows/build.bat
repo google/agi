@@ -106,7 +106,8 @@ if "%KOKORO_GITHUB_COMMIT%." == "." (
 
 REM Use T:\src for Bazel output, where files are less likely to be
 REM locked by system checks.
-set BAZEL_OUTPUT_USER_ROOT="T:\src"
+set BAZEL_OUTPUT_USER_ROOT="T:\src\bazel_user_root"
+mkdir %BAZEL_OUTPUT_USER_ROOT%
 
 REM Build in several steps in order to avoid running out of memory.
 
