@@ -19,7 +19,6 @@ import static com.google.gapid.util.Paths.lastCommand;
 
 import com.google.gapid.models.CommandStream;
 import com.google.gapid.models.Models;
-import com.google.gapid.models.Profile;
 import com.google.gapid.proto.service.path.Path;
 import com.google.gapid.util.Experimental;
 import com.google.gapid.views.CommandTree.Tree;
@@ -33,7 +32,6 @@ import org.eclipse.swt.widgets.MenuItem;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 public class CommandOptions {
@@ -108,7 +106,7 @@ public class CommandOptions {
 
   private static List<Path.Command> getSiblings(CommandStream.Node node) {
     return Arrays.asList(node.getParent().getChildren()).stream()
-        .filter(n -> n.getData().getExperimentalCommandsCount() > 0 && !n.equals(node))
+        .filter(n -> n.getData() != null && n.getData().getExperimentalCommandsCount() > 0 && !n.equals(node))
         .map(n -> n.getData().getExperimentalCommandsList())
         .flatMap(Collection::stream)
         .collect(Collectors.toList());
