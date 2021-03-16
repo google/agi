@@ -36,6 +36,7 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Shell;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class Experiments {
   private final Models models;
@@ -68,17 +69,17 @@ public class Experiments {
 
   public void disableCommands(List<Path.Command> commands) {
     models.analytics.postInteraction(View.Commands, ClientAction.DisableCommand);
-    List<Path.Command> disabledCommands = experiment.disabledCommands;
-    disabledCommands.addAll(commands);
-    experiment = new ProfileExperiments(experiment.disableAnisotropicFiltering, disabledCommands);
+    commands.addAll(experiment.disabledCommands);
+    experiment = new ProfileExperiments(experiment.disableAnisotropicFiltering, commands);
     models.profile.updateExperiments(experiment);
   }
 
   public void enableCommands(List<Path.Command> commands) {
     models.analytics.postInteraction(View.Commands, ClientAction.EnableCommand);
-    List<Path.Command> disabledCommands = experiment.disabledCommands;
-    disabledCommands.removeAll(commands);
-    experiment = new ProfileExperiments(experiment.disableAnisotropicFiltering, disabledCommands);
+    experiment = new ProfileExperiments(experiment.disableAnisotropicFiltering,
+        experiment.disabledCommands.stream()
+        .filter(c-> !commands.contains(c))
+        .collect(Collectors.toList()));
     models.profile.updateExperiments(experiment);
   }
 
