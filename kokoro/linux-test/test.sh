@@ -27,12 +27,14 @@ echo "2fbdc9c0e3d376697caf0ee3673b7c9475214068c55a01b9744891e131f90b87  bazel-${
 mkdir bazel
 bash bazel-${BAZEL_VERSION}-installer-linux-x86_64.sh --prefix=$PWD/bazel
 
-# Get GCC 8
+# Remove CUDA apt source as they create flakes
 sudo rm /etc/apt/sources.list.d/cuda.list*
+
+# Get GCC-9
 sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
 sudo apt-get -q update
-sudo apt-get -qy install gcc-8 g++-8
-export CC=/usr/bin/gcc-8
+sudo apt-get -qy install gcc-9 g++-9
+export CC=/usr/bin/gcc-9
 
 cd $SRC
 BUILD_SHA=${KOKORO_GITHUB_COMMIT:-$KOKORO_GITHUB_PULL_REQUEST_COMMIT}
