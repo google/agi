@@ -40,7 +40,6 @@ public class CommandOptions {
 
   public static void CreateCommandOptionsMenu(Control parent, Widgets widgets, Tree tree, Models models) {
     final Menu optionsMenu = new Menu(parent);
-    final Menu experimentsMenu = new Menu(optionsMenu);
 
     MenuItem editMenuItem = Widgets.createMenuItem(optionsMenu , "&Edit", SWT.MOD1 + 'E', e -> {
       CommandStream.Node node = tree.getSelection();
@@ -63,6 +62,7 @@ public class CommandOptions {
             widgets.experiments.disableCommands(experimentalCommands);
           }
         }
+        tree.refresh();
       });
 
       isolateMenuItem = Widgets.createMenuItem(optionsMenu, "Isolate Command", SWT.MOD1 + 'I', e -> {
@@ -75,6 +75,7 @@ public class CommandOptions {
             widgets.experiments.disableCommands(commands);
           }
         }
+        tree.refresh();
       });
     } else {
       disableMenuItem = null;

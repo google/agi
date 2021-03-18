@@ -67,17 +67,26 @@ public class Experiments {
     return commands.stream().anyMatch(c -> experiment.disabledCommands.contains(c));
   }
 
+  public boolean areAllCommandDisabled(List<Path.Command> commands) {
+    return commands.stream().allMatch(c -> experiment.disabledCommands.contains(c));
+  }
+
   public void disableCommands(List<Path.Command> commands) {
     models.analytics.postInteraction(View.Commands, ClientAction.DisableCommand);
-    commands.addAll(experiment.disabledCommands);
-    experiment = new ProfileExperiments(experiment.disableAnisotropicFiltering, commands);
+    List <Path.Command> disabledCommands = experiment.disabledCommands
+        .stream()
+        .filter(c -> !commands.contains(c))
+        .collect(Collectors.toList());
+    disabledCommands.addAll(commands);
+    experiment = new ProfileExperiments(experiment.disableAnisotropicFiltering, disabledCommands);
     models.profile.updateExperiments(experiment);
   }
 
   public void enableCommands(List<Path.Command> commands) {
     models.analytics.postInteraction(View.Commands, ClientAction.EnableCommand);
     experiment = new ProfileExperiments(experiment.disableAnisotropicFiltering,
-        experiment.disabledCommands.stream()
+        experiment.disabledCommands
+        .stream()
         .filter(c-> !commands.contains(c))
         .collect(Collectors.toList()));
     models.profile.updateExperiments(experiment);
