@@ -78,7 +78,7 @@ def main():
     # Use the 'sxs-frames' mode that generates a series of PNGs rather
     # than an mp4 video. This makes inspection easier, and removes the
     # dependency on ffmpeg on the running hosts.
-    videooutfile = os.path.join(out_dir, test_params['package'])
+    videooutfile = os.path.join(out_dir, test_params['package'] + '.frame.png')
     cmd = [
         gapit, 'video',
         '-gapir-nofallback',
