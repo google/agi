@@ -572,7 +572,7 @@ cmd void vkDestroyImageView(
             if index in fmBufObj.ImageAttachments {
               v := fmBufObj.ImageAttachments[index]
               if (v != null) && (v == viewObj) {
-                fmBufObj.ImageAttachments[index] = null
+                delete(fmBufObj.ImageAttachments, index)
               }
             }
           }
