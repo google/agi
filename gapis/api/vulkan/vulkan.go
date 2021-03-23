@@ -152,18 +152,18 @@ func (API) BoundPipeline(ctx context.Context, o interface{}, p *path.Pipelines, 
 	return api.BoundPipeline{}, api.ErrPipelineNotAvailable
 }
 
-type MarkerType int
+type markerType int
 
 const (
-	DebugMarker = iota
-	RenderPassMarker
-	DrawGroupMarker
-	otherGroupMarker
+	debugMarker = iota
+	renderPassMarker
+	drawGroupMarker
+	invalidDrawGroupMarker
 )
 
 type markerInfo struct {
 	name   string
-	ty     MarkerType
+	ty     markerType
 	start  uint64
 	end    uint64
 	parent api.SubCmdIdx
@@ -220,7 +220,7 @@ func (API) ResolveSynchronization(ctx context.Context, d *sync.Data, c *path.Cap
 		experimentalCmds = append(experimentalCmds, executeCmdID)
 	}
 
-	pushMarker := func(name string, ty MarkerType, commandIndex int, parent api.SubCmdIdx) {
+	pushMarker := func(name string, ty markerType, commandIndex int, parent api.SubCmdIdx) {
 		markerStack = append(markerStack,
 			&markerInfo{
 				name:   name,
@@ -229,30 +229,41 @@ func (API) ResolveSynchronization(ctx context.Context, d *sync.Data, c *path.Cap
 				parent: parent,
 			})
 
-		if ty == RenderPassMarker {
+		if ty == renderPassMarker {
 			experimentalCmds = []api.SubCmdIdx{}
 		}
 	}
 
-	popMarkerWithNewGroupName := func(ty MarkerType, id uint64, name string) {
-		if len(markerStack) > 0 {
-			marker := markerStack[len(markerStack)-1]
-			currentExperimentalCmds := []api.SubCmdIdx{}
-			if ty == DrawGroupMarker {
-				currentExperimentalCmds = []api.SubCmdIdx{append(marker.parent, id)}
-				experimentalCmds = append(experimentalCmds, currentExperimentalCmds...)
-			} else if ty == RenderPassMarker {
-				currentExperimentalCmds = experimentalCmds
-			} else if ty == DebugMarker {
-				currentExperimentalCmds = getDebugGroupExperimentalCmds(append(marker.parent, id), append(marker.parent, marker.start))
-			}
-
-			d.SubCommandMarkerGroups.NewMarkerGroup(marker.parent, name, marker.start, id+1, currentExperimentalCmds)
-			markerStack = markerStack[0 : len(markerStack)-1]
+	popMarkerWithNewGroupName := func(ty markerType, id uint64, name string) {
+		if len(markerStack) == 0 {
+			log.W(ctx, "Group Marker stack is empty while trying to pop [%v:%v]:%v", id, name, ty)
+			return
 		}
+
+		marker := markerStack[len(markerStack)-1]
+		if marker.ty != ty {
+			if marker.ty != drawGroupMarker && ty == invalidDrawGroupMarker {
+				log.D(ctx, "No draw command found after state setting [%v:%v]", id, name)
+			} else {
+				log.W(ctx, "Mismatch of command groups : [%v:%v]%V != %v", id, name, ty, marker.ty)
+			}
+		}
+
+		currentExperimentalCmds := []api.SubCmdIdx{}
+		if ty == drawGroupMarker {
+			currentExperimentalCmds = []api.SubCmdIdx{append(marker.parent, id)}
+			experimentalCmds = append(experimentalCmds, currentExperimentalCmds...)
+		} else if ty == renderPassMarker {
+			currentExperimentalCmds = experimentalCmds
+		} else if ty == debugMarker {
+			currentExperimentalCmds = getDebugGroupExperimentalCmds(append(marker.parent, id), append(marker.parent, marker.start))
+		}
+
+		d.SubCommandMarkerGroups.NewMarkerGroup(marker.parent, name, marker.start, id+1, currentExperimentalCmds)
+		markerStack = markerStack[0 : len(markerStack)-1]
 	}
 
-	popMarker := func(ty MarkerType, id uint64) {
+	popMarker := func(ty markerType, id uint64) {
 		if len(markerStack) > 0 {
 			popMarkerWithNewGroupName(ty, id, markerStack[len(markerStack)-1].name)
 		}
@@ -299,7 +310,7 @@ func (API) ResolveSynchronization(ctx context.Context, d *sync.Data, c *path.Cap
 				strings.HasPrefix(cmdName, "cmd_vkCmdBind")) && !strings.HasPrefix(cmdName, "cmd_vkCmdSetEvent")
 			if isStateSettingCmd && canStartDrawGrouping {
 				pushMarker("State Setting Group",
-					DrawGroupMarker, i, append(api.SubCmdIdx{}, idx...))
+					drawGroupMarker, i, append(api.SubCmdIdx{}, idx...))
 				canStartDrawGrouping = false
 			} else if isDrawCmd && !canStartDrawGrouping {
 				// When a group is complete with state setting cmds following a draw command, override the group name.
@@ -307,12 +318,12 @@ func (API) ResolveSynchronization(ctx context.Context, d *sync.Data, c *path.Cap
 				if strings.HasPrefix(groupName, "cmd_vkCmd") { // Remove "cmd_vkCmd".
 					groupName = groupName[9:len(groupName)]
 				}
-				popMarkerWithNewGroupName(DrawGroupMarker, uint64(i), groupName)
+				popMarkerWithNewGroupName(drawGroupMarker, uint64(i), groupName)
 				canStartDrawGrouping = true
 			} else if !isStateSettingCmd && !isDrawCmd && !canStartDrawGrouping {
 				// Handle an edge case where a group of state setting commands are
 				// followed by something other than a drawing command.
-				popMarker(otherGroupMarker, uint64(i-1))
+				popMarker(invalidDrawGroupMarker, uint64(i-1))
 				canStartDrawGrouping = true
 			}
 
@@ -353,34 +364,34 @@ func (API) ResolveSynchronization(ctx context.Context, d *sync.Data, c *path.Cap
 				if !rp.DebugInfo().IsNil() && len(rp.DebugInfo().ObjectName()) > 0 {
 					name = rp.DebugInfo().ObjectName()
 				}
-				pushMarker(name, RenderPassMarker, i, append(api.SubCmdIdx{}, idx...))
+				pushMarker(name, renderPassMarker, i, append(api.SubCmdIdx{}, idx...))
 
 				nextSubpass = 0
 				if rp.SubpassDescriptions().Len() > 1 {
 					name = fmt.Sprintf("Subpass: %v", nextSubpass)
-					pushMarker(name, RenderPassMarker, i, append(api.SubCmdIdx{}, idx...))
+					pushMarker(name, renderPassMarker, i, append(api.SubCmdIdx{}, idx...))
 					nextSubpass++
 				}
 				break
 			case VkCmdEndRenderPassArgsʳ:
 				if nextSubpass > 0 { // Pop one more time since there were one extra marker pushed.
-					popMarker(RenderPassMarker, uint64(i))
+					popMarker(renderPassMarker, uint64(i))
 				}
-				popMarker(RenderPassMarker, uint64(i))
+				popMarker(renderPassMarker, uint64(i))
 				break
 			case VkCmdNextSubpassArgsʳ:
-				popMarker(RenderPassMarker, uint64(i-1))
+				popMarker(renderPassMarker, uint64(i-1))
 				name := fmt.Sprintf("Subpass: %v", nextSubpass)
-				pushMarker(name, RenderPassMarker, i, append(api.SubCmdIdx{}, idx...))
+				pushMarker(name, renderPassMarker, i, append(api.SubCmdIdx{}, idx...))
 				nextSubpass++
 			case VkCmdDebugMarkerBeginEXTArgsʳ:
-				pushMarker(args.MarkerName(), DebugMarker, i, append(api.SubCmdIdx{}, idx...))
+				pushMarker(args.MarkerName(), debugMarker, i, append(api.SubCmdIdx{}, idx...))
 			case VkCmdBeginDebugUtilsLabelEXTArgsʳ:
-				pushMarker(args.LabelName(), DebugMarker, i, append(api.SubCmdIdx{}, idx...))
+				pushMarker(args.LabelName(), debugMarker, i, append(api.SubCmdIdx{}, idx...))
 			case VkCmdEndDebugUtilsLabelEXTArgsʳ:
-				popMarker(DebugMarker, uint64(i))
+				popMarker(debugMarker, uint64(i))
 			case VkCmdDebugMarkerEndEXTArgsʳ:
-				popMarker(DebugMarker, uint64(i))
+				popMarker(debugMarker, uint64(i))
 			}
 		}
 
