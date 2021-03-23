@@ -50,17 +50,21 @@ public class CommandOptions {
     });
 
     MenuItem disableMenuItem;
+    MenuItem enableMenuItem;
     MenuItem isolateMenuItem;
     if (Experimental.enableProfileExperiments(models.settings)) {
-      disableMenuItem = Widgets.createCheckMenuItem(optionsMenu, "Disable Command", SWT.MOD1 + 'D', e -> {
+      disableMenuItem = Widgets.createMenuItem(optionsMenu, "Disable Command", SWT.MOD1 + 'D', e -> {
         CommandStream.Node node = tree.getSelection();
         if (node != null && node.getData() != null) {
-          List<Path.Command> experimentalCommands = node.getData().getExperimentalCommandsList();
-          if (widgets.experiments.isAnyCommandDisabled(experimentalCommands)) {
-            widgets.experiments.enableCommands(experimentalCommands);
-          } else {
-            widgets.experiments.disableCommands(experimentalCommands);
-          }
+          widgets.experiments.disableCommands(node.getData().getExperimentalCommandsList());
+        }
+        tree.refresh();
+      });
+
+      enableMenuItem = Widgets.createMenuItem(optionsMenu, "Enable Command", SWT.MOD1 + 'E', e -> {
+        CommandStream.Node node = tree.getSelection();
+        if (node != null && node.getData() != null) {
+          widgets.experiments.enableCommands(node.getData().getExperimentalCommandsList());
         }
         tree.refresh();
       });
@@ -68,17 +72,13 @@ public class CommandOptions {
       isolateMenuItem = Widgets.createMenuItem(optionsMenu, "Isolate Command", SWT.MOD1 + 'I', e -> {
         CommandStream.Node node = tree.getSelection();
         if (node != null && node.getData() != null) {
-         List<Path.Command> commands = getSiblings(node);
-          if (widgets.experiments.isAnyCommandDisabled(commands)) {
-            widgets.experiments.enableCommands(commands);
-          } else {
-            widgets.experiments.disableCommands(commands);
-          }
+          widgets.experiments.disableCommands(getSiblings(node));
         }
         tree.refresh();
       });
     } else {
       disableMenuItem = null;
+      enableMenuItem = null;
       isolateMenuItem = null;
     }
 
@@ -92,14 +92,23 @@ public class CommandOptions {
         editMenuItem.setEnabled(true);
       }
 
-      if (disableMenuItem != null && isolateMenuItem != null) {
-        boolean canBeDisabled = node.getData().getExperimentalCommandsCount() > 0;
-        boolean hasDisabledChild = widgets.experiments.isAnyCommandDisabled(
+      boolean canBeDisabled = node.getData().getExperimentalCommandsCount() > 0;
+      boolean canBeIsolated = node.getParent().getData().getExperimentalCommandsCount() > 1;
+
+      if (disableMenuItem != null) {
+        boolean disabled = widgets.experiments.areAllCommandDisabled(
             node.getData().getExperimentalCommandsList());
-        disableMenuItem.setEnabled(canBeDisabled);
-        disableMenuItem.setSelection(hasDisabledChild);
-        isolateMenuItem.setEnabled(canBeDisabled &&
-            node.getParent().getData().getExperimentalCommandsCount() > 1);
+        disableMenuItem.setEnabled(canBeDisabled && !disabled);
+      }
+
+      if (enableMenuItem != null) {
+        boolean hasDisabledChildren = widgets.experiments.isAnyCommandDisabled(
+            node.getData().getExperimentalCommandsList());
+        enableMenuItem.setEnabled(canBeDisabled && hasDisabledChildren);
+      }
+
+      if (isolateMenuItem != null) {
+        isolateMenuItem.setEnabled(canBeDisabled && canBeIsolated);
       }
       return true;
     });
