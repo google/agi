@@ -144,7 +144,7 @@ func handleCommError(ctx context.Context, commErr error, anyDataReceived bool) (
 		abort = true
 		// Most of the time, this error happens when the app crashed: rather
 		// than reporting just "EOF", hint that this was probably a crash.
-		err = log.Err(ctx, commErr, "It looks like the app terminated (crashed?) before we could finish the capture")
+		err = log.Err(ctx, commErr, "The application exited during the capture")
 	case commErr != nil && anyDataReceived:
 		netErr, isnet := commErr.(net.Error)
 		if !isnet || (!netErr.Temporary() && !netErr.Timeout()) {
