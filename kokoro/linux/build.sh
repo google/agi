@@ -33,6 +33,7 @@ sudo rm /etc/apt/sources.list.d/cuda.list*
 # Get GCC 10
 sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
 sudo apt-get -q update
+sudo apt-cache search gcc
 sudo apt-get -qy install gcc-10 g++-10
 export CC=/usr/bin/gcc-10
 
