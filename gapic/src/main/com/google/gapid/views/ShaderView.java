@@ -321,7 +321,7 @@ public class ShaderView extends Composite
     Composite keyComposite = withLayoutData(createComposite(parent, statsLayout, SWT.BORDER),
         new GridData(SWT.FILL, SWT.TOP, false, false));
 
-    Label keyLabel = withLayoutData( createBoldLabel(keyComposite, statText),
+    Label keyLabel = withLayoutData(createBoldLabel(keyComposite, statText),
         new GridData(SWT.RIGHT, SWT.CENTER, true, true));
 
     Composite valueComposite = withLayoutData(createComposite(parent, statsLayout, SWT.BORDER),
@@ -346,6 +346,7 @@ public class ShaderView extends Composite
     createStaticAnalysisStat(contentComposite, "Texture Instructions:", staticAnalysis.getTextureInstructions());
     createStaticAnalysisStat(contentComposite, "Branch Instructions:", staticAnalysis.getBranchInstructions());
     createStaticAnalysisStat(contentComposite, "Temporary Registers:", staticAnalysis.getTempRegisters());
+    createStaticAnalysisStat(contentComposite, "High Precision Registers:", staticAnalysis.getHighPrecRegisters());
 
     scrollComposite.setContent(contentComposite);
     scrollComposite.setExpandVertical(true);

@@ -21,22 +21,40 @@
 
 #include <cstring>
 
+void processResultID(const spirv_cross::ParsedIR& pir,
+                     const spirv_cross::Instruction& currentOp,
+                     instruction_counters_t& counters) {
+  uint32_t resultID = pir.spirv[currentOp.offset + 1];
+
+  if (pir.ids[resultID].get_type() == spirv_cross::TypeNone) {
+    uint32_t resultType = pir.spirv[currentOp.offset];
+    auto typeInfo =
+        spirv_cross::variant_get<spirv_cross::SPIRType>(pir.ids[resultType]);
+
+    uint32_t numRegistersNeeded = typeInfo.vecsize * typeInfo.columns;
+
+    counters.temp_registers += numRegistersNeeded;
+
+    if (typeInfo.width > 16) {
+      counters.high_prec_registers += numRegistersNeeded;
+    }
+  }
+}
+
 instruction_counters_t performStaticAnalysis(const uint32_t* spirv_binary,
                                              size_t length) {
   spirv_cross::Parser parser(spirv_binary, length);
   parser.parse();
   spirv_cross::ParsedIR pir = parser.get_parsed_ir();
 
-  instruction_counters_t counters = instruction_counters_t{0, 0, 0, 0};
+  instruction_counters_t counters = instruction_counters_t{0, 0, 0, 0, 0};
 
   for (auto& block : pir.ids_for_type[spirv_cross::Types::TypeBlock]) {
     if (pir.ids[block].get_type() ==
         static_cast<spirv_cross::Types>(spirv_cross::Types::TypeBlock)) {
       spirv_cross::SPIRBlock currentBlock =
           spirv_cross::variant_get<spirv_cross::SPIRBlock>(pir.ids[block]);
-      for (auto& currentOp : currentBlock.ops) {
-        uint32_t resultID = 0;
-
+      for (spirv_cross::Instruction& currentOp : currentBlock.ops) {
         switch (currentOp.op) {
           default:
             break;
@@ -187,11 +205,7 @@ instruction_counters_t performStaticAnalysis(const uint32_t* spirv_binary,
           case spv::OpGroupNonUniformLogicalOr:
           case spv::OpGroupNonUniformLogicalXor:
             counters.alu_instructions++;
-
-            resultID = pir.spirv[currentOp.offset + 1];
-            if (pir.ids[resultID].get_type() == spirv_cross::TypeNone) {
-              counters.temp_registers++;
-            }
+            processResultID(pir, currentOp, counters);
             break;
 
           case spv::OpSampledImage:
@@ -231,11 +245,7 @@ instruction_counters_t performStaticAnalysis(const uint32_t* spirv_binary,
           case spv::OpImageSparseRead:
           case spv::OpImageSampleFootprintNV:
             counters.texture_instructions++;
-
-            resultID = pir.spirv[currentOp.offset + 1];
-            if (pir.ids[resultID].get_type() == spirv_cross::TypeNone) {
-              counters.temp_registers++;
-            }
+            processResultID(pir, currentOp, counters);
             break;
 
           // Deal with other instructions that have a result ID.
@@ -330,10 +340,7 @@ instruction_counters_t performStaticAnalysis(const uint32_t* spirv_binary,
           case spv::OpGroupNonUniformQuadBroadcast:
           case spv::OpGroupNonUniformQuadSwap:
           case spv::OpGroupNonUniformPartitionNV:
-            resultID = pir.spirv[currentOp.offset + 1];
-            if (pir.ids[resultID].get_type() == spirv_cross::TypeNone) {
-              counters.temp_registers++;
-            }
+            processResultID(pir, currentOp, counters);
             break;
         }
       }

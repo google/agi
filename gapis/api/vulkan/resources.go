@@ -848,6 +848,7 @@ func (s ShaderModuleObjectʳ) ResourceData(ctx context.Context, t *api.GlobalSta
 		TextureInstructions: counters.TexInstructions,
 		BranchInstructions:  counters.BranchInstructions,
 		TempRegisters:       counters.TempRegisters,
+		HighPrecRegisters:   counters.HighPrecRegisters,
 	}
 
 	return api.NewResourceData(&api.Shader{Type: api.ShaderType_Spirv, Source: source, SpirvSource: spirv, SourceLanguage: sourceLanguage, CrossCompiled: isCross, StaticAnalysis: analysis_stats}), nil
@@ -1306,6 +1307,7 @@ func commonShaderDataGroups(ctx context.Context,
 			counterList = counterList.AppendKeyValuePair("Texture Instructions", api.CreatePoDDataValue("u32", counters.TexInstructions), false)
 			counterList = counterList.AppendKeyValuePair("Branch Instructions", api.CreatePoDDataValue("u32", counters.BranchInstructions), false)
 			counterList = counterList.AppendKeyValuePair("Temporary Registers", api.CreatePoDDataValue("u32", counters.TempRegisters), false)
+			counterList = counterList.AppendKeyValuePair("High Precision Registers", api.CreatePoDDataValue("u32", counters.HighPrecRegisters), false)
 
 			return []*api.DataGroup{
 				&api.DataGroup{

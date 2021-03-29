@@ -28,6 +28,7 @@ typedef struct instruction_counters_t {
   uint32_t texture_instructions;
   uint32_t branch_instructions;
   uint32_t temp_registers;
+  uint32_t high_prec_registers;
 } instruction_counters_t;
 
 instruction_counters_t performStaticAnalysis(const uint32_t*, size_t);
