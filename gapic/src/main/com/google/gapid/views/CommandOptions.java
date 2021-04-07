@@ -29,8 +29,6 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
 
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -115,10 +113,10 @@ public class CommandOptions {
   }
 
   private static List<Path.Command> getSiblings(CommandStream.Node node) {
-    return Arrays.asList(node.getParent().getChildren()).stream()
-        .filter(n -> n.getData() != null && n.getData().getExperimentalCommandsCount() > 0 && !n.equals(node))
-        .map(n -> n.getData().getExperimentalCommandsList())
-        .flatMap(Collection::stream)
-        .collect(Collectors.toList());
+    List<Path.Command> experimentalCommands = node.getData().getExperimentalCommandsList();
+    return node.getParent().getData().getExperimentalCommandsList()
+      .stream()
+      .filter(cmd -> !experimentalCommands.contains(cmd))
+      .collect(Collectors.toList());
   }
 }
