@@ -58,7 +58,7 @@ public class CommandOptions {
         if (node != null && node.getData() != null) {
           widgets.experiments.disableCommands(node.getData().getExperimentalCommandsList());
         }
-        tree.refresh();
+        tree.updateTree(tree.getSelectionItem());
       });
 
       enableMenuItem = Widgets.createMenuItem(optionsMenu, "Enable Command", SWT.MOD1 + 'E', e -> {
@@ -66,7 +66,7 @@ public class CommandOptions {
         if (node != null && node.getData() != null) {
           widgets.experiments.enableCommands(node.getData().getExperimentalCommandsList());
         }
-        tree.refresh();
+        tree.updateTree(tree.getSelectionItem());
       });
 
       isolateMenuItem = Widgets.createMenuItem(optionsMenu, "Isolate Command", SWT.MOD1 + 'I', e -> {
@@ -74,7 +74,7 @@ public class CommandOptions {
         if (node != null && node.getData() != null) {
           widgets.experiments.disableCommands(getSiblings(node));
         }
-        tree.refresh();
+        tree.updateTree(tree.getSelectionItem());
       });
     } else {
       disableMenuItem = null;

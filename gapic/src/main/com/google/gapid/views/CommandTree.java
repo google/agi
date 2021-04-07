@@ -70,6 +70,7 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.TreeItem;
 
 import java.util.List;
 import java.util.Map;
@@ -301,6 +302,10 @@ public class CommandTree extends Composite
 
     public void refresh() {
       refresher.refresh();
+    }
+
+    public void updateTree(TreeItem item) {
+      labelProvider.updateHierarchy(item);
     }
 
     @Override
