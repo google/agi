@@ -135,14 +135,17 @@ func (cmd Cmd) Start(ctx context.Context) (Process, error) {
 			cmd.Stderr = logStderr
 		}
 	}
-	// Ready to start
-	if cmd.Verbosity {
-		extra := ""
-		if cmd.Dir != "" {
-			extra = fmt.Sprintf(" In %v", cmd.Dir)
-		}
-		log.I(ctx, "Exec: %v%s", cmd, extra)
+	// Conditionally log the command: Info if verbose, otherwise only Debug
+	extra := ""
+	if cmd.Dir != "" {
+		extra = fmt.Sprintf(" In %v", cmd.Dir)
 	}
+	if cmd.Verbosity {
+		log.I(ctx, "Exec: %v%s", cmd, extra)
+	} else {
+		log.D(ctx, "Exec: %v%s", cmd, extra)
+	}
+	// Ready to start
 	return cmd.Target.Start(cmd)
 }
 
