@@ -44,7 +44,7 @@ Start a console, with administrator privilege, and type:
 
 `choco install bazel --version 2.0.0`
 
-In the same console, install Python 2.7 and MSYS2 as well:
+In the same console, install Python and MSYS2 as well:
 
 `choco install python`  
 `choco install msys2`
@@ -58,7 +58,7 @@ From the Start Menu select the `MSYS2 64bit / MSYS2 MinGW 64-bit` shell:
 4. Download gcc with: `curl -O http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-10.2.0-10-any.pkg.tar.zst`
 5. Download gcc-libs with: `curl -O http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-libs-10.2.0-10-any.pkg.tar.zst`
 6. Install the downloaded packages with: `pacman -U mingw-w64-x86_64-gcc*-10.2.0-10-any.pkg.tar.zst`
-7. Close the MSYS terminal
+7. Close the MSYS2 terminal
 
 ### Install Java Development Kit 1.8
 
@@ -100,8 +100,8 @@ Either do this globally or in your shell every time.
 
 Make sure the environment is setup before you run bazel (`bazel shutdown` will shut it down).
 
-1. Add MSYS2 binary directories to the PATH:
-   `set PATH=C:\tools\msys64\usr\bin;C:\tools\msys64\mingw64\bin;%PATH%`
+1. Add MSYS2 binary directories to the PATH:  
+   `set PATH=C:\tools\msys64\usr\bin;C:\tools\msys64\mingw64\bin;%PATH%`  
    Running `where gcc` should now find mingw’s gcc.
 
 1. Set TMP to something very short. `C:\tmp` is known to work. For faster builds, add this folder to the excemptions of the Windows Defender anti-malware scanner.
