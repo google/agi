@@ -130,9 +130,7 @@ Spy::Spy()
   // nullptr raises a compilation warning that is treated as an error.
   if (((const char*)capture_proc_name != nullptr) &&
       (capture_proc_name[0] != '\0')) {
-    // Use strcmp() since string.compare() does not work for these strings, see
-    // NDK issue: https://github.com/android/ndk/issues/1494
-    this_executable = (!strcmp(this_proc_name.c_str(), capture_proc_name));
+    this_executable = (!this_proc_name.compare(capture_proc_name));
     GAPID_INFO("capture process name: %s (%s this process name)",
                capture_proc_name,
                this_executable ? "same as" : "different from");
