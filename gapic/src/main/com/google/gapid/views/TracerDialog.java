@@ -961,6 +961,7 @@ public class TracerDialog {
         trace.setHideUnknownExtensions(hideUnknownExtensions.getSelection());
         trace.setOutDir(directory.getText());
         trace.setFriendlyName(friendlyName);
+        trace.setProcessName(processName.getText());
 
         Service.TraceOptions.Builder options = Service.TraceOptions.newBuilder()
             .setDevice(dev.path)
