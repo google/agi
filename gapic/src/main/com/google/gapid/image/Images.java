@@ -147,22 +147,15 @@ public class Images {
     switch (format.getFormatCase()) {
       case UNCOMPRESSED:
         return getChannelCount(format.getUncompressed().getFormat(), interestedChannels);
-      case ETC2_R_U11_NORM:
-      case ETC2_R_S11_NORM:
-        return 1;
-      case ETC2_RG_U11_NORM:
-      case ETC2_RG_S11_NORM:
-        return 2;
+      case ETC2:
+        return getEtc2ChannelCount(format.getEtc2());
       case ATC_RGB_AMD:
       case ETC1_RGB_U8_NORM:
-      case ETC2_RGB_U8_NORM:
       case S3_DXT1_RGB:
         return 3;
       case ASTC:
       case ATC_RGBA_EXPLICIT_ALPHA_AMD:
       case ATC_RGBA_INTERPOLATED_ALPHA_AMD:
-      case ETC2_RGBA_U8_NORM:
-      case ETC2_RGBA_U8U8U8U1_NORM:
       case PNG:
       case S3_DXT1_RGBA:
       case S3_DXT3_RGBA:
@@ -173,6 +166,20 @@ public class Images {
     }
   }
 
+  private static int getEtc2ChannelCount(Image.FmtETC2 format) {
+    switch(format.getColorMode()) {
+      case R:
+        return 1;
+      case RG:
+        return 2;
+      case RGB:
+        return 3;
+      case RGBA:
+        return 4;
+      default:
+        throw new AssertionError();
+    }
+  }
   public static int getChannelCount(Stream.Format format, Set<Stream.Channel> interestedChannels) {
     int result = 0;
     for (Stream.Component c : format.getComponentsList()) {
