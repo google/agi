@@ -46,9 +46,6 @@ var (
 	ETC2_R_S11_NORM  = NewETC2_R_S11_NORM("ETC2_R_S11_NORM")
 	ETC2_RG_S11_NORM = NewETC2_RG_S11_NORM("ETC2_RG_S11_NORM")
 
-	// ETC 1
-	ETC1_RGB_U8_NORM = NewETC1_RGB_U8_NORM("ETC1_RGB_U8_NORM")
-
 	formatToCEnum = map[interface{}]C.enum_etc_format{
 		ETC2_RGB_U8_NORM:         C.ETC2_RGB_U8_NORM,
 		ETC2_RGBA_U8_NORM:        C.ETC2_RGBA_U8_NORM,
@@ -60,7 +57,6 @@ var (
 		ETC2_RG_U11_NORM:         C.ETC2_RG_U11_NORM,
 		ETC2_R_S11_NORM:          C.ETC2_R_S11_NORM,
 		ETC2_RG_S11_NORM:         C.ETC2_RG_S11_NORM,
-		ETC1_RGB_U8_NORM:         C.ETC1_RGB_U8_NORM,
 	}
 )
 
@@ -93,9 +89,6 @@ func NewETC2_R_S11_NORM(name string) *image.Format {
 }
 func NewETC2_RG_S11_NORM(name string) *image.Format {
 	return image.NewETC2(name, image.FmtETC2_RG, image.FmtETC2_ALPHA_NONE, false)
-}
-func NewETC1_RGB_U8_NORM(name string) *image.Format {
-	return image.NewETC1_RGB_U8_NORM(name)
 }
 
 type converterLayout struct {
@@ -173,24 +166,6 @@ func init() {
 
 		image.RegisterConverter(conv.uncompressed, conv.compressed, func(src []byte, w, h, d int) ([]byte, error) {
 			bytesPerPixel := conv.channels * 2
-			return compress(src, w, h, d, conv.compressed, bytesPerPixel)
-		})
-	}
-
-	// ETC1 formats
-	etc1SupportMap := []converterLayout{
-		{image.RGB_U8_NORM, ETC1_RGB_U8_NORM},
-		{image.RGBA_U8_NORM, ETC1_RGB_U8_NORM},
-	}
-
-	for _, conversion := range etc1SupportMap {
-		conv := conversion
-		image.RegisterConverter(conv.compressed, conv.uncompressed, func(src []byte, w, h, d int) ([]byte, error) {
-			return image.Convert(src, w, h, d, ETC2_RGB_U8_NORM, conv.uncompressed)
-		})
-
-		image.RegisterConverter(conv.uncompressed, conv.compressed, func(src []byte, w, h, d int) ([]byte, error) {
-			bytesPerPixel := 4
 			return compress(src, w, h, d, conv.compressed, bytesPerPixel)
 		})
 	}
