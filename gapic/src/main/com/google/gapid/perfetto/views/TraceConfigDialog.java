@@ -321,7 +321,8 @@ public class TraceConfigDialog extends DialogBase {
               .setName("android.power")
               .getAndroidPowerConfigBuilder()
                   .setBatteryPollMs(p.getBatteryOrBuilder().getRate())
-                  .addAllBatteryCounters(Arrays.asList(BAT_COUNTERS));
+                  .addAllBatteryCounters(Arrays.asList(BAT_COUNTERS))
+                  .setCollectPowerRails(true);
     }
 
     if (p.getVulkanOrBuilder().getEnabled()) {
