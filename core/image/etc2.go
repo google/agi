@@ -19,13 +19,15 @@ import (
 	"github.com/google/gapid/core/stream"
 )
 
-func NewETC2(name string, colorMode FmtETC2_ColorMode, alphaMode FmtETC2_AlphaMode) *Format {
+func NewETC2(name string, colorMode FmtETC2_ColorMode, alphaMode FmtETC2_AlphaMode, srgb bool, signed bool) *Format {
 	return &Format{
 		Name: name,
 		Format: &Format_Etc2{
 			&FmtETC2{
 				ColorMode: colorMode,
 				AlphaMode: alphaMode,
+				Srgb:      srgb,
+				Signed:    signed,
 			},
 		},
 	}

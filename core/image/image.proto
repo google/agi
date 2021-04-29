@@ -106,6 +106,8 @@ message FmtETC2 {
 
   ColorMode colorMode = 1;
   AlphaMode alphaMode = 2;
+  bool srgb = 3;
+  bool signed = 4;
 }
 
 message FmtS3_DXT1_RGB {
