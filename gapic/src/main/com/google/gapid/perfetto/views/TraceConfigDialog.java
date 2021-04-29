@@ -322,7 +322,7 @@ public class TraceConfigDialog extends DialogBase {
               .getAndroidPowerConfigBuilder()
                   .setBatteryPollMs(p.getBatteryOrBuilder().getRate())
                   .addAllBatteryCounters(Arrays.asList(BAT_COUNTERS))
-                  .setCollectPowerRails(true);
+                  .setCollectPowerRails(p.getBatteryOrBuilder().getCollectPowerRail());
     }
 
     if (p.getVulkanOrBuilder().getEnabled()) {
@@ -597,6 +597,8 @@ public class TraceConfigDialog extends DialogBase {
     private final Button bat;
     private final Label[] batLabels;
     private final Spinner batRate;
+    private final Button batPowerRail;
+
     private final Button vulkan;
     private final Button vulkanCPUTiming;
     private final Button vulkanCPUTimingDevice;
@@ -740,11 +742,14 @@ public class TraceConfigDialog extends DialogBase {
       bat = createCheckbox(this, "Battery", sBatt.getEnabled(), e -> updateBat());
       batLabels = new Label[2];
       Composite batGroup = withLayoutData(
-          createComposite(this, withMargin(new GridLayout(3, false), 5, 0)),
+          createComposite(this, withMargin(new GridLayout(4, false), 5, 0)),
           withIndents(new GridData(), GROUP_INDENT, 0));
       batLabels[0] = createLabel(batGroup, "Poll Rate:");
       batRate = createSpinner(batGroup, sBatt.getRate(), 250, 60000);
       batLabels[1] = createLabel(batGroup, "ms");
+      batPowerRail = createCheckbox(batGroup, "Collect Power Rails",
+          caps.getHasPowerRail()&& sBatt.getCollectPowerRail());
+      batPowerRail.setVisible(caps.getHasPowerRail());
 
       Device.VulkanProfilingLayers vkLayers = caps.getVulkanProfileLayers();
       if (vkLayers.getCpuTiming() || vkLayers.getMemoryTracker()) {
@@ -863,6 +868,7 @@ public class TraceConfigDialog extends DialogBase {
       sMem.setRate(memRate.getSelection());
       sBatt.setEnabled(bat.getSelection());
       sBatt.setRate(batRate.getSelection());
+      sBatt.setCollectPowerRail(batPowerRail.getSelection());
 
       if (vulkan != null) {
         sVk.setEnabled(vulkan.getSelection());
@@ -968,6 +974,7 @@ public class TraceConfigDialog extends DialogBase {
       for (Label label : batLabels) {
         label.setEnabled(enabled);
       }
+      batPowerRail.setEnabled(enabled);
     }
   }
 
