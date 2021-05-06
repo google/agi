@@ -318,6 +318,7 @@ public class TracerDialog {
       private final Label startUnit;
       private final Button withoutBuffering;
       private final Button hideUnknownExtensions;
+      private final Button loadValidationLayer;
       private final Button clearCache;
       private final Composite perfettoConfig;
       private final Label perfettoConfigLabel;
@@ -454,6 +455,9 @@ public class TracerDialog {
         hideUnknownExtensions = createCheckbox(
             optGroup, "Hide Unknown Extensions", trace.getHideUnknownExtensions());
         hideUnknownExtensions.setEnabled(false);
+        loadValidationLayer = createCheckbox(
+            optGroup, "Load Vulkan validation layer", trace.getLoadValidationLayer());
+        loadValidationLayer.setEnabled(false);
 
         perfettoConfig = withLayoutData(
             createComposite(optGroup, withMargin(new GridLayout(2, false), 5, 0)),
@@ -694,6 +698,8 @@ public class TracerDialog {
             isPerfetto ? Messages.CAPTURE_TRACE_PERFETTO : Messages.CAPTURE_TRACE_GRAPHICS);
         withoutBuffering.setEnabled(!isPerfetto);
         withoutBuffering.setSelection(!isPerfetto && trace.getWithoutBuffering());
+        loadValidationLayer.setEnabled(!isPerfetto && getSelectedDevice().isAndroid());
+        loadValidationLayer.setSelection(trace.getLoadValidationLayer());
         if (isPerfetto && startType.getItemCount() == 4) {
           startType.remove(StartType.Frame.ordinal());
         } else if (!isPerfetto && startType.getItemCount() == 3) {
@@ -959,6 +965,7 @@ public class TracerDialog {
         dur.setDuration(duration.getSelection());
         trace.setWithoutBuffering(withoutBuffering.getSelection());
         trace.setHideUnknownExtensions(hideUnknownExtensions.getSelection());
+        trace.setLoadValidationLayer(loadValidationLayer.getSelection());
         trace.setOutDir(directory.getText());
         trace.setFriendlyName(friendlyName);
         trace.setProcessName(processName.getText());
@@ -972,6 +979,7 @@ public class TracerDialog {
             .setFramesToCapture(duration.getSelection())
             .setNoBuffer(withoutBuffering.getSelection())
             .setHideUnknownExtensions(hideUnknownExtensions.getSelection())
+            .setLoadValidationLayer(loadValidationLayer.getSelection())
             .setServerLocalSavePath(output.getAbsolutePath())
             .setProcessName(processName.getText());
 
