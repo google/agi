@@ -936,6 +936,9 @@ void VulkanSpy::serializeGPUBuffers(StateSerializer* serializer) {
         // forbidden by the spec and in practice it can lead to GPU hangs.
         // TODO(b/148857112): retrieve the data by sampling the image.
         // For now, mock support by zeroing image data.
+        GAPID_WARNING(
+            "Mock support of image with Android external format, image data is "
+            "zeroed.");
         memset(stage.GetMappedMemory(), 0, offset);
       } else {
         for (auto& family_copies : copies) {
