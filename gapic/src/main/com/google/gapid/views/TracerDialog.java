@@ -129,6 +129,9 @@ public class TracerDialog {
       "max-frames", 1, "The maximum number of frames to allow for graphics captures", true);
   public static final Flag<Integer> maxPerfetto = Flags.value(
       "max-perfetto", 10 * 60, "The maximum amount of time to allow for profile captures", true);
+  public static final Flag<Boolean> enableLoadValidationLayer = Flags.value(
+      "load-validation-layer", false,
+      "Show the option to load the Vulkan validation layer at capture time.");
 
   private TracerDialog() {
   }
@@ -458,6 +461,7 @@ public class TracerDialog {
         loadValidationLayer = createCheckbox(
             optGroup, "Load Vulkan validation layer", trace.getLoadValidationLayer());
         loadValidationLayer.setEnabled(false);
+        loadValidationLayer.setVisible(enableLoadValidationLayer.get());
 
         perfettoConfig = withLayoutData(
             createComposite(optGroup, withMargin(new GridLayout(2, false), 5, 0)),
@@ -965,7 +969,6 @@ public class TracerDialog {
         dur.setDuration(duration.getSelection());
         trace.setWithoutBuffering(withoutBuffering.getSelection());
         trace.setHideUnknownExtensions(hideUnknownExtensions.getSelection());
-        trace.setLoadValidationLayer(loadValidationLayer.getSelection());
         trace.setOutDir(directory.getText());
         trace.setFriendlyName(friendlyName);
         trace.setProcessName(processName.getText());
@@ -979,9 +982,13 @@ public class TracerDialog {
             .setFramesToCapture(duration.getSelection())
             .setNoBuffer(withoutBuffering.getSelection())
             .setHideUnknownExtensions(hideUnknownExtensions.getSelection())
-            .setLoadValidationLayer(loadValidationLayer.getSelection())
             .setServerLocalSavePath(output.getAbsolutePath())
             .setProcessName(processName.getText());
+
+        if (enableLoadValidationLayer.get()) {
+          trace.setLoadValidationLayer(loadValidationLayer.getSelection());
+          options.setLoadValidationLayer(loadValidationLayer.getSelection());
+        }
 
         if (dev.config.getCanSpecifyCwd()) {
           trace.setCwd(cwd.getText());
