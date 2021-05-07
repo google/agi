@@ -153,6 +153,10 @@ func processGpuSlices(ctx context.Context, processor *perfetto.Processor, captur
 			if indices, ok := syncData.SubmissionIndices[key]; ok && names[i] == renderPassSliceName {
 				var idx []uint64
 				if c, ok := subCommandGroupMap[key]; ok { // Sometimes multiple renderPass slices shares the same renderPass and renderTarget.
+					if c >= len(indices) {
+						log.E(ctx, "CmdSubmissionKey %v appears more often in profiling results than expected")
+						c = len(indices) - 1
+					}
 					idx = indices[c]
 				} else {
 					idx = indices[0]
