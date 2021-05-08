@@ -46,6 +46,9 @@ public class Images {
   public static final Image.Format FMT_RGBA_FLOAT = Image.Format.newBuilder()
       .setUncompressed(Image.FmtUncompressed.newBuilder().setFormat(Streams.FMT_RGBA_FLOAT))
       .build();
+  public static final Image.Format FMT_RG16_FLOAT = Image.Format.newBuilder()
+      .setUncompressed(Image.FmtUncompressed.newBuilder().setFormat(Streams.FMT_RG16_FLOAT))
+      .build();
   public static final Image.Format FMT_LUMINANCE_FLOAT = Image.Format.newBuilder()
       .setUncompressed(Image.FmtUncompressed.newBuilder().setFormat(Streams.FMT_LUMINANCE_FLOAT))
       .build();
@@ -65,6 +68,9 @@ public class Images {
 
   public static final Set<Stream.Channel> RGB_CHANNELS = Sets.immutableEnumSet(
       Stream.Channel.Red, Stream.Channel.Green, Stream.Channel.Blue);
+
+  public static final Set<Stream.Channel> RG_CHANNELS = Sets.immutableEnumSet(
+      Stream.Channel.Red, Stream.Channel.Green);
 
   public static final Set<Stream.Channel> LUMINANCE_CHANNELS = Sets.immutableEnumSet(
       Stream.Channel.Luminance);
@@ -264,11 +270,18 @@ public class Images {
         return new ArrayImage.Luminance8Image(key, width, height, depth, data);
       }
     },
-    ColorFloat(FMT_RGBA_FLOAT, 4 * 4) {
+    ColorRgbaFloat(FMT_RGBA_FLOAT, 4 * 4) {
       @Override
       protected ArrayImage build(
           com.google.gapid.image.Image.Key key, int width, int height, int depth, byte[] data) {
         return new ArrayImage.RGBAFloatImage(key, width, height, depth, data);
+      }
+    },
+    ColorRg16Float(FMT_RG16_FLOAT, 2 * 2) {
+      @Override
+      protected ArrayImage build(
+          com.google.gapid.image.Image.Key key, int width, int height, int depth, byte[] data) {
+        return new ArrayImage.RG16FloatImage(key, width, height, depth, data);
       }
     },
     DepthFloat(FMT_DEPTH_FLOAT, 1 * 4) {
@@ -303,8 +316,19 @@ public class Images {
 
     public static Format from(Image.Format format) {
       if (isColorFormat(format)) {
-        return are8BitsEnough(format, COLOR_CHANNELS) ? Color8 :
-            (getChannelCount(format, COLOR_CHANNELS) == 1 ? LuminanceFloat : ColorFloat);
+        if (are8BitsEnough(format, COLOR_CHANNELS)) {
+          return Color8;
+        } else if (getChannelCount(format, COLOR_CHANNELS) == 1) {
+          return LuminanceFloat;
+        } else {
+          switch (format.getName()) {
+            case "VK_FORMAT_R16G16_SFLOAT":
+              return ColorRg16Float;
+            // TODO: Support other special float color format.
+            default:
+              return ColorRgbaFloat;
+          }
+        }
       } else if (isCountFormat(format)) {
         // Currently only one count format
         return Count8;

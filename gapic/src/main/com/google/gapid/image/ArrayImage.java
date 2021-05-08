@@ -358,6 +358,134 @@ public abstract class ArrayImage implements com.google.gapid.image.Image {
   }
 
   /**
+   * An {@link ArrayImage} that represents an R16G16 image with 16bit float color channels.
+   */
+  public static class RG16FloatImage extends ArrayImage {
+    private final FloatBuffer buffer; // Stores {Red, Green} pairs.
+    private final PixelInfo info;
+
+    public RG16FloatImage(Image.Key key, int width, int height, int depth, byte[] data) {
+      super(width, height, depth, 4, data, GL30.GL_RG16F, GL30.GL_RG, GL30.GL_HALF_FLOAT);
+      this.buffer = FloatBuffer.allocate(data.length / 2);
+      for (int i = 0; i + 3 < data.length; i+=4) {
+        this.buffer.put(toJavaFloat(data[i + 0], data[i + 1]));
+        this.buffer.put(toJavaFloat(data[i + 2], data[i + 3]));
+      }
+      this.info = getUnchecked(PIXEL_INFO_CACHE, key, () -> FloatPixelInfo.compute(buffer, false));
+    }
+
+    private RG16FloatImage(int width, int height, int depth, byte[] data, PixelInfo info) {
+      super(width, height, depth, 4, data, GL30.GL_RG16F, GL30.GL_RG, GL30.GL_HALF_FLOAT);
+      this.buffer = FloatBuffer.allocate(data.length / 2);
+      for (int i = 0; i + 3 < data.length; i+=4) {
+        this.buffer.put(toJavaFloat(data[i + 0], data[i + 1]));
+        this.buffer.put(toJavaFloat(data[i + 2], data[i + 3]));
+      }
+      this.info = info;
+    }
+
+    @Override
+    protected Image create(int w, int h, int d, byte[] pixels) {
+      return new RG16FloatImage(w, h, d, pixels, info);
+    }
+
+    @Override
+    protected void convert2D(byte[] src, byte[] dst, byte[] alpha, int stride) {
+      for (int row = 0, di = 0, si = 2 * (height - 1) * width, ai = 0; row < height;
+          row++, si -= 2 * width, di += stride) {
+        for (int col = 0, s = si, d = di; col < width; col++, s += 2, d += 3, ai++) {
+          dst[d + 0] = clamp(buffer.get(s + 0));
+          dst[d + 1] = clamp(buffer.get(s + 1));
+          dst[d + 2] = clamp(0.0f);
+          alpha[ai] = clamp(1.0f);
+        }
+      }
+    }
+
+    @Override
+    protected PixelValue getPixel(int x, int y) {
+      int i = 2 * (y * width + x);
+      return new Pixel(buffer.get(i + 0), buffer.get(i + 1));
+    }
+
+    @Override
+    public Set<Stream.Channel> getChannels() {
+      return Images.RG_CHANNELS;
+    }
+
+    @Override
+    public Image.ImageType getType() {
+      return Image.ImageType.LDR;
+    }
+
+    @Override
+    public void bin(Histogram.Binner binner) {
+      for (int i = 0, end = buffer.remaining() - 1; i <= end; i += 2) {
+        float red = buffer.get(i);
+        if (!Float.isNaN(red) && !Float.isInfinite(red)) {
+          binner.bin(red, Stream.Channel.Red);
+        }
+        float green = buffer.get(i + 1);
+        if (!Float.isNaN(green) && !Float.isInfinite(green)) {
+          binner.bin(green, Stream.Channel.Green);
+        }
+      }
+    }
+
+    // Convert a value from 16-bit half-precision float format to 32-bit java primitive float format.
+    // The input 16-bit half-precision value is stored by two bytes and in little-endian byte order.
+    // Implementation: there's no open source utility found to achieve this aim, this implementation
+    // references from a stackoverflow question: https://stackoverflow.com/questions/6162651.
+    private float toJavaFloat(byte high, byte low) {
+      // The buffer we receive is of little endian byte order, so we have to reverse it.
+      short merged =  Short.reverseBytes((short)(high<<8 &0xFF00 | low&0xFF));
+      int mantissa = merged & 0x03ff;              // 10 bits mantissa
+      int exponent =  merged & 0x7c00;             // 5 bits exponent
+      if( exponent == 0x7c00 ) {                   // -> NaN/Inf
+        exponent = 0x3fc00;
+      } else if( exponent != 0 ) {                 // normalized value
+        exponent += 0x1c000;                       // exp - 15 + 127
+        if( mantissa == 0 && exponent > 0x1c400 )  // smooth transition
+          return Float.intBitsToFloat( ( merged & 0x8000 ) << 16
+              | exponent << 13 | 0x3ff );
+      } else if( mantissa != 0 ) {                 // && exp==0 -> subnormal
+        exponent = 0x1c400;                        // make it normal
+        do {
+          mantissa <<= 1;                          // mantissa * 2
+          exponent -= 0x400;                       // decrease exp by 1
+        } while( ( mantissa & 0x400 ) == 0 );      // while not normal
+        mantissa &= 0x3ff;                         // discard subnormal bit
+      }                                            // else +/-0 -> +/-0
+      // Combine all parts. Sign  << ( 31 - 15 ),  value << ( 23 - 10 )
+      return Float.intBitsToFloat(( merged & 0x8000 ) << 16 | ( exponent | mantissa ) << 13 );
+    }
+
+    @Override
+    public PixelInfo getInfo() {
+      return info;
+    }
+
+    private static class Pixel implements PixelValue {
+      private final float r, g;
+
+      public Pixel(float r, float g) {
+        this.r = r;
+        this.g = g;
+      }
+
+      @Override
+      public String toString() {
+        return String.format("RG(%f, %f)", r, g);
+      }
+
+      @Override
+      public boolean isDark() {
+        return Colors.getLuminance(r, g, 0.0f) < DARK_LUMINANCE_THRESHOLD;
+      }
+    }
+  }
+
+  /**
    * An {@link ArrayImage} that represents an 8bit luminance image.
    */
   // TODO: The client may not actually need to distinguish between luminance and RGBA
