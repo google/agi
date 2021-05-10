@@ -51,7 +51,7 @@ public class CommandOptions {
     MenuItem enableMenuItem;
     MenuItem isolateMenuItem;
     if (Experimental.enableProfileExperiments(models.settings)) {
-      disableMenuItem = Widgets.createMenuItem(optionsMenu, "Disable Command", SWT.MOD1 + 'D', e -> {
+      disableMenuItem = Widgets.createMenuItem(optionsMenu, "Disable Drawcall", SWT.MOD1 + 'D', e -> {
         CommandStream.Node node = tree.getSelection();
         if (node != null && node.getData() != null) {
           widgets.experiments.disableCommands(node.getData().getExperimentalCommandsList());
@@ -59,7 +59,7 @@ public class CommandOptions {
         tree.updateTree(tree.getSelectionItem());
       });
 
-      enableMenuItem = Widgets.createMenuItem(optionsMenu, "Enable Command", SWT.MOD1 + 'E', e -> {
+      enableMenuItem = Widgets.createMenuItem(optionsMenu, "Enable Drawcall", SWT.MOD1 + 'E', e -> {
         CommandStream.Node node = tree.getSelection();
         if (node != null && node.getData() != null) {
           widgets.experiments.enableCommands(node.getData().getExperimentalCommandsList());
@@ -67,7 +67,7 @@ public class CommandOptions {
         tree.updateTree(tree.getSelectionItem());
       });
 
-      isolateMenuItem = Widgets.createMenuItem(optionsMenu, "Isolate Command", SWT.MOD1 + 'I', e -> {
+      isolateMenuItem = Widgets.createMenuItem(optionsMenu, "Disable Other Drawcalls", SWT.MOD1 + 'I', e -> {
         CommandStream.Node node = tree.getSelection();
         if (node != null && node.getData() != null) {
           widgets.experiments.disableCommands(getSiblings(node));
