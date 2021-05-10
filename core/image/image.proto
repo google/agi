@@ -95,7 +95,6 @@ message FmtETC2 {
     R = 0;
     RG = 1;
     RGB = 2;
-    RGBA = 3;
   }
 
   enum AlphaMode {

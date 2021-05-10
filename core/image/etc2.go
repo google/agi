@@ -42,7 +42,7 @@ func (f *FmtETC2) size(w, h, d int) int {
 
 	// In ETC2 RGBA8 and RG11 compressed with 128 bit per 4x4 block.
 	// All the others have 64 bit. Therefore half the size.
-	if f.ColorMode == FmtETC2_RGBA && f.AlphaMode == FmtETC2_ALPHA_8BIT {
+	if f.ColorMode == FmtETC2_RGB && f.AlphaMode == FmtETC2_ALPHA_8BIT {
 		return baseSize
 	}
 
@@ -64,9 +64,11 @@ func (f *FmtETC2) channels() stream.Channels {
 	case FmtETC2_RG:
 		return stream.Channels{stream.Channel_Red, stream.Channel_Green}
 	case FmtETC2_RGB:
-		return stream.Channels{stream.Channel_Red, stream.Channel_Green, stream.Channel_Blue}
-	case FmtETC2_RGBA:
-		return stream.Channels{stream.Channel_Red, stream.Channel_Green, stream.Channel_Blue, stream.Channel_Alpha}
+		if f.AlphaMode == FmtETC2_ALPHA_NONE {
+			return stream.Channels{stream.Channel_Red, stream.Channel_Green, stream.Channel_Blue}
+		} else {
+			return stream.Channels{stream.Channel_Red, stream.Channel_Green, stream.Channel_Blue, stream.Channel_Alpha}
+		}
 	default:
 		panic("Unknown ETC color format")
 	}

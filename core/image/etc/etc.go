@@ -64,19 +64,19 @@ func NewETC2_RGB_U8_NORM(name string) *image.Format {
 	return image.NewETC2(name, image.FmtETC2_RGB, image.FmtETC2_ALPHA_NONE, false, false)
 }
 func NewETC2_RGBA_U8_NORM(name string) *image.Format {
-	return image.NewETC2(name, image.FmtETC2_RGBA, image.FmtETC2_ALPHA_8BIT, false, false)
+	return image.NewETC2(name, image.FmtETC2_RGB, image.FmtETC2_ALPHA_8BIT, false, false)
 }
 func NewETC2_RGBA_U8U8U8U1_NORM(name string) *image.Format {
-	return image.NewETC2(name, image.FmtETC2_RGBA, image.FmtETC2_ALPHA_1BIT, false, false)
+	return image.NewETC2(name, image.FmtETC2_RGB, image.FmtETC2_ALPHA_1BIT, false, false)
 }
 func NewETC2_SRGB_U8_NORM(name string) *image.Format {
 	return image.NewETC2(name, image.FmtETC2_RGB, image.FmtETC2_ALPHA_NONE, true, false)
 }
 func NewETC2_SRGBA_U8_NORM(name string) *image.Format {
-	return image.NewETC2(name, image.FmtETC2_RGBA, image.FmtETC2_ALPHA_8BIT, true, false)
+	return image.NewETC2(name, image.FmtETC2_RGB, image.FmtETC2_ALPHA_8BIT, true, false)
 }
 func NewETC2_SRGBA_U8U8U8U1_NORM(name string) *image.Format {
-	return image.NewETC2(name, image.FmtETC2_RGBA, image.FmtETC2_ALPHA_1BIT, true, false)
+	return image.NewETC2(name, image.FmtETC2_RGB, image.FmtETC2_ALPHA_1BIT, true, false)
 }
 func NewETC2_R_U11_NORM(name string) *image.Format {
 	return image.NewETC2(name, image.FmtETC2_R, image.FmtETC2_ALPHA_NONE, false, false)

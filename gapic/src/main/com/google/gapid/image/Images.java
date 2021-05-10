@@ -18,6 +18,7 @@ package com.google.gapid.image;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gapid.proto.image.Image;
+import com.google.gapid.proto.image.Image.FmtETC2.AlphaMode;
 import com.google.gapid.proto.stream.Stream;
 import com.google.gapid.util.MoreFutures;
 import com.google.gapid.util.Streams;
@@ -172,9 +173,11 @@ public class Images {
       case RG:
         return 2;
       case RGB:
-        return 3;
-      case RGBA:
-        return 4;
+        if (format.getAlphaMode() == AlphaMode.ALPHA_NONE) {
+          return 3;
+        } else {
+          return 4;
+        }
       default:
         throw new AssertionError();
     }
