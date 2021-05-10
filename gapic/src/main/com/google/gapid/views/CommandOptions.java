@@ -94,7 +94,7 @@ public class CommandOptions {
       boolean canBeIsolated = node.getParent().getData().getExperimentalCommandsCount() > 1;
 
       if (disableMenuItem != null) {
-        boolean disabled = widgets.experiments.areAllCommandDisabled(
+        boolean disabled = widgets.experiments.areAllCommandsDisabled(
             node.getData().getExperimentalCommandsList());
         disableMenuItem.setEnabled(canBeDisabled && !disabled);
       }

@@ -421,7 +421,7 @@ public abstract class LinkifiedTree<T, F> extends Composite {
     }
 
     public void updateHierarchy(TreeItem item) {
-      while(item != null) {
+      while (item != null) {
         updateWithChildren(item);
         item = item.getParentItem();
       }

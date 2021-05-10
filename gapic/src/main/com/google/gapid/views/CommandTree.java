@@ -344,12 +344,12 @@ public class CommandTree extends Composite
       }
 
       final List<Path.Command> experimentCommands = node.getExperimentalCommandsList();
-      if (widgets.experiments.areAllCommandDisabled(experimentCommands)) {
-          return string.disabledLabelStyle();
+      if (widgets.experiments.areAllCommandsDisabled(experimentCommands)) {
+        return string.disabledLabelStyle();
       }
 
       if (widgets.experiments.isAnyCommandDisabled(experimentCommands)) {
-          return string.semiDisabledLabelStyle();
+        return string.semiDisabledLabelStyle();
       }
 
       return string.labelStyle();

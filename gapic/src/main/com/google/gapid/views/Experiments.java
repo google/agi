@@ -67,7 +67,7 @@ public class Experiments {
     return commands.stream().anyMatch(c -> experiment.disabledCommands.contains(c));
   }
 
-  public boolean areAllCommandDisabled(List<Path.Command> commands) {
+  public boolean areAllCommandsDisabled(List<Path.Command> commands) {
     return commands.stream().allMatch(c -> experiment.disabledCommands.contains(c));
   }
 

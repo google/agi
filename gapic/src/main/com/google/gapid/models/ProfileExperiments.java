@@ -20,6 +20,7 @@ import com.google.gapid.proto.service.Service;
 import com.google.gapid.proto.service.path.Path;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public final class ProfileExperiments {
@@ -27,7 +28,7 @@ public final class ProfileExperiments {
   public final ImmutableList<Path.Command> disabledCommands;
 
   public ProfileExperiments() {
-    this(false, new ArrayList<>());
+    this(false, Collections.emptyList());
   }
 
   public ProfileExperiments(boolean disableAnisotropicFiltering, List<Path.Command> disabledCommands) {
