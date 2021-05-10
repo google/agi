@@ -24,6 +24,7 @@ go_library(
         "convert.go",
         "convertable.go",
         "doc.go",
+        "etc1.go",
         "etc2.go",
         "format.go",
         "id.go",

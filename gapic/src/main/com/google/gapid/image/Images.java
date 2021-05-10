@@ -151,6 +151,7 @@ public class Images {
       case ETC2:
         return getEtc2ChannelCount(format.getEtc2());
       case ATC_RGB_AMD:
+      case ETC1_RGB_U8_NORM:
       case S3_DXT1_RGB:
         return 3;
       case ASTC:
