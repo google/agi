@@ -170,10 +170,13 @@ public class Images {
   private static int getEtc2ChannelCount(Image.FmtETC2 format) {
     switch(format.getColorMode()) {
       case R:
+      case R_SIGNED:
         return 1;
       case RG:
+      case RG_SIGNED:
         return 2;
       case RGB:
+      case SRGB:
         if (format.getAlphaMode() == AlphaMode.ALPHA_NONE) {
           return 3;
         } else {

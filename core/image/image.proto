@@ -94,8 +94,11 @@ message FmtETC1_RGB_U8_NORM {
 message FmtETC2 {
   enum ColorMode {
     R = 0;
-    RG = 1;
-    RGB = 2;
+    R_SIGNED = 1;
+    RG = 2;
+    RG_SIGNED = 3;
+    RGB = 4;
+    SRGB = 5;
   }
 
   enum AlphaMode {
@@ -106,8 +109,6 @@ message FmtETC2 {
 
   ColorMode colorMode = 1;
   AlphaMode alphaMode = 2;
-  bool srgb = 3;
-  bool signed = 4;
 }
 
 message FmtS3_DXT1_RGB {

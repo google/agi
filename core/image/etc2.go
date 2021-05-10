@@ -19,15 +19,13 @@ import (
 	"github.com/google/gapid/core/stream"
 )
 
-func NewETC2(name string, colorMode FmtETC2_ColorMode, alphaMode FmtETC2_AlphaMode, srgb bool, signed bool) *Format {
+func NewETC2(name string, colorMode FmtETC2_ColorMode, alphaMode FmtETC2_AlphaMode) *Format {
 	return &Format{
 		Name: name,
 		Format: &Format_Etc2{
 			&FmtETC2{
 				ColorMode: colorMode,
 				AlphaMode: alphaMode,
-				Srgb:      srgb,
-				Signed:    signed,
 			},
 		},
 	}
@@ -42,11 +40,11 @@ func (f *FmtETC2) size(w, h, d int) int {
 
 	// In ETC2 RGBA8 and RG11 compressed with 128 bit per 4x4 block.
 	// All the others have 64 bit. Therefore half the size.
-	if f.ColorMode == FmtETC2_RGB && f.AlphaMode == FmtETC2_ALPHA_8BIT {
+	if (f.ColorMode == FmtETC2_RGB || f.ColorMode == FmtETC2_SRGB) && f.AlphaMode == FmtETC2_ALPHA_8BIT {
 		return baseSize
 	}
 
-	if f.ColorMode == FmtETC2_RG {
+	if f.ColorMode == FmtETC2_RG || f.ColorMode == FmtETC2_RG_SIGNED {
 		return baseSize
 	}
 
@@ -58,18 +56,21 @@ func (f *FmtETC2) check(data []byte, w, h, d int) error {
 }
 
 func (f *FmtETC2) channels() stream.Channels {
-	switch f.ColorMode {
-	case FmtETC2_R:
+	if f.ColorMode == FmtETC2_R || f.ColorMode == FmtETC2_R_SIGNED {
 		return stream.Channels{stream.Channel_Red}
-	case FmtETC2_RG:
+	}
+
+	if f.ColorMode == FmtETC2_RG || f.ColorMode == FmtETC2_RG_SIGNED {
 		return stream.Channels{stream.Channel_Red, stream.Channel_Green}
-	case FmtETC2_RGB:
+	}
+
+	if f.ColorMode == FmtETC2_RGB || f.ColorMode == FmtETC2_SRGB {
 		if f.AlphaMode == FmtETC2_ALPHA_NONE {
 			return stream.Channels{stream.Channel_Red, stream.Channel_Green, stream.Channel_Blue}
-		} else {
-			return stream.Channels{stream.Channel_Red, stream.Channel_Green, stream.Channel_Blue, stream.Channel_Alpha}
 		}
-	default:
-		panic("Unknown ETC color format")
+
+		return stream.Channels{stream.Channel_Red, stream.Channel_Green, stream.Channel_Blue, stream.Channel_Alpha}
 	}
+
+	panic("Unknown ETC color format")
 }
