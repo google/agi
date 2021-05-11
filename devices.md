@@ -23,6 +23,7 @@ These devices do not support AGI yet but will offer support in the near future:
 Device name                         | GPU name
 ----------------------------------- | -------------------
 OPPO Find X3 Pro                    | Qualcomm® Adreno™ 660
+OPPO Find X3                        | Qualcomm® Adreno™ 650
 
 More devices will be added to the list as they get upgraded to Android 11.
 
