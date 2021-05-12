@@ -143,7 +143,7 @@ func processGpuSlices(ctx context.Context, processor *perfetto.Processor, captur
 	trackIds := slicesColumns[13].GetLongValues()
 	trackNames := slicesColumns[14].GetStringValues()
 
-	subCommandGroupMap := make(map[api.CmdSubmissionKey]int)
+	groupCount := make(map[api.CmdSubmissionKey]int)
 	for i, v := range submissionIds {
 		subOrder, ok := submissionOrdering[v]
 		if ok {
@@ -152,11 +152,16 @@ func processGpuSlices(ctx context.Context, processor *perfetto.Processor, captur
 			// Create a new group for each main renderPass slice.
 			if indices, ok := syncData.SubmissionIndices[key]; ok && names[i] == renderPassSliceName {
 				var idx []uint64
-				if c, ok := subCommandGroupMap[key]; ok { // Sometimes multiple renderPass slices shares the same renderPass and renderTarget.
-					idx = indices[c]
+				if c, ok := groupCount[key]; ok { // Sometimes multiple renderPass slices shares the same renderPass and renderTarget.
+					if c < len(indices) {
+						idx = indices[c]
+					} else {
+						log.W(ctx, "For key {submissionOrder%v, commandBuffer%v, renderPass%v, renderTarget%v}, command buffer walk-through found %v render records, but driver found more and this is the %v-th Surface Slice.", subOrder, cb, uint64(renderPasses[i]), uint64(renderTargets[i]), len(indices), c+1)
+						continue
+					}
 				} else {
 					idx = indices[0]
-					subCommandGroupMap[key] = 0
+					groupCount[key] = 0
 				}
 				names[i] = fmt.Sprintf("%v", idx)
 
@@ -168,7 +173,7 @@ func processGpuSlices(ctx context.Context, processor *perfetto.Processor, captur
 					Link:   &path.Command{Capture: capture, Indices: idx},
 				}
 				groups = append(groups, group)
-				subCommandGroupMap[key]++
+				groupCount[key]++
 			}
 		} else {
 			log.W(ctx, "Encountered submission ID mismatch %v", v)
