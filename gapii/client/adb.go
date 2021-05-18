@@ -20,14 +20,13 @@ import (
 	"time"
 
 	"github.com/google/gapid/core/app"
-	"github.com/google/gapid/core/context/keys"
 	"github.com/google/gapid/core/log"
 	"github.com/google/gapid/core/os/android"
 	"github.com/google/gapid/core/os/android/adb"
 	"github.com/google/gapid/core/os/device"
 	"github.com/google/gapid/core/os/device/bind"
-	"github.com/google/gapid/core/os/flock"
 	"github.com/google/gapid/core/text"
+	"github.com/google/gapid/core/vulkan/loader"
 	"github.com/google/gapid/gapidapk"
 	"github.com/pkg/errors"
 )
@@ -36,9 +35,10 @@ const (
 	// getPidRetries is the number of retries for getting the pid of the process
 	// our newly-started activity runs in.
 	getPidRetries = 7
-	// vkImplicitLayersProp is the name of the system property that contains implicit
-	// Vulkan layers to be loaded by Vulkan loader on Android
-	vkImplicitLayersProp = "debug.vulkan.layers"
+
+	// captureProcessNameProperty is the Android system property holding the
+	// name of the process to capture. Mirrored in gapii/cc/spy.cpp.
+	captureProcessNameProperty = "debug.agi.procname"
 )
 
 // Process represents a running process to capture.
@@ -143,7 +143,12 @@ func Start(ctx context.Context, p *android.InstalledPackage, a *android.Activity
 	}
 
 	log.I(ctx, "Setting up Layer")
-	cu, err := android.SetupLayers(ctx, d, p.Name, []string{gapidapk.PackageName(abi)}, []string{gapidapk.LayerName(true)})
+	layerNames := []string{gapidapk.GraphicsSpyLayerName}
+	if o.LoadValidationLayer {
+		log.I(ctx, "Also loading Vulkan validation layer")
+		layerNames = append(layerNames, loader.VulkanValidationLayer)
+	}
+	cu, err := android.SetupLayers(ctx, d, p.Name, []string{gapidapk.PackageName(abi)}, layerNames)
 	if err != nil {
 		return nil, cleanup.Invoke(ctx), log.Err(ctx, err, "Failed when setting up layers")
 	}
@@ -152,6 +157,18 @@ func Start(ctx context.Context, p *android.InstalledPackage, a *android.Activity
 	var additionalArgs []android.ActionExtra
 	if o.AdditionalFlags != "" {
 		additionalArgs = append(additionalArgs, android.CustomExtras(text.Quote(text.SplitArgs(o.AdditionalFlags))))
+	}
+
+	log.I(ctx, "Setting capture process name")
+	procNameBackup, err := d.SystemProperty(ctx, captureProcessNameProperty)
+	if err != nil {
+		return nil, cleanup.Invoke(ctx), err
+	}
+	cleanup = cleanup.Then(func(ctx context.Context) {
+		d.SetSystemProperty(ctx, captureProcessNameProperty, procNameBackup)
+	})
+	if err := d.SetSystemProperty(ctx, captureProcessNameProperty, o.ProcessName); err != nil {
+		return nil, cleanup.Invoke(ctx), err
 	}
 
 	if a != nil {
@@ -214,29 +231,4 @@ func Connect(ctx context.Context, d adb.Device, abi *device.ABI, pipe string, o 
 		return nil, err
 	}
 	return process, nil
-}
-
-// reserveVulkanDevice reserves the given device for starting Vulkan trace and
-// set the implicit Vulkan layers property to let the Vulkan loader loads
-// GraphicsSpy layer. It returns the mutex which reserves the device and error.
-func reserveVulkanDevice(ctx context.Context, d adb.Device) (*flock.Mutex, error) {
-	m := flock.Lock(d.Instance().GetSerial())
-	if err := d.SetSystemProperty(ctx, vkImplicitLayersProp, "GraphicsSpy"); err != nil {
-		return nil, log.Err(ctx, err, "Setting up vulkan layer")
-	}
-	return m, nil
-}
-
-// releaseVulkanDevice checks if the given mutex is nil, and if not, unsets the
-// implicit Vulkan layers property on the given Android device and release the
-// lock in the given mutex.
-func releaseVulkanDevice(ctx context.Context, d adb.Device, m *flock.Mutex) error {
-	if m != nil {
-		ctx = keys.Clone(context.Background(), ctx)
-		if err := d.SetSystemProperty(ctx, vkImplicitLayersProp, ""); err != nil {
-			return err
-		}
-		m.Unlock()
-	}
-	return nil
 }

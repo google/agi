@@ -39,6 +39,12 @@ import (
 	"github.com/google/gapid/gapis/trace/tracer"
 )
 
+const (
+	// captureProcessNameEnvVar is the environment variable holding the name of
+	// the process to capture. Mirrored in gapii/cc/spy.cpp.
+	captureProcessNameEnvVar = "GAPID_CAPTURE_PROCESS_NAME"
+)
+
 type DesktopTracer struct {
 	b bind.Device
 }
@@ -227,6 +233,11 @@ func (t *DesktopTracer) SetupTrace(ctx context.Context, o *service.TraceOptions)
 
 	ignorePort := true
 	if o.Type == service.TraceType_Graphics {
+		if o.LoadValidationLayer {
+			// We don't ship desktop builds of the VVL, and we have no guarantee
+			// that they are present on the desktop.
+			log.W(ctx, "Loading Vulkan validation layer at capture time is not supported on desktop")
+		}
 		cleanup, portFile, err = loader.SetupTrace(ctx, t.b, t.b.Instance().Configuration.ABIs[0], env)
 		if err != nil {
 			cleanup.Invoke(ctx)
@@ -240,6 +251,9 @@ func (t *DesktopTracer) SetupTrace(ctx context.Context, o *service.TraceOptions)
 
 	for _, x := range o.Environment {
 		env.Add(x)
+	}
+	if o.ProcessName != "" {
+		env.Add(captureProcessNameEnvVar + "=" + o.ProcessName)
 	}
 	var p tracer.Process
 	var boundPort int

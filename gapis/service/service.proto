@@ -433,6 +433,8 @@ message TraceTypeCapabilities {
   bool can_enable_unsupported_extensions = 4;
   // Does this trace require starting an application.
   bool requires_application = 6;
+  // Can select a specific process name
+  bool can_select_process_name = 7;
 }
 
 // MultiResourceData represents the state of resources at a single point in a
@@ -638,6 +640,12 @@ service Gapid {
   // SplitCapture creates a new capture containing the requested subset of
   // commands.
   rpc SplitCapture(SplitCaptureRequest) returns (SplitCaptureResponse) {
+  }
+
+  // TrimCaptureInitialState returns a new capture with an initial state trimmed
+  // from resources not needed by the capture commands.
+  rpc TrimCaptureInitialState(TrimCaptureInitialStateRequest)
+      returns (TrimCaptureInitialStateResponse) {
   }
 
   ///////////////////////////////////////////////////////////////
@@ -1326,6 +1334,17 @@ message SplitCaptureResponse {
   }
 }
 
+message TrimCaptureInitialStateRequest {
+  path.Capture capture = 1;
+}
+
+message TrimCaptureInitialStateResponse {
+  oneof res {
+    path.Capture capture = 1;
+    Error error = 2;
+  }
+}
+
 message TraceRequest {
   oneof action {
     TraceOptions initialize = 1;
@@ -1394,6 +1413,10 @@ message TraceOptions {
   bool wait_for_debugger = 26;
   // The config to use if doing a Perfetto trace.
   perfetto.protos.TraceConfig perfetto_config = 24;
+  // The name of the process to capture (empty for capturing any process).
+  string process_name = 27;
+  // Load the Vulkan validation layer during capture
+  bool load_validation_layer = 28;
 }
 
 enum TraceEvent {

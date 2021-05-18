@@ -22,6 +22,25 @@
 
 namespace gapii {
 
+namespace {
+
+bool hasAndroidExternalFormat(const VkImageCreateInfo* pCreateInfo) {
+  const VulkanStructHeader* header =
+      reinterpret_cast<const VulkanStructHeader*>(pCreateInfo->mpNext);
+  while (header != nullptr) {
+    if (header->mSType ==
+        VkStructureType::VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_ANDROID) {
+      const VkExternalFormatANDROID* externalFormat =
+          reinterpret_cast<const VkExternalFormatANDROID*>(header);
+      return externalFormat->mexternalFormat != 0;
+    }
+    header = reinterpret_cast<const VulkanStructHeader*>(header->mPNext);
+  }
+  return false;
+}
+
+}  // namespace
+
 struct destroyer {
   destroyer(const std::function<void(void)>& f) { destroy = f; }
   ~destroyer() { destroy(); }
@@ -475,20 +494,6 @@ void VulkanSpy::recordPresentSwapchainImage(CallObserver*, uint64_t, uint32_t) {
 void VulkanSpy::recordBeginCommandBuffer(CallObserver*, VkCommandBuffer) {}
 void VulkanSpy::recordEndCommandBuffer(CallObserver*, VkCommandBuffer) {}
 
-bool VulkanSpy::hasDynamicProperty(CallObserver* observer,
-                                   const VkPipelineDynamicStateCreateInfo* info,
-                                   uint32_t state) {
-  if (!info) {
-    return false;
-  }
-  for (size_t i = 0; i < info->mdynamicStateCount; ++i) {
-    if (info->mpDynamicStates[i] == state) {
-      return true;
-    }
-  }
-  return false;
-}
-
 void VulkanSpy::resetCmd(CallObserver* observer, VkCommandBuffer cmdBuf) {}
 void VulkanSpy::enterSubcontext(CallObserver*) {}
 void VulkanSpy::leaveSubcontext(CallObserver*) {}
@@ -901,11 +906,15 @@ uint32_t VulkanSpy::SpyOverride_vkCreateImage(
     CallObserver*, VkDevice device, const VkImageCreateInfo* pCreateInfo,
     const VkAllocationCallbacks* pAllocator, VkImage* pImage) {
   VkImageCreateInfo override_create_info = *pCreateInfo;
-  // TODO(b/148857112): do not set TRANSFER_SRC_BIT on images with
-  // TRANSIENT_ATTACHMENT_BIT set (this is invalid). For now, while this is
-  // invalid, it seems to work fine in practice.
-  override_create_info.musage |=
-      VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+  // Image with an Android external format cannot have the transfer bit, this
+  // is forbidden and in practice it can cause driver crashes.
+  if (!hasAndroidExternalFormat(pCreateInfo)) {
+    // TODO(b/148857112): do not set TRANSFER_SRC_BIT on images with
+    // TRANSIENT_ATTACHMENT_BIT set (this is invalid). For now, while this is
+    // invalid, it seems to work fine in practice.
+    override_create_info.musage |=
+        VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+  }
   return mImports.mVkDeviceFunctions[device].vkCreateImage(
       device, &override_create_info, pAllocator, pImage);
 }

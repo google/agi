@@ -41,6 +41,7 @@ const (
 	// production build as is not 'rooted'.
 	ErrDeviceNotRooted = fault.Const("Device is not a userdebug build")
 	ErrRootFailed      = fault.Const("Device failed to switch to root")
+	ErrUnrootFailed    = fault.Const("Device failed to switch out of root")
 
 	maxRootAttempts                         = 5
 	gpuRenderStagesDataSourceDescriptorName = "gpu.renderstages"
@@ -60,6 +61,17 @@ func isRootSuccessful(line string) bool {
 	for _, expected := range []string{
 		"adbd is already running as root",
 		"* daemon started successfully *",
+	} {
+		if line == expected {
+			return true
+		}
+	}
+	return false
+}
+
+func isUnrootSuccessful(line string) bool {
+	for _, expected := range []string{
+		"adbd not running as root",
 	} {
 		if line == expected {
 			return true
@@ -104,6 +116,39 @@ retry:
 	return log.Err(ctx, ErrRootFailed, buf.String())
 }
 
+// Unroot restarts adb as not-root.
+func (b *binding) Unroot(ctx context.Context) error {
+	buf := bytes.Buffer{}
+	buf.WriteString("adb unroot gave output:")
+retry:
+	for attempt := 0; attempt < maxRootAttempts; attempt++ {
+		output, err := b.Command("unroot").Call(ctx)
+		if err != nil {
+			return err
+		}
+		if len(output) == 0 {
+			return nil // Assume no output is success
+		}
+		output = strings.Replace(output, "\r\n", "\n", -1) // Not expected, but let's be safe.
+		buf.WriteString(fmt.Sprintf("\n#%d: %v", attempt, output))
+		lines := strings.Split(output, "\n")
+		for i := len(lines) - 1; i >= 0; i-- {
+			line := lines[i]
+			if isUnrootSuccessful(line) {
+				return nil // Success
+			}
+			switch line {
+			case "restarting adbd as non root":
+				time.Sleep(time.Millisecond * 100)
+				continue retry
+			default:
+				// Some output we weren't expecting.
+			}
+		}
+	}
+	return log.Err(ctx, ErrUnrootFailed, buf.String())
+}
+
 // IsDebuggableBuild returns true if the device runs a debuggable Android build.
 func (b *binding) IsDebuggableBuild(ctx context.Context) (bool, error) {
 	output, err := b.Command("shell", "getprop", "ro.debuggable").Call(ctx)
@@ -132,6 +177,12 @@ func (b *binding) InstallAPK(ctx context.Context, path string, reinstall bool, g
 		args = append(args, "--force-queryable")
 	}
 	args = append(args, path)
+
+	// We unroot here for b/180757454. That is a problem installing APKs on some root phones.
+	// There is a theoretical race condition on the root/unroot status with packageinfo.go:PackageList()
+	// Because adb root/unroot is outside the program's state there's not much we can do to prevent this
+	// race conditon though. Someone could always run adb from a terminal at a bad time...
+	b.Unroot(ctx)
 	return b.Command("install", args...).Run(ctx)
 }
 
@@ -354,6 +405,14 @@ func (b *binding) QueryPerfettoServiceState(ctx context.Context) (*device.Perfet
 	if b.Instance().GetConfiguration().GetOS().GetAPIVersion() >= 30 {
 		result.HasFrameLifecycle = true
 	}
+
+	services, err := b.Shell("service", "list").Call(ctx)
+	if err != nil {
+		return result, log.Errf(ctx, err, "Failed to query service list when trying to know power rail capability.")
+	}
+	if strings.Contains(services, "android.hardware.power.stats.IPowerStats/default") {
+		result.HasPowerRail = true
+	}
 	return result, nil
 }
 
@@ -412,22 +471,21 @@ func (b *binding) QueryAngle(ctx context.Context) (*device.ANGLE, error) {
 		return nil, fmt.Errorf("ANGLE not supported on this device")
 	}
 	// ANGLE supported, so check for installed ANGLE package
-	// Favor custom installed package first, followed by default system package
-	custom := "org.chromium.angle"
-	system := "com.google.android.angle"
+	// Favor custom installed packages first, followed by default system package
+	supported := []string{
+		"org.chromium.angle.agi",
+		"org.chromium.angle",
+		"com.google.android.angle",
+	}
 	// Check installed packages for ANGLE package
 	packages, _ := b.InstalledPackages(ctx)
-	if pkg := packages.FindByName(custom); pkg != nil {
-		return &device.ANGLE{
-			Package: custom,
-			Version: int32(pkg.VersionCode),
-		}, nil
-	}
-	if pkg := packages.FindByName(system); pkg != nil {
-		return &device.ANGLE{
-			Package: system,
-			Version: int32(pkg.VersionCode),
-		}, nil
+	for _, angle := range supported {
+		if pkg := packages.FindByName(angle); pkg != nil {
+			return &device.ANGLE{
+				Package: angle,
+				Version: int32(pkg.VersionCode),
+			}, nil
+		}
 	}
 	return nil, fmt.Errorf("No ANGLE packages installed on this device")
 }

@@ -32,7 +32,6 @@ import (
 	"github.com/google/gapid/core/log"
 	"github.com/google/gapid/core/os/android/adb"
 	"github.com/google/gapid/core/os/device/bind"
-	"github.com/google/gapid/core/os/device/ggp"
 	"github.com/google/gapid/core/os/device/host"
 	"github.com/google/gapid/core/os/device/remotessh"
 	"github.com/google/gapid/core/os/file"
@@ -55,6 +54,7 @@ var (
 	gapirAuthToken   = flag.String("gapir-auth-token", "", "_The connection authorization token for gapir")
 	gapirArgStr      = flag.String("gapir-args", "", "_The arguments to be passed to the host-run gapir")
 	scanAndroidDevs  = flag.Bool("monitor-android-devices", true, "Server will scan for locally connected Android devices")
+	androidSerial    = flag.String("android-serial", "", "Server will only consider the Android device with this serial id")
 	addLocalDevice   = flag.Bool("add-local-device", true, "Server can trace and replay locally")
 	idleTimeout      = flag.Duration("idle-timeout", 0, "_Closes GAPIS if the server is not repeatedly pinged within this duration (e.g. '30s', '2m'). Default: 0 (no timeout).")
 	adbPath          = flag.String("adb", "", "Path to the adb executable; leave empty to search the environment")
@@ -117,6 +117,10 @@ func run(ctx context.Context) error {
 
 	wg := sync.WaitGroup{}
 
+	if *androidSerial != "" {
+		adb.LimitToSerial(*androidSerial)
+	}
+
 	if *scanAndroidDevs {
 		wg.Add(1)
 		crash.Go(func() { monitorAndroidDevices(ctx, r, wg.Done) })
@@ -126,9 +130,6 @@ func run(ctx context.Context) error {
 		wg.Add(1)
 		crash.Go(func() { monitorRemoteSSHDevices(ctx, r, wg.Done) })
 	}
-
-	wg.Add(1)
-	crash.Go(func() { monitorGGPDevices(ctx, r, wg.Done) })
 
 	deviceScanDone, onDeviceScanDone := task.NewSignal()
 	crash.Go(func() {
@@ -202,25 +203,6 @@ func monitorRemoteSSHDevices(ctx context.Context, r *bind.Registry, scanDone fun
 
 	if err := remotessh.Monitor(ctx, r, time.Second*15, getRemoteSSHConfig); err != nil {
 		log.W(ctx, "Could not scan for remote SSH devices. Error: %v", err)
-	}
-}
-
-func monitorGGPDevices(ctx context.Context, r *bind.Registry, scanDone func()) {
-
-	func() {
-		// Populate the registry with all the existing devices.
-		defer scanDone() // Signal that we have a primed registry.
-
-		if devs, err := ggp.Devices(ctx); err == nil {
-			for _, d := range devs {
-				r.AddDevice(ctx, d)
-				r.SetDeviceProperty(ctx, d, client.LaunchArgsKey, text.SplitArgs(*gapirArgStr))
-			}
-		}
-	}()
-
-	if err := ggp.Monitor(ctx, r, time.Second*15); err != nil {
-		log.W(ctx, "Could not scan for remote GGP devices. Error: %v", err)
 	}
 }
 

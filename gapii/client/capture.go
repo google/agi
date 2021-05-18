@@ -78,6 +78,10 @@ type Options struct {
 	EnableAngle bool
 	// The name of the pipe to connect/listen to.
 	PipeName string
+	// Name of the process to capture (non-empty to indicate a specific process)
+	ProcessName string
+	// Whether to load the Vulkan validation layer under our Spy layer
+	LoadValidationLayer bool
 }
 
 const sizeGap = 1024 * 1024 * 5
@@ -142,7 +146,9 @@ func handleCommError(ctx context.Context, commErr error, anyDataReceived bool) (
 	case errors.Cause(commErr) == io.EOF:
 		log.E(ctx, "unexpected end of stream")
 		abort = true
-		err = commErr
+		// Most of the time, this error happens when the app crashed: rather
+		// than reporting just "EOF", hint that this was probably a crash.
+		err = log.Err(ctx, commErr, "The application exited during the capture")
 	case commErr != nil && anyDataReceived:
 		netErr, isnet := commErr.(net.Error)
 		if !isnet || (!netErr.Temporary() && !netErr.Timeout()) {

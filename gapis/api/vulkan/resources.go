@@ -22,6 +22,7 @@ import (
 	"github.com/google/gapid/core/data/id"
 	"github.com/google/gapid/core/image"
 	"github.com/google/gapid/core/image/astc"
+	_ "github.com/google/gapid/core/image/etc" // keep for initialization
 	"github.com/google/gapid/core/log"
 	"github.com/google/gapid/core/stream/fmts"
 	"github.com/google/gapid/gapis/api"
@@ -840,7 +841,17 @@ func (s ShaderModuleObjectʳ) ResourceData(ctx context.Context, t *api.GlobalSta
 		log.E(ctx, "Error decompiling shader: %v", err)
 	}
 	spirv := shadertools.DisassembleSpirvBinary(words)
-	return api.NewResourceData(&api.Shader{Type: api.ShaderType_Spirv, Source: source, SpirvSource: spirv, SourceLanguage: sourceLanguage, CrossCompiled: isCross}), nil
+
+	counters, _ := shadertools.Analyze(words)
+
+	analysis_stats := &api.Shader_StaticAnalysis{
+		AluInstructions:     counters.ALUInstructions,
+		TextureInstructions: counters.TexInstructions,
+		BranchInstructions:  counters.BranchInstructions,
+		TempRegisters:       counters.TempRegisters,
+	}
+
+	return api.NewResourceData(&api.Shader{Type: api.ShaderType_Spirv, Source: source, SpirvSource: spirv, SourceLanguage: sourceLanguage, CrossCompiled: isCross, StaticAnalysis: analysis_stats}), nil
 }
 
 func (shader ShaderModuleObjectʳ) SetResourceData(
@@ -1015,9 +1026,7 @@ func (p GraphicsPipelineObjectʳ) ResourceData(ctx context.Context, s *api.Globa
 	var boundDsets map[uint32]DescriptorSetObjectʳ
 	var renderpass RenderPassObjectʳ
 	var dynamicOffsets map[uint32]U32ːU32ːVkDeviceSizeᵐᵐ
-	// Convert the DynamicStates map to have VkDynamicState be the key
-	// for quick lookup (i.e. make it a set)
-	dynamicStates := make(map[VkDynamicState]bool)
+	var dynamicStates map[VkDynamicState]bool
 	// Use LastDrawInfos to get bound descriptor set data.
 	// TODO: Ideally we could look at just a specific pipeline/descriptor
 	// set pair.  Maybe we could modify mutate to track which what
@@ -1036,9 +1045,7 @@ func (p GraphicsPipelineObjectʳ) ResourceData(ctx context.Context, s *api.Globa
 		}
 
 		if !p.DynamicState().IsNil() {
-			for _, k := range p.DynamicState().DynamicStates().Keys() {
-				dynamicStates[p.DynamicState().DynamicStates().Get(k)] = true
-			}
+			dynamicStates = p.DynamicState().Contains().All()
 		}
 	}
 

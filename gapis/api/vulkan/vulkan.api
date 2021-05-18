@@ -89,7 +89,9 @@ import "extensions/khr_bind_memory2.api"
 import "extensions/khr_16bit_storage.api"
 import "extensions/khr_external_fence_capabilities.api"
 import "extensions/khr_external_memory_capabilities.api"
+import "extensions/android_external_memory_android_hardware_buffer.api"
 import "extensions/khr_external_semaphore_capabilities.api"
+import "extensions/khr_external_semaphore_fd.api"
 import "extensions/khr_variable_pointers.api"
 import "extensions/khr_sampler_ycbcr_conversion.api"
 import "extensions/amd_draw_indirect_count.api"
@@ -114,12 +116,12 @@ import "extensions/khr_shader_float16_int8.api"
 import "extensions/khr_shader_atomic_int64.api"
 import "extensions/khr_driver_properties.api"
 import "extensions/khr_timeline_semaphore.api"
+import "extensions/ext_line_rasterization.api"
 
 import "android/vulkan_android.api"
 import "linux/vulkan_linux.api"
 import "windows/vulkan_windows.api"
 import "mac/vulkan_mac.api"
-import "ggp/vulkan_ggp.api"
 import "synthetic.api"
 import "errors.api"
 
@@ -132,7 +134,6 @@ extern void unmapMemory(VkDeviceMemory handle, u8[] slice)
 extern void trackMappedCoherentMemory(u64 start, size size)
 extern void readMappedCoherentMemory(VkDeviceMemory memory, u64 offset_in_mapped, size readSize)
 extern void untrackMappedCoherentMemory(u64 start, size size)
-extern bool hasDynamicProperty(const VkPipelineDynamicStateCreateInfo* info, VkDynamicState state)
 extern void enterSubcontext()
 extern void nextSubcontext()
 extern void leaveSubcontext()
@@ -225,7 +226,6 @@ sub ref!ExtensionSet supportedInstanceExtensions() {
   supported.ExtensionNames["VK_KHR_external_memory_capabilities"] = true
   supported.ExtensionNames["VK_KHR_external_semaphore_capabilities"] = true
   supported.ExtensionNames["VK_KHR_external_fence_capabilities"] = true
-  supported.ExtensionNames["VK_GGP_stream_descriptor_surface"] = true
   supported.ExtensionNames["VK_EXT_swapchain_colorspace"] = true
   supported.ExtensionNames["VK_KHR_device_group_creation"] = true
   return supported
@@ -249,7 +249,6 @@ sub ref!ExtensionSet supportedDeviceExtensions() {
   supported.ExtensionNames["VK_KHR_maintenance1"] = true
   supported.ExtensionNames["VK_KHR_maintenance2"] = true
   supported.ExtensionNames["VK_KHR_maintenance3"] = true
-  supported.ExtensionNames["VK_GGP_frame_token"] = true
   supported.ExtensionNames["VK_AMD_draw_indirect_count"] = true
   supported.ExtensionNames["VK_KHR_draw_indirect_count"] = true
   supported.ExtensionNames["VK_AMD_buffer_marker"] = true
@@ -284,7 +283,11 @@ sub ref!ExtensionSet supportedDeviceExtensions() {
   supported.ExtensionNames["VK_KHR_driver_properties"] = true
   supported.ExtensionNames["VK_ANDROID_frame_boundary"] = true
   supported.ExtensionNames["VK_KHR_external_semaphore"] = true
+  supported.ExtensionNames["VK_KHR_external_semaphore_fd"] = true
   supported.ExtensionNames["VK_KHR_external_memory"] = true
+  supported.ExtensionNames["VK_EXT_queue_family_foreign"] = true
+  supported.ExtensionNames["VK_ANDROID_external_memory_android_hardware_buffer"] = true
+  supported.ExtensionNames["VK_EXT_line_rasterization"] = true
   return supported
 }
 
@@ -337,6 +340,9 @@ sub ref!ExtensionSet supportedDeviceExtensions() {
   dense_map!(u32, VkRect2D) Scissors
   // The value set by vkCmdSetLineWidth
   f32 LineWidth
+  // The values set by vkCmdSetLineStippleEXT
+  u32 LineStippleFactor
+  u16 LineStipplePattern
   // The constant factor set by vkCmdSetDepthBias
   f32 DepthBiasConstantFactor
   // The clamp set by vkCmdSetDepthBias

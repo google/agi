@@ -129,6 +129,9 @@ public class TracerDialog {
       "max-frames", 1, "The maximum number of frames to allow for graphics captures", true);
   public static final Flag<Integer> maxPerfetto = Flags.value(
       "max-perfetto", 10 * 60, "The maximum amount of time to allow for profile captures", true);
+  public static final Flag<Boolean> enableLoadValidationLayer = Flags.value(
+      "load-validation-layer", false,
+      "Show the option to load the Vulkan validation layer at capture time.");
 
   private TracerDialog() {
   }
@@ -308,6 +311,7 @@ public class TracerDialog {
       private final Label targetLabel;
       private final Text arguments;
       private final Text cwd;
+      private final Text processName;
       private final Text envVars;
       private final Combo startType;
       private final Spinner startFrame;
@@ -317,6 +321,7 @@ public class TracerDialog {
       private final Label startUnit;
       private final Button withoutBuffering;
       private final Button hideUnknownExtensions;
+      private final Button loadValidationLayer;
       private final Button clearCache;
       private final Composite perfettoConfig;
       private final Label perfettoConfigLabel;
@@ -406,6 +411,11 @@ public class TracerDialog {
         arguments = withLayoutData(createTextbox(appGroup, trace.getArguments()),
             new GridData(SWT.FILL, SWT.FILL, true, false));
 
+        createLabel(appGroup, "Process name:");
+        processName = withLayoutData(createTextbox(appGroup, trace.getProcessName()),
+            new GridData(SWT.FILL, SWT.FILL, true, false));
+        processName.setEnabled(false);
+
         createLabel(appGroup, "Working Directory:");
         cwd = withLayoutData(createTextbox(appGroup, trace.getCwd()),
             new GridData(SWT.FILL, SWT.FILL, true, false));
@@ -448,6 +458,10 @@ public class TracerDialog {
         hideUnknownExtensions = createCheckbox(
             optGroup, "Hide Unknown Extensions", trace.getHideUnknownExtensions());
         hideUnknownExtensions.setEnabled(false);
+        loadValidationLayer = createCheckbox(
+            optGroup, "Load Vulkan validation layer", trace.getLoadValidationLayer());
+        loadValidationLayer.setEnabled(false);
+        loadValidationLayer.setVisible(enableLoadValidationLayer.get());
 
         perfettoConfig = withLayoutData(
             createComposite(optGroup, withMargin(new GridLayout(2, false), 5, 0)),
@@ -678,6 +692,9 @@ public class TracerDialog {
         targetLabel.setText(TARGET_LABEL + (appRequired ? "*:" : ":"));
         targetLabel.requestLayout();
 
+        boolean canSelectProcessName = config != null && config.getCanSelectProcessName();
+        processName.setEnabled(canSelectProcessName);
+
         boolean isPerfetto = isPerfetto(config);
         SettingsProto.Trace.DurationOrBuilder dur = isPerfetto ?
             trace.getProfileDurationOrBuilder() : trace.getGfxDurationOrBuilder();
@@ -685,6 +702,8 @@ public class TracerDialog {
             isPerfetto ? Messages.CAPTURE_TRACE_PERFETTO : Messages.CAPTURE_TRACE_GRAPHICS);
         withoutBuffering.setEnabled(!isPerfetto);
         withoutBuffering.setSelection(!isPerfetto && trace.getWithoutBuffering());
+        loadValidationLayer.setEnabled(!isPerfetto && getSelectedDevice().isAndroid());
+        loadValidationLayer.setSelection(trace.getLoadValidationLayer());
         if (isPerfetto && startType.getItemCount() == 4) {
           startType.remove(StartType.Frame.ordinal());
         } else if (!isPerfetto && startType.getItemCount() == 3) {
@@ -749,12 +768,6 @@ public class TracerDialog {
               boolean secondIsAndroid = devices.get(1).isAndroid();
               if (firstIsAndroid != secondIsAndroid) {
                 return firstIsAndroid ? devices.get(0) : devices.get(1);
-              }
-              // Same reasoning for Stadia instances.
-              boolean firstIsStadia = devices.get(0).isStadia();
-              boolean secondIsStadia = devices.get(1).isStadia();
-              if (firstIsStadia != secondIsStadia) {
-                return firstIsStadia ? devices.get(0) : devices.get(1);
               }
             }
             return null;
@@ -958,6 +971,7 @@ public class TracerDialog {
         trace.setHideUnknownExtensions(hideUnknownExtensions.getSelection());
         trace.setOutDir(directory.getText());
         trace.setFriendlyName(friendlyName);
+        trace.setProcessName(processName.getText());
 
         Service.TraceOptions.Builder options = Service.TraceOptions.newBuilder()
             .setDevice(dev.path)
@@ -968,7 +982,13 @@ public class TracerDialog {
             .setFramesToCapture(duration.getSelection())
             .setNoBuffer(withoutBuffering.getSelection())
             .setHideUnknownExtensions(hideUnknownExtensions.getSelection())
-            .setServerLocalSavePath(output.getAbsolutePath());
+            .setServerLocalSavePath(output.getAbsolutePath())
+            .setProcessName(processName.getText());
+
+        if (enableLoadValidationLayer.get()) {
+          trace.setLoadValidationLayer(loadValidationLayer.getSelection());
+          options.setLoadValidationLayer(loadValidationLayer.getSelection());
+        }
 
         if (dev.config.getCanSpecifyCwd()) {
           trace.setCwd(cwd.getText());

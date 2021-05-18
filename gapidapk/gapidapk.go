@@ -128,7 +128,10 @@ func ensureInstalled(ctx context.Context, d adb.Device, abi *device.ABI) (*APK, 
 
 		apkPath, err := gapid.Path(ctx)
 		if err != nil {
-			return nil, log.Err(ctx, err, "Obtaining GAPID package path")
+			// This might happen if gapid is installed only for the work profile
+			log.I(ctx, "Uninstalling existing gapid.apk as path not queryable.")
+			gapid.Uninstall(ctx)
+			continue
 		}
 		log.I(ctx, "Found gapid package...")
 
@@ -180,18 +183,8 @@ func (a APK) LibsPath(abi *device.ABI) string {
 	return a.path + "/lib/" + abi.Name
 }
 
-// LibGAPIIPath returns the path on the Android device to the GAPII dynamic
-// library file.
-// gapid.apk must be installed for this path to be valid.
-func (a APK) LibGAPIIPath(abi *device.ABI) string {
-	return a.LibsPath(abi) + "/" + LibGAPIIName
-}
-
 const (
-	// LibGAPIIName is the name of the GAPII dynamic library file.
-	LibGAPIIName = "libgapii.so"
-
-	// GraphicsSpyLayerName is the name of the graphics spy layer.
+	// GraphicsSpyLayerName is the name of the graphics spy Vulkan layer.
 	GraphicsSpyLayerName = "GraphicsSpy"
 )
 
@@ -204,15 +197,6 @@ func PackageName(abi *device.ABI) string {
 		return "com.google.android.gapid.arm64v8a"
 	default:
 		return fmt.Sprintf("com.google.android.gapid.%v", abi.Name)
-	}
-}
-
-// LayerName returns the name of the layer to use for Vulkan vs GLES.
-func LayerName(vulkan bool) string {
-	if vulkan {
-		return GraphicsSpyLayerName
-	} else {
-		return LibGAPIIName
 	}
 }
 

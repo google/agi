@@ -42,17 +42,23 @@ var (
 // GetInitialPayload creates a replay that emits instructions for
 // state priming of a capture.
 func (a API) GetInitialPayload(ctx context.Context,
-	capture *path.Capture,
+	c *path.Capture,
 	device *device.Instance,
 	out transform.Writer) error {
 
-	initialCmds, im, _ := initialcmds.InitialCommands(ctx, capture)
+	initialCmds, im, _ := initialcmds.InitialCommands(ctx, c)
 	out.State().Allocator.ReserveRanges(im)
 	cmdGenerator := commandGenerator.NewLinearCommandGenerator(initialCmds, nil)
 
-	transforms := make([]transform.Transform, 0)
+	var transforms []transform.Transform
 	transforms = append(transforms, newMakeAttachmentReadable(false))
 	transforms = append(transforms, newDropInvalidDestroy("GetInitialPayload"))
+	transforms = append(transforms, newExternalMemory())
+	if config.LogInitialCmdsToCapture {
+		if c, err := capture.ResolveGraphicsFromPath(ctx, c); err == nil {
+			transforms = append(transforms, newCaptureLog(ctx, c, "initial_cmds.gfxtrace"))
+		}
+	}
 
 	chain := transform.CreateTransformChain(ctx, cmdGenerator, transforms, out)
 	controlFlow := controlFlowGenerator.NewLinearControlFlowGenerator(chain)
@@ -109,12 +115,12 @@ func (a API) Replay(
 		}
 	}
 
-	transforms := make([]transform.Transform, 0)
-
 	_, isProfileRequest := firstRequest.(profileRequest)
-	transforms = append(transforms, newMakeAttachmentReadable(isProfileRequest))
 
+	var transforms []transform.Transform
+	transforms = append(transforms, newMakeAttachmentReadable(isProfileRequest))
 	transforms = append(transforms, newDropInvalidDestroy(replayType))
+	transforms = append(transforms, newExternalMemory())
 
 	// Melih TODO: DCE probably should be here
 	initialCmds := getInitialCmds(ctx, dependentPayload, intent, out)

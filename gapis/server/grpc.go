@@ -66,7 +66,7 @@ func NewWithListener(ctx context.Context, l net.Listener, cfg Config, srvChan ch
 		done <- grpcutil.ServeWithListener(ctx, l, func(ctx context.Context, listener net.Listener, server *grpc.Server) error {
 			if addr, ok := listener.Addr().(*net.TCPAddr); ok {
 				// The following message is parsed by launchers to detect the selected port. DO NOT CHANGE!
-				fmt.Printf("Bound on port '%d'\n", addr.Port)
+				fmt.Printf("\nBound on port '%d'\n", addr.Port)
 			}
 			service.RegisterGapidServer(server, s)
 			if srvChan != nil {
@@ -589,6 +589,15 @@ func (s *grpcServer) SplitCapture(ctx xctx.Context, req *service.SplitCaptureReq
 		return &service.SplitCaptureResponse{Res: &service.SplitCaptureResponse_Error{Error: err}}, nil
 	}
 	return &service.SplitCaptureResponse{Res: &service.SplitCaptureResponse_Capture{Capture: res}}, nil
+}
+
+func (s *grpcServer) TrimCaptureInitialState(ctx xctx.Context, req *service.TrimCaptureInitialStateRequest) (*service.TrimCaptureInitialStateResponse, error) {
+	defer s.inRPC()()
+	res, err := s.handler.TrimCaptureInitialState(s.bindCtx(ctx), req.Capture)
+	if err := service.NewError(err); err != nil {
+		return &service.TrimCaptureInitialStateResponse{Res: &service.TrimCaptureInitialStateResponse_Error{Error: err}}, nil
+	}
+	return &service.TrimCaptureInitialStateResponse{Res: &service.TrimCaptureInitialStateResponse_Capture{Capture: res}}, nil
 }
 
 func (s *grpcServer) TraceTargetTreeNode(ctx xctx.Context, req *service.TraceTargetTreeNodeRequest) (*service.TraceTargetTreeNodeResponse, error) {

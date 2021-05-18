@@ -637,19 +637,6 @@ func (sb *stateBuilder) createSurface(s SurfaceObjectʳ) {
 			sb.MustAllocWriteData(s.VulkanHandle()).Ptr(),
 			VkResult_VK_SUCCESS,
 		))
-	case SurfaceType_SURFACE_TYPE_GGP:
-		sb.write(sb.cb.VkCreateStreamDescriptorSurfaceGGP(
-			s.Instance(),
-			sb.MustAllocReadData(NewVkStreamDescriptorSurfaceCreateInfoGGP(
-				VkStructureType_VK_STRUCTURE_TYPE_STREAM_DESCRIPTOR_SURFACE_CREATE_INFO_GGP,
-				0, // pNext
-				0, // flags
-				0, // streamDescriptor
-			)).Ptr(),
-			memory.Nullptr,
-			sb.MustAllocWriteData(s.VulkanHandle()).Ptr(),
-			VkResult_VK_SUCCESS,
-		))
 	case SurfaceType_SURFACE_TYPE_MACOS_MVK:
 		sb.write(sb.cb.VkCreateMacOSSurfaceMVK(
 			s.Instance(),
@@ -1109,8 +1096,8 @@ func (sb *stateBuilder) createSwapchain(swp SwapchainObjectʳ) {
 	}
 }
 
-func (sb *stateBuilder) createDeviceMemory(mem DeviceMemoryObjectʳ, allowDedicatedNV bool) {
-	if !allowDedicatedNV && !mem.DedicatedAllocationNV().IsNil() {
+func (sb *stateBuilder) createDeviceMemory(mem DeviceMemoryObjectʳ, allowDedicated bool) {
+	if !allowDedicated && (!mem.DedicatedAllocationNV().IsNil() || !mem.DedicatedAllocationKHR().IsNil()) {
 		return
 	}
 
@@ -1123,6 +1110,17 @@ func (sb *stateBuilder) createDeviceMemory(mem DeviceMemoryObjectʳ, allowDedica
 				pNext,                                // pNext
 				mem.DedicatedAllocationNV().Image(),  // image
 				mem.DedicatedAllocationNV().Buffer(), // buffer
+			),
+		).Ptr())
+	}
+
+	if !mem.DedicatedAllocationKHR().IsNil() {
+		pNext = NewVoidᶜᵖ(sb.MustAllocReadData(
+			NewVkMemoryDedicatedAllocationInfoKHR(
+				VkStructureType_VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR, // sType
+				pNext,                                 // pNext
+				mem.DedicatedAllocationKHR().Image(),  // image
+				mem.DedicatedAllocationKHR().Buffer(), // buffer
 			),
 		).Ptr())
 	}
@@ -1145,6 +1143,16 @@ func (sb *stateBuilder) createDeviceMemory(mem DeviceMemoryObjectʳ, allowDedica
 				VkStructureType_VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO, // sType
 				pNext,
 				mem.ExternalHandleTypeFlags(), // handleTypes
+			),
+		).Ptr())
+	}
+
+	if mem.AndroidHardwareBuffer() != 0 {
+		pNext = NewVoidᶜᵖ(sb.MustAllocReadData(
+			NewVkImportAndroidHardwareBufferInfoANDROID(
+				VkStructureType_VK_STRUCTURE_TYPE_IMPORT_ANDROID_HARDWARE_BUFFER_INFO_ANDROID, // sType
+				pNext, // pNext
+				AHardwareBufferᵖ(mem.AndroidHardwareBuffer()), // buffer
 			),
 		).Ptr())
 	}
@@ -1305,8 +1313,7 @@ func (sb *stateBuilder) createBuffer(buffer BufferObjectʳ) {
 		buffer.LastBoundQueue())
 	newBuffer := buffer.VulkanHandle()
 
-	mem := GetState(sb.newState).DeviceMemories().Get(buffer.Memory().VulkanHandle())
-	if err := sb.createSameBuffer(buffer, newBuffer, mem, buffer.MemoryOffset()); err != nil {
+	if err := sb.createSameBuffer(buffer, newBuffer, buffer.Memory(), buffer.MemoryOffset()); err != nil {
 		log.E(sb.ctx, "create buffer %v failed", buffer)
 		return
 	}
@@ -1513,7 +1520,7 @@ func (sb *stateBuilder) createImage(img ImageObjectʳ, srcState *api.GlobalState
 			srcState, GetState(srcState), 0, nil, nil, "VkDeviceMemory", uint64(planeMemInfo.BoundMemory().VulkanHandle()))
 	}
 
-	if dedicatedMemoryNV {
+	if dedicatedMemoryNV || (!planeMemInfo.BoundMemory().IsNil() && !planeMemInfo.BoundMemory().DedicatedAllocationKHR().IsNil()) {
 		sb.createDeviceMemory(planeMemInfo.BoundMemory(), true)
 	}
 
@@ -1817,12 +1824,23 @@ func (sb *stateBuilder) primeImage(img ImageObjectʳ, imgPrimer *imagePrimer, op
 }
 
 func (sb *stateBuilder) createSamplerYcbcrConversion(conv SamplerYcbcrConversionObjectʳ) {
+	pNext := NewVoidᶜᵖ(memory.Nullptr)
+	if conv.AndroidExternalFormat() != 0 {
+		pNext = NewVoidᶜᵖ(sb.MustAllocReadData(
+			NewVkExternalFormatANDROID(
+				VkStructureType_VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_ANDROID,
+				pNext,                        // pNext
+				conv.AndroidExternalFormat(), // externalFormat
+			),
+		).Ptr())
+	}
+
 	if conv.IsFromExtension() {
 		sb.write(sb.cb.VkCreateSamplerYcbcrConversionKHR(
 			conv.Device(),
 			sb.MustAllocReadData(NewVkSamplerYcbcrConversionCreateInfo(
 				VkStructureType_VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_CREATE_INFO_KHR, // sType
-				0,                                  // pNext
+				pNext,                              // pNext
 				conv.Fmt(),                         // format
 				conv.YcbcrModel(),                  // ycbcrModel
 				conv.YcbcrRange(),                  // ycbcrRange
@@ -1841,7 +1859,7 @@ func (sb *stateBuilder) createSamplerYcbcrConversion(conv SamplerYcbcrConversion
 			conv.Device(),
 			sb.MustAllocReadData(NewVkSamplerYcbcrConversionCreateInfo(
 				VkStructureType_VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_CREATE_INFO, // sType
-				0,                                  // pNext
+				pNext,                              // pNext
 				conv.Fmt(),                         // format
 				conv.YcbcrModel(),                  // ycbcrModel
 				conv.YcbcrRange(),                  // ycbcrRange
@@ -3207,7 +3225,7 @@ func (sb *stateBuilder) createSameBuffer(src BufferObjectʳ, buffer VkBuffer, me
 			sb.oldState, GetState(sb.oldState), 0, nil, nil, "VkDeviceMemory", uint64(src.Memory().VulkanHandle()))
 	}
 
-	if dedicatedMemoryNV {
+	if dedicatedMemoryNV || (!src.Memory().IsNil() && !src.Memory().DedicatedAllocationKHR().IsNil()) {
 		sb.createDeviceMemory(mem, true)
 	}
 

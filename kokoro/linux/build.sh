@@ -18,10 +18,12 @@ set -ex
 
 BUILD_ROOT=$PWD
 SRC=$PWD/github/agi/
+CURL="curl -fksLS --http1.1 --retry 3"
 
 # Get bazel.
 BAZEL_VERSION=2.0.0
-curl -L -k -O -s https://github.com/bazelbuild/bazel/releases/download/${BAZEL_VERSION}/bazel-${BAZEL_VERSION}-installer-linux-x86_64.sh
+$CURL -O https://github.com/bazelbuild/bazel/releases/download/${BAZEL_VERSION}/bazel-${BAZEL_VERSION}-installer-linux-x86_64.sh
+echo "2fbdc9c0e3d376697caf0ee3673b7c9475214068c55a01b9744891e131f90b87  bazel-${BAZEL_VERSION}-installer-linux-x86_64.sh" | sha256sum --check
 mkdir bazel
 bash bazel-${BAZEL_VERSION}-installer-linux-x86_64.sh --prefix=$PWD/bazel
 
@@ -33,7 +35,8 @@ sudo apt-get -qy install gcc-8 g++-8
 export CC=/usr/bin/gcc-8
 
 # Get the Android NDK
-curl -L -k -O -s https://dl.google.com/android/repository/android-ndk-r21d-linux-x86_64.zip
+$CURL -O https://dl.google.com/android/repository/android-ndk-r21d-linux-x86_64.zip
+echo "dd6dc090b6e2580206c64bcee499bc16509a5d017c6952dcd2bed9072af67cbd  android-ndk-r21d-linux-x86_64.zip" | sha256sum --check
 unzip -q android-ndk-r21d-linux-x86_64.zip
 export ANDROID_NDK_HOME=$PWD/android-ndk-r21d
 
@@ -44,7 +47,7 @@ echo y | $ANDROID_HOME/tools/bin/sdkmanager --install 'build-tools;29.0.2'
 JDK_BUILD=zulu8.46.0.19-ca
 JDK_VERSION=8.0.252
 JDK_NAME=$JDK_BUILD-jdk$JDK_VERSION-linux_x64
-curl -L -k -O -s https://storage.googleapis.com/jdk-mirror/$JDK_BUILD/$JDK_NAME.zip
+$CURL -O https://storage.googleapis.com/jdk-mirror/$JDK_BUILD/$JDK_NAME.zip
 echo "ab9df193a482152ec9b7d5f37cc07637190e623efe5aaba240f0f4c2239d1046  $JDK_NAME.zip" | sha256sum --check
 unzip -q $JDK_NAME.zip
 export JAVA_HOME=$PWD/$JDK_NAME
@@ -52,34 +55,30 @@ export JAVA_HOME=$PWD/$JDK_NAME
 cd $SRC
 BUILD_SHA=${DEV_PREFIX}${KOKORO_GITHUB_COMMIT:-$KOKORO_GITHUB_PULL_REQUEST_COMMIT}
 
-function build {
-  echo $(date): Starting build for $@...
+function run_bazel {
+  local ACTION=$1
+  shift
   $BUILD_ROOT/bazel/bin/bazel \
     --output_base="${TMP}/bazel_out" \
-    build -c opt --config symbols \
+    $ACTION -c opt --config symbols \
     --define AGI_BUILD_NUMBER="$KOKORO_BUILD_NUMBER" \
     --define AGI_BUILD_SHA="$BUILD_SHA" \
+    --show_timestamps \
     $@
-  echo $(date): Build completed.
 }
 
 # Build the Vulkan API package separately first, as the go-compiler needs ~8GB
 # of RAM for this
-build //gapis/api/vulkan:go_default_library
+run_bazel build //gapis/api/vulkan:go_default_library
 
 # Build the package and symbol file.
-build //:pkg //:symbols
+run_bazel build //:pkg //:symbols
 
 # Build the Vulkan sample
-build //cmd/vulkan_sample:vulkan_sample
+run_bazel build //cmd/vulkan_sample:vulkan_sample
 
 # Build and run the smoketests.
-build //cmd/smoketests:smoketests
-echo $(date): Run smoketests...
-# Using "bazel run //cmd/smoketests seems to make 'bazel-bin/pkg/gapit'
-# disappear, hence we call the binary directly
-bazel-bin/cmd/smoketests/linux_amd64_stripped/smoketests -gapit bazel-bin/pkg/gapit -traces test/traces
-echo $(date): Smoketests completed.
+run_bazel run //cmd/smoketests:smoketests -- -traces test/traces
 
 # Build the release packages.
 mkdir $BUILD_ROOT/out
@@ -168,7 +167,8 @@ sudo apt-get -qy install libvulkan1 xvfb
 # Get prebuilt SwiftShader.
 # This is the latest commit at the time of writing.
 # Should be updated periodically.
-curl -fsSL -o swiftshader.zip https://github.com/google/gfbuild-swiftshader/releases/download/github%2Fgoogle%2Fgfbuild-swiftshader%2F0bbf7ba9f909092f0328b1d519d5f7db1773be57/gfbuild-swiftshader-0bbf7ba9f909092f0328b1d519d5f7db1773be57-Linux_x64_Debug.zip
+$CURL -o swiftshader.zip https://github.com/google/gfbuild-swiftshader/releases/download/github%2Fgoogle%2Fgfbuild-swiftshader%2F0bbf7ba9f909092f0328b1d519d5f7db1773be57/gfbuild-swiftshader-0bbf7ba9f909092f0328b1d519d5f7db1773be57-Linux_x64_Debug.zip
+echo "0b9fc77c469da6f047df6bf2b9103350551c93cde21eee5d51013c1cda046619  swiftshader.zip" | sha256sum --check
 unzip -d swiftshader swiftshader.zip
 
 # Use SwiftShader.

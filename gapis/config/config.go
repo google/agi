@@ -23,6 +23,7 @@ const (
 	DebugDeadCodeElimination   = false
 	DebugDependencyGraph       = false
 	DumpReplayProfile          = false
+	DumpValidationTrace        = true
 	AllInitialCommandsLive     = false
 	LogExtrasInTransforms      = false // Logs all commands' extras together with transforms
 	LogMemoryInExtras          = false // Logs all commands' read/write memory observation together with extras
@@ -33,6 +34,7 @@ const (
 	LogTransformsToFile      = false
 	LogTransformsToCapture   = false
 	LogInitialCmdsIssues     = false
+	LogInitialCmdsToCapture  = false
 	SeparateMutateStates     = false
 	CheckRebuiltStateMatches = false
 )

@@ -53,7 +53,6 @@ enum OSKind {
   OSX = 2;
   Linux = 3;
   Android = 4;
-  Stadia = 5;
 }
 
 // MemoryLayout holds information about how memory is fundamentally laid out for
@@ -187,6 +186,7 @@ message PerfettoCapability {
   VulkanProfilingLayers vulkan_profile_layers = 2;
   bool can_specify_atrace_apps = 3;
   bool hasFrameLifecycle = 4;
+  bool hasPowerRail = 5;
 }
 
 message GPUProfiling {

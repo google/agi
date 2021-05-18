@@ -119,6 +119,8 @@ message Trace {
   string friendly_name = 16;
   Duration gfx_duration = 17;
   Duration profile_duration = 18;
+  string process_name = 19;
+  bool load_validation_layer = 20;
 }
 
 message Perfetto {
@@ -149,6 +151,7 @@ message Perfetto {
   message Battery {
     bool enabled = 1;
     int32 rate = 2;
+    bool collectPowerRail = 3;
   }
   Battery battery = 4;
 
