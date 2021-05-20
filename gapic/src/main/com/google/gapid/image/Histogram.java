@@ -74,8 +74,8 @@ public class Histogram {
       return Range.IDENTITY;
     }
 
-    double rangeMin = getPercentile(1, false, false);
-    double rangeMax = getPercentile(99, true, true);
+    double rangeMin = getPercentile(1, false);
+    double rangeMax = getPercentile(99, true);
 
     // Snap the range to the limits if they're close enough.
     if (mapper.normalize(rangeMin) < snapThreshold) {
@@ -92,10 +92,9 @@ public class Histogram {
    * @param percentile the percentile value ranging from 0 to 100.
    * @param lastBin if true, for all the percentile bins from different channels, choose the last
    * bin, otherwise choose the first bin.
-   * @param high if true, return the upper limit on the percentile's bin, otherwise the lower limit.
    * @return the absolute pixel value at the specified percentile in the histogram.
    */
-  private double getPercentile(int percentile, boolean lastBin, boolean high) {
+  private double getPercentile(int percentile, boolean lastBin) {
     List<Integer> percentileBins = Lists.newArrayList();
     for (Stream.Channel c : channels) {
       int bin = bins.getPercentileBin(percentile, c);
@@ -107,7 +106,8 @@ public class Histogram {
       return mapper.limits.max;
     } else {
       int chosenBin = lastBin ? Collections.max(percentileBins) : Collections.min(percentileBins);
-      return getValueFromNormalizedX((chosenBin + (high ? 1 : 0)) / (double)bins.count());
+      // If to choose lastBin, return the upper limit of the bin, otherwise the lower limit.
+      return getValueFromNormalizedX((chosenBin + (lastBin ? 1 : 0)) / (double)bins.count());
     }
   }
 
