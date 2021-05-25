@@ -639,7 +639,7 @@ public class TraceConfigDialog extends DialogBase {
             createComposite(this, withMargin(new GridLayout(1, false), 5, 0)),
             withIndents(new GridData(), GROUP_INDENT, 0));
         if (gpuCaps.getHasRenderStage()) {
-          gpuSlices = createCheckbox(gpuGroup, "GPU activity", sGpu.getSlices());
+          gpuSlices = createCheckbox(gpuGroup, "GPU queues", sGpu.getSlices());
         } else {
           gpuSlices = null;
         }
