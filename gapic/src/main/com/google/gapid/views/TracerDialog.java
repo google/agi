@@ -358,12 +358,7 @@ public class TracerDialog {
         deviceLoader.setLayoutData(
             withIndents(new GridData(SWT.RIGHT, SWT.CENTER, false, false), 5, 0));
         // TODO: Make this a true button to allow keyboard use.
-        deviceLoader.addListener(SWT.MouseDown, e -> {
-          deviceLoader.startLoading();
-          // By waiting a tiny bit, the icon will change to the loading indicator, giving the user
-          // feedback that something is happening, in case the refresh is really quick.
-          logFailure(LOG, Scheduler.EXECUTOR.schedule(refreshDevices, 300, TimeUnit.MILLISECONDS));
-        });
+        deviceLoader.addListener(SWT.MouseDown, e -> { reloadDevices(refreshDevices); });
 
         apiLabel = createLabel(mainGroup, "Type*:");
         api = createApiDropDown(mainGroup);
@@ -508,7 +503,7 @@ public class TracerDialog {
 
         newAngleAvailableMessage = createLink(this, "A new ANGLE version is available for this " +
             "device. Click to <a>download and install</a> the APK.",
-            e -> downloadAndInstallAngle(widgets.theme, models.settings));
+            e -> downloadAndInstallAngle(widgets.theme, models.settings, refreshDevices));
         newAngleAvailableMessage.setForeground(getDisplay().getSystemColor(SWT.COLOR_DARK_YELLOW));
         newAngleAvailableMessage.setVisible(false);
 
@@ -560,6 +555,13 @@ public class TracerDialog {
 
         updateDevicesDropDown(trace);
         colorFilledInput(widgets.theme);
+      }
+
+      private void reloadDevices(Runnable refreshDevices) {
+        deviceLoader.startLoading();
+        // By waiting a tiny bit, the icon will change to the loading indicator, giving the user
+        // feedback that something is happening, in case the refresh is really quick.
+        logFailure(LOG, Scheduler.EXECUTOR.schedule(refreshDevices, 300, TimeUnit.MILLISECONDS));
       }
 
       private void colorFilledInput(Theme theme) {
@@ -890,7 +892,7 @@ public class TracerDialog {
         return (name.isEmpty() ? DEFAULT_TRACE_FILE : name) + angle + date + ext;
       }
 
-      private void downloadAndInstallAngle(Theme theme, Settings settings) {
+      private void downloadAndInstallAngle(Theme theme, Settings settings, Runnable refreshDevices) {
         DeviceCaptureInfo dev = devices.get(device.getCombo().getSelectionIndex());
         Service.Releases.ANGLERelease release = settings.preferences().getLatestAngleRelease();
         String url = getAngleAPKUrl(dev, release);
@@ -903,6 +905,7 @@ public class TracerDialog {
         if (InstallAngleDialog
             .showDialogAndInstallApk(getShell(), models, theme, dev.device, url) == Window.OK) {
           newAngleAvailableMessage.setVisible(false);
+          reloadDevices(refreshDevices);
         }
       }
 

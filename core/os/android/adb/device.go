@@ -350,6 +350,15 @@ func scanDevices(ctx context.Context) error {
 	return nil
 }
 
+// rescanDevice force-refresh the device info for a particular device.
+func rescanDevice(ctx context.Context, d bind.Device) error {
+	registry.RemoveDevice(ctx, d)
+	cacheMutex.Lock()
+	delete(cache, d.Instance().Serial)
+	cacheMutex.Unlock()
+	return scanDevices(ctx)
+}
+
 func parseDevices(ctx context.Context, out string) (map[string]bind.Status, error) {
 	a := strings.SplitAfter(out, "List of devices attached")
 	if len(a) != 2 {

@@ -183,7 +183,14 @@ func (b *binding) InstallAPK(ctx context.Context, path string, reinstall bool, g
 	// Because adb root/unroot is outside the program's state there's not much we can do to prevent this
 	// race conditon though. Someone could always run adb from a terminal at a bad time...
 	b.Unroot(ctx)
-	return b.Command("install", args...).Run(ctx)
+	if err := b.Command("install", args...).Run(ctx); err != nil {
+		return err
+	}
+
+	// We've just installed an APK, likely ANGLE, so rescan this device info.
+	rescanDevice(ctx, b)
+
+	return nil
 }
 
 // SELinuxEnforcing returns true if the device is currently in a
