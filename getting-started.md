@@ -44,7 +44,7 @@ such that it can be accessed via `adb`.
 
     <img src="../images/system_profiler/welcome.png" width="500px">
 
-4. The first thing to do is to select the Android device you want to capture on. If your device does not shows up in the "Device" list, you can refresh the device list by clicking on the reload arrow next to the drop-down menu.
+4. The first thing to do is to select the Android device you want to capture on. If your device does not show up in the "Device" list, you can refresh the device list by clicking on the reload arrow next to the drop-down menu.
 
     <img src="../images/system_profiler/capture-dialog.png" width="500px">
 
