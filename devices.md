@@ -17,13 +17,15 @@ Samsung Galaxy S20 series           | Qualcomm® Adreno™ 650 and Arm® Mali™
 Samsung Galaxy Note 10 series       | Qualcomm® Adreno™ 640 and Arm® Mali™ G76
 Samsung Galaxy Note 20 series       | Qualcomm® Adreno™ 650 and Arm® Mali™ G77
 Samsung Galaxy S21 series           | Qualcomm® Adreno™ 660 and Arm® Mali™ G78
+OPPO Find X3 Pro                    | Qualcomm® Adreno™ 660
+OPPO Find X3                        | Qualcomm® Adreno™ 650
+OPPO Reno 6 Pro+                    | Qualcomm® Adreno™ 650
 
 These devices do not support AGI yet but will offer support in the near future:
 
 Device name                         | GPU name
 ----------------------------------- | -------------------
-OPPO Find X3 Pro                    | Qualcomm® Adreno™ 660
-OPPO Find X3                        | Qualcomm® Adreno™ 650
+N/A                                 | N/A
 
 More devices will be added to the list as they get upgraded to Android 11.
 
