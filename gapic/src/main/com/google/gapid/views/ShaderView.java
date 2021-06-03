@@ -155,6 +155,8 @@ public class ShaderView extends Composite
       }
     });
 
+    // TODO(b/188434910): Shader editing is disabled as it doesn't work right
+    // now. Enable it once the issue is fixed.
     if (!Experimental.enableAll.get()) {
       pushButton = Optional.empty();
     } else {
