@@ -294,7 +294,7 @@ public class ShaderView extends Composite
     if (!pinned) {
       shaderMessage = null;
     }
-    pushButton.ifPresent(b -> b.setEnabled(true));
+    pushButton.ifPresent(b -> b.setEnabled(false));
   }
 
   private void loadShader(Service.Resource shader) {
