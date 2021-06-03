@@ -16,10 +16,12 @@ package ffx
 
 import (
 	"context"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/google/gapid/core/event/task"
+	"github.com/google/gapid/core/fault"
 	"github.com/google/gapid/core/log"
 	"github.com/google/gapid/core/os/device"
 	"github.com/google/gapid/core/os/device/bind"
@@ -30,6 +32,10 @@ import (
 const (
 	// Frequency at which to print scan errors.
 	printScanErrorsEveryNSeconds = 120
+	// ErrNoDeviceList May be returned if the ffx fails to return a device list when asked.
+	ErrNoDeviceList = fault.Const("Device list not returned")
+	// ErrInvalidDeviceList May be returned if the device list could not be parsed.
+	ErrInvalidDeviceList = fault.Const("Could not parse device list")
 )
 
 var (
@@ -67,9 +73,10 @@ func Monitor(ctx context.Context, r *bind.Registry, interval time.Duration) erro
 		r.AddDevice(ctx, d)
 	}
 
-	var lastErrorPrinted time.Time
+	lastErrorPrinted := time.Now()
 	for {
-		if err := scanDevices(ctx); err != nil {
+		err := scanDevices(ctx)
+		if err != nil {
 			if time.Since(lastErrorPrinted).Seconds() > printScanErrorsEveryNSeconds {
 				log.E(ctx, "Couldn't scan devices: %v", err)
 				lastErrorPrinted = time.Now()
@@ -113,6 +120,9 @@ func scanDevices(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	if strings.Contains(stdout, "No devices found") {
+		return ErrNoDeviceList
+	}
 	parsed, err := parseDevices(ctx, stdout)
 	if err != nil {
 		return err
@@ -143,10 +153,20 @@ func scanDevices(ctx context.Context) error {
 	return nil
 }
 
-func parseDevices(ctx context.Context, out string) (map[string]struct{}, error) {
-	// TODO: implement.
-	devices := map[string]struct{}{
-		"fuchsia-b02a-4370-c245": struct{}{},
+func parseDevices(ctx context.Context, out string) (map[string]bind.Status, error) {
+	lines := strings.Split(out, "\n")
+	devices := make(map[string]bind.Status, len(lines))
+	for _, line := range lines {
+		fields := strings.Fields(line)
+		switch len(fields) {
+		case 0:
+			continue
+		case 2:
+			_, serial := fields[0], fields[1]
+			devices[serial] = bind.Status_Online
+		default:
+			return nil, ErrInvalidDeviceList
+		}
 	}
 	return devices, nil
 }

@@ -17,7 +17,6 @@ package ffx
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/google/gapid/core/os/device/bind"
 	"github.com/google/gapid/core/os/file"
@@ -42,28 +41,13 @@ func ffx() (file.Path, error) {
 		return FFX, nil
 	}
 
-	exe := "ffx"
-
-	search := []string{exe}
-
-	// If FUCHSIA_DIR is set, build a fully rooted path
-	// We still want to call LookPath to pick up the extension and check the binary exists
-	if home := os.Getenv("FUCHSIA_DIR"); home != "" {
-		search = append(search, filepath.Join(home, "tools", "devshell", "contrib", exe))
+	if ffx_env := os.Getenv("FUCHSIA_FFX_PATH"); ffx_env != "" {
+		FFX = file.Abs(ffx_env)
+		return FFX, nil
 	}
 
-	for _, path := range search {
-		if p, err := file.FindExecutable(path); err == nil {
-			FFX = p
-			return FFX, nil
-		}
-	}
-
-	return file.Path{}, fmt.Errorf("ffx could not be found from FUCHSIA_DIR or PATH\n"+
-		"FUCHSIA_DIR: %v\n"+
-		"PATH: %v\n"+
-		"search: %v",
-		os.Getenv("FUCHSIA_DIR"), os.Getenv("PATH"), search)
+	return file.Path{}, fmt.Errorf("FUCHSIA_FFX_PATH is not set. " +
+	    "The \"ffx\" tool, from the Fuchsia SDK, is required for Fuchsia device profiling.\n")
 }
 
 func (b *binding) Command(name string, args ...string) shell.Cmd {
@@ -75,13 +59,16 @@ func (b *binding) prepareFFXCommand(cmd shell.Cmd) (shell.Process, error) {
 	if err != nil {
 		return nil, err
 	}
-	// Adjust the command to: "ffx -t <target> <cmd.Name> <cmd.Args...>"
+
+	// Adjust the ffx command to use a specific target:
+	//     "ffx -t <target> <cmd.Name> <cmd.Args...>"
 	old := cmd.Args
 	cmd.Args = make([]string, 0, len(old)+4)
 	cmd.Args = append(cmd.Args, "-t", b.To.Serial)
 	cmd.Args = append(cmd.Args, cmd.Name)
 	cmd.Args = append(cmd.Args, old...)
 	cmd.Name = exe.System()
+
 	// And delegate to the normal local target
 	return shell.LocalTarget.Start(cmd)
 }
