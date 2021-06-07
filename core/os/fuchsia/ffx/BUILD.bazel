@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
     name = "go_default_library",
@@ -31,5 +31,18 @@ go_library(
         "//core/os/file:go_default_library",
         "//core/os/fuchsia:go_default_library",
         "//core/os/shell:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    size = "small",
+    srcs = ["ffx_data_test.go", "device_test.go"],
+    embed = [":go_default_library"],
+    deps = [
+        "//core/assert:go_default_library",
+        "//core/log:go_default_library",
+        "//core/os/device:go_default_library",
+        "//core/os/shell/stub:go_default_library",
     ],
 )

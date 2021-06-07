@@ -36,6 +36,17 @@ var _ fuchsia.Device = (*binding)(nil)
 // executable was not found.
 var FFX file.Path
 
+// FindBySerial returns the device with the matching serial, or nil if the
+// device cannot be found.
+func (l DeviceList) FindBySerial(serial string) Device {
+	for _, d := range l {
+		if d.Instance().Serial == serial {
+			return d
+		}
+	}
+	return nil
+}
+
 func ffx() (file.Path, error) {
 	if !FFX.IsEmpty() {
 		return FFX, nil
