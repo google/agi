@@ -80,3 +80,9 @@ class VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT {
   VkBool32        vertexAttributeInstanceRateDivisor
   VkBool32        vertexAttributeInstanceRateZeroDivisor
 }
+
+@internal
+class PhysicalDeviceVertexAttributeDivisorFeaturesEXT {
+  VkBool32        VertexAttributeInstanceRateDivisor
+  VkBool32        VertexAttributeInstanceRateZeroDivisor
+}
