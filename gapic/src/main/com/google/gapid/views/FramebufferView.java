@@ -57,6 +57,7 @@ import com.google.gapid.rpc.RpcException;
 import com.google.gapid.rpc.SingleInFlight;
 import com.google.gapid.rpc.UiErrorCallback;
 import com.google.gapid.server.Client.DataUnavailableException;
+import com.google.gapid.util.Experimental;
 import com.google.gapid.util.Loadable;
 import com.google.gapid.util.Messages;
 import com.google.gapid.util.MoreFutures;
@@ -89,6 +90,7 @@ import org.eclipse.swt.widgets.ToolBar;
 import org.eclipse.swt.widgets.ToolItem;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -207,7 +209,7 @@ public class FramebufferView extends Composite
 
   private ToolBar createToolBar(Theme theme) {
     ToolBar bar = new ToolBar(this, SWT.VERTICAL | SWT.FLAT);
-    exclusiveSelection(
+    List<ToolItem> items = new ArrayList(Arrays.asList(
         createToggleToolItem(bar, theme.wireframeNone(), e -> {
           models.analytics.postInteraction(View.Framebuffer, ClientAction.Shaded);
           renderSettings = RenderSetting.RENDER_SHADED;
@@ -222,12 +224,15 @@ public class FramebufferView extends Composite
           models.analytics.postInteraction(View.Framebuffer, ClientAction.Wireframe);
           renderSettings = RenderSetting.RENDER_WIREFRAME;
           updateBuffer();
-        }, "Render wireframe geometry"),
-        createToggleToolItem(bar, theme.overdraw(), e -> {
-          models.analytics.postInteraction(View.Framebuffer, ClientAction.Overdraw);
-          renderSettings = RenderSetting.RENDER_OVERDRAW;
-          updateBuffer();
-        }, "Render overdraw"));
+        }, "Render wireframe geometry")));
+    if (Experimental.enableUnstableFeatures(models.settings)) {
+      items.add(createToggleToolItem(bar, theme.overdraw(), e -> {
+        models.analytics.postInteraction(View.Framebuffer, ClientAction.Overdraw);
+        renderSettings = RenderSetting.RENDER_OVERDRAW;
+        updateBuffer();
+      }, "Render overdraw"));
+    }
+    exclusiveSelection(items);
     createSeparator(bar);
     return bar;
   }
