@@ -27,10 +27,12 @@ const (
 	// dependency graph.
 	DisableDeadCodeElimination = false
 
-	// DeadSubCmdElimination prevents the elimination of subcommands in DCE.
+	// DeadSubCmdElimination prevents the elimination of subcommands in dead
+	// code elimination.
 	DeadSubCmdElimination = false
 
-	// DebugDeadCodeElimination activates various debug logs related to DCE.
+	// DebugDeadCodeElimination activates various debug logs related to dead
+	// code elimination.
 	DebugDeadCodeElimination = false
 
 	// DumpReplayProfile dumps the perfetto trace of a replay profile.
@@ -40,7 +42,7 @@ const (
 	DumpValidationTrace = false
 
 	// AllInitialCommandsLive forces all initial commands to be considered as
-	// live when computing DCE.
+	// live when computing dead code elimination.
 	AllInitialCommandsLive = false
 
 	// LogExtrasInTransforms logs all commands' extras together with transforms.
@@ -60,7 +62,7 @@ const (
 	LogTransformsToFile = false
 
 	// LogTransformsToCapture creates a gfxtrace that stores the commands
-	// obtained after each transformation has been applied.
+	// obtained after all transforms have been applied.
 	LogTransformsToCapture = false
 
 	// LogInitialCmdsToCapture creates a gfxtrace that stores initial commands.
