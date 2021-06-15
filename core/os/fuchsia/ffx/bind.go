@@ -36,17 +36,6 @@ var _ fuchsia.Device = (*binding)(nil)
 // executable was not found.
 var FFX file.Path
 
-// FindBySerial returns the device with the matching serial, or nil if the
-// device cannot be found.
-func (l DeviceList) FindBySerial(serial string) Device {
-	for _, d := range l {
-		if d.Instance().Serial == serial {
-			return d
-		}
-	}
-	return nil
-}
-
 func ffx() (file.Path, error) {
 	if !FFX.IsEmpty() {
 		return FFX, nil
@@ -54,11 +43,14 @@ func ffx() (file.Path, error) {
 
 	if ffx_env := os.Getenv("FUCHSIA_FFX_PATH"); ffx_env != "" {
 		FFX = file.Abs(ffx_env)
+		if !FFX.IsExecutable() {
+			return file.Path{}, fmt.Errorf("ffx path: %s is not executable", FFX)
+		}
 		return FFX, nil
 	}
 
 	return file.Path{}, fmt.Errorf("FUCHSIA_FFX_PATH is not set. " +
-	    "The \"ffx\" tool, from the Fuchsia SDK, is required for Fuchsia device profiling.\n")
+		"The \"ffx\" tool, from the Fuchsia SDK, is required for Fuchsia device profiling.\n")
 }
 
 func (b *binding) Command(name string, args ...string) shell.Cmd {

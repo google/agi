@@ -17,6 +17,7 @@ package file
 import (
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"net/url"
 	"os"
 	"os/exec"
@@ -86,6 +87,22 @@ func (p Path) IsEmpty() bool { return p.value == "" }
 func (p Path) IsDir() bool {
 	info := p.Info()
 	return info != nil && info.IsDir()
+}
+
+// IsExecutable returns true if the file at p.value exists, is executable
+// and is not a directory.
+func (p Path) IsExecutable() bool {
+	if !p.IsDir() {
+		fileInfo, err := os.Stat(p.value)
+		if err == nil {
+			bits := fileInfo.Mode().Perm()
+			return (bits & 0111) != 0
+		} else {
+			log.Print(err)
+			return false
+		}
+	}
+	return false
 }
 
 // System returns the full absolute path using the system separator.

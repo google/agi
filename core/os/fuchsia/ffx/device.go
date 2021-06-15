@@ -56,11 +56,11 @@ func Devices(ctx context.Context) (DeviceList, error) {
 		return nil, err
 	}
 	devs := registry.Devices()
-	out := make(DeviceList, len(devs))
+	deviceList := make(DeviceList, len(devs))
 	for i, d := range devs {
-		out[i] = d.(fuchsia.Device)
+		deviceList[i] = d.(fuchsia.Device)
 	}
-	return out, nil
+	return deviceList, nil
 }
 
 // Monitor updates the registry with devices that are added and removed at the
@@ -123,7 +123,7 @@ func scanDevices(ctx context.Context) error {
 	if strings.Contains(stdout, "No devices found") {
 		return ErrNoDeviceList
 	}
-	parsed, err := parseDevices(ctx, stdout)
+	parsed, err := ParseDevices(ctx, stdout)
 	if err != nil {
 		return err
 	}
@@ -153,7 +153,7 @@ func scanDevices(ctx context.Context) error {
 	return nil
 }
 
-func parseDevices(ctx context.Context, out string) (map[string]bind.Status, error) {
+func ParseDevices(ctx context.Context, out string) (map[string]bind.Status, error) {
 	lines := strings.Split(out, "\n")
 	devices := make(map[string]bind.Status, len(lines))
 	for _, line := range lines {
@@ -164,6 +164,11 @@ func parseDevices(ctx context.Context, out string) (map[string]bind.Status, erro
 		case 2:
 			_, serial := fields[0], fields[1]
 			devices[serial] = bind.Status_Online
+		case 3:
+			if strings.ToUpper(line) != "NO DEVICES FOUND." {
+				return nil, ErrInvalidDeviceList
+			}
+			return devices, nil
 		default:
 			return nil, ErrInvalidDeviceList
 		}
