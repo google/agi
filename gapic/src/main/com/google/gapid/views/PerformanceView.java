@@ -50,6 +50,7 @@ import com.google.gapid.perfetto.views.TraceConfigDialog.GpuCountersDialog;
 import com.google.gapid.proto.SettingsProto;
 import com.google.gapid.proto.SettingsProto.UI.PerformancePreset;
 import com.google.gapid.proto.device.GpuProfiling;
+import com.google.gapid.proto.device.GpuProfiling.GpuCounterDescriptor.GpuCounterGroup;
 import com.google.gapid.proto.device.GpuProfiling.GpuCounterDescriptor.GpuCounterSpec;
 
 import com.google.gapid.proto.service.Service;
@@ -446,6 +447,42 @@ public class PerformanceView extends Composite
           updateTree(false);
         }));
       }
+
+      for (PerformancePreset preset : getRecommendedPresets()) {
+        buttons.add(createButton(this, SWT.FLAT, preset.getPresetName(), buttonColor, e -> {
+          visibleMetrics = Sets.newHashSet(preset.getCounterIdsList());
+          updateTree(false);
+        }));
+      }
+    }
+
+    // Create and return a list of presets based on vendor provided GPU counter grouping metadata.
+    private List<SettingsProto.UI.PerformancePreset> getRecommendedPresets() {
+      List<SettingsProto.UI.PerformancePreset> presets = Lists.newArrayList();
+      if (!models.profile.isLoaded()) {
+        return presets;
+      }
+      Map<GpuCounterGroup, List<Integer>> groupToMetrics = Maps.newHashMap();
+      // Pre-create the map entries so they go with the default order in enum definition.
+      for (GpuCounterGroup group : GpuCounterGroup.values()) {
+        groupToMetrics.put(group, Lists.newArrayList());
+      }
+      for (Service.ProfilingData.GpuCounters.Metric metric: models.profile.getData().
+          getGpuPerformance().getMetricsList()) {
+        for (GpuCounterGroup group : metric.getGpuCounterGroupsList()) {
+          groupToMetrics.get(group).add(metric.getId());
+        }
+      }
+      for (GpuCounterGroup group : groupToMetrics.keySet()) {
+        if (group != GpuCounterGroup.UNCLASSIFIED && groupToMetrics.get(group).size() > 0) {
+          presets.add(SettingsProto.UI.PerformancePreset.newBuilder()
+              .setPresetName(group.name())
+              .setDeviceName(models.devices.getSelectedReplayDevice().getName())
+              .addAllCounterIds(groupToMetrics.get(group))
+              .build());
+        }
+      }
+      return presets;
     }
 
     private class AddPresetDialog extends GpuCountersDialog {
