@@ -474,7 +474,7 @@ public class PerformanceView extends Composite
       }
       for (Service.ProfilingData.GpuCounters.Metric metric: models.profile.getData().
           getGpuPerformance().getMetricsList()) {
-        for (GpuCounterGroup group : metric.getGpuCounterGroupsList()) {
+        for (GpuCounterGroup group : metric.getCounterGroupsList()) {
           groupToMetrics.get(group).add(metric.getId());
         }
       }
