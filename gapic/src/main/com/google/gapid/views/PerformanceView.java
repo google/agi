@@ -89,6 +89,7 @@ import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.layout.RowData;
 import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
@@ -129,12 +130,12 @@ public class PerformanceView extends Composite
         new GridData(SWT.FILL, SWT.BOTTOM, true, true));
     splitter.setWeights(new int[] { 70, 30 });
 
-    int numberOfButtons = 3;
+    int numberOfButtonsPerRow = 2;
     if (Experimental.enableProfileExperiments(models.settings)) {
-      numberOfButtons = 4;
+      numberOfButtonsPerRow = 3;
     }
 
-    Composite buttonsComposite = createComposite(top, new GridLayout(numberOfButtons, false));
+    Composite buttonsComposite = createComposite(top, new GridLayout(numberOfButtonsPerRow, false));
     buttonsComposite.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, true, false));
 
     Button toggleButton = createButton(buttonsComposite, SWT.FLAT, "Estimate / Confidence Range",
@@ -161,7 +162,7 @@ public class PerformanceView extends Composite
     filterButton.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false));
 
     presetsBar = new PresetsBar(buttonsComposite, models.settings, widgets.theme);
-    presetsBar.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, false));
+    presetsBar.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, false, numberOfButtonsPerRow, 1));
 
     tree = createTreeViewer(top, SWT.NONE);
 
@@ -391,7 +392,6 @@ public class PerformanceView extends Composite
   private class PresetsBar extends Composite {
     private final Settings settings;
     private final Theme theme;
-    private List<Button> buttons = Lists.newArrayList();
 
     public PresetsBar(Composite parent, Settings settings, Theme theme) {
       super(parent, SWT.NONE);
@@ -406,10 +406,9 @@ public class PerformanceView extends Composite
     }
 
     public void refresh() {
-      for (Button button : buttons) {
-        button.dispose();
+      for (Control children : this.getChildren()) {
+        children.dispose();
       }
-      buttons.clear();
       createPresetButtons();
       redraw();
       requestLayout();
@@ -436,23 +435,29 @@ public class PerformanceView extends Composite
         }
       });
       addButton.setImage(theme.add());
-      buttons.add(addButton);
+      withLayoutData(new Label(this, SWT.VERTICAL | SWT.SEPARATOR), new RowData(SWT.DEFAULT, 1));
 
+      boolean customPresetButtonCreated = false;
       for (PerformancePreset preset : settings.ui().getPerformancePresetsList()) {
         if (!preset.getDeviceName().equals(models.devices.getSelectedReplayDevice().getName())) {
           continue;
         }
-        buttons.add(createButton(this, SWT.FLAT, preset.getPresetName(), buttonColor, e -> {
+        createButton(this, SWT.FLAT, preset.getPresetName(), buttonColor, e -> {
           visibleMetrics = Sets.newHashSet(preset.getCounterIdsList());
           updateTree(false);
-        }));
+        });
+        customPresetButtonCreated = true;
+      }
+      if (customPresetButtonCreated) {
+        withLayoutData(new Label(this, SWT.VERTICAL | SWT.SEPARATOR), new RowData(SWT.DEFAULT, 1));
       }
 
+
       for (PerformancePreset preset : getRecommendedPresets()) {
-        buttons.add(createButton(this, SWT.FLAT, preset.getPresetName(), buttonColor, e -> {
+        createButton(this, SWT.FLAT, preset.getPresetName(), buttonColor, e -> {
           visibleMetrics = Sets.newHashSet(preset.getCounterIdsList());
           updateTree(false);
-        }));
+        });
       }
     }
 
