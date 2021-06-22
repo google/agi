@@ -350,6 +350,15 @@ func scanDevices(ctx context.Context) error {
 	return nil
 }
 
+func (b *binding) unregister(ctx context.Context) {
+	cacheMutex.Lock()
+	defer cacheMutex.Unlock()
+	if cached, ok := cache[b.Instance().GetSerial()]; ok {
+		delete(cache, b.Instance().GetSerial())
+		registry.RemoveDevice(ctx, cached)
+	}
+}
+
 func parseDevices(ctx context.Context, out string) (map[string]bind.Status, error) {
 	a := strings.SplitAfter(out, "List of devices attached")
 	if len(a) != 2 {
