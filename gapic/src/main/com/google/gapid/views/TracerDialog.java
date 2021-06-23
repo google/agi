@@ -520,7 +520,7 @@ public class TracerDialog {
         traceTarget.addBoxListener(SWT.Modify, e -> updateEmptyAppWithRenderStageWarning(models.settings));
 
         RowLayout angleBarLayout = new RowLayout();
-        angleBarLayout.fill = true;
+        angleBarLayout.center = true;
         angleBarLayout.spacing = 10;
         angleBar = withLayoutData(
             createComposite(this, angleBarLayout),
@@ -757,10 +757,10 @@ public class TracerDialog {
           if (version == 0 || version < settings.preferences().getLatestAngleRelease().getVersion())
           {
             if (version == 0) {
-              angleMessage.setText("ANGLE was not found on this device, but is required for selected trace type:");
+              angleMessage.setText("ANGLE is required for this trace type (AGI restart required):");
               installAngle.setText("Install ANGLE");
             } else {
-              angleMessage.setText("A new recommended ANGLE version is available for this device:");
+              angleMessage.setText("A recommended update to ANGLE is available (AGI restart required):");
               installAngle.setText("Update ANGLE");
             }
             angleMessage.requestLayout();
@@ -920,7 +920,11 @@ public class TracerDialog {
 
         if (InstallAngleDialog
             .showDialogAndInstallApk(getShell(), models, theme, dev.device, url) == Window.OK) {
-          deviceLoader.notifyListeners(SWT.MouseDown, new Event());
+          Composite comp = this;
+          while (comp.getParent() != null) {
+            comp = comp.getParent();
+          }
+          comp.getShell().close();
         }
       }
 
@@ -1429,6 +1433,10 @@ public class TracerDialog {
     @Override
     public void create() {
       super.create();
+      Button ok = getButton(IDialogConstants.OK_ID);
+      if (ok != null) {
+        ok.setText("Close AGI");
+      }
       updateButtons();
     }
 
