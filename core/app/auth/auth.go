@@ -111,7 +111,7 @@ func UnaryServerInterceptor(token Token) grpc.UnaryServerInterceptor {
 	}
 }
 
-// StreamServerInterceptor returns a grpc.UnaryServerInterceptor that checks
+// StreamServerInterceptor returns a grpc.StreamServerInterceptor that checks
 // incoming RPC calls for the given auth token.
 func StreamServerInterceptor(token Token) grpc.StreamServerInterceptor {
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
