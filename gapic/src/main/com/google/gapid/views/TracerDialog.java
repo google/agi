@@ -1397,7 +1397,6 @@ public class TracerDialog {
 
     public InstallAngleDialog(Shell shell, Theme theme) {
       super(shell, theme);
-      setReturnCode(Window.CANCEL);
     }
 
     @SuppressWarnings("CheckReturnValue")
@@ -1440,6 +1439,15 @@ public class TracerDialog {
       updateButtons();
     }
 
+    @Override
+    protected void handleShellCloseEvent()
+    {
+      if (status != Status.INSTALLING) {
+        super.handleShellCloseEvent();
+        setReturnCode(status == Status.DONE ? Window.OK : Window.CANCEL);
+      }
+    }
+
     public void scheduleUpdate(Status newStatus, int progress) {
       Widgets.scheduleIfNotDisposed(getShell(), () -> updateStatus(newStatus, progress));
     }
@@ -1463,12 +1471,12 @@ public class TracerDialog {
     private void updateButtons() {
       Button ok = getButton(IDialogConstants.OK_ID);
       if (ok != null) {
-        ok.setEnabled(status.isDone());
+        ok.setEnabled(status == Status.DONE);
       }
       Button cancel = getButton(IDialogConstants.CANCEL_ID);
       if (cancel != null) {
-        // Only the download can be cancelled.
-        cancel.setEnabled(status == Status.DOWNLOADING);
+        // Can only be cancelled while downloading or when installation failed.
+        cancel.setEnabled(status == Status.DOWNLOADING || status == Status.FAILED);
       }
     }
 
@@ -1514,10 +1522,6 @@ public class TracerDialog {
 
       private Status(String message) {
         this.message = message;
-      }
-
-      public boolean isDone() {
-        return this == DONE || this == FAILED;
       }
     }
   }
