@@ -1515,7 +1515,7 @@ public class TracerDialog {
     private static enum Status {
       DOWNLOADING("Downloading APK..."),
       INSTALLING("Installing APK..."),
-      DONE("All done."),
+      DONE("All done. AGI restart required."),
       FAILED("Download/Install failed.");
 
       public final String message;
