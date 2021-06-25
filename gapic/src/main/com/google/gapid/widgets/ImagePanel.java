@@ -720,7 +720,7 @@ public class ImagePanel extends Composite implements Loadable {
 
     public ImageComponent(Composite parent, Theme theme, Consumer<AlphaWarning> showAlphaWarning,
         boolean naturallyFlipped) {
-      super(parent, SWT.NO_BACKGROUND);
+      super(parent, SWT.BORDER | SWT.V_SCROLL | SWT.H_SCROLL | SWT.NO_BACKGROUND);
       setLayout(new FillLayout(SWT.VERTICAL));
       // disableAutoHideScrollbars(this);
 
