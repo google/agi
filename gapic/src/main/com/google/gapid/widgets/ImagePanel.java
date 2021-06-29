@@ -61,6 +61,7 @@ import com.google.gapid.util.Loadable;
 import com.google.gapid.util.Messages;
 import com.google.gapid.util.MoreFutures;
 import com.google.gapid.util.MouseAdapter;
+import com.google.gapid.util.OS;
 import com.google.gapid.util.Range;
 
 import org.eclipse.swt.SWT;
@@ -696,6 +697,7 @@ public class ImagePanel extends Composite implements Loadable {
     private final Consumer<AlphaWarning> showAlphaWarning;
     private final boolean naturallyFlipped;
 
+    private final ScrollBar scrollbars[];
     private final ScenePanel<SceneData> canvas;
     protected final SceneData data;
     private Image[] images = {};
@@ -720,7 +722,16 @@ public class ImagePanel extends Composite implements Loadable {
     public ImageComponent(Composite parent, Theme theme, Consumer<AlphaWarning> showAlphaWarning,
         boolean naturallyFlipped) {
       // TODO: b/189382432 Enable scroll bars when compatibility issue between SWT & macOS resolves.
-      super(parent, SWT.NO_BACKGROUND);
+      super(parent, OS.isMac ? SWT.NO_BACKGROUND :
+          SWT.BORDER | SWT.V_SCROLL | SWT.H_SCROLL | SWT.NO_BACKGROUND);
+      if (OS.isMac) {
+        scrollbars = new ScrollBar[0];
+      } else {
+        disableAutoHideScrollbars(this);
+        scrollbars = new ScrollBar[] { getHorizontalBar(), getVerticalBar() };
+        getHorizontalBar().addListener(SWT.Selection, e -> onScroll());
+        getVerticalBar().addListener(SWT.Selection, e -> onScroll());
+      }
       setLayout(new FillLayout(SWT.VERTICAL));
 
       this.showAlphaWarning = showAlphaWarning;
@@ -848,6 +859,7 @@ public class ImagePanel extends Composite implements Loadable {
       viewOffset = viewOffset
           .add(dx / scaleGridToView, dy / scaleGridToView, 0)
           .clamp(viewOffsetMin, viewOffsetMax);
+      updateScrollbars();
       refresh();
     }
 
@@ -916,6 +928,7 @@ public class ImagePanel extends Composite implements Loadable {
           /* do nothing */
           break;
       }
+      updateScrollbars();
       refresh();
     }
 
@@ -934,6 +947,7 @@ public class ImagePanel extends Composite implements Loadable {
       } else {
         setScale(scale);
       }
+      updateScrollbars();
       refresh();
     }
 
@@ -1033,6 +1047,43 @@ public class ImagePanel extends Composite implements Loadable {
       // The smallest zoom factor to see the whole image or that causes the larger dimension to be
       // no less than MIN_ZOOM_WIDTH pixels.
       scaleGridToViewMin = Math.min(MIN_ZOOM_SIZE.safeDivide(gridSize).minXY(), scaleGridToViewFit);
+    }
+
+    private void updateScrollbars() {
+      for (int i = 0; i < scrollbars.length; i++) {
+        ScrollBar scrollbar = scrollbars[i];
+        int val = (int)(viewOffset.get(i) * scaleGridToView); // offset in view pixels
+        int min = (int)(viewOffsetMin.get(i) * scaleGridToView); // min movement in view pixels
+        int max = (int)(viewOffsetMax.get(i) * scaleGridToView); // max movement in view pixels
+        int rng = max - min;
+        if (rng == 0) {
+          scrollbar.setEnabled(false);
+          scrollbar.setValues(0, 0, 1, 1, 1, 1);
+        } else {
+          int size = (int)this.viewSize.get(i);
+          scrollbar.setEnabled(true);
+          scrollbar.setValues(
+              val - min,        // selection
+              0,                // min
+              size + rng,       // max
+              size,             // thumb
+              (rng + 99) / 100, // increment
+              (rng + 9) / 10    // page increment
+          );
+        }
+      }
+    }
+
+    private void onScroll() {
+      for (int i = 0; i < scrollbars.length; i++) {
+        ScrollBar scrollbar = scrollbars[i];
+        if (scrollbar.getEnabled()) {
+          int min = (int)(viewOffsetMin.get(i) * scaleGridToView); // min movement in view pixels
+          int val = min + scrollbar.getSelection();
+          viewOffset = viewOffset.set(i, val / scaleGridToView);
+        }
+      }
+      refresh();
     }
   }
 
