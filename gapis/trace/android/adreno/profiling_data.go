@@ -90,6 +90,45 @@ func extractTraceHandles(ctx context.Context, replayHandles *[]int64, replayHand
 	}
 }
 
+func fixContextIds(contextIDs []int64) []int64 {
+	// This is a temporary work to workaround a QC bug
+	// that causes first deviceID to be zero after a
+	// renderpass change in the same queue submit.
+
+	zeroIndices := make([]int, 0)
+	deviceID := int64(0)
+	multipleDevice := false
+
+	for i, v := range contextIDs {
+		if v == 0 {
+			zeroIndices = append(zeroIndices, i)
+			continue
+		}
+
+		if deviceID != v {
+			if deviceID == 0 {
+				deviceID = v
+				continue
+			} else {
+				multipleDevice = true
+			}
+		}
+	}
+
+	if multipleDevice {
+		// We cannot know which deviceID we should fill
+		return contextIDs
+	}
+
+	for _, v := range zeroIndices {
+		// If there is only one device in entire trace
+		// We can assume that we possibly have only one device
+		contextIDs[v] = deviceID
+	}
+
+	return contextIDs
+}
+
 func processGpuSlices(ctx context.Context, processor *perfetto.Processor, capture *path.Capture, handleMapping *map[uint64][]service.VulkanHandleMappingItem, syncData *sync.Data) (*service.ProfilingData_GpuSlices, error) {
 	slicesQueryResult, err := processor.Query(slicesQuery)
 	if err != nil {
@@ -120,6 +159,7 @@ func processGpuSlices(ctx context.Context, processor *perfetto.Processor, captur
 	// Grab all the column values. Depends on the order of columns selected in slicesQuery
 
 	contextIds := slicesColumns[0].GetLongValues()
+	contextIds = fixContextIds(contextIds)
 	extractTraceHandles(ctx, &contextIds, "VkDevice", handleMapping)
 
 	renderTargets := slicesColumns[1].GetLongValues()
