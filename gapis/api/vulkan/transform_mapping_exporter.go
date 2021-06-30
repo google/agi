@@ -43,20 +43,24 @@ type mappingHandle struct {
 }
 
 type mappingExporter struct {
-	mappings       *map[uint64][]service.VulkanHandleMappingItem
-	thread         uint64
-	path           string
-	traceValues    []mappingHandle
-	notificationID uint64
+	mappings         *map[uint64][]service.VulkanHandleMappingItem
+	thread           uint64
+	path             string
+	traceValues      []mappingHandle
+	notificationID   uint64
+	usedFrameBuffers map[uint64]bool
+	numOfInitialCmds uint64
 }
 
-func newMappingExporter(ctx context.Context, mappings *map[uint64][]service.VulkanHandleMappingItem) *mappingExporter {
+func newMappingExporter(ctx context.Context, numOfInitialCmds uint64, mappings *map[uint64][]service.VulkanHandleMappingItem) *mappingExporter {
 	return &mappingExporter{
-		mappings:       mappings,
-		thread:         0,
-		path:           "",
-		traceValues:    make([]mappingHandle, 0, 0),
-		notificationID: 0,
+		mappings:         mappings,
+		thread:           0,
+		path:             "",
+		traceValues:      make([]mappingHandle, 0, 0),
+		notificationID:   0,
+		usedFrameBuffers: make(map[uint64]bool),
+		numOfInitialCmds: numOfInitialCmds,
 	}
 }
 
@@ -105,7 +109,48 @@ func (mappingTransform *mappingExporter) TransformCommand(ctx context.Context, i
 		mappingTransform.thread = inputCommands[0].Thread()
 	}
 
+	for _, cmd := range inputCommands {
+		if queueSubmit, ok := cmd.(*VkQueueSubmit); ok {
+			if err := mappingTransform.recordSubmittedRenderPass(ctx, queueSubmit, id.GetID(), inputState); err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	return inputCommands, nil
+}
+
+func (mappingTransform *mappingExporter) recordSubmittedRenderPass(ctx context.Context, cmd *VkQueueSubmit, cmdID api.CmdID, inputState *api.GlobalState) error {
+	cmd.Extras().Observations().ApplyReads(inputState.Memory.ApplicationPool())
+	layout := inputState.MemoryLayout
+	stateObj := GetState(inputState)
+
+	submitInfos, err := cmd.PSubmits().Slice(0, uint64(cmd.SubmitCount()), layout).Read(ctx, cmd, inputState, nil)
+	if err != nil {
+		return err
+	}
+
+	for _, submitInfo := range submitInfos {
+		commandBuffers, err := submitInfo.PCommandBuffers().Slice(0, uint64(submitInfo.CommandBufferCount()), layout).Read(ctx, cmd, inputState, nil)
+		if err != nil {
+			return err
+		}
+
+		for _, cmdBuffer := range commandBuffers {
+			cmdBufferObj := GetState(inputState).CommandBuffers().Get(cmdBuffer)
+			for cmdIndex := 0; cmdIndex < cmdBufferObj.CommandReferences().Len(); cmdIndex++ {
+				currentCmd := cmdBufferObj.CommandReferences().Get(uint32(cmdIndex))
+				args := GetCommandArgs(ctx, currentCmd, stateObj)
+				if beginRenderPassArgs, ok := args.(VkCmdBeginRenderPassArgsʳ); ok {
+					if uint64(cmdID) > mappingTransform.numOfInitialCmds {
+						mappingTransform.usedFrameBuffers[uint64(beginRenderPassArgs.Framebuffer())] = true
+					}
+				}
+			}
+		}
+	}
+
+	return nil
 }
 
 func (mappingTransform *mappingExporter) extractRemappings(ctx context.Context, inputState *api.GlobalState, b *builder.Builder) error {
@@ -178,9 +223,17 @@ func (mappingTransform *mappingExporter) processNotification(ctx context.Context
 			(*mappingTransform.mappings)[replayValue] = make([]service.VulkanHandleMappingItem, 0, 0)
 		}
 
+		if handle.name == "VkFramebuffer" && !mappingTransform.usedFrameBuffers[handle.traceValue] {
+			continue
+		}
+
 		(*mappingTransform.mappings)[replayValue] = append(
 			(*mappingTransform.mappings)[replayValue],
-			service.VulkanHandleMappingItem{HandleType: handle.name, TraceValue: handle.traceValue, ReplayValue: replayValue},
+			service.VulkanHandleMappingItem{
+				HandleType:  handle.name,
+				TraceValue:  handle.traceValue,
+				ReplayValue: replayValue,
+			},
 		)
 	}
 
