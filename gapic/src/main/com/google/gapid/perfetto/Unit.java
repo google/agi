@@ -15,6 +15,8 @@
  */
 package com.google.gapid.perfetto;
 
+import static java.lang.Math.pow;
+
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
@@ -106,6 +108,21 @@ public class Unit {
       public String format(double value) {
         return numer.format(value) + "/" + denom.name;
       }
+
+      @Override
+      public boolean convertible() {
+        return numer.formatter.convertible();
+      }
+
+      @Override
+      public int findOptimalOffset(double value) {
+        return numer.formatter.findOptimalOffset(value);
+      }
+
+      @Override
+      public String convertTo(double value, int offset) {
+        return numer.formatter.convertTo(value, offset) + "/" + denom.name;
+      }
     });
   }
 
@@ -156,6 +173,18 @@ public class Unit {
     }
   }
 
+  public boolean convertible() {
+    return formatter.convertible();
+  }
+
+  public int findOptimalOffset(double value) {
+    return formatter.findOptimalOffset(value);
+  }
+
+  public String convertTo(double value, int offset) {
+    return formatter.convertTo(value, offset);
+  }
+
   public static String bytesToString(long val) {
     return Unit.BYTE.format(val);
   }
@@ -163,6 +192,10 @@ public class Unit {
   private static interface Formatter {
     public String format(long value);
     public String format(double value);
+    // Conversion interface for units that can convert between different offsets. e.g. Time, Memory.
+    public default boolean convertible() { return false; }
+    public default int findOptimalOffset(double value) { return -1; }
+    public default String convertTo(double value, int offset) { return "Conversion not supported"; }
 
     public static final Formatter DEFAULT = new Formatter() {
       @Override
@@ -270,6 +303,31 @@ public class Unit {
         return String.format("%,d.%03d%s",
             (long)(value / BASE), Math.round((value % BASE) * 1000 / BASE), names[unit]);
       }
+
+      @Override
+      public boolean convertible() {
+        return true;
+      }
+
+      @Override
+      public int findOptimalOffset(double value) {
+        double bestConvertedValue = value;
+        int bestOffset = this.offset;
+        for (int offset = 0; offset < names.length; offset++) {
+          double convertedValue = value * pow(BASE, this.offset - offset);
+          // Wish the converted value will be larger than 1, but as small as possible.
+          if (convertedValue > 1 && convertedValue < bestConvertedValue) {
+            bestConvertedValue = convertedValue;
+            bestOffset = offset;
+          }
+        }
+        return bestOffset;
+      }
+
+      @Override
+      public String convertTo(double value, int offset) {
+        return String.format("%,.3f %s", value * pow(BASE, this.offset - offset), names[offset]);
+      }
     }
 
     public static class Base10 implements Formatter {
@@ -328,6 +386,31 @@ public class Unit {
         return String.format(
             "%,d.%03d%s", (long)(value / BASE), Math.round(value % BASE), names[unit]);
       }
+
+      @Override
+      public boolean convertible() {
+        return true;
+      }
+
+      @Override
+      public int findOptimalOffset(double value) {
+        double bestConvertedValue = value;
+        int bestOffset = this.offset;
+        for (int offset = 0; offset < names.length; offset++) {
+          double convertedValue = value * pow(BASE, this.offset - offset);
+          // Wish the converted value will be larger than 1, but as small as possible.
+          if (convertedValue > 1 && convertedValue < bestConvertedValue) {
+            bestConvertedValue = convertedValue;
+            bestOffset = offset;
+          }
+        }
+        return bestOffset;
+      }
+
+      @Override
+      public String convertTo(double value, int offset) {
+        return String.format("%,.3f %s", value * pow(BASE, this.offset - offset), names[offset]);
+      }
     }
 
     public static class Time implements Formatter {
@@ -338,6 +421,14 @@ public class Unit {
       private static final int SECONDS = 3;
 
       private static final String[] NAMES = { "ns", "us", "ms", "s", "m", "h" };
+      private static final double[][] TIME_CONVERT_TABLE = {
+          {1,                      1f / 1000,              1f/pow(1000, 2), 1f/pow(1000, 3), 1f/(pow(1000, 3)* 60), 1f/(pow(1000, 3)* 60 * 60)}, // ns -> {ns, us, ms, s, m, h}
+          {1000,                   1,                      1f / 1000,       1f/pow(1000, 2), 1f/(pow(1000, 2)* 60), 1f/(pow(1000, 2)* 60 * 60)}, // us -> {ns, us, ms, s, m, h}
+          {pow(1000, 2),           1000,                   1,               1f / 1000,       1f/(1000* 60),         1f/(1000 * 60 * 60)},        // ms -> {ns, us, ms, s, m, h}
+          {pow(1000, 3),           pow(1000, 2),           1000,            1,               1f/60,                 1f/(60 * 60)},               // s -> {ns, us, ms, s, m, h}
+          {pow(1000, 3) * 60,      pow(1000, 2) * 60,      1000 * 60,       60,              1,                     1f/60},                      // m -> {ns, us, ms, s, m, h}
+          {pow(1000, 3) * 60 * 60, pow(1000, 2) * 60 * 60, 1000 * 60 * 60,  60 * 60,         60,                    1},                          // h -> {ns, us, ms, s, m, h}
+      };
       private final int offset;
 
       private Time(int offset) {
@@ -458,6 +549,32 @@ public class Unit {
           default:
             return String.format("%,gh", value);
         }
+      }
+
+      @Override
+      public boolean convertible() {
+        return true;
+      }
+
+      @Override
+      public int findOptimalOffset(double value) {
+        double bestConvertedValue = value;
+        int bestOffset = this.offset;
+        for (int offset = 0; offset < NAMES.length; offset++) {
+          double convertedValue = value * TIME_CONVERT_TABLE[this.offset][offset];
+          // Wish the converted value will be larger than 1, but as small as possible.
+          if (convertedValue > 1 && convertedValue < bestConvertedValue) {
+            bestConvertedValue = convertedValue;
+            bestOffset = offset;
+          }
+        }
+        return bestOffset;
+      }
+
+      @Override
+      public String convertTo(double value, int offset) {
+        return String.format("%,.3f %s", value * TIME_CONVERT_TABLE[this.offset][offset],
+            NAMES[offset]);
       }
     }
   }
