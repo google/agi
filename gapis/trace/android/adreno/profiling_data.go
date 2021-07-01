@@ -91,13 +91,15 @@ func extractTraceHandles(ctx context.Context, replayHandles *[]int64, replayHand
 }
 
 func fixContextIds(contextIDs []int64) []int64 {
-	// This is a temporary work to workaround a QC bug
+	// This is a workaround a QC bug(b/192546534)
 	// that causes first deviceID to be zero after a
 	// renderpass change in the same queue submit.
+	// So, we fill the zero devices with the existing
+	// device id, where there is only one device id.
 
 	zeroIndices := make([]int, 0)
 	deviceID := int64(0)
-	multipleDevice := false
+	multipleDevices := false
 
 	for i, v := range contextIDs {
 		if v == 0 {
@@ -109,13 +111,12 @@ func fixContextIds(contextIDs []int64) []int64 {
 			if deviceID == 0 {
 				deviceID = v
 				continue
-			} else {
-				multipleDevice = true
 			}
+			multipleDevices = true
 		}
 	}
 
-	if multipleDevice {
+	if multipleDevices {
 		// We cannot know which deviceID we should fill
 		return contextIDs
 	}
