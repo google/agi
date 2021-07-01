@@ -98,7 +98,7 @@ func fixContextIds(contextIDs []int64) {
 	// device id, where there is only one device id.
 
 	zeroIndices := make([]int, 0)
-	deviceID := int64(0)
+	contextID := int64(0)
 
 	for i, v := range contextIDs {
 		if v == 0 {
@@ -106,12 +106,12 @@ func fixContextIds(contextIDs []int64) {
 			continue
 		}
 
-		if deviceID == 0 {
-			deviceID = v
+		if contextID == 0 {
+			contextID = v
 			continue
 		}
 
-		if deviceID != v {
+		if contextID != v {
 			// There are multiple devices
 			// We cannot know which one to fill
 			return
@@ -121,7 +121,7 @@ func fixContextIds(contextIDs []int64) {
 	for _, v := range zeroIndices {
 		// If there is only one device in entire trace
 		// We can assume that we possibly have only one device
-		contextIDs[v] = deviceID
+		contextIDs[v] = contextID
 	}
 }
 
