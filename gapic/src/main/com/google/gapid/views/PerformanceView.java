@@ -341,7 +341,7 @@ public class PerformanceView extends Composite
   }
 
   private String format(double value, Unit unit, int optimalOffset) {
-    if (unit.convertible() || optimalOffset >= 0) {
+    if (unit.convertible() && optimalOffset >= 0) {
       return unit.convertTo(value, optimalOffset);
     } else {
       return unit.format(value);
