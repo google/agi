@@ -192,7 +192,8 @@ public class Unit {
   private static interface Formatter {
     public String format(long value);
     public String format(double value);
-    // Conversion interface for units that can convert between different offsets. e.g. Time, Memory.
+    // Conversion interface for units that can convert between different offsets/scales.
+    // e.g. Time can be converted among {ns, us, ms, s, m, h}, Memory among {B, KB, MB, GB}, etc.
     public default boolean convertible() { return false; }
     public default int findOptimalOffset(double value) { return -1; }
     public default String convertTo(double value, int offset) { return "Conversion not supported"; }
