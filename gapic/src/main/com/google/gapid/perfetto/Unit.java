@@ -110,18 +110,18 @@ public class Unit {
       }
 
       @Override
-      public boolean convertible() {
-        return numer.formatter.convertible();
-      }
+      public Formatter withFixedScale(double representativeValue) {
+        return new Formatter() {
+          @Override
+          public String format(long value) {
+            return numer.withFixedScale(representativeValue).format(value) + "/" + denom.name;
+          }
 
-      @Override
-      public int findOptimalOffset(double value) {
-        return numer.formatter.findOptimalOffset(value);
-      }
-
-      @Override
-      public String convertTo(double value, int offset) {
-        return numer.formatter.convertTo(value, offset) + "/" + denom.name;
+          @Override
+          public String format(double value) {
+            return numer.withFixedScale(representativeValue).format(value) + "/" + denom.name;
+          }
+        };
       }
     });
   }
@@ -173,16 +173,8 @@ public class Unit {
     }
   }
 
-  public boolean convertible() {
-    return formatter.convertible();
-  }
-
-  public int findOptimalOffset(double value) {
-    return formatter.findOptimalOffset(value);
-  }
-
-  public String convertTo(double value, int offset) {
-    return formatter.convertTo(value, offset);
+  public Unit withFixedScale(double representativeValue) {
+    return new Unit(name, formatter.withFixedScale(representativeValue));
   }
 
   public static String bytesToString(long val) {
@@ -192,11 +184,9 @@ public class Unit {
   private static interface Formatter {
     public String format(long value);
     public String format(double value);
-    // Conversion interface for units that can convert between different offsets/scales.
-    // e.g. Time can be converted among {ns, us, ms, s, m, h}, Memory among {B, KB, MB, GB}, etc.
-    public default boolean convertible() { return false; }
-    public default int findOptimalOffset(double value) { return -1; }
-    public default String convertTo(double value, int offset) { return "Conversion not supported"; }
+    // Return a Formatter that format values with a fixed scale, rather than deciding the scale
+    // every time based on the coming value. The fixed scale is picked based on representativeValue.
+    public default Formatter withFixedScale(double representativeValue) { return this; }
 
     public static final Formatter DEFAULT = new Formatter() {
       @Override
@@ -306,28 +296,29 @@ public class Unit {
       }
 
       @Override
-      public boolean convertible() {
-        return true;
-      }
-
-      @Override
-      public int findOptimalOffset(double value) {
-        double bestConvertedValue = value;
+      public Formatter withFixedScale(double representativeValue) {
+        double bestConvertedValue = representativeValue;
         int bestOffset = this.offset;
         for (int offset = 0; offset < names.length; offset++) {
-          double convertedValue = value * pow(BASE, this.offset - offset);
+          double convertedValue = representativeValue * pow(BASE, this.offset - offset);
           // Wish the converted value will be larger than 1, but as small as possible.
           if (convertedValue > 1 && convertedValue < bestConvertedValue) {
             bestConvertedValue = convertedValue;
             bestOffset = offset;
           }
         }
-        return bestOffset;
-      }
+        int fromOffset = this.offset,toOffset = bestOffset;
+        return new Formatter() {
+          @Override
+          public String format(long value) {
+            return String.format("%,.3f %s", value * pow(BASE, fromOffset - toOffset), names[toOffset]);
+          }
 
-      @Override
-      public String convertTo(double value, int offset) {
-        return String.format("%,.3f %s", value * pow(BASE, this.offset - offset), names[offset]);
+          @Override
+          public String format(double value) {
+            return String.format("%,.3f %s", value * pow(BASE, fromOffset - toOffset), names[toOffset]);
+          }
+        };
       }
     }
 
@@ -389,28 +380,29 @@ public class Unit {
       }
 
       @Override
-      public boolean convertible() {
-        return true;
-      }
-
-      @Override
-      public int findOptimalOffset(double value) {
-        double bestConvertedValue = value;
+      public Formatter withFixedScale(double representativeValue) {
+        double bestConvertedValue = representativeValue;
         int bestOffset = this.offset;
         for (int offset = 0; offset < names.length; offset++) {
-          double convertedValue = value * pow(BASE, this.offset - offset);
+          double convertedValue = representativeValue * pow(BASE, this.offset - offset);
           // Wish the converted value will be larger than 1, but as small as possible.
           if (convertedValue > 1 && convertedValue < bestConvertedValue) {
             bestConvertedValue = convertedValue;
             bestOffset = offset;
           }
         }
-        return bestOffset;
-      }
+        int fromOffset = this.offset, toOffset = bestOffset;
+        return new Formatter() {
+          @Override
+          public String format(long value) {
+            return String.format("%,.3f %s", value * pow(BASE, fromOffset - toOffset), names[toOffset]);
+          }
 
-      @Override
-      public String convertTo(double value, int offset) {
-        return String.format("%,.3f %s", value * pow(BASE, this.offset - offset), names[offset]);
+          @Override
+          public String format(double value) {
+            return String.format("%,.3f %s", value * pow(BASE, fromOffset - toOffset), names[toOffset]);
+          }
+        };
       }
     }
 
@@ -553,29 +545,31 @@ public class Unit {
       }
 
       @Override
-      public boolean convertible() {
-        return true;
-      }
-
-      @Override
-      public int findOptimalOffset(double value) {
-        double bestConvertedValue = value;
+      public Formatter withFixedScale(double representativeValue) {
+        double bestConvertedValue = representativeValue;
         int bestOffset = this.offset;
         for (int offset = 0; offset < NAMES.length; offset++) {
-          double convertedValue = value * TIME_CONVERT_TABLE[this.offset][offset];
+          double convertedValue = representativeValue * TIME_CONVERT_TABLE[this.offset][offset];
           // Wish the converted value will be larger than 1, but as small as possible.
           if (convertedValue > 1 && convertedValue < bestConvertedValue) {
             bestConvertedValue = convertedValue;
             bestOffset = offset;
           }
         }
-        return bestOffset;
-      }
+        int fromOffset = this.offset, toOffset = bestOffset;
+        return new Formatter() {
+          @Override
+          public String format(long value) {
+            return String.format("%,.3f %s", value * TIME_CONVERT_TABLE[fromOffset][toOffset],
+                NAMES[toOffset]);
+          }
 
-      @Override
-      public String convertTo(double value, int offset) {
-        return String.format("%,.3f %s", value * TIME_CONVERT_TABLE[this.offset][offset],
-            NAMES[offset]);
+          @Override
+          public String format(double value) {
+            return String.format("%,.3f %s", value * TIME_CONVERT_TABLE[fromOffset][toOffset],
+                NAMES[toOffset]);
+          }
+        };
       }
     }
   }

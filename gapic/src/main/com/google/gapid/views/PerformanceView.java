@@ -318,8 +318,7 @@ public class PerformanceView extends Composite
   }
 
   private void addColumnForMetric(Service.ProfilingData.GpuCounters.Metric metric) {
-    Unit unit = CounterInfo.unitFromString(metric.getUnit());
-    int optimalOffset = unit.findOptimalOffset(metric.getAverage());
+    Unit unit = CounterInfo.unitFromString(metric.getUnit()).withFixedScale(metric.getAverage());
     TreeViewerColumn column = createTreeColumn(tree, metric.getName() + "(" + unit.name + ")", e -> {
       Profile.PerfNode node = (Profile.PerfNode)e;
       if (node == null || node.getPerfs() == null) {
@@ -329,23 +328,15 @@ public class PerformanceView extends Composite
       } else {
         Service.ProfilingData.GpuCounters.Perf perf = node.getPerfs().get(metric.getId());
         if (showEstimate) {
-          return perf.getEstimate() < 0 ? "" : format(perf.getEstimate(), unit, optimalOffset);
+          return perf.getEstimate() < 0 ? "" : unit.format(perf.getEstimate());
         } else {
-          String minStr = perf.getMin() < 0 ? "?" : format(perf.getMin(), unit, optimalOffset);
-          String maxStr = perf.getMax() < 0 ? "?" : format(perf.getMax(), unit, optimalOffset);
+          String minStr = perf.getMin() < 0 ? "?" : unit.format(perf.getMin());
+          String maxStr = perf.getMax() < 0 ? "?" : unit.format(perf.getMax());
           return minStr + " ~ " + maxStr;
         }
       }
     });
     column.getColumn().setAlignment(SWT.RIGHT);
-  }
-
-  private String format(double value, Unit unit, int optimalOffset) {
-    if (unit.convertible() && optimalOffset >= 0) {
-      return unit.convertTo(value, optimalOffset);
-    } else {
-      return unit.format(value);
-    }
   }
 
   private void toggleEstimateOrRange() {
