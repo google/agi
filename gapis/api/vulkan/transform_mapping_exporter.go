@@ -48,18 +48,14 @@ type mappingExporter struct {
 	path             string
 	traceValues      []mappingHandle
 	notificationID   uint64
-	usedFrameBuffers map[uint64]bool
+	usedFrameBuffers map[uint64]struct{}
 	numOfInitialCmds uint64
 }
 
 func newMappingExporter(ctx context.Context, numOfInitialCmds uint64, mappings *map[uint64][]service.VulkanHandleMappingItem) *mappingExporter {
 	return &mappingExporter{
 		mappings:         mappings,
-		thread:           0,
-		path:             "",
-		traceValues:      make([]mappingHandle, 0, 0),
-		notificationID:   0,
-		usedFrameBuffers: make(map[uint64]bool),
+		usedFrameBuffers: map[uint64]struct{}{},
 		numOfInitialCmds: numOfInitialCmds,
 	}
 }
@@ -149,7 +145,7 @@ func (mappingTransform *mappingExporter) recordFramebuffersInSubmittedRenderPass
 				currentCmd := cmdBufferObj.CommandReferences().Get(uint32(cmdIndex))
 				args := GetCommandArgs(ctx, currentCmd, stateObj)
 				if beginRenderPassArgs, ok := args.(VkCmdBeginRenderPassArgsʳ); ok {
-					mappingTransform.usedFrameBuffers[uint64(beginRenderPassArgs.Framebuffer())] = true
+					mappingTransform.usedFrameBuffers[uint64(beginRenderPassArgs.Framebuffer())] = struct{}{}
 				}
 			}
 		}
@@ -229,7 +225,7 @@ func (mappingTransform *mappingExporter) processNotification(ctx context.Context
 		}
 
 		// Eliminate the framebuffers that are not marked.
-		if handle.name == "VkFramebuffer" && !mappingTransform.usedFrameBuffers[handle.traceValue] {
+		if _, ok := mappingTransform.usedFrameBuffers[handle.traceValue]; !ok && handle.name == "VkFramebuffer" {
 			continue
 		}
 
