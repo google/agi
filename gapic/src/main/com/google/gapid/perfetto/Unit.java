@@ -111,15 +111,16 @@ public class Unit {
 
       @Override
       public Formatter withFixedScale(double representativeValue) {
+        Unit fixed = numer.withFixedScale(representativeValue);
         return new Formatter() {
           @Override
           public String format(long value) {
-            return numer.withFixedScale(representativeValue).format(value) + "/" + denom.name;
+            return fixed.format(value) + "/" + denom.name;
           }
 
           @Override
           public String format(double value) {
-            return numer.withFixedScale(representativeValue).format(value) + "/" + denom.name;
+            return fixed.format(value) + "/" + denom.name;
           }
         };
       }
