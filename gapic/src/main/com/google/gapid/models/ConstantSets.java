@@ -33,6 +33,7 @@ import com.google.gapid.util.MoreFutures;
 import com.google.gapid.util.Pods;
 
 import java.util.List;
+import java.util.Objects;
 
 public class ConstantSets {
   protected final FutureCache<Path.ConstantSet, Service.ConstantSet> cache;
@@ -92,6 +93,9 @@ public class ConstantSets {
 
   public static Service.Constant find(Service.ConstantSet constants, Pod.Value value) {
     if (!Pods.mayBeConstant(value)) {
+      return Service.Constant.getDefaultInstance();
+    }
+    if (Objects.isNull(constants)) {
       return Service.Constant.getDefaultInstance();
     }
     long numValue = Pods.getConstant(value);
