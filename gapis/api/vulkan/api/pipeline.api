@@ -152,7 +152,7 @@ cmd void vkDestroyPipelineLayout(
   @unused u16                        LineStipplePattern
 
   // @extension("VK_EXT_provoking_vertex")
-  @unused VkProvokingVertexModeEXT ProvokingVertexMode
+  @unused ref!PipelineRasterizationProvokingVertexStateCreateInfoEXT PipelineRasterizationProvokingVertexStateCreateInfoEXT
 }
 
 @internal class MultisampleData {
@@ -518,7 +518,9 @@ cmd VkResult vkCreateGraphicsPipelines(
           }
           case VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_PROVOKING_VERTEX_STATE_CREATE_INFO_EXT: {
             ext := as!VkPipelineRasterizationProvokingVertexStateCreateInfoEXT*(next.Ptr)[0]
-            obj.RasterizationState.ProvokingVertexMode = ext.provokingVertexMode
+            obj.RasterizationState.PipelineRasterizationProvokingVertexStateCreateInfoEXT = new!PipelineRasterizationProvokingVertexStateCreateInfoEXT(
+              ProvokingVertexMode: ext.provokingVertexMode
+            )
           }
         }
         next.Ptr = as!VulkanStructHeader*(next.Ptr)[0].PNext

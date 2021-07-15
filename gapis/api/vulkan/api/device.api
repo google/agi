@@ -78,7 +78,7 @@
   // @extension("VK_EXT_image_robustness")
   @unused ref!PhysicalDeviceImageRobustnessFeaturesEXT PhysicalDeviceImageRobustnessFeaturesEXT
 
-  // @extension("VK_EXT_image_robustness")
+  // @extension("VK_EXT_provoking_vertex")
   @unused ref!PhysicalDeviceProvokingVertexFeaturesEXT PhysicalDeviceProvokingVertexFeaturesEXT
 }
 
