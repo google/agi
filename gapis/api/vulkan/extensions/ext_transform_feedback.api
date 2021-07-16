@@ -144,7 +144,34 @@ cmd void vkCmdBindTransformFeedbackBuffersEXT(
     if !(commandBuffer in CommandBuffers) {
         vkErrorInvalidCommandBuffer(commandBuffer)
     } else {
-        // TODO: Implement
+        args := new!vkCmdBindTransformFeedbackBuffersEXTArgs(
+            FirstBinding:  firstBinding,
+            BindingCount:  bindingCount
+        )
+        buffers := pBuffers[0:bindingCount]
+        offsets := pOffsets[0:bindingCount]
+
+        for i in (0 .. bindingCount) {
+            if !(buffers[i] in Buffers) { vkErrorInvalidBuffer(buffers[i]) }
+            args.Buffers[i] = buffers[i]
+            args.Offsets[i] = offsets[i]
+        }
+
+        // pSizes is optional
+        if pSizes != null {
+            sizes := pSizes[0:bindingCount]
+            for i in (0 .. bindingCount) {
+                args.Sizes[i] = sizes[i]
+            }
+        } else {
+            args.Sizes = null
+        }
+
+        cmdBuf := CommandBuffers[commandBuffer]
+        mapPos := as!u32(len(cmdBuf.BufferCommands.vkCmdBindTransformFeedbackBuffersEXT))
+        cmdBuf.BufferCommands.vkCmdBindTransformFeedbackBuffersEXT[mapPos] = args
+
+        AddCommand(commandBuffer, cmd_vkCmdBindTransformFeedbackBuffersEXT, mapPos)
     }
 }
 

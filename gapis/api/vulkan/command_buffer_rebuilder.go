@@ -1416,6 +1416,72 @@ func rebuildVkCmdDispatchBase(
 	), nil
 }
 
+func rebuildVkCmdBindTransformFeedbackBuffersEXT(
+	ctx context.Context,
+	cb CommandBuilder,
+	commandBuffer VkCommandBuffer,
+	r *api.GlobalState,
+	s *api.GlobalState,
+	d VkCmdBindTransformFeedbackBuffersEXTArgsʳ) (func(), api.Cmd, error) {
+	// MELIH TODO: Implement
+	return nil, nil, fmt.Errorf("Not implemented")
+}
+
+func rebuildVkCmdBeginTransformFeedbackEXT(
+	ctx context.Context,
+	cb CommandBuilder,
+	commandBuffer VkCommandBuffer,
+	r *api.GlobalState,
+	s *api.GlobalState,
+	d VkCmdBeginTransformFeedbackEXTArgsʳ) (func(), api.Cmd, error) {
+	// MELIH TODO: Implement
+	return nil, nil, fmt.Errorf("Not implemented")
+}
+
+func rebuildVkCmdEndTransformFeedbackEXT(
+	ctx context.Context,
+	cb CommandBuilder,
+	commandBuffer VkCommandBuffer,
+	r *api.GlobalState,
+	s *api.GlobalState,
+	d VkCmdEndTransformFeedbackEXTArgsʳ) (func(), api.Cmd, error) {
+	// MELIH TODO: Implement
+	return nil, nil, fmt.Errorf("Not implemented")
+}
+
+func rebuildVkCmdBeginQueryIndexedEXT(
+	ctx context.Context,
+	cb CommandBuilder,
+	commandBuffer VkCommandBuffer,
+	r *api.GlobalState,
+	s *api.GlobalState,
+	d VkCmdBeginQueryIndexedEXTArgsʳ) (func(), api.Cmd, error) {
+	// MELIH TODO: Implement
+	return nil, nil, fmt.Errorf("Not implemented")
+}
+
+func rebuildVkCmdEndQueryIndexedEXT(
+	ctx context.Context,
+	cb CommandBuilder,
+	commandBuffer VkCommandBuffer,
+	r *api.GlobalState,
+	s *api.GlobalState,
+	d VkCmdEndQueryIndexedEXTArgsʳ) (func(), api.Cmd, error) {
+	// MELIH TODO: Implement
+	return nil, nil, fmt.Errorf("Not implemented")
+}
+
+func rebuildVkCmdDrawIndirectByteCountEXT(
+	ctx context.Context,
+	cb CommandBuilder,
+	commandBuffer VkCommandBuffer,
+	r *api.GlobalState,
+	s *api.GlobalState,
+	d VkCmdDrawIndirectByteCountEXTArgsʳ) (func(), api.Cmd, error) {
+	// MELIH TODO: Implement
+	return nil, nil, fmt.Errorf("Not implemented")
+}
+
 // GetCommandArgs takes a command reference and returns the command arguments
 // of that recorded command.
 func GetCommandArgs(ctx context.Context,
@@ -1424,6 +1490,7 @@ func GetCommandArgs(ctx context.Context,
 
 	cmds := s.CommandBuffers().Get(cr.Buffer()).BufferCommands()
 
+	// MELIH TODO: Transform Feedback
 	switch cr.Type() {
 	case CommandType_cmd_vkCmdBeginRenderPass:
 		return cmds.VkCmdBeginRenderPass().Get(cr.MapIndex())
@@ -1541,6 +1608,19 @@ func GetCommandArgs(ctx context.Context,
 		return cmds.VkCmdDispatchBaseKHR().Get(cr.MapIndex())
 	case CommandType_cmd_vkCmdDispatchBase:
 		return cmds.VkCmdDispatchBase().Get(cr.MapIndex())
+	// @extension("VK_EXT_transform_refactor")
+	case CommandType_cmd_vkCmdBindTransformFeedbackBuffersEXT:
+		return cmds.VkCmdBindTransformFeedbackBuffersEXT().Get(cr.MapIndex())
+	case CommandType_cmd_vkCmdBeginTransformFeedbackEXT:
+		return cmds.VkCmdBeginTransformFeedbackEXT().Get(cr.MapIndex())
+	case CommandType_cmd_vkCmdEndTransformFeedbackEXT:
+		return cmds.VkCmdEndTransformFeedbackEXT().Get(cr.MapIndex())
+	case CommandType_cmd_vkCmdBeginQueryIndexedEXT:
+		return cmds.VkCmdBeginQueryIndexedEXT().Get(cr.MapIndex())
+	case CommandType_cmd_vkCmdEndQueryIndexedEXT:
+		return cmds.VkCmdEndQueryIndexedEXT().Get(cr.MapIndex())
+	case CommandType_cmd_vkCmdDrawIndirectByteCountEXT:
+		return cmds.VkCmdDrawIndirectByteCountEXT().Get(cr.MapIndex())
 	default:
 		x := fmt.Sprintf("Should not reach here: %T", cr)
 		panic(x)
@@ -1668,6 +1748,19 @@ func GetCommandFunction(cr *CommandReference) interface{} {
 		return subDovkCmdDispatchBaseKHR
 	case CommandType_cmd_vkCmdDispatchBase:
 		return subDovkCmdDispatchBase
+	// @extension("VK_EXT_transform_refactor")
+	case CommandType_cmd_vkCmdBindTransformFeedbackBuffersEXT:
+		return subDovkCmdBindTransformFeedbackBuffersEXT
+	case CommandType_cmd_vkCmdBeginTransformFeedbackEXT:
+		return subDovkCmdBeginTransformFeedbackEXT
+	case CommandType_cmd_vkCmdEndTransformFeedbackEXT:
+		return subDovkCmdEndTransformFeedbackEXT
+	case CommandType_cmd_vkCmdBeginQueryIndexedEXT:
+		return subDovkCmdBeginQueryIndexedEXT
+	case CommandType_cmd_vkCmdEndQueryIndexedEXT:
+		return subDovkCmdEndQueryIndexedEXT
+	case CommandType_cmd_vkCmdDrawIndirectByteCountEXT:
+		return subDovkCmdDrawIndirectByteCountEXT
 	default:
 		x := fmt.Sprintf("Should not reach here: %T", cr)
 		panic(x)
@@ -1802,6 +1895,19 @@ func AddCommand(ctx context.Context,
 		return rebuildVkCmdDispatchBaseKHR(ctx, cb, commandBuffer, r, s, t)
 	case VkCmdDispatchBaseArgsʳ:
 		return rebuildVkCmdDispatchBase(ctx, cb, commandBuffer, r, s, t)
+	// @extension("VK_EXT_transform_refactor")
+	case VkCmdBindTransformFeedbackBuffersEXTArgsʳ:
+		return rebuildVkCmdBindTransformFeedbackBuffersEXT(ctx, cb, commandBuffer, r, s, t)
+	case VkCmdBeginTransformFeedbackEXTArgsʳ:
+		return rebuildVkCmdBeginTransformFeedbackEXT(ctx, cb, commandBuffer, r, s, t)
+	case VkCmdEndTransformFeedbackEXTArgsʳ:
+		return rebuildVkCmdEndTransformFeedbackEXT(ctx, cb, commandBuffer, r, s, t)
+	case VkCmdBeginQueryIndexedEXTArgsʳ:
+		return rebuildVkCmdBeginQueryIndexedEXT(ctx, cb, commandBuffer, r, s, t)
+	case VkCmdEndQueryIndexedEXTArgsʳ:
+		return rebuildVkCmdEndQueryIndexedEXT(ctx, cb, commandBuffer, r, s, t)
+	case VkCmdDrawIndirectByteCountEXTArgsʳ:
+		return rebuildVkCmdDrawIndirectByteCountEXT(ctx, cb, commandBuffer, r, s, t)
 	default:
 		x := fmt.Sprintf("Should not reach here: %T", t)
 		panic(x)
