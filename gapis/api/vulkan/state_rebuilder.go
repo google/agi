@@ -2647,7 +2647,7 @@ func (sb *stateBuilder) createGraphicsPipeline(gp GraphicsPipelineObjectʳ) {
 			)).Ptr())
 	}
 
-	pipelineRasterizationState := NewVkPipelineRasterizationStateCreateInfoᶜᵖ(memory.Nullptr)
+	rasterizationState := NewVkPipelineRasterizationStateCreateInfoᶜᵖ(memory.Nullptr)
 	{
 		pNext := NewVoidᶜᵖ(memory.Nullptr)
 		if !gp.RasterizationState().PipelineRasterizationProvokingVertexStateCreateInfoEXT().IsNil() {
@@ -2659,7 +2659,7 @@ func (sb *stateBuilder) createGraphicsPipeline(gp GraphicsPipelineObjectʳ) {
 				),
 			).Ptr())
 		}
-		pipelineRasterizationState = NewVkPipelineRasterizationStateCreateInfoᶜᵖ(sb.MustAllocReadData(
+		rasterizationState = NewVkPipelineRasterizationStateCreateInfoᶜᵖ(sb.MustAllocReadData(
 			NewVkPipelineRasterizationStateCreateInfo(
 				VkStructureType_VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, // sType
 				NewVoidᶜᵖ(pNext), // pNext
@@ -2706,9 +2706,9 @@ func (sb *stateBuilder) createGraphicsPipeline(gp GraphicsPipelineObjectʳ) {
 					gp.InputAssemblyState().Topology(), // topology
 					gp.InputAssemblyState().PrimitiveRestartEnable(), // primitiveRestartEnable
 				)).Ptr()),
-			tessellationState, // pTessellationState
-			viewportState,     // pViewportState
-			pipelineRasterizationState,
+			tessellationState,              // pTessellationState
+			viewportState,                  // pViewportState
+			rasterizationState,             // pRasterizationState
 			multisampleState,               // pMultisampleState
 			depthState,                     // pDepthStencilState
 			colorBlendState,                // pColorBlendState
