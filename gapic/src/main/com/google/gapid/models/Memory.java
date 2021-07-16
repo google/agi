@@ -549,8 +549,12 @@ public class Memory extends DeviceDependentModel<Memory.Data, Memory.Source, Voi
 
     public String getValueFormatted() {
       if (type.getTyCase() == TyCase.ENUM && type.getEnum().hasConstants()) {
-        return ConstantSets.find(typesModel.constants.getConstants(type.getEnum().getConstants()),
-            value.getPod()).getName();
+        Service.ConstantSet constantSet = typesModel.constants.getConstants(type.getEnum().getConstants());
+        if (constantSet != null) {
+          return ConstantSets.find(constantSet, value.getPod()).getName();
+        } else {
+          return Service.Constant.getDefaultInstance().getName();
+        }
       } else {
         return MemoryBoxes.format(value, rootAddress);
       }

@@ -91,7 +91,7 @@ public class ConstantSets {
   }
 
   public static Service.Constant find(Service.ConstantSet constants, Pod.Value value) {
-    if (!Pods.mayBeConstant(value) || constants == null) {
+    if (!Pods.mayBeConstant(value)) {
       return Service.Constant.getDefaultInstance();
     }
     long numValue = Pods.getConstant(value);
