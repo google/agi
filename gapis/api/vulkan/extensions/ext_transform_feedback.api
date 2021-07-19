@@ -51,10 +51,6 @@
 type VkFlags VkPipelineRasterizationStateStreamCreateFlagsEXT
 
 /////////////
-// Enums //
-/////////////
-
-/////////////
 // Structs //
 /////////////
 
@@ -129,7 +125,7 @@ class PipelineRasterizationStateStreamCreateInfoEXT {
 }
 
 sub void dovkCmdBindTransformFeedbackBuffersEXT(ref!vkCmdBindTransformFeedbackBuffersEXTArgs bind) {
-    // TODO: Implement
+    // Melih TODO: Implement
 }
 
 @extension("VK_EXT_transform_feedback")
@@ -163,8 +159,6 @@ cmd void vkCmdBindTransformFeedbackBuffersEXT(
             for i in (0 .. bindingCount) {
                 args.Sizes[i] = sizes[i]
             }
-        } else {
-            args.Sizes = null
         }
 
         cmdBuf := CommandBuffers[commandBuffer]
@@ -183,7 +177,7 @@ cmd void vkCmdBindTransformFeedbackBuffersEXT(
 }
 
 sub void dovkCmdBeginTransformFeedbackEXT(ref!vkCmdBeginTransformFeedbackEXTArgs begin) {
-    // TODO: Implement
+    // Melih TODO: Implement
 }
 
 @extension("VK_EXT_transform_feedback")
@@ -197,7 +191,31 @@ cmd void vkCmdBeginTransformFeedbackEXT(
     if !(commandBuffer in CommandBuffers) {
         vkErrorInvalidCommandBuffer(commandBuffer)
     } else {
-        // TODO: Implement
+        args := new!vkCmdBeginTransformFeedbackEXTArgs(
+            FirstCounterBuffer:  firstCounterBuffer,
+            CounterBufferCount:  counterBufferCount
+        )
+
+        if pCounterBuffers != null {
+            counterBuffers := pCounterBuffers[0:counterBufferCount]
+            for i in (0 .. counterBufferCount) {
+                if !(counterBuffers[i] in Buffers) { vkErrorInvalidBuffer(counterBuffers[i]) }
+                args.CounterBuffers[i] = counterBuffers[i]
+            }
+        }
+
+        if pCounterBufferOffsets != null {
+            counterBufferOffsets := pCounterBufferOffsets[0:counterBufferCount]
+            for i in (0 .. counterBufferCount) {
+                args.CounterBufferOffsets[i] = counterBufferOffsets[i]
+            }
+        }
+
+        cmdBuf := CommandBuffers[commandBuffer]
+        mapPos := as!u32(len(cmdBuf.BufferCommands.vkCmdBeginTransformFeedbackEXT))
+        cmdBuf.BufferCommands.vkCmdBeginTransformFeedbackEXT[mapPos] = args
+
+        AddCommand(commandBuffer, cmd_vkCmdBeginTransformFeedbackEXT, mapPos)
     }
 }
 
@@ -209,7 +227,7 @@ cmd void vkCmdBeginTransformFeedbackEXT(
 }
 
 sub void dovkCmdEndTransformFeedbackEXT(ref!vkCmdEndTransformFeedbackEXTArgs end) {
-    // TODO: Implement
+    // Melih TODO: Implement
 }
 
 @extension("VK_EXT_transform_feedback")
@@ -223,7 +241,31 @@ cmd void vkCmdEndTransformFeedbackEXT(
     if !(commandBuffer in CommandBuffers) {
         vkErrorInvalidCommandBuffer(commandBuffer)
     } else {
-        // TODO: Implement
+        args := new!vkCmdEndTransformFeedbackEXTArgs(
+            FirstCounterBuffer:  firstCounterBuffer,
+            CounterBufferCount:  counterBufferCount
+        )
+
+        if pCounterBuffers != null {
+            counterBuffers := pCounterBuffers[0:counterBufferCount]
+            for i in (0 .. counterBufferCount) {
+                if !(counterBuffers[i] in Buffers) { vkErrorInvalidBuffer(counterBuffers[i]) }
+                args.CounterBuffers[i] = counterBuffers[i]
+            }
+        }
+
+        if pCounterBufferOffsets != null {
+            counterBufferOffsets := pCounterBufferOffsets[0:counterBufferCount]
+            for i in (0 .. counterBufferCount) {
+                args.CounterBufferOffsets[i] = counterBufferOffsets[i]
+            }
+        }
+
+        cmdBuf := CommandBuffers[commandBuffer]
+        mapPos := as!u32(len(cmdBuf.BufferCommands.vkCmdEndTransformFeedbackEXT))
+        cmdBuf.BufferCommands.vkCmdEndTransformFeedbackEXT[mapPos] = args
+
+        AddCommand(commandBuffer, cmd_vkCmdEndTransformFeedbackEXT, mapPos)
     }
 }
 
@@ -235,7 +277,7 @@ cmd void vkCmdEndTransformFeedbackEXT(
 }
 
 sub void dovkCmdBeginQueryIndexedEXT(ref!vkCmdBeginQueryIndexedEXTArgs begin) {
-    // TODO: Implement
+    // Melih TODO: Implement
 }
 
 @extension("VK_EXT_transform_feedback")
@@ -249,7 +291,14 @@ cmd void vkCmdBeginQueryIndexedEXT(
     if !(commandBuffer in CommandBuffers) {
         vkErrorInvalidCommandBuffer(commandBuffer)
     } else {
-        // TODO: Implement
+        if !(queryPool in QueryPools) { vkErrorInvalidQueryPool(queryPool) }
+        args := new!vkCmdBeginQueryIndexedEXTArgs(queryPool, query, flags, index)
+
+        cmdBuf := CommandBuffers[commandBuffer]
+        mapPos := as!u32(len(cmdBuf.BufferCommands.vkCmdBeginQueryIndexedEXT))
+        cmdBuf.BufferCommands.vkCmdBeginQueryIndexedEXT[mapPos] = args
+
+        AddCommand(commandBuffer, cmd_vkCmdBeginQueryIndexedEXT, mapPos)
     }
 }
 
@@ -260,7 +309,7 @@ cmd void vkCmdBeginQueryIndexedEXT(
 }
 
 sub void dovkCmdEndQueryIndexedEXT(ref!vkCmdEndQueryIndexedEXTArgs begin) {
-    // TODO: Implement
+    // Melih TODO: Implement
 }
 
 @extension("VK_EXT_transform_feedback")
@@ -273,7 +322,14 @@ cmd void vkCmdEndQueryIndexedEXT(
     if !(commandBuffer in CommandBuffers) {
         vkErrorInvalidCommandBuffer(commandBuffer)
     } else {
-        // TODO: Implement
+        if !(queryPool in QueryPools) { vkErrorInvalidQueryPool(queryPool) }
+        args := new!vkCmdEndQueryIndexedEXTArgs(queryPool, query, index)
+
+        cmdBuf := CommandBuffers[commandBuffer]
+        mapPos := as!u32(len(cmdBuf.BufferCommands.vkCmdEndQueryIndexedEXT))
+        cmdBuf.BufferCommands.vkCmdEndQueryIndexedEXT[mapPos] = args
+
+        AddCommand(commandBuffer, cmd_vkCmdEndQueryIndexedEXT, mapPos)
     }
 }
 
@@ -287,7 +343,7 @@ cmd void vkCmdEndQueryIndexedEXT(
 }
 
 sub void dovkCmdDrawIndirectByteCountEXT(ref!vkCmdDrawIndirectByteCountEXTArgs draw) {
-    // TODO: Implement
+    // Melih TODO: Implement
 }
 
 @extension("VK_EXT_transform_feedback")
@@ -303,6 +359,21 @@ cmd void vkCmdDrawIndirectByteCountEXT(
     if !(commandBuffer in CommandBuffers) {
         vkErrorInvalidCommandBuffer(commandBuffer)
     } else {
-        // TODO: Implement
+        if !(counterBuffer in Buffers) { vkErrorInvalidBuffer(counterBuffer) }
+        args := new!vkCmdDrawIndirectByteCountEXTArgs(
+            instanceCount,
+            firstInstance,
+            counterBuffer,
+            counterBufferOffset,
+            counterOffset,
+            vertexStride,
+        )
+
+        cmdBuf := CommandBuffers[commandBuffer]
+
+        mapPos := as!u32(len(cmdBuf.BufferCommands.vkCmdDrawIndirectByteCountEXT))
+        cmdBuf.BufferCommands.vkCmdDrawIndirectByteCountEXT[mapPos] = args
+
+        AddCommand(commandBuffer, cmd_vkCmdDrawIndirectByteCountEXT, mapPos)
     }
 }
