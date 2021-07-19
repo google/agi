@@ -1,0 +1,281 @@
+// Copyright (C) 2021 Google Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Based off of the original vulkan.h header file which has the following
+// license.
+
+// Copyright (c) 2015 The Khronos Group Inc.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and/or associated documentation files (the
+// "Materials"), to deal in the Materials without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Materials, and to
+// permit persons to whom the Materials are furnished to do so, subject to
+// the following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Materials.
+//
+// THE MATERIALS ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+// IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+// CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+// TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+// MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
+
+///////////////
+// Constants //
+///////////////
+
+@extension("VK_EXT_transform_feedback") define VK_EXT_TRANSFORM_FEEDBACK_SPEC_VERSION   1
+@extension("VK_EXT_transform_feedback") define VK_EXT_TRANSFORM_FEEDBACK_EXTENSION_NAME "VK_EXT_transform_feedback"
+
+/////////////
+// Flags //
+/////////////
+
+// Reserved for the Future Use
+type VkFlags VkPipelineRasterizationStateStreamCreateFlagsEXT
+
+/////////////
+// Enums //
+/////////////
+
+/////////////
+// Structs //
+/////////////
+
+@extension("VK_EXT_transform_feedback")
+class VkPhysicalDeviceTransformFeedbackFeaturesEXT {
+    VkStructureType  sType
+    void*            pNext
+    VkBool32         transformFeedback
+    VkBool32         geometryStreams
+}
+
+@extension("VK_EXT_transform_feedback")
+class VkPhysicalDeviceTransformFeedbackPropertiesEXT {
+    VkStructureType sType
+    void*           pNext
+    u32             maxTransformFeedbackStreams
+    u32             maxTransformFeedbackBuffers
+    VkDeviceSize    maxTransformFeedbackBufferSize
+    u32             maxTransformFeedbackStreamDataSize
+    u32             maxTransformFeedbackBufferDataSize
+    u32             maxTransformFeedbackBufferDataStride
+    VkBool32        transformFeedbackQueries
+    VkBool32        transformFeedbackStreamsLinesTriangles
+    VkBool32        transformFeedbackRasterizationStreamSelect
+    VkBool32        transformFeedbackDraw
+}
+
+@extension("VK_EXT_transform_feedback")
+class VkPipelineRasterizationStateStreamCreateInfoEXT {
+    VkStructureType                                     sType
+    const void*                                         pNext
+    VkPipelineRasterizationStateStreamCreateFlagsEXT    flags
+    u32                                                 rasterizationStream
+}
+
+@internal
+class PhysicalDeviceTransformFeedbackFeaturesEXT {
+    VkBool32    transformFeedback
+    VkBool32    geometryStreams
+}
+
+@internal
+class PhysicalDeviceTransformFeedbackPropertiesEXT {
+    u32             maxTransformFeedbackStreams
+    u32             maxTransformFeedbackBuffers
+    VkDeviceSize    maxTransformFeedbackBufferSize
+    u32             maxTransformFeedbackStreamDataSize
+    u32             maxTransformFeedbackBufferDataSize
+    u32             maxTransformFeedbackBufferDataStride
+    VkBool32        transformFeedbackQueries
+    VkBool32        transformFeedbackStreamsLinesTriangles
+    VkBool32        transformFeedbackRasterizationStreamSelect
+    VkBool32        transformFeedbackDraw
+}
+
+@internal
+class PipelineRasterizationStateStreamCreateInfoEXT {
+    VkPipelineRasterizationStateStreamCreateFlagsEXT    flags
+    u32                                                 rasterizationStream
+}
+
+//////////////
+// Commands //
+//////////////
+
+@internal class vkCmdBindTransformFeedbackBuffersEXTArgs {
+    u32                     FirstBinding
+    u32                     BindingCount
+    map!(u32, VkBuffer)     Buffers
+    map!(u32, VkDeviceSize) Offsets
+    map!(u32, VkDeviceSize) Sizes
+}
+
+sub void dovkCmdBindTransformFeedbackBuffersEXT(ref!vkCmdBindTransformFeedbackBuffersEXTArgs bind) {
+    // TODO: Implement
+}
+
+@extension("VK_EXT_transform_feedback")
+@indirect("VkCommandBuffer", "VkDevice")
+cmd void vkCmdBindTransformFeedbackBuffersEXT(
+    VkCommandBuffer     commandBuffer,
+    u32                 firstBinding,
+    u32                 bindingCount,
+    const VkBuffer*     pBuffers,
+    const VkDeviceSize* pOffsets,
+    const VkDeviceSize* pSizes) {
+    if !(commandBuffer in CommandBuffers) {
+        vkErrorInvalidCommandBuffer(commandBuffer)
+    } else {
+        // TODO: Implement
+    }
+}
+
+@internal class vkCmdBeginTransformFeedbackEXTArgs {
+    u32                     FirstCounterBuffer
+    u32                     CounterBufferCount
+    map!(u32, VkBuffer)     CounterBuffers
+    map!(u32, VkDeviceSize) CounterBufferOffsets
+}
+
+sub void dovkCmdBeginTransformFeedbackEXT(ref!vkCmdBeginTransformFeedbackEXTArgs begin) {
+    // TODO: Implement
+}
+
+@extension("VK_EXT_transform_feedback")
+@indirect("VkCommandBuffer", "VkDevice")
+cmd void vkCmdBeginTransformFeedbackEXT(
+    VkCommandBuffer     commandBuffer,
+    u32                 firstCounterBuffer,
+    u32                 counterBufferCount,
+    const VkBuffer*     pCounterBuffers,
+    const VkDeviceSize* pCounterBufferOffsets) {
+    if !(commandBuffer in CommandBuffers) {
+        vkErrorInvalidCommandBuffer(commandBuffer)
+    } else {
+        // TODO: Implement
+    }
+}
+
+@internal class vkCmdEndTransformFeedbackEXTArgs {
+    u32                     FirstCounterBuffer
+    u32                     CounterBufferCount
+    map!(u32, VkBuffer)     CounterBuffers
+    map!(u32, VkDeviceSize) CounterBufferOffsets
+}
+
+sub void dovkCmdEndTransformFeedbackEXT(ref!vkCmdEndTransformFeedbackEXTArgs end) {
+    // TODO: Implement
+}
+
+@extension("VK_EXT_transform_feedback")
+@indirect("VkCommandBuffer", "VkDevice")
+cmd void vkCmdEndTransformFeedbackEXT(
+    VkCommandBuffer     commandBuffer,
+    u32                 firstCounterBuffer,
+    u32                 counterBufferCount,
+    const VkBuffer*     pCounterBuffers,
+    const VkDeviceSize* pCounterBufferOffsets) {
+    if !(commandBuffer in CommandBuffers) {
+        vkErrorInvalidCommandBuffer(commandBuffer)
+    } else {
+        // TODO: Implement
+    }
+}
+
+@internal class vkCmdBeginQueryIndexedEXTArgs {
+    VkQueryPool         QueryPool
+    u32                 Query
+    VkQueryControlFlags Flags
+    u32                 Index
+}
+
+sub void dovkCmdBeginQueryIndexedEXT(ref!vkCmdBeginQueryIndexedEXTArgs begin) {
+    // TODO: Implement
+}
+
+@extension("VK_EXT_transform_feedback")
+@indirect("VkCommandBuffer", "VkDevice")
+cmd void vkCmdBeginQueryIndexedEXT(
+    VkCommandBuffer     commandBuffer,
+    VkQueryPool         queryPool,
+    u32                 query,
+    VkQueryControlFlags flags,
+    u32                 index) {
+    if !(commandBuffer in CommandBuffers) {
+        vkErrorInvalidCommandBuffer(commandBuffer)
+    } else {
+        // TODO: Implement
+    }
+}
+
+@internal class vkCmdEndQueryIndexedEXTArgs {
+    VkQueryPool QueryPool
+    u32         Query
+    u32         Index
+}
+
+sub void dovkCmdEndQueryIndexedEXT(ref!vkCmdEndQueryIndexedEXTArgs begin) {
+    // TODO: Implement
+}
+
+@extension("VK_EXT_transform_feedback")
+@indirect("VkCommandBuffer", "VkDevice")
+cmd void vkCmdEndQueryIndexedEXT(
+    VkCommandBuffer commandBuffer,
+    VkQueryPool     queryPool,
+    u32             query,
+    u32             index) {
+    if !(commandBuffer in CommandBuffers) {
+        vkErrorInvalidCommandBuffer(commandBuffer)
+    } else {
+        // TODO: Implement
+    }
+}
+
+@internal class vkCmdDrawIndirectByteCountEXTArgs {
+    u32             InstanceCount,
+    u32             FirstInstance,
+    VkBuffer        CounterBuffer,
+    VkDeviceSize    CounterBufferOffset,
+    u32             CounterOffset,
+    u32             VertexStride
+}
+
+sub void dovkCmdDrawIndirectByteCountEXT(ref!vkCmdDrawIndirectByteCountEXTArgs draw) {
+    // TODO: Implement
+}
+
+@extension("VK_EXT_transform_feedback")
+@indirect("VkCommandBuffer", "VkDevice")
+cmd void vkCmdDrawIndirectByteCountEXT(
+    VkCommandBuffer commandBuffer,
+    u32             instanceCount,
+    u32             firstInstance,
+    VkBuffer        counterBuffer,
+    VkDeviceSize    counterBufferOffset,
+    u32             counterOffset,
+    u32             vertexStride) {
+    if !(commandBuffer in CommandBuffers) {
+        vkErrorInvalidCommandBuffer(commandBuffer)
+    } else {
+        // TODO: Implement
+    }
+}
