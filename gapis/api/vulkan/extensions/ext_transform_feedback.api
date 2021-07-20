@@ -124,7 +124,7 @@ class PipelineRasterizationStateStreamCreateInfoEXT {
     map!(u32, VkDeviceSize) Sizes
 }
 
-sub void dovkCmdBindTransformFeedbackBuffersEXT(ref!vkCmdBindTransformFeedbackBuffersEXTArgs bind) {
+sub void dovkCmdBindTransformFeedbackBuffersEXT(ref!vkCmdBindTransformFeedbackBuffersEXTArgs args) {
     // Melih TODO: Implement
 }
 
@@ -176,7 +176,7 @@ cmd void vkCmdBindTransformFeedbackBuffersEXT(
     map!(u32, VkDeviceSize) CounterBufferOffsets
 }
 
-sub void dovkCmdBeginTransformFeedbackEXT(ref!vkCmdBeginTransformFeedbackEXTArgs begin) {
+sub void dovkCmdBeginTransformFeedbackEXT(ref!vkCmdBeginTransformFeedbackEXTArgs args) {
     // Melih TODO: Implement
 }
 
@@ -226,7 +226,7 @@ cmd void vkCmdBeginTransformFeedbackEXT(
     map!(u32, VkDeviceSize) CounterBufferOffsets
 }
 
-sub void dovkCmdEndTransformFeedbackEXT(ref!vkCmdEndTransformFeedbackEXTArgs end) {
+sub void dovkCmdEndTransformFeedbackEXT(ref!vkCmdEndTransformFeedbackEXTArgs args) {
     // Melih TODO: Implement
 }
 
@@ -276,7 +276,7 @@ cmd void vkCmdEndTransformFeedbackEXT(
     u32                 Index
 }
 
-sub void dovkCmdBeginQueryIndexedEXT(ref!vkCmdBeginQueryIndexedEXTArgs begin) {
+sub void dovkCmdBeginQueryIndexedEXT(ref!vkCmdBeginQueryIndexedEXTArgs args) {
     // Melih TODO: Implement
 }
 
@@ -308,7 +308,7 @@ cmd void vkCmdBeginQueryIndexedEXT(
     u32         Index
 }
 
-sub void dovkCmdEndQueryIndexedEXT(ref!vkCmdEndQueryIndexedEXTArgs begin) {
+sub void dovkCmdEndQueryIndexedEXT(ref!vkCmdEndQueryIndexedEXTArgs args) {
     // Melih TODO: Implement
 }
 
@@ -342,7 +342,7 @@ cmd void vkCmdEndQueryIndexedEXT(
     u32             VertexStride
 }
 
-sub void dovkCmdDrawIndirectByteCountEXT(ref!vkCmdDrawIndirectByteCountEXTArgs draw) {
+sub void dovkCmdDrawIndirectByteCountEXT(ref!vkCmdDrawIndirectByteCountEXTArgs args) {
     // Melih TODO: Implement
 }
 
