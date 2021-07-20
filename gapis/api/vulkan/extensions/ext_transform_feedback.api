@@ -88,28 +88,28 @@ class VkPipelineRasterizationStateStreamCreateInfoEXT {
 
 @internal
 class PhysicalDeviceTransformFeedbackFeaturesEXT {
-    VkBool32    transformFeedback
-    VkBool32    geometryStreams
+    VkBool32    TransformFeedback
+    VkBool32    GeometryStreams
 }
 
 @internal
 class PhysicalDeviceTransformFeedbackPropertiesEXT {
-    u32             maxTransformFeedbackStreams
-    u32             maxTransformFeedbackBuffers
-    VkDeviceSize    maxTransformFeedbackBufferSize
-    u32             maxTransformFeedbackStreamDataSize
-    u32             maxTransformFeedbackBufferDataSize
-    u32             maxTransformFeedbackBufferDataStride
-    VkBool32        transformFeedbackQueries
-    VkBool32        transformFeedbackStreamsLinesTriangles
-    VkBool32        transformFeedbackRasterizationStreamSelect
-    VkBool32        transformFeedbackDraw
+    u32             MaxTransformFeedbackStreams
+    u32             MaxTransformFeedbackBuffers
+    VkDeviceSize    MaxTransformFeedbackBufferSize
+    u32             MaxTransformFeedbackStreamDataSize
+    u32             MaxTransformFeedbackBufferDataSize
+    u32             MaxTransformFeedbackBufferDataStride
+    VkBool32        TransformFeedbackQueries
+    VkBool32        TransformFeedbackStreamsLinesTriangles
+    VkBool32        TransformFeedbackRasterizationStreamSelect
+    VkBool32        TransformFeedbackDraw
 }
 
 @internal
 class PipelineRasterizationStateStreamCreateInfoEXT {
-    VkPipelineRasterizationStateStreamCreateFlagsEXT    flags
-    u32                                                 rasterizationStream
+    VkPipelineRasterizationStateStreamCreateFlagsEXT    Flags
+    u32                                                 RasterizationStream
 }
 
 //////////////
