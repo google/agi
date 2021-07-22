@@ -520,8 +520,8 @@ sub void readDrawState() {
     _ = dyn.LineStippleFactor
     _ = dyn.LineStipplePattern
   } else {
-    _ = pipeline.RasterizationState.LineStippleFactor
-    _ = pipeline.RasterizationState.LineStipplePattern
+    _ = pipeline.RasterizationState.PipelineRasterizationLineStateCreateInfoEXT.LineStippleFactor
+    _ = pipeline.RasterizationState.PipelineRasterizationLineStateCreateInfoEXT.LineStipplePattern
   }
 
   // read depth bias
