@@ -1423,8 +1423,31 @@ func rebuildVkCmdBindTransformFeedbackBuffersEXT(
 	r *api.GlobalState,
 	s *api.GlobalState,
 	d VkCmdBindTransformFeedbackBuffersEXTArgsʳ) (func(), api.Cmd, error) {
-	// MELIH TODO: Implement
-	return nil, nil, fmt.Errorf("Not implemented")
+
+	for i, c := 0, d.Buffers().Len(); i < c; i++ {
+		buf := d.Buffers().Get(uint32(i))
+		if !GetState(s).Buffers().Contains(buf) {
+			return nil, nil, fmt.Errorf("Cannot find Buffer %v", buf)
+		}
+	}
+
+	bufferData, _ := unpackMap(ctx, s, d.Buffers())
+	offsetData, _ := unpackMap(ctx, s, d.Offsets())
+	sizesData, _ := unpackMap(ctx, s, d.Sizes())
+
+	return func() {
+			bufferData.Free()
+			offsetData.Free()
+			sizesData.Free()
+		},
+		cb.VkCmdBindTransformFeedbackBuffersEXT(commandBuffer,
+			d.FirstBinding(),
+			d.BindingCount(),
+			bufferData.Ptr(),
+			offsetData.Ptr(),
+			sizesData.Ptr(),
+		).AddRead(offsetData.Data()).AddRead(bufferData.Data()).AddRead(sizesData.Data()),
+		nil
 }
 
 func rebuildVkCmdBeginTransformFeedbackEXT(
@@ -1434,8 +1457,28 @@ func rebuildVkCmdBeginTransformFeedbackEXT(
 	r *api.GlobalState,
 	s *api.GlobalState,
 	d VkCmdBeginTransformFeedbackEXTArgsʳ) (func(), api.Cmd, error) {
-	// MELIH TODO: Implement
-	return nil, nil, fmt.Errorf("Not implemented")
+
+	for i, c := 0, d.CounterBuffers().Len(); i < c; i++ {
+		buf := d.CounterBuffers().Get(uint32(i))
+		if !GetState(s).Buffers().Contains(buf) {
+			return nil, nil, fmt.Errorf("Cannot find Buffer %v", buf)
+		}
+	}
+
+	bufferData, _ := unpackMap(ctx, s, d.CounterBuffers())
+	offsetData, _ := unpackMap(ctx, s, d.CounterBufferOffsets())
+
+	return func() {
+			bufferData.Free()
+			offsetData.Free()
+		},
+		cb.VkCmdBeginTransformFeedbackEXT(commandBuffer,
+			d.FirstCounterBuffer(),
+			d.CounterBufferCount(),
+			bufferData.Ptr(),
+			offsetData.Ptr(),
+		).AddRead(offsetData.Data()).AddRead(bufferData.Data()),
+		nil
 }
 
 func rebuildVkCmdEndTransformFeedbackEXT(
@@ -1445,8 +1488,28 @@ func rebuildVkCmdEndTransformFeedbackEXT(
 	r *api.GlobalState,
 	s *api.GlobalState,
 	d VkCmdEndTransformFeedbackEXTArgsʳ) (func(), api.Cmd, error) {
-	// MELIH TODO: Implement
-	return nil, nil, fmt.Errorf("Not implemented")
+
+	for i, c := 0, d.CounterBuffers().Len(); i < c; i++ {
+		buf := d.CounterBuffers().Get(uint32(i))
+		if !GetState(s).Buffers().Contains(buf) {
+			return nil, nil, fmt.Errorf("Cannot find Buffer %v", buf)
+		}
+	}
+
+	bufferData, _ := unpackMap(ctx, s, d.CounterBuffers())
+	offsetData, _ := unpackMap(ctx, s, d.CounterBufferOffsets())
+
+	return func() {
+			bufferData.Free()
+			offsetData.Free()
+		},
+		cb.VkCmdEndTransformFeedbackEXT(commandBuffer,
+			d.FirstCounterBuffer(),
+			d.CounterBufferCount(),
+			bufferData.Ptr(),
+			offsetData.Ptr(),
+		).AddRead(offsetData.Data()).AddRead(bufferData.Data()),
+		nil
 }
 
 func rebuildVkCmdBeginQueryIndexedEXT(
@@ -1456,8 +1519,13 @@ func rebuildVkCmdBeginQueryIndexedEXT(
 	r *api.GlobalState,
 	s *api.GlobalState,
 	d VkCmdBeginQueryIndexedEXTArgsʳ) (func(), api.Cmd, error) {
-	// MELIH TODO: Implement
-	return nil, nil, fmt.Errorf("Not implemented")
+
+	if !GetState(s).QueryPools().Contains(d.QueryPool()) {
+		return nil, nil, fmt.Errorf("Cannot find QueryPool %v", d.QueryPool())
+	}
+
+	return func() {}, cb.VkCmdBeginQueryIndexedEXT(commandBuffer, d.QueryPool(),
+		d.Query(), d.Flags(), d.Index()), nil
 }
 
 func rebuildVkCmdEndQueryIndexedEXT(
@@ -1467,8 +1535,13 @@ func rebuildVkCmdEndQueryIndexedEXT(
 	r *api.GlobalState,
 	s *api.GlobalState,
 	d VkCmdEndQueryIndexedEXTArgsʳ) (func(), api.Cmd, error) {
-	// MELIH TODO: Implement
-	return nil, nil, fmt.Errorf("Not implemented")
+
+	if !GetState(s).QueryPools().Contains(d.QueryPool()) {
+		return nil, nil, fmt.Errorf("Cannot find QueryPool %v", d.QueryPool())
+	}
+
+	return func() {}, cb.VkCmdEndQueryIndexedEXT(commandBuffer, d.QueryPool(),
+		d.Query(), d.Index()), nil
 }
 
 func rebuildVkCmdDrawIndirectByteCountEXT(
@@ -1478,8 +1551,18 @@ func rebuildVkCmdDrawIndirectByteCountEXT(
 	r *api.GlobalState,
 	s *api.GlobalState,
 	d VkCmdDrawIndirectByteCountEXTArgsʳ) (func(), api.Cmd, error) {
-	// MELIH TODO: Implement
-	return nil, nil, fmt.Errorf("Not implemented")
+	if !GetState(s).Buffers().Contains(d.CounterBuffer()) {
+		return nil, nil, fmt.Errorf("Cannot find Count Buffer %v", d.CounterBuffer())
+	}
+
+	return func() {}, cb.VkCmdDrawIndirectByteCountEXT(commandBuffer,
+		d.InstanceCount(),
+		d.FirstInstance(),
+		d.CounterBuffer(),
+		d.CounterBufferOffset(),
+		d.CounterOffset(),
+		d.VertexStride(),
+	), nil
 }
 
 // GetCommandArgs takes a command reference and returns the command arguments
@@ -1490,7 +1573,6 @@ func GetCommandArgs(ctx context.Context,
 
 	cmds := s.CommandBuffers().Get(cr.Buffer()).BufferCommands()
 
-	// MELIH TODO: Transform Feedback
 	switch cr.Type() {
 	case CommandType_cmd_vkCmdBeginRenderPass:
 		return cmds.VkCmdBeginRenderPass().Get(cr.MapIndex())
