@@ -718,7 +718,7 @@ only the (transformed) capture commands needs to be replayed.
 
 If the user-requested replay does require to transform the initial commands,
 then the pre-warm replay is abandonned and a new replay of the transformed
-inital commands and then the transformed capture commands is executed.
+initial and capture commands is executed.
 
 ## Life of a perfetto trace (system profile trace)
 
