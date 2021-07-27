@@ -125,7 +125,27 @@ class PipelineRasterizationStateStreamCreateInfoEXT {
 }
 
 sub void dovkCmdBindTransformFeedbackBuffersEXT(ref!vkCmdBindTransformFeedbackBuffersEXTArgs args) {
-    // Melih TODO: Implement
+    n := len(args.Buffers)
+    for i in (0 .. n) {
+        v := args.Buffers[as!u32(i)]
+        if !(v in Buffers) {
+            vkErrorInvalidBuffer(v)
+        } else {
+            ldi := lastDrawInfo()
+            if (as!u32(i) in args.Sizes) && (args.Sizes[as!u32(i)]) != VK_WHOLE_SIZE {
+                ldi.BoundTransformFeedbackBuffers[as!u32(i) + args.FirstBinding] = BoundBuffer(
+                Buffers[v],
+                args.Offsets[as!u32(i)],
+                args.Sizes[as!u32(i)])
+            } else {
+                ldi.BoundTransformFeedbackBuffers[as!u32(i) + args.FirstBinding] = BoundBuffer(
+                Buffers[v],
+                args.Offsets[as!u32(i)],
+                Buffers[v].Info.Size - args.Offsets[as!u32(i)])
+            }
+            Buffers[v].LastBoundQueue = LastBoundQueue
+        }
+    }
 }
 
 @extension("VK_EXT_transform_feedback")
@@ -177,7 +197,12 @@ cmd void vkCmdBindTransformFeedbackBuffersEXT(
 }
 
 sub void dovkCmdBeginTransformFeedbackEXT(ref!vkCmdBeginTransformFeedbackEXTArgs args) {
-    // Melih TODO: Implement
+    ldi := lastDrawInfo()
+    transformFeedbackBuffer := ldi.BoundTransformFeedbackBuffers[args.FirstCounterBuffer].Buffer
+    readCoherentMemoryInBuffer(transformFeedbackBuffer)
+    for i in (0 .. args.CounterBufferCount) {
+        readMemoryInBuffer(Buffers[args.CounterBuffers[i]], args.CounterBufferOffsets[i], 4)
+    }
 }
 
 @extension("VK_EXT_transform_feedback")
@@ -227,7 +252,12 @@ cmd void vkCmdBeginTransformFeedbackEXT(
 }
 
 sub void dovkCmdEndTransformFeedbackEXT(ref!vkCmdEndTransformFeedbackEXTArgs args) {
-    // Melih TODO: Implement
+    ldi := lastDrawInfo()
+    transformFeedbackBuffer := ldi.BoundTransformFeedbackBuffers[args.FirstCounterBuffer].Buffer
+    readCoherentMemoryInBuffer(transformFeedbackBuffer)
+    for i in (0 .. args.CounterBufferCount) {
+        readMemoryInBuffer(Buffers[args.CounterBuffers[i]], args.CounterBufferOffsets[i], 4)
+    }
 }
 
 @extension("VK_EXT_transform_feedback")
@@ -277,7 +307,25 @@ cmd void vkCmdEndTransformFeedbackEXT(
 }
 
 sub void dovkCmdBeginQueryIndexedEXT(ref!vkCmdBeginQueryIndexedEXTArgs args) {
-    // Melih TODO: Implement
+    if !(args.QueryPool in QueryPools) {
+        vkErrorInvalidQueryPool(args.QueryPool)
+    }
+
+    pool := QueryPools[args.QueryPool]
+    if pool == null {
+        vkErrorNullPointer("QueryPoolObject")
+    }
+
+    if !(args.Query < pool.QueryCount) {
+        vkErrorQueryOutOfRange(args.QueryPool, args.Query)
+    }
+
+    if pool.Status[args.Query] != QUERY_STATUS_INACTIVE {
+        vkErrorQueryNotInactive(args.QueryPool, args.Query)
+    }
+
+    pool.Status[args.Query] = QUERY_STATUS_ACTIVE
+    pool.LastBoundQueue = LastBoundQueue
 }
 
 @extension("VK_EXT_transform_feedback")
@@ -309,7 +357,25 @@ cmd void vkCmdBeginQueryIndexedEXT(
 }
 
 sub void dovkCmdEndQueryIndexedEXT(ref!vkCmdEndQueryIndexedEXTArgs args) {
-    // Melih TODO: Implement
+    if !(args.QueryPool in QueryPools) {
+        vkErrorInvalidQueryPool(args.QueryPool)
+    }
+
+    pool := QueryPools[args.QueryPool]
+    if pool == null {
+        vkErrorNullPointer("QueryPoolObject")
+    }
+
+    if !(args.Query < pool.QueryCount) {
+        vkErrorQueryOutOfRange(args.QueryPool, args.Query)
+    }
+
+    if pool.Status[args.Query] != QUERY_STATUS_ACTIVE {
+        vkErrorQueryNotActive(args.QueryPool, args.Query)
+    }
+
+    pool.Status[args.Query] = QUERY_STATUS_COMPLETE
+    pool.LastBoundQueue = LastBoundQueue
 }
 
 @extension("VK_EXT_transform_feedback")
@@ -343,7 +409,17 @@ cmd void vkCmdEndQueryIndexedEXT(
 }
 
 sub void dovkCmdDrawIndirectByteCountEXT(ref!vkCmdDrawIndirectByteCountEXTArgs args) {
-    // Melih TODO: Implement
+    if args.InstanceCount > 0 {
+        useRenderPass()
+        readWriteMemoryInBoundGraphicsDescriptorSets()
+        readMemoryInBuffer(Buffers[args.CounterBuffer], args.CounterBufferOffset, 4)
+        readCoherentMemoryInBuffer(Buffers[args.CounterBuffer])
+        // Read through all the vertex buffers, as we cannot assume the buffer given to indirect draw is host
+        readMemoryInCurrentPipelineBoundVertexBuffers(0xFFFFFFFF, 0xFFFFFFFF, 0, 0)
+        clearLastDrawInfoDrawCommandParameters()
+        ldi := lastDrawInfo()
+        ldi.CommandParameters.DrawIndirectByteCountEXT = args
+    }
 }
 
 @extension("VK_EXT_transform_feedback")
