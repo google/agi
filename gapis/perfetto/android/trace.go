@@ -315,8 +315,8 @@ func (p *Process) captureWithClientApi(ctx context.Context, start task.Signal, s
 				}
 				cnt += 1
 
-				// Give up after 1000 tries
-				if cnt == 1000 {
+				// Give up after 5000 tries
+				if cnt == 5000 {
 					timeout = true
 					sessionReadyFunc(ctx)
 					break
