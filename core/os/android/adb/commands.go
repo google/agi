@@ -41,7 +41,7 @@ const (
 	ErrRootFailed      = fault.Const("Device failed to switch to root")
 	ErrUnrootFailed    = fault.Const("Device failed to switch out of root")
 
-	maxRootAttempts                         = 5
+	maxRootAttempts                         = 50
 	gpuRenderStagesDataSourceDescriptorName = "gpu.renderstages"
 	gpuMemTotalDataSourceDescriptorName     = "android.gpu.memory"
 
@@ -108,6 +108,7 @@ retry:
 				continue retry
 			default:
 				// Some output we weren't expecting.
+				time.Sleep(time.Millisecond * 100)
 			}
 		}
 	}
@@ -141,6 +142,7 @@ retry:
 				continue retry
 			default:
 				// Some output we weren't expecting.
+				time.Sleep(time.Millisecond * 100)
 			}
 		}
 	}
