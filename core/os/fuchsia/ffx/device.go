@@ -100,7 +100,7 @@ func newDevice(ctx context.Context, serial string) (*binding, error) {
 				Serial:        serial,
 				Configuration: &device.Configuration{},
 			},
-			LastStatus: bind.Status_Online,
+			LastStatus: bind.Online,
 		},
 	}
 
@@ -163,7 +163,7 @@ func ParseDevices(ctx context.Context, out string) (map[string]bind.Status, erro
 			continue
 		case 2:
 			_, serial := fields[0], fields[1]
-			devices[serial] = bind.Status_Online
+			devices[serial] = bind.Online
 		case 3:
 			if strings.ToUpper(line) != "NO DEVICES FOUND." {
 				return nil, ErrInvalidDeviceList
