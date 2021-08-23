@@ -76,6 +76,8 @@ func (b *binding) prepareFFXCommand(cmd shell.Cmd) (shell.Process, error) {
 	return shell.LocalTarget.Start(cmd)
 }
 
+func (b *binding) CanTrace() bool { return false }
+
 type deviceTarget struct{ b *binding }
 
 func (t deviceTarget) Start(cmd shell.Cmd) (shell.Process, error) {

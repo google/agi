@@ -29,11 +29,11 @@ var (
 	AndroidMIPS     = abi("mips", Android, MIPS, Little32)
 	AndroidMIPS64   = abi("mips64", Android, MIPS64, Little64)
 
-	FuchsiaARM64v8a = abi("arm64-v8a", Fuchsia, ARMv8a, ARM64v8aLayout)
-
 	LinuxX86_64   = abi("linux_x64", Linux, X86_64, Little64)
 	OSXX86_64     = abi("osx_x64", OSX, X86_64, Little64)
 	WindowsX86_64 = abi("windows_x64", Windows, X86_64, Little64)
+
+	FuchsiaARM64 = abi("fuchsia_aarch64", Fuchsia, ARMv8a, ARM64v8aLayout)
 )
 
 var androidAbiByName = map[string]*ABI{}
