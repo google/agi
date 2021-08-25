@@ -354,6 +354,13 @@ public class TracerDialog {
         Group mainGroup = withLayoutData(
             createGroup(this, "Device and Type", new GridLayout(3, false)),
             new GridData(GridData.FILL_HORIZONTAL));
+
+        apiLabel = createLabel(mainGroup, "Type*:");
+        api = createApiDropDown(mainGroup);
+        api.getCombo().setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+        // Placeholder label to fill the 3rd column
+        createLabel(mainGroup, "");
+
         deviceLabel = createLabel(mainGroup, "Device*:");
         device = createDeviceDropDown(mainGroup);
         deviceLoader = widgets.loading.createWidgetWithRefresh(mainGroup);
@@ -367,12 +374,6 @@ public class TracerDialog {
           // feedback that something is happening, in case the refresh is really quick.
           logFailure(LOG, Scheduler.EXECUTOR.schedule(refreshDevices, 300, TimeUnit.MILLISECONDS));
         });
-
-        apiLabel = createLabel(mainGroup, "Type*:");
-        api = createApiDropDown(mainGroup);
-        api.getCombo().setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
-        // Placeholder label to fill the 3rd column
-        createLabel(mainGroup, "");
 
         validationStatusLoader = widgets.loading.createWidgetWithImage(mainGroup, widgets.theme.check(), widgets.theme.error());
         validationStatusLoader.setLayoutData(
