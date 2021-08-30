@@ -17,12 +17,12 @@ package file
 import (
 	"encoding/json"
 	"io/ioutil"
-	"log"
 	"net/url"
 	"os"
 	"os/exec"
 	"os/user"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 )
@@ -92,17 +92,11 @@ func (p Path) IsDir() bool {
 // IsExecutable returns true if the file at p.value exists, is executable
 // and is not a directory.
 func (p Path) IsExecutable() bool {
-	if !p.IsDir() {
-		fileInfo, err := os.Stat(p.value)
-		if err == nil {
-			bits := fileInfo.Mode().Perm()
-			return (bits & 0111) != 0
-		} else {
-			log.Print(err)
-			return false
-		}
+	if runtime.GOOS == "windows" {
+		return true
 	}
-	return false
+	info := p.Info()
+	return info != nil && !info.IsDir() && (info.Mode().Perm()&0111) != 0
 }
 
 // System returns the full absolute path using the system separator.

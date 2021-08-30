@@ -50,7 +50,7 @@ var (
 // DeviceList is a list of devices.
 type DeviceList []fuchsia.Device
 
-// Devices returns the list of attached Android devices.
+// Devices returns the list of attached Fuchsia devices.
 func Devices(ctx context.Context) (DeviceList, error) {
 	if err := scanDevices(ctx); err != nil {
 		return nil, err
