@@ -1446,7 +1446,13 @@ func rebuildVkCmdBindTransformFeedbackBuffersEXT(
 			bufferData.Ptr(),
 			offsetData.Ptr(),
 			sizesData.Ptr(),
-		).AddRead(offsetData.Data()).AddRead(bufferData.Data()).AddRead(sizesData.Data()),
+		).AddRead(
+			offsetData.Data(),
+		).AddRead(
+			bufferData.Data(),
+		).AddRead(
+			sizesData.Data(),
+		),
 		nil
 }
 

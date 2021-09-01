@@ -422,6 +422,7 @@ sub void dovkCmdDrawIndirectByteCountEXT(ref!vkCmdDrawIndirectByteCountEXTArgs a
     }
 }
 
+@executed_draw
 @extension("VK_EXT_transform_feedback")
 @indirect("VkCommandBuffer", "VkDevice")
 cmd void vkCmdDrawIndirectByteCountEXT(

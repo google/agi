@@ -190,7 +190,7 @@ bitfield VkPipelineStageFlagBits {
   VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT                   = 0x00008000, /// All stages of the graphics pipeline
   VK_PIPELINE_STAGE_ALL_COMMANDS_BIT                   = 0x00010000, /// All graphics, compute, copy, and transition commands
 
-  //@extension("VK_EXT_transform_feedback")
+  // @extension("VK_EXT_transform_feedback")
   VK_PIPELINE_STAGE_TRANSFORM_FEEDBACK_BIT_EXT = 0x01000000,
 }
 type VkFlags VkPipelineStageFlags
