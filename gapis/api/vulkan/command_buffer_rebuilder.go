@@ -1483,7 +1483,11 @@ func rebuildVkCmdBeginTransformFeedbackEXT(
 			d.CounterBufferCount(),
 			bufferData.Ptr(),
 			offsetData.Ptr(),
-		).AddRead(offsetData.Data()).AddRead(bufferData.Data()),
+		).AddRead(
+			offsetData.Data()
+		).AddRead(
+			bufferData.Data()
+		),
 		nil
 }
 
@@ -1514,7 +1518,11 @@ func rebuildVkCmdEndTransformFeedbackEXT(
 			d.CounterBufferCount(),
 			bufferData.Ptr(),
 			offsetData.Ptr(),
-		).AddRead(offsetData.Data()).AddRead(bufferData.Data()),
+		).AddRead(
+			offsetData.Data()
+		).AddRead(
+			bufferData.Data()
+		),
 		nil
 }
 
