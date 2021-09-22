@@ -71,6 +71,7 @@ func (b *binding) prepareFFXCommand(cmd shell.Cmd) (shell.Process, error) {
 	cmd.Args = append(cmd.Args, cmd.Name)
 	cmd.Args = append(cmd.Args, old...)
 	cmd.Name = exe.System()
+	fmt.Println(cmd)
 
 	// And delegate to the normal local target
 	return shell.LocalTarget.Start(cmd)
