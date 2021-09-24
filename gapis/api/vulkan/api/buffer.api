@@ -71,6 +71,10 @@
   // Vulkan 1.1 promoted from extension: VK_KHR_dedicated_allocation
   ref!DedicatedRequirements          DedicatedRequirements
   ref!DeviceGroupBinding             DeviceGroupBinding
+
+  // KHR_buffer_device_address
+  VkDeviceAddress                    BufferDeviceAddress
+  u64                                BufferOpaqueCaptureAddress
 }
 
 @indirect("VkDevice")

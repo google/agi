@@ -68,33 +68,107 @@ class VkPhysicalDeviceBufferDeviceAddressFeatures {
     VkBool32            bufferDeviceAddressMultiDevice
 }
 
+sub VkBuffer preGetBufferDeviceAddress(
+    VkDevice                            device,
+    const VkBufferDeviceAddressInfo*    pInfo) {
+    if !(device in Devices) { vkErrorInvalidDevice(device) }
+    if (pInfo == null) { vkErrorNullPointer("VkBufferDeviceAddressInfo") }
+
+    info := pInfo[0]
+
+    if (info.pNext != null) {
+        vkErrorNotNullPointer("VkBufferDeviceAddressInfo:PNext")
+    }
+
+    return info.buffer
+}
+
+sub void postGetBufferDeviceAddress(
+    VkBuffer buffer,
+    VkDeviceAddress deviceAddress) {
+    if !(buffer in Buffers) {
+      vkErrorInvalidBuffer(buffer)
+    } else {
+        Buffers[buffer].BufferDeviceAddress = deviceAddress
+    }
+}
 
 @indirect("VkDevice")
 cmd VkDeviceAddress vkGetBufferDeviceAddress(
     VkDevice                            device,
     const VkBufferDeviceAddressInfo*    pInfo) {
-        if !(device in Devices) { vkErrorInvalidDevice(device) }
-        // Melih TODO: Implement
-        dovkGetBufferDeviceAddress()
-        return?
+        buffer := preGetBufferDeviceAddress(device, pInfo)
+        deviceAddress := ?
+        postGetBufferDeviceAddress(buffer, deviceAddress)
+        return deviceAddress
+}
+
+sub VkBuffer preGetBufferOpaqueCaptureAddress(
+    VkDevice                            device,
+    const VkBufferDeviceAddressInfo*    pInfo) {
+    if !(device in Devices) { vkErrorInvalidDevice(device) }
+    if (pInfo == null) { vkErrorNullPointer("VkBufferDeviceAddressInfo") }
+
+    info := pInfo[0]
+
+    if (info.pNext != null) {
+        vkErrorNotNullPointer("VkBufferDeviceAddressInfo:PNext")
+    }
+
+    return info.buffer
+}
+
+sub void postGetBufferOpaqueCaptureAddress(
+    VkBuffer buffer,
+    u64      bufferOpaqueCaptureAddress) {
+    if !(buffer in Buffers) {
+      vkErrorInvalidBuffer(buffer)
+    } else {
+        Buffers[buffer].BufferOpaqueCaptureAddress = bufferOpaqueCaptureAddress
+    }
 }
 
 @indirect("VkDevice")
 cmd u64 vkGetBufferOpaqueCaptureAddress(
     VkDevice                            device,
     const VkBufferDeviceAddressInfo*    pInfo) {
-        if !(device in Devices) { vkErrorInvalidDevice(device) }
-        // Melih TODO: Implement
-        dovkGetBufferOpaqueCaptureAddress()
-        return?
+    buffer := preGetBufferOpaqueCaptureAddress(device, pInfo)
+    bufferOpaqueCaptureAddress := ?
+    postGetBufferOpaqueCaptureAddress(buffer, bufferOpaqueCaptureAddress)
+    return bufferOpaqueCaptureAddress
+}
+
+sub VkDeviceMemory preGetDeviceMemoryOpaqueCaptureAddress(
+    VkDevice                                        device,
+    const VkDeviceMemoryOpaqueCaptureAddressInfo*   pInfo) {
+    if !(device in Devices) { vkErrorInvalidDevice(device) }
+    if (pInfo == null) { vkErrorNullPointer("VkBufferDeviceAddressInfo") }
+
+    info := pInfo[0]
+
+    if (info.pNext != null) {
+        vkErrorNotNullPointer("VkBufferDeviceAddressInfo:PNext")
+    }
+
+    return info.memory
+}
+
+sub void postGetDeviceMemoryOpaqueCaptureAddress(
+    VkDeviceMemory  memory,
+    u64             deviceMemoryOpaqueCaptureAddress) {
+    if !(memory in DeviceMemories) {
+      vkErrorInvalidDeviceMemory(memory)
+    } else {
+        DeviceMemories[memory].DeviceMemoryOpaqueCaptureAddress = deviceMemoryOpaqueCaptureAddress
+    }
 }
 
 @indirect("VkDevice")
 cmd u64 vkGetDeviceMemoryOpaqueCaptureAddress (
     VkDevice                                        device,
     const VkDeviceMemoryOpaqueCaptureAddressInfo*   pInfo) {
-        if !(device in Devices) { vkErrorInvalidDevice(device) }
-        // Melih TODO: Implement
-        dovkGetDeviceMemoryOpaqueCaptureAddress()
-        return?
+    memory := preGetDeviceMemoryOpaqueCaptureAddress(device, pInfo)
+    deviceMemoryOpaqueCaptureAddress := ?
+    postGetDeviceMemoryOpaqueCaptureAddress(memory, deviceMemoryOpaqueCaptureAddress)
+    return deviceMemoryOpaqueCaptureAddress
 }

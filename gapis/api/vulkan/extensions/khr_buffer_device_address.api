@@ -76,39 +76,26 @@ class VkPhysicalDeviceBufferDeviceAddressFeaturesKHR {
     VkBool32            bufferDeviceAddressMultiDevice
 }
 
-
-sub void dovkGetBufferDeviceAddress() {
-    // Melih TODO: Implement
-}
-
 @extension("VK_KHR_buffer_device_address")
 @indirect("VkDevice")
 cmd VkDeviceAddress vkGetBufferDeviceAddressKHR(
     VkDevice                            device,
-    const VkBufferDeviceAddressInfo*    pInfo) {
-        if !(device in Devices) { vkErrorInvalidDevice(device) }
-        // Melih TODO: Implement
-        dovkGetBufferDeviceAddress()
-        return?
-}
-
-sub void dovkGetBufferOpaqueCaptureAddress() {
-    // Melih TODO: Implement
+    const VkBufferDeviceAddressInfoKHR*    pInfo) {
+    buffer := preGetBufferDeviceAddress(device, as!const VkBufferDeviceAddressInfo*(pInfo))
+    deviceAddress := ?
+    postGetBufferDeviceAddress(buffer, deviceAddress)
+    return deviceAddress
 }
 
 @extension("VK_KHR_buffer_device_address")
 @indirect("VkDevice")
 cmd u64 vkGetBufferOpaqueCaptureAddressKHR(
     VkDevice                            device,
-    const VkBufferDeviceAddressInfo*    pInfo) {
-        if !(device in Devices) { vkErrorInvalidDevice(device) }
-        // Melih TODO: Implement
-        dovkGetBufferOpaqueCaptureAddress()
-        return?
-}
-
-sub void dovkGetDeviceMemoryOpaqueCaptureAddress() {
-    // Melih TODO: Implement
+    const VkBufferDeviceAddressInfoKHR*    pInfo) {
+    buffer := preGetBufferOpaqueCaptureAddress(device, as!const VkBufferDeviceAddressInfo*(pInfo))
+    bufferOpaqueCaptureAddress := ?
+    postGetBufferOpaqueCaptureAddress(buffer, bufferOpaqueCaptureAddress)
+    return bufferOpaqueCaptureAddress
 }
 
 @extension("VK_KHR_buffer_device_address")
@@ -116,8 +103,8 @@ sub void dovkGetDeviceMemoryOpaqueCaptureAddress() {
 cmd u64 vkGetDeviceMemoryOpaqueCaptureAddressKHR (
     VkDevice                                        device,
     const VkDeviceMemoryOpaqueCaptureAddressInfo*   pInfo) {
-        if !(device in Devices) { vkErrorInvalidDevice(device) }
-        // Melih TODO: Implement
-        dovkGetDeviceMemoryOpaqueCaptureAddress()
-        return?
+    memory := preGetDeviceMemoryOpaqueCaptureAddress(device, as!const VkDeviceMemoryOpaqueCaptureAddressInfo*(pInfo))
+    deviceMemoryOpaqueCaptureAddress := ?
+    postGetDeviceMemoryOpaqueCaptureAddress(memory, deviceMemoryOpaqueCaptureAddress)
+    return deviceMemoryOpaqueCaptureAddress
 }

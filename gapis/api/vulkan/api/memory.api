@@ -59,6 +59,8 @@
   ref!MemoryAllocateFlagsInfo             MemoryAllocateFlagsInfo
   @unused VkExternalMemoryHandleTypeFlags ExternalHandleTypeFlags
   @unused u64                             AndroidHardwareBuffer
+
+  u64                                     DeviceMemoryOpaqueCaptureAddress
 }
 
 @internal class MemoryAllocateFlagsInfo {
