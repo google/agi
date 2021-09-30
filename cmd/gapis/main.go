@@ -129,7 +129,6 @@ func run(ctx context.Context) error {
 	}
 
 	if *scanFuchsiaDevs {
-		fmt.Println("SCAN FUCHSIA DEVS")
 		wg.Add(1)
 		crash.Go(func() { monitorFuchsiaDevices(ctx, r, wg.Done) })
 	}

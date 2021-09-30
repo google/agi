@@ -48,6 +48,7 @@ func PerfettoTraceOptions() *service.TraceTypeCapabilities {
 	}
 }
 
+/* TODO:
 // FuchsiaTraceOptions returns the default trace options for Fuchsia.
 func FuchsiaTraceOptions() *service.TraceTypeCapabilities {
 	return &service.TraceTypeCapabilities{
@@ -57,3 +58,4 @@ func FuchsiaTraceOptions() *service.TraceTypeCapabilities {
 		CanSelectProcessName:           false,
 	}
 }
+*/
