@@ -114,7 +114,7 @@ bool hasVulkanLoader();
 // The functions below are used by getDeviceInstance(), and are implemented
 // in the target-dependent sub-directories.
 
-typedef struct {
+typedef struct PlatformInfo {
   std::string name;
   std::vector<device::ABI> abis;
   std::string hardwareName;
