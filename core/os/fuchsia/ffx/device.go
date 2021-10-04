@@ -107,8 +107,8 @@ func newDevice(ctx context.Context, serial string) (*binding, error) {
 		Simple: bind.Simple{
 			To: &device.Instance{
 				Serial:        serial,
-				// TODO: put a user-friendly device name
-				Name:          "FEMU (fix this hardcoded name)",
+				// TODO: change "Fuchsia" to a device-specific name.
+				Name:          "Fuchsia",
 				Configuration: &device.Configuration{OS: &device.OS{Kind: device.Fuchsia}},
 			},
 			LastStatus: bind.Online,

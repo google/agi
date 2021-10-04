@@ -70,7 +70,8 @@ func (verb *traceVerb) Run(ctx context.Context, flags flag.FlagSet) error {
 	traceURI := verb.URI
 	if traceURI == "" && verb.Local.Port == 0 {
 		if flags.NArg() != 1 {
-			if api.traceType != service.TraceType_Perfetto {
+			if api.traceType != service.TraceType_Perfetto &&
+				api.traceType != service.TraceType_Fuchsia {
 				app.Usage(ctx, "Expected application name.")
 				return nil
 			}
@@ -83,7 +84,7 @@ func (verb *traceVerb) Run(ctx context.Context, flags flag.FlagSet) error {
 	}
 
 	if api.traceType == service.TraceType_Perfetto {
-		if verb.Perfetto == "" && api.config {
+		if verb.Perfetto == "" {
 			app.Usage(ctx, "The Perfetto config is required for System Profiles.")
 			return nil
 		}
@@ -250,7 +251,7 @@ func (verb *traceVerb) Run(ctx context.Context, flags flag.FlagSet) error {
 	}
 	target(options)
 
-	if api.config {
+	if api.traceType == service.TraceType_Perfetto {
 		data, err := ioutil.ReadFile(verb.Perfetto)
 		if err != nil {
 			return log.Errf(ctx, err, "Failed to read Perfetto config")
@@ -325,7 +326,6 @@ func (verb *traceVerb) Run(ctx context.Context, flags flag.FlagSet) error {
 type traceType struct {
 	traceType service.TraceType
 	traceExt  string
-	config    bool
 }
 
 func (verb *traceVerb) traceType() (traceType, error) {
@@ -334,25 +334,21 @@ func (verb *traceVerb) traceType() (traceType, error) {
 		return traceType{
 			service.TraceType_ANGLE,
 			".gfxtrace",
-			false,
 		}, nil
 	case "vulkan":
 		return traceType{
 			service.TraceType_Graphics,
 			".gfxtrace",
-			false,
 		}, nil
 	case "perfetto":
 		return traceType{
 			service.TraceType_Perfetto,
 			".perfetto",
-			true,
 		}, nil
 	case "fuchsia":
 		return traceType{
-			service.TraceType_Perfetto,
+			service.TraceType_Fuchsia,
 			".fxt",
-			false,
 		}, nil
 	default:
 		return traceType{}, fmt.Errorf("Unknown API '%s'", verb.API)

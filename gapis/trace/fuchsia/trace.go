@@ -92,7 +92,7 @@ type fuchsiaTracer struct {
 // TraceConfiguration returns the device's supported trace configuration.
 func (t *fuchsiaTracer) TraceConfiguration(ctx context.Context) (*service.DeviceTraceConfiguration, error) {
 	return &service.DeviceTraceConfiguration{
-		Types:                []*service.TraceTypeCapabilities{tracer.PerfettoTraceOptions()},
+		Types:                []*service.TraceTypeCapabilities{tracer.FuchsiaTraceOptions()},
 		ServerLocalPath:      false,
 		CanSpecifyCwd:        true,
 		CanUploadApplication: false,
