@@ -17,7 +17,6 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -187,7 +186,6 @@ func monitorAndroidDevices(ctx context.Context, r *bind.Registry, scanDone func(
 }
 
 func monitorFuchsiaDevices(ctx context.Context, r *bind.Registry, scanDone func()) {
-	fmt.Println("<<<<<<@@@@@ Monitor Fuchsia Devices @@@@@>>>>>>>>>>>>>>")
 	// Populate the registry with all the existing devices.
 	func() {
 		defer scanDone() // Signal that we have a primed registry.

@@ -105,8 +105,6 @@ func (t *fuchsiaTracer) TraceConfiguration(ctx context.Context) (*service.Device
 // GetTraceTargetNode returns a TraceTargetTreeNode for the given URI
 // on the device
 func (t *fuchsiaTracer) GetTraceTargetNode(ctx context.Context, uri string, iconDensity float32) (*tracer.TraceTargetTreeNode, error) {
-	if uri == "" {
-	}
 	return nil, nil
 }
 
