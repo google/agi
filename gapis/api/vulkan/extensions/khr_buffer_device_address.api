@@ -76,6 +76,13 @@ class VkPhysicalDeviceBufferDeviceAddressFeaturesKHR {
     VkBool32            bufferDeviceAddressMultiDevice
 }
 
+@internal
+class PhysicalDeviceBufferDeviceAddressFeaturesKHR {
+    VkBool32            BufferDeviceAddress
+    VkBool32            BufferDeviceAddressCaptureReplay
+    VkBool32            BufferDeviceAddressMultiDevice
+}
+
 @extension("VK_KHR_buffer_device_address")
 @indirect("VkDevice")
 cmd VkDeviceAddress vkGetBufferDeviceAddressKHR(

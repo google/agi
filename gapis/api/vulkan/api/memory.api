@@ -60,7 +60,8 @@
   @unused VkExternalMemoryHandleTypeFlags ExternalHandleTypeFlags
   @unused u64                             AndroidHardwareBuffer
 
-  u64                                     DeviceMemoryOpaqueCaptureAddress
+  // KHR_buffer_device_address
+  @unused u64                             OpaqueCaptureAddress
 }
 
 @internal class MemoryAllocateFlagsInfo {
@@ -130,6 +131,10 @@ cmd VkResult vkAllocateMemory(
         case VK_STRUCTURE_TYPE_IMPORT_ANDROID_HARDWARE_BUFFER_INFO_ANDROID: {
           ext := as!VkImportAndroidHardwareBufferInfoANDROID*(next.Ptr)[0]
           memoryObject.AndroidHardwareBuffer = as!u64(ext.buffer)
+        }
+        case VK_STRUCTURE_TYPE_MEMORY_OPAQUE_CAPTURE_ADDRESS_ALLOCATE_INFO_KHR: {
+          ext := as!VkMemoryOpaqueCaptureAddressAllocateInfoKHR*(next.Ptr)[0]
+          memoryObject.OpaqueCaptureAddress = as!u64(ext.opaqueCaptureAddress)
         }
       }
       next.Ptr = as!VulkanStructHeader*(next.Ptr)[0].PNext

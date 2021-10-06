@@ -68,6 +68,13 @@ class VkPhysicalDeviceBufferDeviceAddressFeatures {
     VkBool32            bufferDeviceAddressMultiDevice
 }
 
+@internal
+class PhysicalDeviceBufferDeviceAddressFeatures {
+    VkBool32            BufferDeviceAddress
+    VkBool32            BufferDeviceAddressCaptureReplay
+    VkBool32            BufferDeviceAddressMultiDevice
+}
+
 sub VkBuffer preGetBufferDeviceAddress(
     VkDevice                            device,
     const VkBufferDeviceAddressInfo*    pInfo) {
@@ -124,7 +131,7 @@ sub void postGetBufferOpaqueCaptureAddress(
     if !(buffer in Buffers) {
       vkErrorInvalidBuffer(buffer)
     } else {
-        Buffers[buffer].BufferOpaqueCaptureAddress = bufferOpaqueCaptureAddress
+        Buffers[buffer].Info.OpaqueCaptureAddress = bufferOpaqueCaptureAddress
     }
 }
 
@@ -159,7 +166,7 @@ sub void postGetDeviceMemoryOpaqueCaptureAddress(
     if !(memory in DeviceMemories) {
       vkErrorInvalidDeviceMemory(memory)
     } else {
-        DeviceMemories[memory].DeviceMemoryOpaqueCaptureAddress = deviceMemoryOpaqueCaptureAddress
+        DeviceMemories[memory].OpaqueCaptureAddress = deviceMemoryOpaqueCaptureAddress
     }
 }
 
