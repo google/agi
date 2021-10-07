@@ -62,7 +62,7 @@ func (s *traceSession) Capture(ctx context.Context, start task.Signal, stop task
 	}
 
 	// Initiate tracing.
-	if err := s.device.StartTrace(ctx, traceFile, nil, stop, ready); err != nil {
+	if err := s.device.StartTrace(ctx, s.options, traceFile, stop, ready); err != nil {
 		return 0, err
 	}
 
