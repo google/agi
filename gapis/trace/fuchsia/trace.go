@@ -21,6 +21,7 @@ import (
 	"io"
 	"os"
 	"sync/atomic"
+	"time"
 
 	"github.com/google/gapid/core/app"
 	"github.com/google/gapid/core/event/task"
@@ -67,7 +68,12 @@ func (s *traceSession) Capture(ctx context.Context, start task.Signal, stop task
 	}
 
 	// Wait for capture to stop.
-	stop.Wait(ctx)
+	durationSecs := time.Duration(s.options.Duration)
+	if durationSecs > 0 {
+		time.Sleep(durationSecs * time.Second)
+	} else {
+		stop.Wait(ctx)
+	}
 
 	// Stop tracing.
 	if err := s.device.StopTrace(ctx, traceFile); err != nil {
