@@ -115,10 +115,13 @@ func (a API) Replay(
 		}
 	}
 
-	_, isProfileRequest := firstRequest.(profileRequest)
-
 	var transforms []transform.Transform
-	transforms = append(transforms, newMakeAttachmentReadable(isProfileRequest))
+
+	_, isProfileRequest := firstRequest.(profileRequest)
+	if !isProfileRequest {
+		transforms = append(transforms, newMakeAttachmentReadable(isProfileRequest))
+	}
+
 	transforms = append(transforms, newDropInvalidDestroy(replayType))
 	transforms = append(transforms, newExternalMemory())
 
