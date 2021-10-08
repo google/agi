@@ -891,12 +891,19 @@ public class Widgets {
   }
 
   public static Refresher withAsyncRefresh(Viewer viewer) {
+    return withAsyncRefresh(viewer, null);
+  }
+
+  public static Refresher withAsyncRefresh(Viewer viewer, Runnable onRefresh) {
     AtomicBoolean scheduled = new AtomicBoolean();
     return () -> ifNotDisposed(viewer.getControl(), () -> {
       if (!scheduled.getAndSet(true)) {
         viewer.getControl().getDisplay().timerExec(5, () -> {
           scheduled.set(false);
           ifNotDisposed(viewer.getControl(), viewer::refresh);
+          if (onRefresh != null) {
+            ifNotDisposed(viewer.getControl(), onRefresh);
+          }
         });
       }
     });
