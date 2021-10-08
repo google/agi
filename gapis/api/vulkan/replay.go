@@ -51,7 +51,7 @@ func (a API) GetInitialPayload(ctx context.Context,
 	cmdGenerator := commandGenerator.NewLinearCommandGenerator(initialCmds, nil)
 
 	var transforms []transform.Transform
-	transforms = append(transforms, newMakeAttachmentReadable(false))
+	transforms = append(transforms, newMakeAttachmentReadable())
 	transforms = append(transforms, newDropInvalidDestroy("GetInitialPayload"))
 	transforms = append(transforms, newExternalMemory())
 	if config.LogInitialCmdsToCapture {
@@ -119,7 +119,7 @@ func (a API) Replay(
 
 	_, isProfileRequest := firstRequest.(profileRequest)
 	if !isProfileRequest {
-		transforms = append(transforms, newMakeAttachmentReadable(isProfileRequest))
+		transforms = append(transforms, newMakeAttachmentReadable())
 	}
 
 	transforms = append(transforms, newDropInvalidDestroy(replayType))
