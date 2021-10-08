@@ -36,6 +36,14 @@
 // TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
+/*
+*
+* Melih TODO: Everytime vkGetBufferDeviceAddressKHR called, we must ensure that
+* in replay we use that same address. This implemetation will likely to
+* require preprocessing and a transform and postponed for now.
+*
+*/
+
 @extension("VK_KHR_buffer_device_address") define VK_KHR_BUFFER_DEVICE_ADDRESS_SPEC_VERSION 1
 @extension("VK_KHR_buffer_device_address") define VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME "VK_KHR_buffer_device_address"
 
