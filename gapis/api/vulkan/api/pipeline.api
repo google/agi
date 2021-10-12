@@ -111,7 +111,7 @@ cmd void vkDestroyPipelineLayout(
   @unused map!(u32, VkVertexInputBindingDivisorDescriptionEXT) VertexBindingDivisors
 }
 
-@internal class VertexData {
+@internal class VertexInputData {
   @unused map!(u32, VkVertexInputBindingDescription)   BindingDescriptions
   @unused map!(u32, VkVertexInputAttributeDescription) AttributeDescriptions
 
@@ -208,7 +208,7 @@ cmd void vkDestroyPipelineLayout(
   @unused VkPipelineCreateFlags     Flags
   @unused VkPipeline                VulkanHandle
   @unused map!(u32, StageData)      Stages
-  @unused ref!VertexData            VertexInputState
+  @unused ref!VertexInputData       VertexInputState
   @unused InputAssemblyData         InputAssemblyState
   @unused ref!TessellationStateData TessellationState
   @unused ref!ViewportData          ViewportState
@@ -364,7 +364,7 @@ cmd VkResult vkCreateGraphicsPipelines(
 
     if (create_info.pVertexInputState != null) {
       vertex_input_state := create_info.pVertexInputState[0]
-      obj.VertexInputState = new!VertexData()
+      obj.VertexInputState = new!VertexInputData()
 
       // handle vertex input state pNext
       if vertex_input_state.pNext != null {
