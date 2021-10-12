@@ -204,57 +204,57 @@ func (verb *screenshotVerb) getSingleFrame(ctx context.Context, cmd *path.Comman
 }
 
 func (verb *screenshotVerb) frameCommands(ctx context.Context, capture *path.Capture, client service.Service) ([]*path.Command, error) {
-	filter, err := verb.CommandFilterFlags.commandFilter(ctx, client, capture)
-	if err != nil {
-		return nil, log.Err(ctx, err, "Couldn't get filter")
-	}
+	// filter, err := verb.CommandFilterFlags.commandFilter(ctx, client, capture)
+	// if err != nil {
+	// 	return nil, log.Err(ctx, err, "Couldn't get filter")
+	// }
 
-	requestEvents := path.Events{
-		Capture:     capture,
-		LastInFrame: true,
-		DrawCalls:   verb.Draws,
-		Filter:      filter,
-	}
+	// requestEvents := path.Events{
+	// 	Capture:     capture,
+	// 	LastInFrame: true,
+	// 	DrawCalls:   verb.Draws,
+	// 	Filter:      filter,
+	// }
 
-	// Get the end-of-frame and possibly draw call events.
-	events, err := getEvents(ctx, client, &requestEvents)
-	if err != nil {
-		return nil, log.Err(ctx, err, "Couldn't get frame events")
-	}
+	// // Get the end-of-frame and possibly draw call events.
+	// events, err := getEvents(ctx, client, &requestEvents)
+	// if err != nil {
+	// 	return nil, log.Err(ctx, err, "Couldn't get frame events")
+	// }
 
-	// Compute an index of frame to event idx.
-	frameIdx := map[int]int{}
-	lastFrame := 0
-	for i, e := range events {
-		if e.Kind == service.EventKind_LastInFrame {
-			lastFrame++
-			frameIdx[lastFrame] = i
-		}
-	}
+	// // Compute an index of frame to event idx.
+	// frameIdx := map[int]int{}
+	// lastFrame := 0
+	// for i, e := range events {
+	// 	if e.Kind == service.EventKind_LastInFrame {
+	// 		lastFrame++
+	// 		frameIdx[lastFrame] = i
+	// 	}
+	// }
 
-	if len(verb.Frame) == 0 {
-		verb.Frame = []int{lastFrame}
-	}
+	// if len(verb.Frame) == 0 {
+	// 	verb.Frame = []int{lastFrame}
+	// }
 
 	var commands []*path.Command
-	for _, frame := range verb.Frame {
-		last, ok := frameIdx[frame]
-		if !ok {
-			return nil, fmt.Errorf("Invalid frame number %d (last frame is %d)", frame, lastFrame)
-		}
+	// for _, frame := range verb.Frame {
+	// 	last, ok := frameIdx[frame]
+	// 	if !ok {
+	// 		return nil, fmt.Errorf("Invalid frame number %d (last frame is %d)", frame, lastFrame)
+	// 	}
 
-		first := last
-		if verb.Draws {
-			if frame == 1 {
-				first = 0
-			} else {
-				first = frameIdx[frame-1]
-			}
-		}
-		for idx := first; idx <= last; idx++ {
-			commands = append(commands, events[idx].Command)
-		}
-	}
+	// 	first := last
+	// 	if verb.Draws {
+	// 		if frame == 1 {
+	// 			first = 0
+	// 		} else {
+	// 			first = frameIdx[frame-1]
+	// 		}
+	// 	}
+	// 	for idx := first; idx <= last; idx++ {
+	// 		commands = append(commands, events[idx].Command)
+	// 	}
+	// }
 	return commands, nil
 }
 

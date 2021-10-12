@@ -15,28 +15,28 @@
 package main
 
 import (
-	"bytes"
+	//"bytes"
 	"context"
 	"flag"
 	"fmt"
 	"image"
-	"image/color"
-	"image/draw"
+	//"image/color"
+	//"image/draw"
 	"image/png"
 	"io"
 	"os"
 	fp "path/filepath"
 	"strings"
-	"sync/atomic"
+	//"sync/atomic"
 
 	"github.com/google/gapid/core/app"
 	"github.com/google/gapid/core/app/crash"
-	"github.com/google/gapid/core/event/task"
-	"github.com/google/gapid/core/image/font"
+	//"github.com/google/gapid/core/event/task"
+	//"github.com/google/gapid/core/image/font"
 	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/math/sint"
+	//"github.com/google/gapid/core/math/sint"
 	"github.com/google/gapid/core/os/file"
-	"github.com/google/gapid/core/text/reflow"
+	//"github.com/google/gapid/core/text/reflow"
 	"github.com/google/gapid/core/video"
 	"github.com/google/gapid/gapis/service"
 	"github.com/google/gapid/gapis/service/path"
@@ -76,192 +76,194 @@ func (verb *videoVerb) regularVideoSource(
 	client service.Service,
 	device *path.Device) (videoFrameWriter, error) {
 
-	filter, err := verb.CommandFilterFlags.commandFilter(ctx, client, capture)
-	if err != nil {
-		return nil, log.Err(ctx, err, "Couldn't get filter")
-	}
+	// filter, err := verb.CommandFilterFlags.commandFilter(ctx, client, capture)
+	// if err != nil {
+	// 	return nil, log.Err(ctx, err, "Couldn't get filter")
+	// }
 
-	requestEvents := path.Events{
-		Capture:     capture,
-		LastInFrame: true,
-		Filter:      filter,
-	}
+	// requestEvents := path.Events{
+	// 	Capture:     capture,
+	// 	LastInFrame: true,
+	// 	Filter:      filter,
+	// }
 
-	if verb.Commands {
-		requestEvents.LastInFrame = false
-		requestEvents.AllCommands = true
-	}
+	// if verb.Commands {
+	// 	requestEvents.LastInFrame = false
+	// 	requestEvents.AllCommands = true
+	// }
 
-	// Get the end-of-frame events.
-	eofEvents, err := getEvents(ctx, client, &requestEvents)
-	if err != nil {
-		return nil, log.Err(ctx, err, "Couldn't get frame events")
-	}
+	// // Get the end-of-frame events.
+	// eofEvents, err := getEvents(ctx, client, &requestEvents)
+	// if err != nil {
+	// 	return nil, log.Err(ctx, err, "Couldn't get frame events")
+	// }
 
-	if verb.Frames.Minimum > len(eofEvents) {
-		return nil, log.Errf(ctx, nil, "Captured only %v frames, requires %v frames at minimum", len(eofEvents), verb.Frames.Minimum)
-	}
+	// if verb.Frames.Minimum > len(eofEvents) {
+	// 	return nil, log.Errf(ctx, nil, "Captured only %v frames, requires %v frames at minimum", len(eofEvents), verb.Frames.Minimum)
+	// }
 
-	if verb.Frames.Start < len(eofEvents) {
-		eofEvents = eofEvents[verb.Frames.Start:]
-	}
+	// if verb.Frames.Start < len(eofEvents) {
+	// 	eofEvents = eofEvents[verb.Frames.Start:]
+	// }
 
-	if verb.Frames.Count != allTheWay && verb.Frames.Count < len(eofEvents) {
-		eofEvents = eofEvents[:verb.Frames.Count]
-	}
+	// if verb.Frames.Count != allTheWay && verb.Frames.Count < len(eofEvents) {
+	// 	eofEvents = eofEvents[:verb.Frames.Count]
+	// }
 
-	frameCount := len(eofEvents)
+	// frameCount := len(eofEvents)
 
-	log.I(ctx, "Frames: %d", frameCount)
+	// log.I(ctx, "Frames: %d", frameCount)
 
-	// Get all the rendered frames
-	const workers = 32
-	events := &task.Events{}
-	pool, shutdown := task.Pool(0, workers)
-	defer shutdown(ctx)
-	executor := task.Batch(pool, events)
-	shouldResize := verb.Type != IndividualFrames
-	rendered := make([]*image.NRGBA, frameCount)
-	errors := make([]error, frameCount)
+	// // Get all the rendered frames
+	// const workers = 32
+	// events := &task.Events{}
+	// pool, shutdown := task.Pool(0, workers)
+	// defer shutdown(ctx)
+	// executor := task.Batch(pool, events)
+	// shouldResize := verb.Type != IndividualFrames
+	// rendered := make([]*image.NRGBA, frameCount)
+	// errors := make([]error, frameCount)
 
-	var errorCount uint32
-	for i, e := range eofEvents {
-		i, e := i, e
-		executor(ctx, func(ctx context.Context) error {
-			if frame, err := getFrame(ctx, verb.Max.Width, verb.Max.Height, e.Command, device, client, verb.NoOpt); err == nil {
-				rendered[i] = flipImg(frame)
-			} else {
-				errors[i] = err
-				atomic.AddUint32(&errorCount, 1)
-			}
-			return nil
-		})
-	}
-	events.Wait(ctx)
+	// var errorCount uint32
+	// for i, e := range eofEvents {
+	// 	i, e := i, e
+	// 	executor(ctx, func(ctx context.Context) error {
+	// 		if frame, err := getFrame(ctx, verb.Max.Width, verb.Max.Height, e.Command, device, client, verb.NoOpt); err == nil {
+	// 			rendered[i] = flipImg(frame)
+	// 		} else {
+	// 			errors[i] = err
+	// 			atomic.AddUint32(&errorCount, 1)
+	// 		}
+	// 		return nil
+	// 	})
+	// }
+	// events.Wait(ctx)
 
-	if errorCount > 0 {
-		log.W(ctx, "%d/%d frames errored", errorCount, len(eofEvents))
-	}
+	// if errorCount > 0 {
+	// 	log.W(ctx, "%d/%d frames errored", errorCount, len(eofEvents))
+	// }
 
-	// Get the max width and height
-	width, height := 0, 0
-	for _, frame := range rendered {
-		if frame != nil {
-			width = sint.Max(width, frame.Bounds().Dx())
-			height = sint.Max(height, frame.Bounds().Dy())
-		}
-	}
+	// // Get the max width and height
+	// width, height := 0, 0
+	// for _, frame := range rendered {
+	// 	if frame != nil {
+	// 		width = sint.Max(width, frame.Bounds().Dx())
+	// 		height = sint.Max(height, frame.Bounds().Dy())
+	// 	}
+	// }
 
-	// Video dimensions must be divisible by two.
-	if (width & 1) != 0 {
-		width++
-	}
-	if (height & 1) != 0 {
-		height++
-	}
+	// // Video dimensions must be divisible by two.
+	// if (width & 1) != 0 {
+	// 	width++
+	// }
+	// if (height & 1) != 0 {
+	// 	height++
+	// }
 
-	log.I(ctx, "Max dimensions: (%d, %d)", width, height)
+	// log.I(ctx, "Max dimensions: (%d, %d)", width, height)
 
 	return func(frames chan<- image.Image) error {
-		for i, frame := range rendered {
-			if err := errors[i]; err != nil {
-				log.E(ctx, "Error getting frame at %v: %v", eofEvents[i].Command, err)
-				continue
-			}
+		// for i, frame := range rendered {
+		// 	if err := errors[i]; err != nil {
+		// 		log.E(ctx, "Error getting frame at %v: %v", eofEvents[i].Command, err)
+		// 		continue
+		// 	}
 
-			if shouldResize && (frame.Bounds().Dx() != width || frame.Bounds().Dy() != height) {
-				src, rect := frame, image.Rect(0, 0, width, height)
-				frame = image.NewNRGBA(rect)
-				draw.Draw(frame, rect, src, image.ZP, draw.Src)
-			}
+		// 	if shouldResize && (frame.Bounds().Dx() != width || frame.Bounds().Dy() != height) {
+		// 		src, rect := frame, image.Rect(0, 0, width, height)
+		// 		frame = image.NewNRGBA(rect)
+		// 		draw.Draw(frame, rect, src, image.ZP, draw.Src)
+		// 	}
 
-			sb := new(bytes.Buffer)
-			refw := reflow.New(sb)
-			fmt.Fprint(refw, verb.Text)
-			fmt.Fprintf(refw, "Frame: %d, cmd: %v", i, eofEvents[i].Command.Indices)
-			refw.Flush()
-			str := sb.String()
-			font.DrawString(str, frame, image.Pt(4, 4), color.Black)
-			font.DrawString(str, frame, image.Pt(2, 2), color.White)
+		// 	sb := new(bytes.Buffer)
+		// 	refw := reflow.New(sb)
+		// 	fmt.Fprint(refw, verb.Text)
+		// 	fmt.Fprintf(refw, "Frame: %d, cmd: %v", i, eofEvents[i].Command.Indices)
+		// 	refw.Flush()
+		// 	str := sb.String()
+		// 	font.DrawString(str, frame, image.Pt(4, 4), color.Black)
+		// 	font.DrawString(str, frame, image.Pt(2, 2), color.White)
 
-			frames <- frame
-		}
-		close(frames)
+		// 	frames <- frame
+		// }
+		// close(frames)
 		return nil
 	}, nil
 }
 
 func (verb *videoVerb) Run(ctx context.Context, flags flag.FlagSet) error {
-	if flags.NArg() != 1 {
-		app.Usage(ctx, "Exactly one gfx trace file expected, got %d", flags.NArg())
-		return nil
-	}
+	// if flags.NArg() != 1 {
+	// 	app.Usage(ctx, "Exactly one gfx trace file expected, got %d", flags.NArg())
+	// 	return nil
+	// }
 
-	client, capture, err := getGapisAndLoadCapture(ctx, verb.Gapis, verb.Gapir, flags.Arg(0), verb.CaptureFileFlags)
-	if err != nil {
-		return err
-	}
-	defer client.Close()
+	// client, capture, err := getGapisAndLoadCapture(ctx, verb.Gapis, verb.Gapir, flags.Arg(0), verb.CaptureFileFlags)
+	// if err != nil {
+	// 	return err
+	// }
+	// defer client.Close()
 
-	device, err := getDevice(ctx, client, capture, verb.Gapir)
-	if err != nil {
-		return err
-	}
+	// device, err := getDevice(ctx, client, capture, verb.Gapir)
+	// if err != nil {
+	// 	return err
+	// }
 
-	fboEvents, err := getEvents(ctx, client, &path.Events{
-		Capture:                 capture,
-		FramebufferObservations: true,
-	})
-	if err != nil {
-		return log.Err(ctx, err, "Couldn't get framebuffer observation events")
-	}
+	// fboEvents, err := getEvents(ctx, client, &path.Events{
+	// 	Capture:                 capture,
+	// 	FramebufferObservations: true,
+	// })
+	// if err != nil {
+	// 	return log.Err(ctx, err, "Couldn't get framebuffer observation events")
+	// }
 
-	var vidSrc videoSource
-	var vidFun videoFrameWriter
-	var vidOut videoSink
+	// var vidSrc videoSource
+	// var vidFun videoFrameWriter
+	// var vidOut videoSink
 
-	switch verb.Type {
-	case IndividualFrames:
-		vidSrc = verb.regularVideoSource
-		vidOut = verb.writeFrames
-	case RegularVideo:
-		vidSrc = verb.regularVideoSource
-		vidOut = verb.encodeVideo
-	case SxsFrames:
-		fallthrough
-	case SxsVideo:
-		if len(fboEvents) == 0 {
-			return fmt.Errorf("Capture does not contain framebuffer observations")
-		}
-		vidSrc = verb.sxsVideoSource
-		if verb.Type == SxsFrames {
-			vidOut = verb.writeFrames
-		} else {
-			vidOut = verb.encodeVideo
-		}
-	case AutoVideo:
-		if len(fboEvents) > 0 {
-			vidSrc = verb.sxsVideoSource
-		} else {
-			vidSrc = verb.regularVideoSource
-		}
-		vidOut = verb.encodeVideo
-	}
+	// switch verb.Type {
+	// case IndividualFrames:
+	// 	vidSrc = verb.regularVideoSource
+	// 	vidOut = verb.writeFrames
+	// case RegularVideo:
+	// 	vidSrc = verb.regularVideoSource
+	// 	vidOut = verb.encodeVideo
+	// case SxsFrames:
+	// 	fallthrough
+	// case SxsVideo:
+	// 	if len(fboEvents) == 0 {
+	// 		return fmt.Errorf("Capture does not contain framebuffer observations")
+	// 	}
+	// 	vidSrc = verb.sxsVideoSource
+	// 	if verb.Type == SxsFrames {
+	// 		vidOut = verb.writeFrames
+	// 	} else {
+	// 		vidOut = verb.encodeVideo
+	// 	}
+	// case AutoVideo:
+	// 	if len(fboEvents) > 0 {
+	// 		vidSrc = verb.sxsVideoSource
+	// 	} else {
+	// 		vidSrc = verb.regularVideoSource
+	// 	}
+	// 	vidOut = verb.encodeVideo
+	// }
 
-	if vidFun, err = vidSrc(ctx, capture, client, device); err != nil {
-		return err
-	}
+	// if vidFun, err = vidSrc(ctx, capture, client, device); err != nil {
+	// 	return err
+	// }
 
-	// A bit messy: vidOut wants the filepath of the capture so that it can
-	// write images or a video alongside it if no output path is given.
-	// But arg 0 might not be a file path, so we check here.
-	var filepath string
-	if !verb.CaptureID {
-		// It is a file path, not a capture ID.
-		filepath = flags.Arg(0)
-	}
+	// // A bit messy: vidOut wants the filepath of the capture so that it can
+	// // write images or a video alongside it if no output path is given.
+	// // But arg 0 might not be a file path, so we check here.
+	// var filepath string
+	// if !verb.CaptureID {
+	// 	// It is a file path, not a capture ID.
+	// 	filepath = flags.Arg(0)
+	// }
 
-	return vidOut(ctx, filepath, vidFun)
+	// return vidOut(ctx, filepath, vidFun)
+
+	return nil
 }
 
 func (verb *videoVerb) writeFrames(ctx context.Context, filepath string, vidFun videoFrameWriter) error {

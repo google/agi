@@ -109,31 +109,31 @@ func (verb *exportReplayVerb) Run(ctx context.Context, flags flag.FlagSet) error
 	case ExportOnScreen:
 		onscreen = true
 	case ExportFrames:
-		filter, err := verb.CommandFilterFlags.commandFilter(ctx, client, capturePath)
-		if err != nil {
-			return log.Err(ctx, err, "Couldn't get filter")
-		}
+		// filter, err := verb.CommandFilterFlags.commandFilter(ctx, client, capturePath)
+		// if err != nil {
+		// 	return log.Err(ctx, err, "Couldn't get filter")
+		// }
 
-		requestEvents := gapidPath.Events{
-			Capture:     capturePath,
-			LastInFrame: true,
-			Filter:      filter,
-		}
+		// requestEvents := gapidPath.Events{
+		// 	Capture:     capturePath,
+		// 	LastInFrame: true,
+		// 	Filter:      filter,
+		// }
 
-		// Get the end-of-frame events.
-		eofEvents, err := getEvents(ctx, client, &requestEvents)
-		if err != nil {
-			return log.Err(ctx, err, "Couldn't get frame events")
-		}
+		// // Get the end-of-frame events.
+		// eofEvents, err := getEvents(ctx, client, &requestEvents)
+		// if err != nil {
+		// 	return log.Err(ctx, err, "Couldn't get frame events")
+		// }
 
-		for _, e := range eofEvents {
-			fbreqs = append(fbreqs, &gapidPath.FramebufferAttachment{
-				After:          e.Command,
-				Index:          0,
-				RenderSettings: &gapidPath.RenderSettings{DisableReplayOptimization: true},
-				Hints:          nil,
-			})
-		}
+		// for _, e := range eofEvents {
+		// 	fbreqs = append(fbreqs, &gapidPath.FramebufferAttachment{
+		// 		After:          e.Command,
+		// 		Index:          0,
+		// 		RenderSettings: &gapidPath.RenderSettings{DisableReplayOptimization: true},
+		// 		Hints:          nil,
+		// 	})
+		// }
 	case ExportTimestamps:
 		// There are no useful field in GetTimestampsRequest as of now.
 		tsreq = &service.GetTimestampsRequest{}

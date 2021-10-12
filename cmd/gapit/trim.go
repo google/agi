@@ -21,8 +21,8 @@ import (
 
 	"github.com/google/gapid/core/app"
 	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/gapis/service"
-	"github.com/google/gapid/gapis/service/path"
+	//"github.com/google/gapid/gapis/service"
+	//"github.com/google/gapid/gapis/service/path"
 )
 
 type trimVerb struct{ TrimFlags }
@@ -50,18 +50,18 @@ func (verb *trimVerb) Run(ctx context.Context, flags flag.FlagSet) error {
 	}
 	defer client.Close()
 
-	eofEvents, err := verb.eofEvents(ctx, capture, client)
-	if err != nil {
-		return err
-	}
+	// eofEvents, err := verb.eofEvents(ctx, capture, client)
+	// if err != nil {
+	// 	return err
+	// }
 
-	dceRequest := verb.getDCERequest(eofEvents, capture)
-	if len(dceRequest) > 0 {
-		capture, err = client.DCECapture(ctx, capture, dceRequest)
-		if err != nil {
-			return log.Errf(ctx, err, "DCECapture(%v, %v)", capture, dceRequest)
-		}
-	}
+	// dceRequest := verb.getDCERequest(eofEvents, capture)
+	// if len(dceRequest) > 0 {
+	// 	capture, err = client.DCECapture(ctx, capture, dceRequest)
+	// 	if err != nil {
+	// 		return log.Errf(ctx, err, "DCECapture(%v, %v)", capture, dceRequest)
+	// 	}
+	// }
 
 	data, err := client.ExportCapture(ctx, capture)
 	if err != nil {
@@ -78,61 +78,61 @@ func (verb *trimVerb) Run(ctx context.Context, flags flag.FlagSet) error {
 	return nil
 }
 
-func (verb *trimVerb) eofEvents(ctx context.Context, capture *path.Capture, client service.Service) ([]*service.Event, error) {
-	filter, err := verb.CommandFilterFlags.commandFilter(ctx, client, capture)
-	if err != nil {
-		return nil, log.Err(ctx, err, "Couldn't get filter")
-	}
-	requestEvents := path.Events{
-		Capture:     capture,
-		LastInFrame: true,
-		Filter:      filter,
-	}
+// func (verb *trimVerb) eofEvents(ctx context.Context, capture *path.Capture, client service.Service) ([]*service.Event, error) {
+// 	filter, err := verb.CommandFilterFlags.commandFilter(ctx, client, capture)
+// 	if err != nil {
+// 		return nil, log.Err(ctx, err, "Couldn't get filter")
+// 	}
+// 	requestEvents := path.Events{
+// 		Capture:     capture,
+// 		LastInFrame: true,
+// 		Filter:      filter,
+// 	}
 
-	if verb.Commands {
-		requestEvents.LastInFrame = false
-		requestEvents.AllCommands = true
-	}
+// 	if verb.Commands {
+// 		requestEvents.LastInFrame = false
+// 		requestEvents.AllCommands = true
+// 	}
 
-	// Get the end-of-frame events.
-	eofEvents, err := getEvents(ctx, client, &requestEvents)
-	if err != nil {
-		return nil, log.Err(ctx, err, "Couldn't get frame events")
-	}
+// 	// Get the end-of-frame events.
+// 	eofEvents, err := getEvents(ctx, client, &requestEvents)
+// 	if err != nil {
+// 		return nil, log.Err(ctx, err, "Couldn't get frame events")
+// 	}
 
-	lastFrame := verb.Frames.Start
-	if verb.Frames.Count > 0 {
-		lastFrame += verb.Frames.Count - 1
-	}
-	if lastFrame >= len(eofEvents) {
-		return nil, log.Errf(ctx, nil, "Requested frame %d, but capture only contains %d frames", lastFrame, len(eofEvents))
-	}
+// 	lastFrame := verb.Frames.Start
+// 	if verb.Frames.Count > 0 {
+// 		lastFrame += verb.Frames.Count - 1
+// 	}
+// 	if lastFrame >= len(eofEvents) {
+// 		return nil, log.Errf(ctx, nil, "Requested frame %d, but capture only contains %d frames", lastFrame, len(eofEvents))
+// 	}
 
-	return eofEvents, nil
-}
+// 	return eofEvents, nil
+// }
 
-func (verb *trimVerb) getDCERequest(eofEvents []*service.Event, p *path.Capture) []*path.Command {
-	frameCount := verb.Frames.Count
-	if frameCount < 0 {
-		frameCount = len(eofEvents) - verb.Frames.Start
-	}
-	dceRequest := make([]*path.Command, 0, frameCount+len(verb.ExtraCommands))
-	for i := 0; i < frameCount; i++ {
-		indices := eofEvents[verb.Frames.Start+i].Command.Indices
-		newIndices := make([]uint64, len(indices))
-		copy(newIndices, indices)
-		cmd := &path.Command{
-			Capture: p,
-			Indices: newIndices,
-		}
-		dceRequest = append(dceRequest, cmd)
-	}
-	for _, id := range verb.ExtraCommands {
-		cmd := &path.Command{
-			Capture: p,
-			Indices: []uint64{id},
-		}
-		dceRequest = append(dceRequest, cmd)
-	}
-	return dceRequest
-}
+// func (verb *trimVerb) getDCERequest(eofEvents []*service.Event, p *path.Capture) []*path.Command {
+// 	frameCount := verb.Frames.Count
+// 	if frameCount < 0 {
+// 		frameCount = len(eofEvents) - verb.Frames.Start
+// 	}
+// 	dceRequest := make([]*path.Command, 0, frameCount+len(verb.ExtraCommands))
+// 	for i := 0; i < frameCount; i++ {
+// 		indices := eofEvents[verb.Frames.Start+i].Command.Indices
+// 		newIndices := make([]uint64, len(indices))
+// 		copy(newIndices, indices)
+// 		cmd := &path.Command{
+// 			Capture: p,
+// 			Indices: newIndices,
+// 		}
+// 		dceRequest = append(dceRequest, cmd)
+// 	}
+// 	for _, id := range verb.ExtraCommands {
+// 		cmd := &path.Command{
+// 			Capture: p,
+// 			Indices: []uint64{id},
+// 		}
+// 		dceRequest = append(dceRequest, cmd)
+// 	}
+// 	return dceRequest
+// }

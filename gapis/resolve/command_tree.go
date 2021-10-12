@@ -20,7 +20,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/google/gapid/core/log"
 	"github.com/google/gapid/core/math/interval"
 	"github.com/google/gapid/gapis/api"
 	"github.com/google/gapid/gapis/capture"
@@ -296,35 +295,35 @@ func (r *CommandTreeResolvable) Resolve(ctx context.Context) (interface{}, error
 		}
 	}
 
-	if p.GroupByDrawCall || p.GroupByFrame || p.GroupBySubmission {
-		events, err := Events(ctx, &path.Events{
-			Capture:            p.Capture,
-			Filter:             p.Filter,
-			DrawCalls:          true,
-			TransformFeedbacks: true,
-			FirstInFrame:       true,
-			LastInFrame:        true,
-			Submissions:        true,
-		}, r.Config)
-		if err != nil {
-			return nil, log.Errf(ctx, err, "Couldn't get events")
-		}
-		if p.GroupByFrame {
-			addFrameGroups(ctx, events, p, out, api.CmdID(len(c.Commands)))
-		}
-		if p.GroupByTransformFeedback {
-			addFrameEventGroups(ctx, events, p, out, api.CmdID(len(c.Commands)),
-				service.EventKind_TransformFeedback, "Transform Feedback")
-		}
-		if p.GroupByDrawCall {
-			addFrameEventGroups(ctx, events, p, out, api.CmdID(len(c.Commands)),
-				service.EventKind_DrawCall, "Draw")
-		}
-		if p.GroupBySubmission {
-			addContainingGroups(ctx, events, p, out, api.CmdID(len(c.Commands)),
-				service.EventKind_Submission, "Host Coordination")
-		}
-	}
+	// if p.GroupByDrawCall || p.GroupByFrame || p.GroupBySubmission {
+	// 	events, err := Events(ctx, &path.Events{
+	// 		Capture:            p.Capture,
+	// 		Filter:             p.Filter,
+	// 		DrawCalls:          true,
+	// 		TransformFeedbacks: true,
+	// 		FirstInFrame:       true,
+	// 		LastInFrame:        true,
+	// 		Submissions:        true,
+	// 	}, r.Config)
+	// 	if err != nil {
+	// 		return nil, log.Errf(ctx, err, "Couldn't get events")
+	// 	}
+	// 	if p.GroupByFrame {
+	// 		addFrameGroups(ctx, events, p, out, api.CmdID(len(c.Commands)))
+	// 	}
+	// 	if p.GroupByTransformFeedback {
+	// 		addFrameEventGroups(ctx, events, p, out, api.CmdID(len(c.Commands)),
+	// 			service.EventKind_TransformFeedback, "Transform Feedback")
+	// 	}
+	// 	if p.GroupByDrawCall {
+	// 		addFrameEventGroups(ctx, events, p, out, api.CmdID(len(c.Commands)),
+	// 			service.EventKind_DrawCall, "Draw")
+	// 	}
+	// 	if p.GroupBySubmission {
+	// 		addContainingGroups(ctx, events, p, out, api.CmdID(len(c.Commands)),
+	// 			service.EventKind_Submission, "Host Coordination")
+	// 	}
+	// }
 
 	drawOrClearCmds := api.Spans{} // All the spans will have length 1
 
@@ -393,92 +392,92 @@ func (r *CommandTreeResolvable) Resolve(ctx context.Context) (interface{}, error
 	return out, nil
 }
 
-func addFrameEventGroups(
-	ctx context.Context,
-	events *service.Events,
-	p *path.CommandTree,
-	t *commandTree,
-	last api.CmdID,
-	kind service.EventKind,
-	prefix string) {
+// func addFrameEventGroups(
+// 	ctx context.Context,
+// 	events *service.Events,
+// 	p *path.CommandTree,
+// 	t *commandTree,
+// 	last api.CmdID,
+// 	kind service.EventKind,
+// 	prefix string) {
 
-	count := 0
-	for _, e := range events.List {
-		i := api.CmdID(e.Command.Indices[0])
-		switch e.Kind {
-		case kind:
-			// Find group which contains this event
-			group := &t.root
-			for true {
-				if idx := group.Spans.IndexOf(i); idx != -1 {
-					if subgroup, ok := group.Spans[idx].(*api.CmdIDGroup); ok {
-						group = subgroup
-						continue
-					}
-				}
-				break
-			}
+// 	count := 0
+// 	for _, e := range events.List {
+// 		i := api.CmdID(e.Command.Indices[0])
+// 		switch e.Kind {
+// 		case kind:
+// 			// Find group which contains this event
+// 			group := &t.root
+// 			for true {
+// 				if idx := group.Spans.IndexOf(i); idx != -1 {
+// 					if subgroup, ok := group.Spans[idx].(*api.CmdIDGroup); ok {
+// 						group = subgroup
+// 						continue
+// 					}
+// 				}
+// 				break
+// 			}
 
-			// Start with group of size 1 and grow it backward as long as nothing gets in the way.
-			start := i
-			for start >= group.Bounds().Start+1 && group.Spans.IndexOf(start-1) == -1 {
-				start--
-			}
+// 			// Start with group of size 1 and grow it backward as long as nothing gets in the way.
+// 			start := i
+// 			for start >= group.Bounds().Start+1 && group.Spans.IndexOf(start-1) == -1 {
+// 				start--
+// 			}
 
-			t.root.AddGroup(start, i+1, fmt.Sprintf("%v %v", prefix, count+1), []api.SubCmdIdx{})
-			count++
+// 			t.root.AddGroup(start, i+1, fmt.Sprintf("%v %v", prefix, count+1), []api.SubCmdIdx{})
+// 			count++
 
-		case service.EventKind_LastInFrame:
-			count = 0
-		}
-	}
-}
+// 		case service.EventKind_LastInFrame:
+// 			count = 0
+// 		}
+// 	}
+// }
 
-// addContainingGroups works much the same as addFrameEventGroups
-// except it will lift the command in question OUT of the group.
-// Furthermore it does not number the groups.
-func addContainingGroups(
-	ctx context.Context,
-	events *service.Events,
-	p *path.CommandTree,
-	t *commandTree,
-	last api.CmdID,
-	kind service.EventKind,
-	label string) {
+// // addContainingGroups works much the same as addFrameEventGroups
+// // except it will lift the command in question OUT of the group.
+// // Furthermore it does not number the groups.
+// func addContainingGroups(
+// 	ctx context.Context,
+// 	events *service.Events,
+// 	p *path.CommandTree,
+// 	t *commandTree,
+// 	last api.CmdID,
+// 	kind service.EventKind,
+// 	label string) {
 
-	lastLeft := api.CmdID(0)
-	for _, e := range events.List {
-		i := api.CmdID(e.Command.Indices[0])
-		switch e.Kind {
-		case kind, service.EventKind_LastInFrame:
-			// Find group which contains this event
-			group := &t.root
-			for true {
-				if idx := group.Spans.IndexOf(i); idx != -1 {
-					if subgroup, ok := group.Spans[idx].(*api.CmdIDGroup); ok {
-						group = subgroup
-						continue
-					}
-				}
-				break
-			}
+// 	lastLeft := api.CmdID(0)
+// 	for _, e := range events.List {
+// 		i := api.CmdID(e.Command.Indices[0])
+// 		switch e.Kind {
+// 		case kind, service.EventKind_LastInFrame:
+// 			// Find group which contains this event
+// 			group := &t.root
+// 			for true {
+// 				if idx := group.Spans.IndexOf(i); idx != -1 {
+// 					if subgroup, ok := group.Spans[idx].(*api.CmdIDGroup); ok {
+// 						group = subgroup
+// 						continue
+// 					}
+// 				}
+// 				break
+// 			}
 
-			// Start with group of size 1 and grow it backward as long as nothing gets in the way.
-			start := i
-			for start >= group.Bounds().Start+1 && group.Spans.IndexOf(start-1) == -1 {
-				start--
-			}
-			if lastLeft != 0 && start < lastLeft+1 {
-				start = lastLeft + 1
-			}
-			end := i
-			lastLeft = end
-			if start < end {
-				t.root.AddGroup(start, end, label, []api.SubCmdIdx{})
-			}
-		}
-	}
-}
+// 			// Start with group of size 1 and grow it backward as long as nothing gets in the way.
+// 			start := i
+// 			for start >= group.Bounds().Start+1 && group.Spans.IndexOf(start-1) == -1 {
+// 				start--
+// 			}
+// 			if lastLeft != 0 && start < lastLeft+1 {
+// 				start = lastLeft + 1
+// 			}
+// 			end := i
+// 			lastLeft = end
+// 			if start < end {
+// 				t.root.AddGroup(start, end, label, []api.SubCmdIdx{})
+// 			}
+// 		}
+// 	}
+// }
 
 type frame struct {
 	index int
@@ -494,63 +493,63 @@ func (f frame) addGroup(t *commandTree) {
 	}
 }
 
-func addFrameGroups(ctx context.Context, events *service.Events, p *path.CommandTree, t *commandTree, last api.CmdID) {
-	frameCount := 0
-	firstFrame, curFrame := frame{}, frame{}
+// func addFrameGroups(ctx context.Context, events *service.Events, p *path.CommandTree, t *commandTree, last api.CmdID) {
+// 	frameCount := 0
+// 	firstFrame, curFrame := frame{}, frame{}
 
-	for _, e := range events.List {
-		i := api.CmdID(e.Command.Indices[0])
-		switch e.Kind {
-		case service.EventKind_FirstInFrame:
-			curFrame.start = i
+// 	for _, e := range events.List {
+// 		i := api.CmdID(e.Command.Indices[0])
+// 		switch e.Kind {
+// 		case service.EventKind_FirstInFrame:
+// 			curFrame.start = i
 
-			// If the start is within existing group, move it past the end of the group
-			if idx := t.root.Spans.IndexOf(curFrame.start); idx != -1 {
-				span := t.root.Spans[idx]
-				if span.Bounds().Start < i { // Unless the start is equal to the group start.
-					if subgroup, ok := span.(*api.CmdIDGroup); ok {
-						curFrame.start = subgroup.Range.End
-					}
-				}
-			}
+// 			// If the start is within existing group, move it past the end of the group
+// 			if idx := t.root.Spans.IndexOf(curFrame.start); idx != -1 {
+// 				span := t.root.Spans[idx]
+// 				if span.Bounds().Start < i { // Unless the start is equal to the group start.
+// 					if subgroup, ok := span.(*api.CmdIDGroup); ok {
+// 						curFrame.start = subgroup.Range.End
+// 					}
+// 				}
+// 			}
 
-		case service.EventKind_LastInFrame:
-			frameCount++
-			curFrame.index, curFrame.end, curFrame.repr = frameCount, i, i
+// 		case service.EventKind_LastInFrame:
+// 			frameCount++
+// 			curFrame.index, curFrame.end, curFrame.repr = frameCount, i, i
 
-			// If the end is within existing group, move it to the end of the group
-			if idx := t.root.Spans.IndexOf(curFrame.end); idx != -1 {
-				if subgroup, ok := t.root.Spans[idx].(*api.CmdIDGroup); ok {
-					curFrame.end = subgroup.Range.Last()
-				}
-			}
+// 			// If the end is within existing group, move it to the end of the group
+// 			if idx := t.root.Spans.IndexOf(curFrame.end); idx != -1 {
+// 				if subgroup, ok := t.root.Spans[idx].(*api.CmdIDGroup); ok {
+// 					curFrame.end = subgroup.Range.Last()
+// 				}
+// 			}
 
-			// If the app properly annotates frames as well, we will end up with
-			// both groupings, where one is the only child of the other.
-			// However, we can not reliably detect this situation as the user
-			// group might be surrounded by (potentially filtered) commands.
+// 			// If the app properly annotates frames as well, we will end up with
+// 			// both groupings, where one is the only child of the other.
+// 			// However, we can not reliably detect this situation as the user
+// 			// group might be surrounded by (potentially filtered) commands.
 
-			// If this is the first frame, don't add it yet, until we see a second
-			// frame. This way we don't have a single "Frame 1" group for 1 frame
-			// traces (the norm).
-			if frameCount == 1 {
-				firstFrame = curFrame
-			} else {
-				if firstFrame.end != 0 {
-					firstFrame.addGroup(t)
-					firstFrame.end = 0
-				}
-				curFrame.addGroup(t)
-			}
-		}
-	}
-	if p.AllowIncompleteFrame && frameCount > 0 && curFrame.start > curFrame.end {
-		if firstFrame.end != 0 {
-			firstFrame.addGroup(t)
-		}
-		t.root.AddGroup(curFrame.start, last, "Incomplete Frame", []api.SubCmdIdx{})
-	}
-}
+// 			// If this is the first frame, don't add it yet, until we see a second
+// 			// frame. This way we don't have a single "Frame 1" group for 1 frame
+// 			// traces (the norm).
+// 			if frameCount == 1 {
+// 				firstFrame = curFrame
+// 			} else {
+// 				if firstFrame.end != 0 {
+// 					firstFrame.addGroup(t)
+// 					firstFrame.end = 0
+// 				}
+// 				curFrame.addGroup(t)
+// 			}
+// 		}
+// 	}
+// 	if p.AllowIncompleteFrame && frameCount > 0 && curFrame.start > curFrame.end {
+// 		if firstFrame.end != 0 {
+// 			firstFrame.addGroup(t)
+// 		}
+// 		t.root.AddGroup(curFrame.start, last, "Incomplete Frame", []api.SubCmdIdx{})
+// 	}
+// }
 
 func setRepresentations(ctx context.Context, g *api.CmdIDGroup, drawOrClearCmds api.Spans) {
 	data, _ := g.UserData.(*CmdGroupData)

@@ -16,10 +16,10 @@ package resolve
 
 import (
 	"context"
-	"fmt"
+	//"fmt"
 
-	"github.com/google/gapid/gapis/api"
-	"github.com/google/gapid/gapis/api/sync"
+	//"github.com/google/gapid/gapis/api"
+	//"github.com/google/gapid/gapis/api/sync"
 	"github.com/google/gapid/gapis/capture"
 	"github.com/google/gapid/gapis/service"
 	"github.com/google/gapid/gapis/service/path"
@@ -44,126 +44,126 @@ func Stats(ctx context.Context, p *path.Stats, r *path.ResolveConfig) (*service.
 }
 
 func drawCallStats(ctx context.Context, capt *path.Capture, stats *service.Stats, r *path.ResolveConfig) error {
-	d, err := SyncData(ctx, capt)
-	if err != nil {
-		return err
-	}
-	cmds, err := Cmds(ctx, capt)
-	if err != nil {
-		return err
-	}
+	// d, err := SyncData(ctx, capt)
+	// if err != nil {
+	// 	return err
+	// }
+	// cmds, err := Cmds(ctx, capt)
+	// if err != nil {
+	// 	return err
+	// }
 
-	st, err := capture.NewState(ctx)
-	if err != nil {
-		return err
-	}
-	flags := make([]api.CmdFlags, len(cmds))
+	// st, err := capture.NewState(ctx)
+	// if err != nil {
+	// 	return err
+	// }
+	// flags := make([]api.CmdFlags, len(cmds))
 
-	// Get the present calls
-	events, err := Events(ctx, &path.Events{
-		Capture:     capt,
-		LastInFrame: true,
-	}, r)
-	if err != nil {
-		return err
-	}
+	// // Get the present calls
+	// events, err := Events(ctx, &path.Events{
+	// 	Capture:     capt,
+	// 	LastInFrame: true,
+	// }, r)
+	// if err != nil {
+	// 	return err
+	// }
 
-	drawsPerFrame := make([]uint64, len(events.List))
-	drawsSinceLastFrame := uint64(0)
+	// drawsPerFrame := make([]uint64, len(events.List))
+	// drawsSinceLastFrame := uint64(0)
 
-	processed := map[sync.SyncNodeIdx]struct{}{}
+	// processed := map[sync.SyncNodeIdx]struct{}{}
 
-	var process func(pt sync.SyncNodeIdx) error
-	process = func(pt sync.SyncNodeIdx) error {
-		if _, ok := processed[pt]; ok {
-			return nil
-		}
-		processed[pt] = struct{}{}
+	// var process func(pt sync.SyncNodeIdx) error
+	// process = func(pt sync.SyncNodeIdx) error {
+	// 	if _, ok := processed[pt]; ok {
+	// 		return nil
+	// 	}
+	// 	processed[pt] = struct{}{}
 
-		ptObj := d.SyncNodes[pt]
-		if cmdIdx, ok := ptObj.(sync.CmdNode); ok {
-			idx := cmdIdx.Idx
-			cmd, err := Cmd(ctx, &path.Command{
-				Capture: capt,
-				Indices: []uint64(idx),
-			}, r)
-			if err != nil {
-				return err
-			}
-			// If the command has subcommands, ignore it (vkQueueSubmit or similar)
-			if _, ok := d.SubcommandReferences[api.CmdID(idx[0])]; len(idx) > 1 || !ok {
-				var cmdflags api.CmdFlags
-				if len(idx) == 1 {
-					cmdflags = flags[idx[0]]
-				} else {
-					cmdflags = cmd.CmdFlags()
-				}
-				if (len(idx) == 1 && cmdflags.IsDrawCall()) ||
-					(len(idx) > 1 && cmdflags.IsExecutedDraw()) {
+	// 	ptObj := d.SyncNodes[pt]
+	// 	if cmdIdx, ok := ptObj.(sync.CmdNode); ok {
+	// 		idx := cmdIdx.Idx
+	// 		cmd, err := Cmd(ctx, &path.Command{
+	// 			Capture: capt,
+	// 			Indices: []uint64(idx),
+	// 		}, r)
+	// 		if err != nil {
+	// 			return err
+	// 		}
+	// 		// If the command has subcommands, ignore it (vkQueueSubmit or similar)
+	// 		if _, ok := d.SubcommandReferences[api.CmdID(idx[0])]; len(idx) > 1 || !ok {
+	// 			var cmdflags api.CmdFlags
+	// 			if len(idx) == 1 {
+	// 				cmdflags = flags[idx[0]]
+	// 			} else {
+	// 				cmdflags = cmd.CmdFlags()
+	// 			}
+	// 			if (len(idx) == 1 && cmdflags.IsDrawCall()) ||
+	// 				(len(idx) > 1 && cmdflags.IsExecutedDraw()) {
 
-					drawsSinceLastFrame += 1
-				}
-			}
-		}
+	// 				drawsSinceLastFrame += 1
+	// 			}
+	// 		}
+	// 	}
 
-		deps, ok := d.SyncDependencies[pt]
-		if ok {
-			for _, dep := range deps {
-				err := process(dep)
-				if err != nil {
-					return err
-				}
-			}
-		}
+	// 	deps, ok := d.SyncDependencies[pt]
+	// 	if ok {
+	// 		for _, dep := range deps {
+	// 			err := process(dep)
+	// 			if err != nil {
+	// 				return err
+	// 			}
+	// 		}
+	// 	}
 
-		return nil
-	}
+	// 	return nil
+	// }
 
-	processCmd := func(idx uint64) error {
-		cmd := cmds[idx]
-		if err := cmd.Mutate(ctx, api.CmdID(idx), st, nil, nil); err != nil {
-			return fmt.Errorf("Fail to mutate command %v: %v", cmd, err)
-		}
-		flags[idx] = cmd.CmdFlags()
+	// processCmd := func(idx uint64) error {
+	// 	cmd := cmds[idx]
+	// 	if err := cmd.Mutate(ctx, api.CmdID(idx), st, nil, nil); err != nil {
+	// 		return fmt.Errorf("Fail to mutate command %v: %v", cmd, err)
+	// 	}
+	// 	flags[idx] = cmd.CmdFlags()
 
-		// If the command wasn't included in the dependency graph,
-		// assume its a synchronous command (e.g. glDraw)
-		if _, ok := d.CmdSyncNodes[api.CmdID(idx)]; !ok {
-			if flags[idx].IsDrawCall() {
-				drawsSinceLastFrame += 1
-			}
-		}
-		return nil
-	}
+	// 	// If the command wasn't included in the dependency graph,
+	// 	// assume its a synchronous command (e.g. glDraw)
+	// 	if _, ok := d.CmdSyncNodes[api.CmdID(idx)]; !ok {
+	// 		if flags[idx].IsDrawCall() {
+	// 			drawsSinceLastFrame += 1
+	// 		}
+	// 	}
+	// 	return nil
+	// }
 
-	cmdIdx := uint64(0)
-	for i, event := range events.List {
-		limitIdx := event.Command.Indices[0]
-		// Add any draws in the final unfinished frame to the last frame
-		if i == len(events.List)-1 {
-			limitIdx = uint64(len(cmds)) - 1
-		}
-		for cmdIdx <= limitIdx {
-			err := processCmd(cmdIdx)
-			if err != nil {
-				return err
-			}
-			cmdIdx += 1
-		}
-		id := api.CmdID(event.Command.Indices[0])
-		cmd := cmds[id]
-		// If the frame boundary was on a synchronized api, process its dependencies
-		if _, ok := cmd.API().(sync.SynchronizedAPI); ok {
-			pt := d.CmdSyncNodes[id]
-			err := process(pt)
-			if err != nil {
-				return err
-			}
-		}
-		drawsPerFrame[i] = drawsSinceLastFrame
-		drawsSinceLastFrame = 0
-	}
+	// cmdIdx := uint64(0)
+	// for i, event := range events.List {
+	// 	limitIdx := event.Command.Indices[0]
+	// 	// Add any draws in the final unfinished frame to the last frame
+	// 	if i == len(events.List)-1 {
+	// 		limitIdx = uint64(len(cmds)) - 1
+	// 	}
+	// 	for cmdIdx <= limitIdx {
+	// 		err := processCmd(cmdIdx)
+	// 		if err != nil {
+	// 			return err
+	// 		}
+	// 		cmdIdx += 1
+	// 	}
+	// 	id := api.CmdID(event.Command.Indices[0])
+	// 	cmd := cmds[id]
+	// 	// If the frame boundary was on a synchronized api, process its dependencies
+	// 	if _, ok := cmd.API().(sync.SynchronizedAPI); ok {
+	// 		pt := d.CmdSyncNodes[id]
+	// 		err := process(pt)
+	// 		if err != nil {
+	// 			return err
+	// 		}
+	// 	}
+	// 	drawsPerFrame[i] = drawsSinceLastFrame
+	// 	drawsSinceLastFrame = 0
+	// }
 
-	stats.DrawCalls = drawsPerFrame
+	// stats.DrawCalls = drawsPerFrame
 	return nil
 }
