@@ -172,6 +172,8 @@ public class TextureList extends Composite
             Comparator.comparingInt(Data::getSortLayers)),
         createTableColumn(viewer, "Levels", Data::getLevels,
             Comparator.comparingInt(Data::getSortLevels)),
+        createTableColumn(viewer, "Size", Data::getComputedSize,
+            Comparator.comparingInt(Data::getSortComputedSize)),
         createTableColumn(viewer, "Format", Data::getFormat,
             Comparator.comparing(Data::getFormat)));
   }
@@ -424,6 +426,14 @@ public class TextureList extends Composite
       return imageInfo.levelCount;
     }
 
+    public String getComputedSize() {
+      return imageInfo.getComputedSize();
+    }
+
+    public int getSortComputedSize() {
+      return imageInfo.level0.getComputedSize();
+    }
+
     public String getFormat() {
       return imageInfo.getFormat();
     }
@@ -521,6 +531,10 @@ public class TextureList extends Composite
 
       public String getDepth() {
         return (layerCount == 0) ? "" : String.valueOf(level0.getDepth());
+      }
+
+      public String getComputedSize() {
+        return (layerCount == 0) ? "" : String.valueOf(level0.getComputedSize());
       }
 
       public String getFormat() {

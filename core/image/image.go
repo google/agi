@@ -52,6 +52,7 @@ func (i *Info) Convert(ctx context.Context, f *Format) (*Info, error) {
 		Height: i.Height,
 		Depth:  i.Depth,
 		Bytes:  NewID(id),
+		ComputedSize: uint32(f.Size(int(i.Width), int(i.Height), int(i.Depth))),
 	}, nil
 }
 
@@ -76,6 +77,7 @@ func (i *Info) Resize(ctx context.Context, w, h, d uint32) (*Info, error) {
 		Height: h,
 		Depth:  d,
 		Bytes:  NewID(id),
+		ComputedSize: uint32(i.Format.Size(int(w),int(h),int(d))),
 	}, nil
 }
 
@@ -116,6 +118,7 @@ func (b *Data) NewInfo(ctx context.Context) (*Info, error) {
 		Height: b.Height,
 		Depth:  b.Depth,
 		Bytes:  NewID(id),
+		ComputedSize: uint32(len(b.Bytes)),
 	}, nil
 }
 
