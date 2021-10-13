@@ -552,6 +552,7 @@ func (t ImageObjectʳ) imageInfo(ctx context.Context, s *api.GlobalState, vkFmt 
 				Height: l.Height(),
 				Depth:  l.Depth(),
 				Bytes:  image.NewID(l.Data().ResourceID(ctx, s)),
+				ComputedSize: uint32(expectedSize),
 			}
 		}
 
@@ -600,6 +601,7 @@ func (t ImageObjectʳ) imageInfo(ctx context.Context, s *api.GlobalState, vkFmt 
 			Height: l.Height(),
 			Depth:  l.Depth(),
 			Bytes:  image.NewID(colorDataID),
+			ComputedSize: uint32(expectedSize),
 		}
 
 	case VkImageAspectFlagBits_VK_IMAGE_ASPECT_DEPTH_BIT | VkImageAspectFlagBits_VK_IMAGE_ASPECT_STENCIL_BIT:
@@ -675,6 +677,7 @@ func (t ImageObjectʳ) imageInfo(ctx context.Context, s *api.GlobalState, vkFmt 
 			Height: depthLevel.Height(),
 			Depth:  depthLevel.Depth(),
 			Bytes:  image.NewID(depthStencilDataID),
+			ComputedSize: uint32(format.Size(int(depthLevel.Width()), int(depthLevel.Height()), int(depthLevel.Depth()))),
 		}
 	}
 	return nil
