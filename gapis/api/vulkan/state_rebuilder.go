@@ -947,9 +947,9 @@ func (sb *stateBuilder) createDevice(d DeviceObjectʳ) {
 	if !d.PhysicalDeviceCustomBorderColorFeaturesEXT().IsNil() {
 		pNext = NewVoidᵖ(sb.MustAllocReadData(
 			NewVkPhysicalDeviceCustomBorderColorFeaturesEXT(
-				VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_BORDER_COLOR_FEATURES_EXT,
+				VkStructureType_VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_BORDER_COLOR_FEATURES_EXT,
 				pNext,
-				d.PhysicalDeviceCustomBorderColorFeaturesEXT().CustomBoderColors(),
+				d.PhysicalDeviceCustomBorderColorFeaturesEXT().CustomBorderColors(),
 				d.PhysicalDeviceCustomBorderColorFeaturesEXT().CustomBorderColorWithoutFormat(),
 			),
 		).Ptr())
@@ -2032,13 +2032,13 @@ func (sb *stateBuilder) createSampler(smp SamplerObjectʳ) {
 			),
 		).Ptr())
 	}
-	if !smp.CustomBoderColorInfo().IsNil() {
+	if !smp.CustomBorderColorInfo().IsNil() {
 		pNext = NewVoidᶜᵖ(sb.MustAllocReadData(
-			NewVkVkSamplerCustomBorderColorCreateInfoEXT(
+			NewVkSamplerCustomBorderColorCreateInfoEXT(
 				VkStructureType_VK_STRUCTURE_TYPE_SAMPLER_CUSTOM_BORDER_COLOR_CREATE_INFO_EXT, // sType
 				pNext,                                // pNext
-				smp.CustomBoderColorInfo().CustomBoderColor(), // customBorderColor
-				smp.CustomBoderColorInfo().Format(), // format
+				smp.CustomBorderColorInfo().CustomBorderColor(), // customBorderColor
+				smp.CustomBorderColorInfo().Fmt(), // format
 			),
 		).Ptr())
 	}
