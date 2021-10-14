@@ -19,7 +19,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"math"
 	"os"
 	"sync/atomic"
 	"time"
@@ -51,7 +50,7 @@ func (s *traceSession) Capture(ctx context.Context, start task.Signal, stop task
 	// Create trace file.
 	traceFile, err := file.Temp()
 	if err != nil {
-		return 0, log.Err(ctx, nil, "Trace Temp file creation")
+		return 0, log.Err(ctx, err, "Trace Temp file creation")
 	}
 	defer file.Remove(traceFile)
 
@@ -69,9 +68,9 @@ func (s *traceSession) Capture(ctx context.Context, start task.Signal, stop task
 	}
 
 	// Wait for capture to stop.
-	durationSecs := time.Duration(math.Ceil(float64(s.options.Duration) * float64(time.Second)))
-	if durationSecs > 0 {
-		stop.TryWait(ctx, durationSecs)
+	duration := time.Duration(float64(s.options.Duration) * float64(time.Second))
+	if duration > 0 {
+		stop.TryWait(ctx, duration)
 	} else {
 		stop.Wait(ctx)
 	}

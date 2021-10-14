@@ -193,7 +193,7 @@ func ParseDevices(ctx context.Context, stdout string) (map[string]bind.Status, e
 				if strings.ToUpper(rcsStatus) == "Y" {
 					devices[targetName] = bind.Online
 				} else {
-					log.I(ctx, "Skipping unreachable Fuchsia device: ", targetName)
+					log.I(ctx, "Skipping unreachable Fuchsia device: %v", targetName)
 				}
 			} else {
 				return nil, ErrInvalidDeviceList

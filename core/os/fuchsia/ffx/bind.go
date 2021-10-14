@@ -119,33 +119,24 @@ func (b *binding) TraceProviders(ctx context.Context) ([]string, error) {
 
 // StartTrace starts a Fuchsia trace.
 func (b *binding) StartTrace(ctx context.Context, options *service.TraceOptions, traceFile file.Path, stop task.Signal, ready task.Task) error {
-	var durationSecs uint32
 	var categoriesArg string
-	argLength := 0
 
-	// Extract trace options if any.
+	// Initialize shell command.
+	cmd := b.Command("trace", "start", "--output", traceFile.System())
+
+	// Extract trace options and append arguments to command.
 	if options != nil {
-		durationSecs = uint32(options.Duration)
+		if durationSecs := int(options.Duration); durationSecs > 0 {
+			cmd = cmd.With("--duration", strconv.Itoa(durationSecs))
+		}
+
 		// ffx expects a comma delimited list of trace categories.
 		if fuchsiaConfig := options.GetFuchsiaTraceConfig(); fuchsiaConfig != nil {
-			for _, category := range fuchsiaConfig.Categories {
-				categoriesArg += category + ","
-			}
-			if argLength = len(categoriesArg); argLength > 0 {
-				// Trim off the last comma.
-				categoriesArg = categoriesArg[:argLength-1]
+			categoriesArg = strings.Join(fuchsiaConfig.Categories, ",")
+			if len(categoriesArg) > 0 {
+				cmd = cmd.With("--categories", categoriesArg)
 			}
 		}
-	}
-
-	// Build shell command.
-	var cmd shell.Cmd
-	cmd = b.Command("trace", "start", "--output", traceFile.System())
-	if argLength > 0 {
-		cmd = cmd.With("--categories", categoriesArg)
-	}
-	if durationSecs > 0 {
-		cmd = cmd.With("--duration", strconv.FormatUint(uint64(durationSecs), 10 /* base */))
 	}
 
 	stdout, err := cmd.Call(ctx)
