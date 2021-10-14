@@ -2036,9 +2036,9 @@ func (sb *stateBuilder) createSampler(smp SamplerObjectʳ) {
 		pNext = NewVoidᶜᵖ(sb.MustAllocReadData(
 			NewVkSamplerCustomBorderColorCreateInfoEXT(
 				VkStructureType_VK_STRUCTURE_TYPE_SAMPLER_CUSTOM_BORDER_COLOR_CREATE_INFO_EXT, // sType
-				pNext,                                // pNext
+				pNext, // pNext
 				smp.CustomBorderColorInfo().CustomBorderColor(), // customBorderColor
-				smp.CustomBorderColorInfo().Fmt(), // format
+				smp.CustomBorderColorInfo().Fmt(),               // format
 			),
 		).Ptr())
 	}
