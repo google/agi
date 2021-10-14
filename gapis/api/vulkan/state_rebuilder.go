@@ -2643,7 +2643,7 @@ func (sb *stateBuilder) createGraphicsPipeline(gp GraphicsPipelineObjectʳ) {
 			NewVkPipelineVertexInputStateCreateInfo(
 				VkStructureType_VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // sType
 				pNext, // pNext
-				0, // flags
+				0,     // flags
 				uint32(gp.VertexInputState().BindingDescriptions().Len()),                                                               // vertexBindingDescriptionCount
 				NewVkVertexInputBindingDescriptionᶜᵖ(sb.MustUnpackReadMap(gp.VertexInputState().BindingDescriptions().All()).Ptr()),     // pVertexBindingDescriptions
 				uint32(gp.VertexInputState().AttributeDescriptions().Len()),                                                             // vertexAttributeDescriptionCount
