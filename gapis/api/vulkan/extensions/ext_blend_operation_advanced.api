@@ -56,14 +56,14 @@ class VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT {
 
 @internal
 class PhysicalDeviceBlendOperationAdvancedFeaturesEXT {
-    VkBool32           advancedBlendCoherentOperations
+    VkBool32           AdvancedBlendCoherentOperations
 }
 
 @extension("VK_EXT_blend_operation_advanced")
 class VkPhysicalDeviceBlendOperationAdvancedPropertiesEXT {
     VkStructureType    sType
     void*              pNext
-    uint32_t           advancedBlendMaxColorAttachments
+    u32                advancedBlendMaxColorAttachments
     VkBool32           advancedBlendIndependentBlend
     VkBool32           advancedBlendNonPremultipliedSrcColor
     VkBool32           advancedBlendNonPremultipliedDstColor
@@ -73,12 +73,12 @@ class VkPhysicalDeviceBlendOperationAdvancedPropertiesEXT {
 
 @internal
 class PhysicalDeviceBlendOperationAdvancedPropertiesEXT {
-    uint32_t           advancedBlendMaxColorAttachments
-    VkBool32           advancedBlendIndependentBlend
-    VkBool32           advancedBlendNonPremultipliedSrcColor
-    VkBool32           advancedBlendNonPremultipliedDstColor
-    VkBool32           advancedBlendCorrelatedOverlap
-    VkBool32           advancedBlendAllOperations
+    u32                AdvancedBlendMaxColorAttachments
+    VkBool32           AdvancedBlendIndependentBlend
+    VkBool32           AdvancedBlendNonPremultipliedSrcColor
+    VkBool32           AdvancedBlendNonPremultipliedDstColor
+    VkBool32           AdvancedBlendCorrelatedOverlap
+    VkBool32           AdvancedBlendAllOperations
 }
 
 @extension("VK_EXT_blend_operation_advanced")
@@ -92,7 +92,7 @@ class VkPipelineColorBlendAdvancedStateCreateInfoEXT {
 
 @internal
 class PipelineColorBlendAdvancedStateCreateInfoEXT {
-    VkBool32             srcPremultiplied
-    VkBool32             dstPremultiplied
-    VkBlendOverlapEXT    blendOverlap
+    VkBool32             SrcPremultiplied
+    VkBool32             DstPremultiplied
+    VkBlendOverlapEXT    BlendOverlap
 }
