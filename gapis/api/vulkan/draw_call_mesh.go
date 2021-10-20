@@ -255,7 +255,6 @@ func getIndicesData(ctx context.Context, s *api.GlobalState, thread uint64, boun
 	default:
 		return []uint32{}, fmt.Errorf("Missing index buffer type %v", boundIndexBuffer.Type())
 	}
-	return []uint32{}, nil
 }
 
 func findBinding(lastDrawInfo DrawInfoʳ, attribute VkVertexInputAttributeDescription) (VkVertexInputBindingDescription, bool) {
