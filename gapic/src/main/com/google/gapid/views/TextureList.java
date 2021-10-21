@@ -440,36 +440,38 @@ public class TextureList extends Composite
 
     private static class AdditionalInfo {
       public static final AdditionalInfo NULL =
-          new AdditionalInfo("", Image.Info.getDefaultInstance(), 0, 0);
+          new AdditionalInfo("", Image.Info.getDefaultInstance(), 0, 0, 0);
       public static final AdditionalInfo NULL_1D =
-          new AdditionalInfo("1D", Image.Info.getDefaultInstance(), 0, 0);
+          new AdditionalInfo("1D", Image.Info.getDefaultInstance(), 0, 0, 0);
       public static final AdditionalInfo NULL_1D_ARRAY =
-          new AdditionalInfo("1D Array", Image.Info.getDefaultInstance(), 0, 0);
+          new AdditionalInfo("1D Array", Image.Info.getDefaultInstance(), 0, 0, 0);
       public static final AdditionalInfo NULL_2D =
-          new AdditionalInfo("2D", Image.Info.getDefaultInstance(), 0, 0);
+          new AdditionalInfo("2D", Image.Info.getDefaultInstance(), 0, 0, 0);
       public static final AdditionalInfo NULL_2D_MS =
-          new AdditionalInfo("2D Multisampled", Image.Info.getDefaultInstance(), 0, 0);
+          new AdditionalInfo("2D Multisampled", Image.Info.getDefaultInstance(), 0, 0, 0);
       public static final AdditionalInfo NULL_2D_ARRAY =
-          new AdditionalInfo("2D Array", Image.Info.getDefaultInstance(), 0, 0);
+          new AdditionalInfo("2D Array", Image.Info.getDefaultInstance(), 0, 0, 0);
       public static final AdditionalInfo NULL_2D_MS_ARRAY =
-          new AdditionalInfo("2D Multisampled Array", Image.Info.getDefaultInstance(), 0, 0);
+          new AdditionalInfo("2D Multisampled Array", Image.Info.getDefaultInstance(), 0, 0, 0);
       public static final AdditionalInfo NULL_3D =
-          new AdditionalInfo("3D", Image.Info.getDefaultInstance(), 0, 0);
+          new AdditionalInfo("3D", Image.Info.getDefaultInstance(), 0, 0, 0);
       public static final AdditionalInfo NULL_CUBEMAP =
-          new AdditionalInfo("Cubemap", Image.Info.getDefaultInstance(), 0, 0);
+          new AdditionalInfo("Cubemap", Image.Info.getDefaultInstance(), 0, 0, 0);
       public static final AdditionalInfo NULL_CUBEMAP_ARRAY =
-          new AdditionalInfo("Cubemap Array", Image.Info.getDefaultInstance(), 0, 0);
+          new AdditionalInfo("Cubemap Array", Image.Info.getDefaultInstance(), 0, 0, 0);
 
       public final Image.Info level0;
       public final int layerCount;
       public final int levelCount;
       public final String typeLabel;
+      public final int totalSize;
 
-      public AdditionalInfo(String typeLabel, Image.Info level0, int layerCount, int levelCount) {
+      public AdditionalInfo(String typeLabel, Image.Info level0, int layerCount, int levelCount, int totalSize) {
         this.level0 = level0;
         this.layerCount = layerCount;
         this.levelCount = levelCount;
         this.typeLabel = typeLabel;
+        this.totalSize = totalSize;
       }
 
       public static AdditionalInfo from(API.ResourceData data) {
@@ -477,37 +479,67 @@ public class TextureList extends Composite
         switch (texture.getTypeCase()) {
           case TEXTURE_1D: {
             API.Texture1D t = texture.getTexture1D();
+            int totalSize = 0;
+            for (Image.Info img : t.getLevelsList()) {
+              totalSize += img.getComputedSize();
+            }
             return (t.getLevelsCount() == 0) ? NULL_1D :
-                new AdditionalInfo("1D", t.getLevels(0), 1, t.getLevelsCount());
+                new AdditionalInfo("1D", t.getLevels(0), 1, t.getLevelsCount(), totalSize);
           }
           case TEXTURE_1D_ARRAY: {
             API.Texture1DArray t = texture.getTexture1DArray();
+            int totalSize = 0;
+            for (API.Texture1D layer : t.getLayersList()) {
+              for (Image.Info img : layer.getLevelsList()) {
+                totalSize += img.getComputedSize();
+              }
+            }
             return (t.getLayersCount() == 0 || t.getLayers(0).getLevelsCount() == 0) ? NULL_1D_ARRAY :
                 new AdditionalInfo("1D Array", t.getLayers(0).getLevels(0), t.getLayersCount(),
-                    t.getLayers(0).getLevelsCount());
+                    t.getLayers(0).getLevelsCount(), totalSize);
           }
           case TEXTURE_2D: {
             API.Texture2D t = texture.getTexture2D();
             AdditionalInfo nullInfo = t.getMultisampled() ? NULL_2D_MS : NULL_2D;
+            int totalSize = 0;
+            for (Image.Info img : t.getLevelsList()) {
+              totalSize += img.getComputedSize();
+            }
             return (t.getLevelsCount() == 0) ? nullInfo :
-                new AdditionalInfo(nullInfo.typeLabel, t.getLevels(0), 1, t.getLevelsCount());
+                new AdditionalInfo(nullInfo.typeLabel, t.getLevels(0), 1, t.getLevelsCount(), totalSize);
           }
           case TEXTURE_2D_ARRAY: {
             API.Texture2DArray t = texture.getTexture2DArray();
             AdditionalInfo nullInfo = t.getMultisampled() ? NULL_2D_MS_ARRAY : NULL_2D_ARRAY;
+            int totalSize = 0;
+            for (API.Texture2D layer : t.getLayersList()) {
+              for (Image.Info img : layer.getLevelsList()) {
+                totalSize += img.getComputedSize();
+              }
+            }
             return (t.getLayersCount() == 0 || t.getLayers(0).getLevelsCount() == 0) ? nullInfo :
                 new AdditionalInfo(nullInfo.typeLabel, t.getLayers(0).getLevels(0), t.getLayersCount(),
-                    t.getLayers(0).getLevelsCount());
+                    t.getLayers(0).getLevelsCount(), totalSize);
           }
           case TEXTURE_3D: {
             API.Texture3D t = texture.getTexture3D();
+            int totalSize = 0;
+            for (Image.Info img : t.getLevelsList()) {
+              totalSize += img.getComputedSize();
+            }
             return (t.getLevelsCount() == 0) ? NULL_3D :
-                new AdditionalInfo("3D", t.getLevels(0), 1, t.getLevelsCount());
+                new AdditionalInfo("3D", t.getLevels(0), 1, t.getLevelsCount(), totalSize);
           }
           case CUBEMAP: {
             API.Cubemap c = texture.getCubemap();
+            int totalSize = 0;
+            for (API.CubemapLevel level : c.getLevelsList()) {
+              totalSize += level.getNegativeX().getComputedSize() + level.getPositiveX().getComputedSize() +
+              level.getNegativeY().getComputedSize() + level.getPositiveY().getComputedSize() +
+              level.getNegativeZ().getComputedSize() + level.getPositiveZ().getComputedSize();
+            }
             return (c.getLevelsCount() == 0) ? NULL_CUBEMAP :
-                new AdditionalInfo("Cubemap", c.getLevels(0).getNegativeX(), 1, c.getLevelsCount());
+                new AdditionalInfo("Cubemap", c.getLevels(0).getNegativeX(), 1, c.getLevelsCount(), totalSize);
           }
           case CUBEMAP_ARRAY: {
             return NULL_CUBEMAP_ARRAY; // TODO
