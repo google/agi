@@ -924,9 +924,9 @@ void VulkanSpy::serializeGPUBuffers(StateSerializer* serializer) {
               VkAccessFlagBits::VK_ACCESS_TRANSFER_READ_BIT;
           img_barriers[i].mdstAccessMask =
               VkAccessFlagBits::VK_ACCESS_MEMORY_READ_BIT |
-              VkAccessFlagBits::VK_ACCESS_MEMORY_WRITE_BIT img_barriers[i]
-                  .moldLayout =
-                  VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+              VkAccessFlagBits::VK_ACCESS_MEMORY_WRITE_BIT;
+          img_barriers[i].moldLayout =
+              VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
           img_barriers[i].mnewLayout = old_layouts[i];
         }
         commandBuffer.FinishAndSubmit(queue->mVulkanHandle);
