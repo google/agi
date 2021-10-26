@@ -547,11 +547,11 @@ func (t ImageObjectʳ) imageInfo(ctx context.Context, s *api.GlobalState, vkFmt 
 		expectedSize := format.Size(int(l.Width()), int(l.Height()), int(l.Depth()))
 		if ll.IsNil() || ll.Size() == VkDeviceSize(expectedSize) {
 			return &image.Info{
-				Format: format,
-				Width:  l.Width(),
-				Height: l.Height(),
-				Depth:  l.Depth(),
-				Bytes:  image.NewID(l.Data().ResourceID(ctx, s)),
+				Format:       format,
+				Width:        l.Width(),
+				Height:       l.Height(),
+				Depth:        l.Depth(),
+				Bytes:        image.NewID(l.Data().ResourceID(ctx, s)),
 				ComputedSize: uint32(expectedSize),
 			}
 		}
@@ -596,11 +596,11 @@ func (t ImageObjectʳ) imageInfo(ctx context.Context, s *api.GlobalState, vkFmt 
 		}
 
 		return &image.Info{
-			Format: format,
-			Width:  l.Width(),
-			Height: l.Height(),
-			Depth:  l.Depth(),
-			Bytes:  image.NewID(colorDataID),
+			Format:       format,
+			Width:        l.Width(),
+			Height:       l.Height(),
+			Depth:        l.Depth(),
+			Bytes:        image.NewID(colorDataID),
 			ComputedSize: uint32(expectedSize),
 		}
 
@@ -672,11 +672,11 @@ func (t ImageObjectʳ) imageInfo(ctx context.Context, s *api.GlobalState, vkFmt 
 		}
 
 		return &image.Info{
-			Format: format,
-			Width:  depthLevel.Width(),
-			Height: depthLevel.Height(),
-			Depth:  depthLevel.Depth(),
-			Bytes:  image.NewID(depthStencilDataID),
+			Format:       format,
+			Width:        depthLevel.Width(),
+			Height:       depthLevel.Height(),
+			Depth:        depthLevel.Depth(),
+			Bytes:        image.NewID(depthStencilDataID),
 			ComputedSize: uint32(format.Size(int(depthLevel.Width()), int(depthLevel.Height()), int(depthLevel.Depth()))),
 		}
 	}
