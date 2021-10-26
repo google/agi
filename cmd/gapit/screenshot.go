@@ -21,6 +21,7 @@ import (
 	"image"
 	"image/png"
 	"os"
+	"math"
 	"strconv"
 	"strings"
 	"sync"
@@ -203,62 +204,75 @@ func (verb *screenshotVerb) getSingleFrame(ctx context.Context, cmd *path.Comman
 	}, nil
 }
 
-func (verb *screenshotVerb) frameCommands(ctx context.Context, capture *path.Capture, client service.Service) ([]*path.Command, error) {
-	// filter, err := verb.CommandFilterFlags.commandFilter(ctx, client, capture)
-	// if err != nil {
-	// 	return nil, log.Err(ctx, err, "Couldn't get filter")
-	// }
+func (verb *screenshotVerb) frameCommands(ctx context.Context, capture *path.Capture, client client.Client) ([]*path.Command, error) {
+	filter, err := verb.CommandFilterFlags.commandFilter(ctx, client, capture)
+	if err != nil {
+		return nil, log.Err(ctx, err, "Couldn't get filter")
+	}
+	filter.OnlyEndOfFrames = true
 
-	// requestEvents := path.Events{
-	// 	Capture:     capture,
-	// 	LastInFrame: true,
-	// 	DrawCalls:   verb.Draws,
-	// 	Filter:      filter,
-	// }
+	treePath := capture.CommandTree(filter)
 
-	// // Get the end-of-frame and possibly draw call events.
-	// events, err := getEvents(ctx, client, &requestEvents)
-	// if err != nil {
-	// 	return nil, log.Err(ctx, err, "Couldn't get frame events")
-	// }
+	boxedTree, err := client.Get(ctx, treePath.Path(), nil)
+	if err != nil {
+		return nil, log.Err(ctx, err, "Failed to load the command tree")
+	}
 
-	// // Compute an index of frame to event idx.
-	// frameIdx := map[int]int{}
-	// lastFrame := 0
-	// for i, e := range events {
-	// 	if e.Kind == service.EventKind_LastInFrame {
-	// 		lastFrame++
-	// 		frameIdx[lastFrame] = i
-	// 	}
-	// }
+	tree := boxedTree.(*service.CommandTree)
+	_ = tree
 
-	// if len(verb.Frame) == 0 {
-	// 	verb.Frame = []int{lastFrame}
-	// }
+	var allEOFCommands []*path.Command
+	traverseCommandTree(ctx, client, tree.Root, func(n *service.CommandTreeNode, prefix string) error {
+		// Filter out groups // ALAN ???
+		if n.Group != "" {
+			return nil
+		}
+		allEOFCommands = append(allEOFCommands, n.Commands.First())
+		return nil
+	}, "", true)
 
-	var commands []*path.Command
-	// for _, frame := range verb.Frame {
-	// 	last, ok := frameIdx[frame]
-	// 	if !ok {
-	// 		return nil, fmt.Errorf("Invalid frame number %d (last frame is %d)", frame, lastFrame)
-	// 	}
+	if len(verb.Frame) == 0 {
+		verb.Frame = []int{len(allEOFCommands) -1}
+	}
 
-	// 	first := last
-	// 	if verb.Draws {
-	// 		if frame == 1 {
-	// 			first = 0
-	// 		} else {
-	// 			first = frameIdx[frame-1]
-	// 		}
-	// 	}
-	// 	for idx := first; idx <= last; idx++ {
-	// 		commands = append(commands, events[idx].Command)
-	// 	}
-	// }
-	return commands, nil
+	var retCommands []*path.Command
+	for _, frame := range verb.Frame {
+
+		if frame < 0 || frame >= len(allEOFCommands) {
+			return nil, fmt.Errorf("Invalid frame number %d (last frame is %d)", frame, len(allEOFCommands))
+		}
+
+		if verb.Draws {
+
+			firstFrameCommand := uint64(0)
+			if frame > 0 {
+				firstFrameCommand = allEOFCommands[frame -1].Indices[0]
+			}
+
+			lastFrameCommand := uint64(math.MaxUint64)
+			if frame < len(allEOFCommands) {
+				lastFrameCommand = allEOFCommands[frame].Indices[0]
+			}
+
+			drawCommands, err := verb.doExecutedDrawCommands(ctx, capture, client, math.MaxInt, firstFrameCommand, lastFrameCommand)
+			if err != nil {
+				return nil, fmt.Errorf("Error getting draw calls for frame")
+			}
+
+			retCommands = append(retCommands, drawCommands...)
+		} else {
+			retCommands = append(retCommands, allEOFCommands[frame])
+		}
+	}
+
+	return retCommands, nil
 }
 
 func (verb *screenshotVerb) executedDrawCommands(ctx context.Context, capture *path.Capture, client client.Client, maxAmount int) ([]*path.Command, error) {
+	return verb.doExecutedDrawCommands(ctx, capture, client, maxAmount, 0, math.MaxUint64)
+}
+
+func (verb *screenshotVerb) doExecutedDrawCommands(ctx context.Context, capture *path.Capture, client client.Client, maxAmount int, after uint64, before uint64) ([]*path.Command, error) {
 	filter, err := verb.CommandFilterFlags.commandFilter(ctx, client, capture)
 	if err != nil {
 		return nil, log.Err(ctx, err, "Couldn't get filter")
@@ -280,7 +294,9 @@ func (verb *screenshotVerb) executedDrawCommands(ctx context.Context, capture *p
 		if n.Group != "" || n.NumChildren > 0 || len(n.Commands.First().Indices) == 1 {
 			return nil
 		}
-		allDrawCommands = append(allDrawCommands, n.Commands.First())
+		if n.Commands.First().Indices[0] >= after && n.Commands.First().Indices[0] < before {
+			allDrawCommands = append(allDrawCommands, n.Commands.First())
+		}
 		return nil
 	}, "", true)
 

@@ -20,6 +20,8 @@ import (
 	"github.com/google/gapid/gapis/api"
 	"github.com/google/gapid/gapis/api/sync"
 	"github.com/google/gapid/gapis/service/path"
+
+	"github.com/google/gapid/core/log"
 )
 
 // CommandFilter is a predicate used for filtering commands.
@@ -68,6 +70,12 @@ func buildFilter(
 	if f.GetOnlyExecutedDraws() {
 		filters = append(filters, func(id api.CmdID, cmd api.Cmd, s *api.GlobalState, idx api.SubCmdIdx) bool {
 			return (cmd.CmdFlags().IsExecutedDraw() && len(idx) > 1) || cmd.CmdFlags().IsSubmission()
+		})
+	}
+	if f.GetOnlyEndOfFrames() {
+		filters = append(filters, func(id api.CmdID, cmd api.Cmd, s *api.GlobalState, idx api.SubCmdIdx) bool {
+			if cmd.CmdFlags().IsEndOfFrame() { log.W(ctx, "AAAAA %v : %v", id, cmd) }
+			return cmd.CmdFlags().IsEndOfFrame()
 		})
 	}
 	return filters.All, nil
