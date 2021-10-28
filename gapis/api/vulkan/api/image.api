@@ -665,8 +665,10 @@ cmd VkResult vkCreateSampler(
         }
         case VK_STRUCTURE_TYPE_SAMPLER_CUSTOM_BORDER_COLOR_CREATE_INFO_EXT: {
           ext := as!VkSamplerCustomBorderColorCreateInfoEXT*(next.Ptr)[0]
-          sampler.CustomBorderColorInfo.CustomBorderColor = ext.customBorderColor
-          sampler.CustomBorderColorInfo.Format = ext.format
+          sampler.CustomBorderColorInfo = new!SamplerCustomBorderColorCreateInfoEXT(
+            CustomBorderColor: ext.customBorderColor,
+            Format: ext.format,
+          )
         }
       }
       next.Ptr = as!VulkanStructHeader*(next.Ptr)[0].PNext
