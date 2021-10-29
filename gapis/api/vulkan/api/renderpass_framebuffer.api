@@ -140,6 +140,7 @@ cmd void vkDestroyFramebuffer(
   @unused ref!VulkanDebugMarkerInfo          DebugInfo
   // Vulkan 1.1 core
   @unused ref!InputAttachmentAspectInfo      InputAttachmentAspectInfo
+  @unused ref!RenderPassMultiviewCreateInfo  MultiviewInfo
 }
 
 @indirect("VkDevice")
@@ -177,6 +178,36 @@ cmd VkResult vkCreateRenderPass(
                 // then use the input attachment aspect info to fix the dependency.
                 renderPass.InputAttachmentAspectInfo.AspectReferences[j] = ext.pAspectReferences[0]
               }
+            }
+          }
+        }
+        case VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO: {
+          ext := as!VkRenderPassMultiviewCreateInfo*(next.Ptr)[0]
+
+          renderPass.MultiviewInfo = new!RenderPassMultiviewCreateInfo(
+            SubpassCount: ext.subpassCount,
+            DependencyCount: ext.dependencyCount,
+            CorrelationMaskCount: ext.correlationMaskCount,
+          )
+
+          if ext.pViewMasks != null {
+            viewMasks := ext.pViewMasks[0:ext.subpassCount]
+            for j in (0 .. ext.subpassCount) {
+                renderPass.MultiviewInfo.PViewMasks[j] = viewMasks[j]
+            }
+          }
+
+          if ext.pViewOffsets != null {
+            viewOffsets := ext.pViewOffsets[0:ext.dependencyCount]
+            for j in (0 .. ext.dependencyCount) {
+                renderPass.MultiviewInfo.PViewOffsets[j] = viewOffsets[j]
+            }
+          }
+
+          if ext.pCorrelationMasks != null {
+            correlationMasks := ext.pCorrelationMasks[0:ext.correlationMaskCount]
+            for j in (0 .. ext.correlationMaskCount) {
+                renderPass.MultiviewInfo.PCorrelationMasks[j] = correlationMasks[j]
             }
           }
         }
