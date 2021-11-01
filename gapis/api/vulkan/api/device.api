@@ -97,9 +97,6 @@
 
   // @extension("VK_KHR_custom_border_color")
   @unused ref!PhysicalDeviceCustomBorderColorFeaturesEXT PhysicalDeviceCustomBorderColorFeaturesEXT
-
-  // @extension("VK_KHR)_buffer_device_address")
-  @unused ref!PhysicalDeviceBufferDeviceAddressFeaturesKHR PhysicalDeviceBufferDeviceAddressFeaturesKHR
 }
 
 @indirect("VkDevice")
@@ -339,9 +336,9 @@ sub ref!DeviceObject createDeviceObject(const VkDeviceCreateInfo* data) {
             CustomBorderColorWithoutFormat: ext.customBorderColorWithoutFormat,
           )
         }
-        case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES_KHR: {
-          ext := as!VkPhysicalDeviceBufferDeviceAddressFeaturesKHR*(next.Ptr)[0]
-          object.PhysicalDeviceBufferDeviceAddressFeaturesKHR = new!PhysicalDeviceBufferDeviceAddressFeaturesKHR(
+        case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES: {
+          ext := as!VkPhysicalDeviceBufferDeviceAddressFeatures*(next.Ptr)[0]
+          object.PhysicalDeviceBufferDeviceAddressFeatures = new!PhysicalDeviceBufferDeviceAddressFeatures(
             BufferDeviceAddress: ext.bufferDeviceAddress,
             BufferDeviceAddressCaptureReplay: ext.bufferDeviceAddressCaptureReplay,
             BufferDeviceAddressMultiDevice: ext.bufferDeviceAddressMultiDevice,

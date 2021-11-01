@@ -121,8 +121,8 @@ cmd VkResult vkCreateBuffer(
           ext := as!VkExternalMemoryBufferCreateInfo*(next.Ptr)[0]
           bufferInfo.ExternalHandleTypeFlags = ext.handleTypes
         }
-        case VK_STRUCTURE_TYPE_BUFFER_OPAQUE_CAPTURE_ADDRESS_CREATE_INFO_KHR: {
-          ext := as!VkBufferOpaqueCaptureAddressCreateInfoKHR*(next.Ptr)[0]
+        case VK_STRUCTURE_TYPE_BUFFER_OPAQUE_CAPTURE_ADDRESS_CREATE_INFO: {
+          ext := as!VkBufferOpaqueCaptureAddressCreateInfo*(next.Ptr)[0]
           bufferInfo.OpaqueCaptureAddress = ext.opaqueCaptureAddress
         }
       }

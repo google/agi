@@ -132,8 +132,8 @@ cmd VkResult vkAllocateMemory(
           ext := as!VkImportAndroidHardwareBufferInfoANDROID*(next.Ptr)[0]
           memoryObject.AndroidHardwareBuffer = as!u64(ext.buffer)
         }
-        case VK_STRUCTURE_TYPE_MEMORY_OPAQUE_CAPTURE_ADDRESS_ALLOCATE_INFO_KHR: {
-          ext := as!VkMemoryOpaqueCaptureAddressAllocateInfoKHR*(next.Ptr)[0]
+        case VK_STRUCTURE_TYPE_MEMORY_OPAQUE_CAPTURE_ADDRESS_ALLOCATE_INFO: {
+          ext := as!VkMemoryOpaqueCaptureAddressAllocateInfo*(next.Ptr)[0]
           memoryObject.OpaqueCaptureAddress = as!u64(ext.opaqueCaptureAddress)
         }
       }

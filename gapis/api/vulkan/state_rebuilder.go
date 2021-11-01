@@ -954,17 +954,6 @@ func (sb *stateBuilder) createDevice(d DeviceObjectʳ) {
 			),
 		).Ptr())
 	}
-	if !d.PhysicalDeviceBufferDeviceAddressFeaturesKHR().IsNil() {
-		pNext = NewVoidᵖ(sb.MustAllocReadData(
-			NewVkPhysicalDeviceBufferDeviceAddressFeaturesKHR(
-				VkStructureType_VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES_KHR,
-				pNext,
-				d.PhysicalDeviceBufferDeviceAddressFeaturesKHR().BufferDeviceAddress(),
-				d.PhysicalDeviceBufferDeviceAddressFeaturesKHR().BufferDeviceAddressCaptureReplay(),
-				d.PhysicalDeviceBufferDeviceAddressFeaturesKHR().BufferDeviceAddressMultiDevice(),
-			),
-		).Ptr())
-	}
 	if !d.PhysicalDeviceBufferDeviceAddressFeatures().IsNil() {
 		pNext = NewVoidᵖ(sb.MustAllocReadData(
 			NewVkPhysicalDeviceBufferDeviceAddressFeatures(

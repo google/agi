@@ -117,7 +117,7 @@ cmd u64 vkGetBufferOpaqueCaptureAddressKHR(
 @indirect("VkDevice")
 cmd u64 vkGetDeviceMemoryOpaqueCaptureAddressKHR (
     VkDevice                                        device,
-    const VkDeviceMemoryOpaqueCaptureAddressInfo*   pInfo) {
+    const VkDeviceMemoryOpaqueCaptureAddressInfoKHR*   pInfo) {
     memory := preGetDeviceMemoryOpaqueCaptureAddress(device, as!const VkDeviceMemoryOpaqueCaptureAddressInfo*(pInfo))
     deviceMemoryOpaqueCaptureAddress := ?
     postGetDeviceMemoryOpaqueCaptureAddress(memory, deviceMemoryOpaqueCaptureAddress)
