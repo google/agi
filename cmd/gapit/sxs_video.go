@@ -15,23 +15,24 @@
 package main
 
 import (
-	//"bytes"
+	"bytes"
 	"context"
-	//"fmt"
+	"fmt"
 	"image"
 	"image/color"
-	//"image/draw"
+	"image/draw"
 	"math"
-	//"time"
+	"time"
 
-	//"github.com/google/gapid/core/event/task"
+	"github.com/google/gapid/core/event/task"
 	img "github.com/google/gapid/core/image"
-	//"github.com/google/gapid/core/image/font"
-	//"github.com/google/gapid/core/log"
+	"github.com/google/gapid/core/image/font"
+	"github.com/google/gapid/core/log"
 	"github.com/google/gapid/core/math/f32"
 	"github.com/google/gapid/core/math/sint"
-	//"github.com/google/gapid/core/text/reflow"
+	"github.com/google/gapid/core/text/reflow"
 	"github.com/google/gapid/gapis/service"
+	"github.com/google/gapid/gapis/client"
 	"github.com/google/gapid/gapis/service/path"
 )
 
@@ -74,32 +75,38 @@ func getFBO(ctx context.Context, client service.Service, a *path.Command) (*img.
 func (verb *videoVerb) sxsVideoSource(
 	ctx context.Context,
 	capture *path.Capture,
-	client service.Service,
+	client client.Client,
 	device *path.Device) (videoFrameWriter, error) {
 
-	// filter, err := verb.CommandFilterFlags.commandFilter(ctx, client, capture)
-	// if err != nil {
-	// 	return nil, log.Err(ctx, err, "Couldn't get filter")
-	// }
+	filter, err := verb.CommandFilterFlags.commandFilter(ctx, client, capture)
+	if err != nil {
+		return nil, log.Err(ctx, err, "Couldn't get filter")
+	}
+	filter.OnlyEndOfFrames = true
 
-	// // Get the draw call and end-of-frame events.
-	// events, err := getEvents(ctx, client, &path.Events{
-	// 	Capture:                 capture,
-	// 	DrawCalls:               true,
-	// 	Clears:                  true,
-	// 	LastInFrame:             true,
-	// 	FramebufferObservations: true,
-	// 	Filter:                  filter,
-	// })
-	// if err != nil {
-	// 	return nil, log.Err(ctx, err, "Couldn't get events")
-	// }
+	treePath := capture.CommandTree(filter)
 
-	// // Find maximum frame width / height of all frames, and get all observation
-	// // command indices.
-	// videoFrames := []*videoFrame{}
-	// w, h := 0, 0
-	// frameIndex, numDrawCalls := 0, 0
+	boxedTree, err := client.Get(ctx, treePath.Path(), nil)
+	if err != nil {
+		return nil, log.Err(ctx, err, "Failed to load the command tree")
+	}
+
+	tree := boxedTree.(*service.CommandTree)
+
+	var allEOFCommands []*path.Command
+	traverseCommandTree(ctx, client, tree.Root, func(n *service.CommandTreeNode, prefix string) error {
+		if n.Group != "" {
+			return nil
+		}
+		allEOFCommands = append(allEOFCommands, n.Commands.First())
+		return nil
+	}, "", true)
+
+	// Find maximum frame width / height of all frames, and get all observation
+	// command indices.
+	videoFrames := []*videoFrame{}
+	w, h := 0, 0
+	frameIndex, numDrawCalls := 0, 0
 
 	// // Some traces call eglSwapBuffers without actually drawing to or clearing
 	// // the framebuffer. This is most common during loading screens.
@@ -120,188 +127,174 @@ func (verb *videoVerb) sxsVideoSource(
 
 	// var lastFrameEvent *path.Command
 	// for _, e := range events {
-	// 	switch e.Kind {
-	// 	case service.EventKind_FramebufferObservation:
-	// 		// We assume FBO events come after other events on a command.
-	// 		if lastFrameEvent == nil {
-	// 			log.W(ctx, "Got framebuffer observation but nothing wrote to the frame")
-	// 			continue
-	// 		}
-	// 		fbo, err := getFBO(ctx, client, e.Command)
-	// 		if err != nil {
-	// 			return nil, err
-	// 		}
-	// 		if int(fbo.Width) > w {
-	// 			w = int(fbo.Width)
-	// 		}
-	// 		if int(fbo.Height) > h {
-	// 			h = int(fbo.Height)
-	// 		}
+	for _, cmd := range allEOFCommands {
 
-	// 		videoFrames = append(videoFrames, &videoFrame{
-	// 			fbo:           fbo,
-	// 			fboIndex:      fmt.Sprint(e.Command.Indices),
-	// 			frameIndex:    frameIndex,
-	// 			numDrawCalls:  numDrawCalls,
-	// 			command:       lastFrameEvent,
-	// 			permitNoMatch: permitNoMatch,
-	// 		})
-	// 	case service.EventKind_Clear:
-	// 		permitNoMatch = false
-	// 		lastFrameEvent = e.Command
-	// 	case service.EventKind_DrawCall:
-	// 		permitNoMatch = false
-	// 		lastFrameEvent = e.Command
-	// 		numDrawCalls++
-	// 	case service.EventKind_LastInFrame:
-	// 		lastFrameEvent = e.Command
-	// 		frameIndex++
-	// 		numDrawCalls = 0
-	// 	}
-	// }
-	// if verb.Frames.Minimum > len(videoFrames) {
-	// 	return nil, log.Errf(ctx, nil, "Captured only %v frames, require %v frames at minimum", len(videoFrames), verb.Frames.Minimum)
-	// }
+		fbo, err := getFBO(ctx, client, cmd)
+		if err != nil {
+			return nil, err
+		}
+		if int(fbo.Width) > w {
+			w = int(fbo.Width)
+		}
+		if int(fbo.Height) > h {
+			h = int(fbo.Height)
+		}
 
-	// // Get all the observed and rendered frames, and compare them.
-	// const workers = 32
-	// execEvents := &task.Events{}
-	// pool, shutdown := task.Pool(0, workers)
-	// defer shutdown(ctx)
-	// executor := task.Batch(pool, execEvents)
+		videoFrames = append(videoFrames, &videoFrame{
+			fbo:           fbo,
+			fboIndex:      fmt.Sprint(cmd.Indices),
+			frameIndex:    frameIndex,
+			numDrawCalls:  numDrawCalls,
+			command:       cmd,
+			permitNoMatch: false, // permitNoMatch ALAN: what?
+		})
 
-	// start := time.Now()
-	// w, h = uniformScale(w, h, verb.Max.Width/2, verb.Max.Height/2)
-	// for _, v := range videoFrames {
-	// 	v := v
-	// 	executor(ctx, func(ctx context.Context) error {
-	// 		v.observed = &image.NRGBA{
-	// 			Pix:    v.fbo.Bytes,
-	// 			Stride: int(v.fbo.Width) * 4,
-	// 			Rect:   image.Rect(0, 0, int(v.fbo.Width), int(v.fbo.Height)),
-	// 		}
-	// 		if frame, err := getFrame(ctx, verb.Max.Width, verb.Max.Height, v.command, device, client, verb.NoOpt); err == nil {
-	// 			v.rendered = frame
-	// 		} else {
-	// 			v.renderError = err
-	// 		}
-	// 		v.observed = flipImg(downsample(v.observed, w, h))
-	// 		v.rendered = flipImg(downsample(v.rendered, w, h))
-	// 		if v.observed != nil && v.rendered != nil {
-	// 			v.difference, v.squareError = getDifference(v.observed, v.rendered, &v.histogramData)
-	// 		}
-	// 		return nil
-	// 	})
-	// }
-	// execEvents.Wait(ctx)
+		frameIndex++
+	}
 
-	// log.D(ctx, "Frames rendered in %v", time.Since(start))
-	// for _, v := range videoFrames {
-	// 	if v.renderError != nil {
-	// 		return nil, v.renderError
-	// 	}
-	// }
+	if verb.Frames.Minimum > len(videoFrames) {
+		return nil, log.Errf(ctx, nil, "Captured only %v frames, require %v frames at minimum", len(videoFrames), verb.Frames.Minimum)
+	}
 
-	// // Produce the histogram image
-	// histogram := getHistogram(videoFrames)
-	// histogram = resize(histogram, w-2, histogram.Bounds().Dy())
+	// Get all the observed and rendered frames, and compare them.
+	const workers = 32
+	execEvents := &task.Events{}
+	pool, shutdown := task.Pool(0, workers)
+	defer shutdown(ctx)
+	executor := task.Batch(pool, execEvents)
+
+	start := time.Now()
+	w, h = uniformScale(w, h, verb.Max.Width/2, verb.Max.Height/2)
+	for _, v := range videoFrames {
+		v := v
+		executor(ctx, func(ctx context.Context) error {
+			v.observed = &image.NRGBA{
+				Pix:    v.fbo.Bytes,
+				Stride: int(v.fbo.Width) * 4,
+				Rect:   image.Rect(0, 0, int(v.fbo.Width), int(v.fbo.Height)),
+			}
+			if frame, err := getFrame(ctx, verb.Max.Width, verb.Max.Height, v.command, device, client, verb.NoOpt); err == nil {
+				v.rendered = frame
+			} else {
+				v.renderError = err
+			}
+			v.observed = flipImg(downsample(v.observed, w, h))
+			v.rendered = flipImg(downsample(v.rendered, w, h))
+			if v.observed != nil && v.rendered != nil {
+				v.difference, v.squareError = getDifference(v.observed, v.rendered, &v.histogramData)
+			}
+			return nil
+		})
+	}
+	execEvents.Wait(ctx)
+
+	log.D(ctx, "Frames rendered in %v", time.Since(start))
+	for _, v := range videoFrames {
+		if v.renderError != nil {
+			return nil, v.renderError
+		}
+	}
+
+	// Produce the histogram image
+	histogram := getHistogram(videoFrames)
+	histogram = resize(histogram, w-2, histogram.Bounds().Dy())
 
 	return func(frames chan<- image.Image) error {
 
-		// // Compose and stream out the video frames
+		// Compose and stream out the video frames
 
-		// //  p0                 p1
-		// //    ┏━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┓
-		// //    ┃                ┃               ┃
-		// //    ┃                ┃               ┃
-		// //    ┃    Observed    ┃    Replay     ┃
-		// //    ┃                ┃               ┃
-		// //    ┃                ┃               ┃
-		// // p2 ┣━━━━━━━━━━━━━━━p3 ━━━━━━━━━━━━━━┫ p4
-		// //    ┃                ┃               ┃
-		// //    ┃   Difference   ┃   Details     ┃
-		// //    ┃             p5 ┣━━━━━━━━━━━━━━━┫
-		// //    ┃                ┃   Histogram   ┃
-		// //    ┃                ┣━━━━━━━━━━━━━━━┫ p7
-		// //    ┗━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━┛
-		// //                     p6                p8
-		// var histogramHeight int
-		// if histogram != nil {
-		// 	histogramHeight = histogram.Bounds().Dy()
-		// }
-		// p0, p1 := image.Pt(0, 0), image.Pt(w, 0)
-		// p2, p3, p4 := image.Pt(0, h), image.Pt(w, h), image.Pt(w*2, h)
-		// p5 := image.Pt(w+2, h+200)
-		// p6 := image.Pt(w, h*2)
-		// p7 := image.Pt(w*2, p5.Y+histogramHeight)
-		// p8 := image.Pt(w*2, h*2)
+		//  p0                 p1
+		//    ┏━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┓
+		//    ┃                ┃               ┃
+		//    ┃                ┃               ┃
+		//    ┃    Observed    ┃    Replay     ┃
+		//    ┃                ┃               ┃
+		//    ┃                ┃               ┃
+		// p2 ┣━━━━━━━━━━━━━━━p3 ━━━━━━━━━━━━━━┫ p4
+		//    ┃                ┃               ┃
+		//    ┃   Difference   ┃   Details     ┃
+		//    ┃             p5 ┣━━━━━━━━━━━━━━━┫
+		//    ┃                ┃   Histogram   ┃
+		//    ┃                ┣━━━━━━━━━━━━━━━┫ p7
+		//    ┗━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━┛
+		//                     p6                p8
+		var histogramHeight int
+		if histogram != nil {
+			histogramHeight = histogram.Bounds().Dy()
+		}
+		p0, p1 := image.Pt(0, 0), image.Pt(w, 0)
+		p2, p3, p4 := image.Pt(0, h), image.Pt(w, h), image.Pt(w*2, h)
+		p5 := image.Pt(w+2, h+200)
+		p6 := image.Pt(w, h*2)
+		p7 := image.Pt(w*2, p5.Y+histogramHeight)
+		p8 := image.Pt(w*2, h*2)
 
-		// white := &image.Uniform{C: color.White}
-		// black := &image.Uniform{C: color.Black}
-		// rect := func(min, max image.Point) image.Rectangle {
-		// 	return image.Rectangle{Min: min, Max: max}
-		// }
+		white := &image.Uniform{C: color.White}
+		black := &image.Uniform{C: color.Black}
+		rect := func(min, max image.Point) image.Rectangle {
+			return image.Rectangle{Min: min, Max: max}
+		}
 
-		// b := getBackground(w, h)
-		// for i, v := range videoFrames {
-		// 	// Create side-by-side image.
-		// 	sxs := image.NewNRGBA(image.Rect(0, 0, w*2, h*2))
+		b := getBackground(w, h)
+		for i, v := range videoFrames {
+			// Create side-by-side image.
+			sxs := image.NewNRGBA(image.Rect(0, 0, w*2, h*2))
 
-		// 	// Observed
-		// 	if o := v.observed; o != nil {
-		// 		draw.Draw(sxs, rect(p0, p3), b, image.ZP, draw.Src)
-		// 		draw.Draw(sxs, rect(p0, p3), o, image.ZP, draw.Over)
-		// 	}
+			// Observed
+			if o := v.observed; o != nil {
+				draw.Draw(sxs, rect(p0, p3), b, image.ZP, draw.Src)
+				draw.Draw(sxs, rect(p0, p3), o, image.ZP, draw.Over)
+			}
 
-		// 	// Rendered
-		// 	if r := v.rendered; r != nil {
-		// 		draw.Draw(sxs, rect(p1, p4), b, image.ZP, draw.Src)
-		// 		draw.Draw(sxs, rect(p1, p4), r, image.ZP, draw.Over)
-		// 	}
+			// Rendered
+			if r := v.rendered; r != nil {
+				draw.Draw(sxs, rect(p1, p4), b, image.ZP, draw.Src)
+				draw.Draw(sxs, rect(p1, p4), r, image.ZP, draw.Over)
+			}
 
-		// 	// Difference
-		// 	if d := v.difference; d != nil {
-		// 		draw.Draw(sxs, rect(p2, p6), d, image.ZP, draw.Src)
-		// 	}
+			// Difference
+			if d := v.difference; d != nil {
+				draw.Draw(sxs, rect(p2, p6), d, image.ZP, draw.Src)
+			}
 
-		// 	draw.Draw(sxs, rect(p3, p8), black, image.ZP, draw.Src)
-		// 	// Histogram
-		// 	if h := histogram; h != nil {
-		// 		draw.Draw(sxs, rect(p5, p7), histogram, image.ZP, draw.Src)
+			draw.Draw(sxs, rect(p3, p8), black, image.ZP, draw.Src)
+			// Histogram
+			if h := histogram; h != nil {
+				draw.Draw(sxs, rect(p5, p7), histogram, image.ZP, draw.Src)
 
-		// 		// Progress line
-		// 		if len(videoFrames) > 1 {
-		// 			x := p5.X + (((p7.X - p5.X) * i) / (len(videoFrames) - 1))
-		// 			draw.Draw(sxs, image.Rect(x, p5.Y, x+1, p7.Y), white, image.ZP, draw.Src)
-		// 		}
-		// 	}
+				// Progress line
+				if len(videoFrames) > 1 {
+					x := p5.X + (((p7.X - p5.X) * i) / (len(videoFrames) - 1))
+					draw.Draw(sxs, image.Rect(x, p5.Y, x+1, p7.Y), white, image.ZP, draw.Src)
+				}
+			}
 
-		// 	sb := new(bytes.Buffer)
-		// 	refw := reflow.New(sb)
-		// 	fmt.Fprint(refw, verb.Text)
-		// 	fmt.Fprintf(refw, "Dimensions:║%dx%d¶", v.fbo.Width, v.fbo.Height)
-		// 	fmt.Fprintf(refw, "Cmd:║%v¶", v.fboIndex)
-		// 	fmt.Fprintf(refw, "Frame:║%d¶", v.frameIndex)
-		// 	fmt.Fprintf(refw, "Draw calls:║%d¶", v.numDrawCalls)
-		// 	fmt.Fprintf(refw, "Difference:║%.4f¶", v.squareError)
-		// 	refw.Flush()
-		// 	str := sb.String()
+			sb := new(bytes.Buffer)
+			refw := reflow.New(sb)
+			fmt.Fprint(refw, verb.Text)
+			fmt.Fprintf(refw, "Dimensions:║%dx%d¶", v.fbo.Width, v.fbo.Height)
+			fmt.Fprintf(refw, "Cmd:║%v¶", v.fboIndex)
+			fmt.Fprintf(refw, "Frame:║%d¶", v.frameIndex)
+			fmt.Fprintf(refw, "Draw calls:║%d¶", v.numDrawCalls)
+			fmt.Fprintf(refw, "Difference:║%.4f¶", v.squareError)
+			refw.Flush()
+			str := sb.String()
 
-		// 	font.DrawString(str, sxs, p3.Add(image.Pt(2, 2)), color.Black)
-		// 	font.DrawString(str, sxs, p3, color.White)
+			font.DrawString(str, sxs, p3.Add(image.Pt(2, 2)), color.Black)
+			font.DrawString(str, sxs, p3, color.White)
 
-		// 	frames <- sxs
-		// }
+			frames <- sxs
+		}
 
-		// close(frames)
+		close(frames)
 
-		// const threshold = 0.01
-		// for _, v := range videoFrames {
-		// 	if !v.permitNoMatch && v.squareError > threshold {
-		// 		return fmt.Errorf("FramebufferObservation did not match replayed framebuffer at %v. Difference: %v%%",
-		// 			v.command.Indices, v.squareError*100)
-		// 	}
-		// }
+		const threshold = 0.01
+		for _, v := range videoFrames {
+			if !v.permitNoMatch && v.squareError > threshold {
+				return fmt.Errorf("FramebufferObservation did not match replayed framebuffer at %v. Difference: %v%%",
+					v.command.Indices, v.squareError*100)
+			}
+		}
 		return nil
 
 	}, nil

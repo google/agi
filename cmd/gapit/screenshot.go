@@ -219,11 +219,9 @@ func (verb *screenshotVerb) frameCommands(ctx context.Context, capture *path.Cap
 	}
 
 	tree := boxedTree.(*service.CommandTree)
-	_ = tree
 
 	var allEOFCommands []*path.Command
 	traverseCommandTree(ctx, client, tree.Root, func(n *service.CommandTreeNode, prefix string) error {
-		// Filter out groups // ALAN ???
 		if n.Group != "" {
 			return nil
 		}

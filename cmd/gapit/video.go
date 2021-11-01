@@ -15,30 +15,31 @@
 package main
 
 import (
-	//"bytes"
+	"bytes"
 	"context"
 	"flag"
 	"fmt"
 	"image"
-	//"image/color"
-	//"image/draw"
+	"image/color"
+	"image/draw"
 	"image/png"
 	"io"
 	"os"
 	fp "path/filepath"
 	"strings"
-	//"sync/atomic"
+	"sync/atomic"
 
 	"github.com/google/gapid/core/app"
 	"github.com/google/gapid/core/app/crash"
-	//"github.com/google/gapid/core/event/task"
-	//"github.com/google/gapid/core/image/font"
+	"github.com/google/gapid/core/event/task"
+	"github.com/google/gapid/core/image/font"
 	"github.com/google/gapid/core/log"
-	//"github.com/google/gapid/core/math/sint"
+	"github.com/google/gapid/core/math/sint"
 	"github.com/google/gapid/core/os/file"
-	//"github.com/google/gapid/core/text/reflow"
+	"github.com/google/gapid/core/text/reflow"
 	"github.com/google/gapid/core/video"
 	"github.com/google/gapid/gapis/service"
+	"github.com/google/gapid/gapis/client"
 	"github.com/google/gapid/gapis/service/path"
 
 	img "github.com/google/gapid/core/image"
@@ -67,201 +68,224 @@ func init() {
 }
 
 type videoFrameWriter func(chan<- image.Image) error
-type videoSource func(ctx context.Context, capture *path.Capture, client service.Service, device *path.Device) (videoFrameWriter, error)
+type videoSource func(ctx context.Context, capture *path.Capture, client client.Client, device *path.Device) (videoFrameWriter, error)
 type videoSink func(ctx context.Context, filepath string, vidFun videoFrameWriter) error
 
 func (verb *videoVerb) regularVideoSource(
 	ctx context.Context,
 	capture *path.Capture,
-	client service.Service,
+	client client.Client,
 	device *path.Device) (videoFrameWriter, error) {
 
-	// filter, err := verb.CommandFilterFlags.commandFilter(ctx, client, capture)
-	// if err != nil {
-	// 	return nil, log.Err(ctx, err, "Couldn't get filter")
-	// }
-
-	// requestEvents := path.Events{
-	// 	Capture:     capture,
-	// 	LastInFrame: true,
-	// 	Filter:      filter,
-	// }
+	filter, err := verb.CommandFilterFlags.commandFilter(ctx, client, capture)
+	if err != nil {
+		return nil, log.Err(ctx, err, "Couldn't get filter")
+	}
+	filter.OnlyEndOfFrames = true
 
 	// if verb.Commands {
 	// 	requestEvents.LastInFrame = false
 	// 	requestEvents.AllCommands = true
 	// }
 
-	// // Get the end-of-frame events.
-	// eofEvents, err := getEvents(ctx, client, &requestEvents)
-	// if err != nil {
-	// 	return nil, log.Err(ctx, err, "Couldn't get frame events")
-	// }
+	treePath := capture.CommandTree(filter)
 
-	// if verb.Frames.Minimum > len(eofEvents) {
-	// 	return nil, log.Errf(ctx, nil, "Captured only %v frames, requires %v frames at minimum", len(eofEvents), verb.Frames.Minimum)
-	// }
+	boxedTree, err := client.Get(ctx, treePath.Path(), nil)
+	if err != nil {
+		return nil, log.Err(ctx, err, "Failed to load the command tree")
+	}
 
-	// if verb.Frames.Start < len(eofEvents) {
-	// 	eofEvents = eofEvents[verb.Frames.Start:]
-	// }
+	tree := boxedTree.(*service.CommandTree)
 
-	// if verb.Frames.Count != allTheWay && verb.Frames.Count < len(eofEvents) {
-	// 	eofEvents = eofEvents[:verb.Frames.Count]
-	// }
+	var eofCommands []*path.Command
+	traverseCommandTree(ctx, client, tree.Root, func(n *service.CommandTreeNode, prefix string) error {
+		if n.Group != "" {
+			return nil
+		}
+		eofCommands = append(eofCommands, n.Commands.First())
+		return nil
+	}, "", true)
 
-	// frameCount := len(eofEvents)
+	if verb.Frames.Minimum > len(eofCommands) {
+		return nil, log.Errf(ctx, nil, "Captured only %v frames, requires %v frames at minimum", len(eofCommands), verb.Frames.Minimum)
+	}
 
-	// log.I(ctx, "Frames: %d", frameCount)
+	if verb.Frames.Start < len(eofCommands) {
+		eofCommands = eofCommands[verb.Frames.Start:]
+	}
 
-	// // Get all the rendered frames
-	// const workers = 32
-	// events := &task.Events{}
-	// pool, shutdown := task.Pool(0, workers)
-	// defer shutdown(ctx)
-	// executor := task.Batch(pool, events)
-	// shouldResize := verb.Type != IndividualFrames
-	// rendered := make([]*image.NRGBA, frameCount)
-	// errors := make([]error, frameCount)
+	if verb.Frames.Count != allTheWay && verb.Frames.Count < len(eofCommands) {
+		eofCommands = eofCommands[:verb.Frames.Count]
+	}
 
-	// var errorCount uint32
-	// for i, e := range eofEvents {
-	// 	i, e := i, e
-	// 	executor(ctx, func(ctx context.Context) error {
-	// 		if frame, err := getFrame(ctx, verb.Max.Width, verb.Max.Height, e.Command, device, client, verb.NoOpt); err == nil {
-	// 			rendered[i] = flipImg(frame)
-	// 		} else {
-	// 			errors[i] = err
-	// 			atomic.AddUint32(&errorCount, 1)
-	// 		}
-	// 		return nil
-	// 	})
-	// }
-	// events.Wait(ctx)
+	frameCount := len(eofCommands)
 
-	// if errorCount > 0 {
-	// 	log.W(ctx, "%d/%d frames errored", errorCount, len(eofEvents))
-	// }
+	log.I(ctx, "Frames: %d", frameCount)
 
-	// // Get the max width and height
-	// width, height := 0, 0
-	// for _, frame := range rendered {
-	// 	if frame != nil {
-	// 		width = sint.Max(width, frame.Bounds().Dx())
-	// 		height = sint.Max(height, frame.Bounds().Dy())
-	// 	}
-	// }
+	// Get all the rendered frames
+	const workers = 32
+	events := &task.Events{}
+	pool, shutdown := task.Pool(0, workers)
+	defer shutdown(ctx)
+	executor := task.Batch(pool, events)
+	shouldResize := verb.Type != IndividualFrames
+	rendered := make([]*image.NRGBA, frameCount)
+	errors := make([]error, frameCount)
 
-	// // Video dimensions must be divisible by two.
-	// if (width & 1) != 0 {
-	// 	width++
-	// }
-	// if (height & 1) != 0 {
-	// 	height++
-	// }
+	var errorCount uint32
+	for i, e := range eofCommands {
+		i, e := i, e
+		executor(ctx, func(ctx context.Context) error {
+			if frame, err := getFrame(ctx, verb.Max.Width, verb.Max.Height, e, device, client, verb.NoOpt); err == nil {
+				rendered[i] = flipImg(frame)
+			} else {
+				errors[i] = err
+				atomic.AddUint32(&errorCount, 1)
+			}
+			return nil
+		})
+	}
+	events.Wait(ctx)
 
-	// log.I(ctx, "Max dimensions: (%d, %d)", width, height)
+	if errorCount > 0 {
+		log.W(ctx, "%d/%d frames errored", errorCount, len(eofCommands))
+	}
+
+	// Get the max width and height
+	width, height := 0, 0
+	for _, frame := range rendered {
+		if frame != nil {
+			width = sint.Max(width, frame.Bounds().Dx())
+			height = sint.Max(height, frame.Bounds().Dy())
+		}
+	}
+
+	// Video dimensions must be divisible by two.
+	if (width & 1) != 0 {
+		width++
+	}
+	if (height & 1) != 0 {
+		height++
+	}
+
+	log.I(ctx, "Max dimensions: (%d, %d)", width, height)
 
 	return func(frames chan<- image.Image) error {
-		// for i, frame := range rendered {
-		// 	if err := errors[i]; err != nil {
-		// 		log.E(ctx, "Error getting frame at %v: %v", eofEvents[i].Command, err)
-		// 		continue
-		// 	}
+		for i, frame := range rendered {
+			if err := errors[i]; err != nil {
+				log.E(ctx, "Error getting frame at %v: %v", eofCommands[i], err)
+				continue
+			}
 
-		// 	if shouldResize && (frame.Bounds().Dx() != width || frame.Bounds().Dy() != height) {
-		// 		src, rect := frame, image.Rect(0, 0, width, height)
-		// 		frame = image.NewNRGBA(rect)
-		// 		draw.Draw(frame, rect, src, image.ZP, draw.Src)
-		// 	}
+			if shouldResize && (frame.Bounds().Dx() != width || frame.Bounds().Dy() != height) {
+				src, rect := frame, image.Rect(0, 0, width, height)
+				frame = image.NewNRGBA(rect)
+				draw.Draw(frame, rect, src, image.ZP, draw.Src)
+			}
 
-		// 	sb := new(bytes.Buffer)
-		// 	refw := reflow.New(sb)
-		// 	fmt.Fprint(refw, verb.Text)
-		// 	fmt.Fprintf(refw, "Frame: %d, cmd: %v", i, eofEvents[i].Command.Indices)
-		// 	refw.Flush()
-		// 	str := sb.String()
-		// 	font.DrawString(str, frame, image.Pt(4, 4), color.Black)
-		// 	font.DrawString(str, frame, image.Pt(2, 2), color.White)
+			sb := new(bytes.Buffer)
+			refw := reflow.New(sb)
+			fmt.Fprint(refw, verb.Text)
+			fmt.Fprintf(refw, "Frame: %d, cmd: %v", i, eofCommands[i].Indices)
+			refw.Flush()
+			str := sb.String()
+			font.DrawString(str, frame, image.Pt(4, 4), color.Black)
+			font.DrawString(str, frame, image.Pt(2, 2), color.White)
 
-		// 	frames <- frame
-		// }
-		// close(frames)
+			frames <- frame
+		}
+		close(frames)
 		return nil
 	}, nil
 }
 
 func (verb *videoVerb) Run(ctx context.Context, flags flag.FlagSet) error {
-	// if flags.NArg() != 1 {
-	// 	app.Usage(ctx, "Exactly one gfx trace file expected, got %d", flags.NArg())
-	// 	return nil
-	// }
+	if flags.NArg() != 1 {
+		app.Usage(ctx, "Exactly one gfx trace file expected, got %d", flags.NArg())
+		return nil
+	}
 
-	// client, capture, err := getGapisAndLoadCapture(ctx, verb.Gapis, verb.Gapir, flags.Arg(0), verb.CaptureFileFlags)
-	// if err != nil {
-	// 	return err
-	// }
-	// defer client.Close()
+	client, capture, err := getGapisAndLoadCapture(ctx, verb.Gapis, verb.Gapir, flags.Arg(0), verb.CaptureFileFlags)
+	if err != nil {
+		return err
+	}
+	defer client.Close()
 
-	// device, err := getDevice(ctx, client, capture, verb.Gapir)
-	// if err != nil {
-	// 	return err
-	// }
+	device, err := getDevice(ctx, client, capture, verb.Gapir)
+	if err != nil {
+		return err
+	}
 
-	// fboEvents, err := getEvents(ctx, client, &path.Events{
-	// 	Capture:                 capture,
-	// 	FramebufferObservations: true,
-	// })
-	// if err != nil {
-	// 	return log.Err(ctx, err, "Couldn't get framebuffer observation events")
-	// }
+	filter, err := verb.CommandFilterFlags.commandFilter(ctx, client, capture)
+	if err != nil {
+		return log.Err(ctx, err, "Couldn't get filter")
+	}
+	filter.OnlyFramebufferObservations = true
 
-	// var vidSrc videoSource
-	// var vidFun videoFrameWriter
-	// var vidOut videoSink
+	treePath := capture.CommandTree(filter)
 
-	// switch verb.Type {
-	// case IndividualFrames:
-	// 	vidSrc = verb.regularVideoSource
-	// 	vidOut = verb.writeFrames
-	// case RegularVideo:
-	// 	vidSrc = verb.regularVideoSource
-	// 	vidOut = verb.encodeVideo
-	// case SxsFrames:
-	// 	fallthrough
-	// case SxsVideo:
-	// 	if len(fboEvents) == 0 {
-	// 		return fmt.Errorf("Capture does not contain framebuffer observations")
-	// 	}
-	// 	vidSrc = verb.sxsVideoSource
-	// 	if verb.Type == SxsFrames {
-	// 		vidOut = verb.writeFrames
-	// 	} else {
-	// 		vidOut = verb.encodeVideo
-	// 	}
-	// case AutoVideo:
-	// 	if len(fboEvents) > 0 {
-	// 		vidSrc = verb.sxsVideoSource
-	// 	} else {
-	// 		vidSrc = verb.regularVideoSource
-	// 	}
-	// 	vidOut = verb.encodeVideo
-	// }
+	boxedTree, err := client.Get(ctx, treePath.Path(), nil)
+	if err != nil {
+		return log.Err(ctx, err, "Failed to load the command tree")
+	}
 
-	// if vidFun, err = vidSrc(ctx, capture, client, device); err != nil {
-	// 	return err
-	// }
+	tree := boxedTree.(*service.CommandTree)
 
-	// // A bit messy: vidOut wants the filepath of the capture so that it can
-	// // write images or a video alongside it if no output path is given.
-	// // But arg 0 might not be a file path, so we check here.
-	// var filepath string
-	// if !verb.CaptureID {
-	// 	// It is a file path, not a capture ID.
-	// 	filepath = flags.Arg(0)
-	// }
+	var fboCommands []*path.Command
+	traverseCommandTree(ctx, client, tree.Root, func(n *service.CommandTreeNode, prefix string) error {
+		if n.Group != "" {
+			return nil
+		}
+		fboCommands = append(fboCommands, n.Commands.First())
+		return nil
+	}, "", true)
 
-	// return vidOut(ctx, filepath, vidFun)
+	var vidSrc videoSource
+	var vidFun videoFrameWriter
+	var vidOut videoSink
+
+	switch verb.Type {
+	case IndividualFrames:
+		vidSrc = verb.regularVideoSource
+		vidOut = verb.writeFrames
+	case RegularVideo:
+		vidSrc = verb.regularVideoSource
+		vidOut = verb.encodeVideo
+	case SxsFrames:
+		fallthrough
+	case SxsVideo:
+		if len(fboCommands) == 0 {
+			return fmt.Errorf("Capture does not contain framebuffer observations")
+		}
+		vidSrc = verb.sxsVideoSource
+		if verb.Type == SxsFrames {
+			vidOut = verb.writeFrames
+		} else {
+			vidOut = verb.encodeVideo
+		}
+	case AutoVideo:
+		if len(fboCommands) > 0 {
+			vidSrc = verb.sxsVideoSource
+		} else {
+			vidSrc = verb.regularVideoSource
+		}
+		vidOut = verb.encodeVideo
+	}
+
+	if vidFun, err = vidSrc(ctx, capture, client, device); err != nil {
+		return err
+	}
+
+	// A bit messy: vidOut wants the filepath of the capture so that it can
+	// write images or a video alongside it if no output path is given.
+	// But arg 0 might not be a file path, so we check here.
+	var filepath string
+	if !verb.CaptureID {
+		// It is a file path, not a capture ID.
+		filepath = flags.Arg(0)
+	}
+
+	return vidOut(ctx, filepath, vidFun)
 
 	return nil
 }
