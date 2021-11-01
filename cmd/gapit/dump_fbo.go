@@ -27,6 +27,7 @@ import (
 	"github.com/google/gapid/core/log"
 	"github.com/google/gapid/core/os/file"
 	"github.com/google/gapid/gapis/client"
+	"github.com/google/gapid/gapis/service"
 	"github.com/google/gapid/gapis/service/path"
 )
 
@@ -73,47 +74,47 @@ func (verb *dumpFBOVerb) pngFrameSink(ctx context.Context, fileprefix string, vi
 
 func (verb *dumpFBOVerb) frameSource(ctx context.Context, client client.Client, capture *path.Capture) (videoFrameWriter, error) {
 
-	// filter, err := verb.CommandFilterFlags.commandFilter(ctx, client, capture)
-	// if err != nil {
-	// 	return nil, log.Err(ctx, err, "Couldn't get filter")
-	// }
+	filter, err := verb.CommandFilterFlags.commandFilter(ctx, client, capture)
+	if err != nil {
+		return nil, log.Err(ctx, err, "Couldn't get filter")
+	}
+	filter.OnlyFramebufferObservations = true
+
+	treePath := capture.CommandTree(filter)
+
+	boxedTree, err := client.Get(ctx, treePath.Path(), nil)
+	if err != nil {
+		return nil, log.Err(ctx, err, "Failed to load the command tree")
+	}
+
+	tree := boxedTree.(*service.CommandTree)
+
+	var allFBOCommands []*path.Command
+	traverseCommandTree(ctx, client, tree.Root, func(n *service.CommandTreeNode, prefix string) error {
+		if n.Group != "" {
+			return nil
+		}
+		allFBOCommands = append(allFBOCommands, n.Commands.First())
+		return nil
+	}, "", true)
+
+	_ = allFBOCommands
 
 	return func(ch chan<- image.Image) error {
-		// // Get the draw call and end-of-frame events.
-		// events, err := getEvents(ctx, client, &path.Events{
-		// 	Capture:                 capture,
-		// 	LastInFrame:             true,
-		// 	FramebufferObservations: true,
-		// 	Filter:                  filter,
-		// })
-		// if err != nil {
-		// 	return log.Err(ctx, err, "Couldn't get events")
-		// }
+		
+		for _, cmd := range allFBOCommands {
 
-		// var lastFrameEvent *path.Command
-		// for _, e := range events {
-		// 	switch e.Kind {
-		// 	case service.EventKind_FramebufferObservation:
-		// 		// Find FBO for all presents.
-		// 		if lastFrameEvent == nil {
-		// 			continue
-		// 		}
-		// 		lastFrameEvent = nil
+			fbo, err := getFBO(ctx, client, cmd)
+			if err != nil {
+				return err
+			}
 
-		// 		fbo, err := getFBO(ctx, client, e.Command)
-		// 		if err != nil {
-		// 			return err
-		// 		}
-
-		// 		ch <- flipImg(&image.NRGBA{
-		// 			Pix:    fbo.Bytes,
-		// 			Stride: int(fbo.Width) * 4,
-		// 			Rect:   image.Rect(0, 0, int(fbo.Width), int(fbo.Height)),
-		// 		})
-		// 	case service.EventKind_LastInFrame:
-		// 		lastFrameEvent = e.Command
-		// 	}
-		// }
+			ch <- flipImg(&image.NRGBA{
+				Pix:    fbo.Bytes,
+				Stride: int(fbo.Width) * 4,
+				Rect:   image.Rect(0, 0, int(fbo.Width), int(fbo.Height)),
+			})
+		}
 
 		return nil
 	}, nil
