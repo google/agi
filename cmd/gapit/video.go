@@ -81,12 +81,10 @@ func (verb *videoVerb) regularVideoSource(
 	if err != nil {
 		return nil, log.Err(ctx, err, "Couldn't get filter")
 	}
-	filter.OnlyEndOfFrames = true
 
-	// if verb.Commands {
-	// 	requestEvents.LastInFrame = false
-	// 	requestEvents.AllCommands = true
-	// }
+	if verb.Commands == false {
+		filter.OnlyEndOfFrames = true
+	}
 
 	treePath := capture.CommandTree(filter)
 

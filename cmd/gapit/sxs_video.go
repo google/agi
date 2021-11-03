@@ -82,7 +82,7 @@ func (verb *videoVerb) sxsVideoSource(
 	if err != nil {
 		return nil, log.Err(ctx, err, "Couldn't get filter")
 	}
-	filter.OnlyEndOfFrames = true
+	filter.OnlyFramebufferObservations = true
 
 	treePath := capture.CommandTree(filter)
 
@@ -93,12 +93,12 @@ func (verb *videoVerb) sxsVideoSource(
 
 	tree := boxedTree.(*service.CommandTree)
 
-	var allEOFCommands []*path.Command
+	var allFBOCommands []*path.Command
 	traverseCommandTree(ctx, client, tree.Root, func(n *service.CommandTreeNode, prefix string) error {
 		if n.Group != "" {
 			return nil
 		}
-		allEOFCommands = append(allEOFCommands, n.Commands.First())
+		allFBOCommands = append(allFBOCommands, n.Commands.First())
 		return nil
 	}, "", true)
 
@@ -116,18 +116,8 @@ func (verb *videoVerb) sxsVideoSource(
 	// // Permit the first run of frames to have no content. If there are no
 	// // draw-calls or clear calls at all however, then do not permit this.
 	// permitNoMatch := false
-
-	// for _, e := range events {
-	// 	if e.Kind == service.EventKind_Clear ||
-	// 		e.Kind == service.EventKind_DrawCall {
-	// 		permitNoMatch = true
-	// 		break
-	// 	}
-	// }
-
-	// var lastFrameEvent *path.Command
-	// for _, e := range events {
-	for _, cmd := range allEOFCommands {
+	
+	for _, cmd := range allFBOCommands {
 
 		fbo, err := getFBO(ctx, client, cmd)
 		if err != nil {
@@ -146,7 +136,7 @@ func (verb *videoVerb) sxsVideoSource(
 			frameIndex:    frameIndex,
 			numDrawCalls:  numDrawCalls,
 			command:       cmd,
-			permitNoMatch: false, // permitNoMatch ALAN: what?
+			permitNoMatch: false,
 		})
 
 		frameIndex++
