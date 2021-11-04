@@ -109,6 +109,30 @@ func (verb *exportReplayVerb) Run(ctx context.Context, flags flag.FlagSet) error
 	case ExportOnScreen:
 		onscreen = true
 	case ExportFrames:
+		filter, err := verb.CommandFilterFlags.commandFilter(ctx, client, capturePath)
+		if err != nil {
+			return log.Err(ctx, err, "Couldn't get filter")
+		}
+		filter.OnlyEndOfFrames = true
+
+		treePath := capturePath.CommandTree(filter)
+
+		boxedTree, err := client.Get(ctx, treePath.Path(), nil)
+		if err != nil {
+			return log.Err(ctx, err, "Failed to load the command tree")
+		}
+
+		tree := boxedTree.(*service.CommandTree)
+
+		var allEOFCommands []*gapidPath.Command
+		traverseCommandTree(ctx, client, tree.Root, func(n *service.CommandTreeNode, prefix string) error {
+			if n.Group != "" {
+				return nil
+			}
+			allEOFCommands = append(allEOFCommands, n.Commands.First())
+			return nil
+		}, "", true)
+
 		// filter, err := verb.CommandFilterFlags.commandFilter(ctx, client, capturePath)
 		// if err != nil {
 		// 	return log.Err(ctx, err, "Couldn't get filter")
@@ -126,14 +150,14 @@ func (verb *exportReplayVerb) Run(ctx context.Context, flags flag.FlagSet) error
 		// 	return log.Err(ctx, err, "Couldn't get frame events")
 		// }
 
-		// for _, e := range eofEvents {
-		// 	fbreqs = append(fbreqs, &gapidPath.FramebufferAttachment{
-		// 		After:          e.Command,
-		// 		Index:          0,
-		// 		RenderSettings: &gapidPath.RenderSettings{DisableReplayOptimization: true},
-		// 		Hints:          nil,
-		// 	})
-		// }
+		for _, e := range allEOFCommands {
+			fbreqs = append(fbreqs, &gapidPath.FramebufferAttachment{
+				After:          e,
+				Index:          0,
+				RenderSettings: &gapidPath.RenderSettings{DisableReplayOptimization: true},
+				Hints:          nil,
+			})
+		}
 	case ExportTimestamps:
 		// There are no useful field in GetTimestampsRequest as of now.
 		tsreq = &service.GetTimestampsRequest{}
