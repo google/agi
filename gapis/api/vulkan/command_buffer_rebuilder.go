@@ -1579,6 +1579,72 @@ func rebuildVkCmdDrawIndirectByteCountEXT(
 	), nil
 }
 
+func rebuildVkCmdBeginRenderPass2(
+	ctx context.Context,
+	cb CommandBuilder,
+	commandBuffer VkCommandBuffer,
+	r *api.GlobalState,
+	s *api.GlobalState,
+	d VkCmdBeginRenderPass2Argsʳ) (func(), api.Cmd, error) {
+	// MELIH TODO: Implement
+	return nil, nil, fmt.Errorf("Not implemented")
+}
+
+func rebuildVkCmdEndRenderPass2(
+	ctx context.Context,
+	cb CommandBuilder,
+	commandBuffer VkCommandBuffer,
+	r *api.GlobalState,
+	s *api.GlobalState,
+	d VkCmdEndRenderPass2Argsʳ) (func(), api.Cmd, error) {
+	// MELIH TODO: Implement
+	return nil, nil, fmt.Errorf("Not implemented")
+}
+
+func rebuildVkCmdNextSubpass2(
+	ctx context.Context,
+	cb CommandBuilder,
+	commandBuffer VkCommandBuffer,
+	r *api.GlobalState,
+	s *api.GlobalState,
+	d VkCmdNextSubpass2Argsʳ) (func(), api.Cmd, error) {
+	// MELIH TODO: Implement
+	return nil, nil, fmt.Errorf("Not implemented")
+}
+
+func rebuildVkCmdBeginRenderPass2KHR(
+	ctx context.Context,
+	cb CommandBuilder,
+	commandBuffer VkCommandBuffer,
+	r *api.GlobalState,
+	s *api.GlobalState,
+	d VkCmdBeginRenderPass2KHRArgsʳ) (func(), api.Cmd, error) {
+	// MELIH TODO: Implement
+	return nil, nil, fmt.Errorf("Not implemented")
+}
+
+func rebuildVkCmdEndRenderPass2KHR(
+	ctx context.Context,
+	cb CommandBuilder,
+	commandBuffer VkCommandBuffer,
+	r *api.GlobalState,
+	s *api.GlobalState,
+	d VkCmdEndRenderPass2KHRArgsʳ) (func(), api.Cmd, error) {
+	// MELIH TODO: Implement
+	return nil, nil, fmt.Errorf("Not implemented")
+}
+
+func rebuildVkCmdNextSubpass2KHR(
+	ctx context.Context,
+	cb CommandBuilder,
+	commandBuffer VkCommandBuffer,
+	r *api.GlobalState,
+	s *api.GlobalState,
+	d VkCmdNextSubpass2KHRArgsʳ) (func(), api.Cmd, error) {
+	// MELIH TODO: Implement
+	return nil, nil, fmt.Errorf("Not implemented")
+}
+
 // GetCommandArgs takes a command reference and returns the command arguments
 // of that recorded command.
 func GetCommandArgs(ctx context.Context,
@@ -1704,6 +1770,13 @@ func GetCommandArgs(ctx context.Context,
 		return cmds.VkCmdDispatchBaseKHR().Get(cr.MapIndex())
 	case CommandType_cmd_vkCmdDispatchBase:
 		return cmds.VkCmdDispatchBase().Get(cr.MapIndex())
+	// Vulkan 1.2
+	case CommandType_cmd_vkCmdBeginRenderPass2:
+		return cmds.VkCmdBeginRenderPass2().Get(cr.MapIndex())
+	case CommandType_cmd_vkCmdEndRenderPass2:
+		return cmds.VkCmdEndRenderPass2().Get(cr.MapIndex())
+	case CommandType_cmd_vkCmdNextSubpass2:
+		return cmds.VkCmdNextSubpass2().Get(cr.MapIndex())
 	// @extension("VK_EXT_transform_refactor")
 	case CommandType_cmd_vkCmdBindTransformFeedbackBuffersEXT:
 		return cmds.VkCmdBindTransformFeedbackBuffersEXT().Get(cr.MapIndex())
@@ -1717,6 +1790,13 @@ func GetCommandArgs(ctx context.Context,
 		return cmds.VkCmdEndQueryIndexedEXT().Get(cr.MapIndex())
 	case CommandType_cmd_vkCmdDrawIndirectByteCountEXT:
 		return cmds.VkCmdDrawIndirectByteCountEXT().Get(cr.MapIndex())
+	// @extension("VK_KHR_createRenderpass2")
+	case CommandType_cmd_vkCmdBeginRenderPass2KHR:
+		return cmds.VkCmdBeginRenderPass2KHR().Get(cr.MapIndex())
+	case CommandType_cmd_vkCmdEndRenderPass2KHR:
+		return cmds.VkCmdEndRenderPass2KHR().Get(cr.MapIndex())
+	case CommandType_cmd_vkCmdNextSubpass2KHR:
+		return cmds.VkCmdNextSubpass2KHR().Get(cr.MapIndex())
 	default:
 		x := fmt.Sprintf("Should not reach here: %T", cr)
 		panic(x)
@@ -1844,6 +1924,13 @@ func GetCommandFunction(cr *CommandReference) interface{} {
 		return subDovkCmdDispatchBaseKHR
 	case CommandType_cmd_vkCmdDispatchBase:
 		return subDovkCmdDispatchBase
+	// Vulkan 1.2
+	case CommandType_cmd_vkCmdBeginRenderPass2:
+		return subDovkCmdBeginRenderPass2
+	case CommandType_cmd_vkCmdEndRenderPass2:
+		return subDovkCmdEndRenderPass2
+	case CommandType_cmd_vkCmdNextSubpass2:
+		return subDovkCmdNextSubpass2
 	// @extension("VK_EXT_transform_refactor")
 	case CommandType_cmd_vkCmdBindTransformFeedbackBuffersEXT:
 		return subDovkCmdBindTransformFeedbackBuffersEXT
@@ -1857,6 +1944,13 @@ func GetCommandFunction(cr *CommandReference) interface{} {
 		return subDovkCmdEndQueryIndexedEXT
 	case CommandType_cmd_vkCmdDrawIndirectByteCountEXT:
 		return subDovkCmdDrawIndirectByteCountEXT
+	// @extension("VK_KHR_createRenderpass2")
+	case CommandType_cmd_vkCmdBeginRenderPass2KHR:
+		return subDovkCmdBeginRenderPass2KHR
+	case CommandType_cmd_vkCmdEndRenderPass2KHR:
+		return subDovkCmdEndRenderPass2KHR
+	case CommandType_cmd_vkCmdNextSubpass2KHR:
+		return subDovkCmdNextSubpass2KHR
 	default:
 		x := fmt.Sprintf("Should not reach here: %T", cr)
 		panic(x)
@@ -1991,6 +2085,13 @@ func AddCommand(ctx context.Context,
 		return rebuildVkCmdDispatchBaseKHR(ctx, cb, commandBuffer, r, s, t)
 	case VkCmdDispatchBaseArgsʳ:
 		return rebuildVkCmdDispatchBase(ctx, cb, commandBuffer, r, s, t)
+	// Vulkan 1.2
+	case VkCmdBeginRenderPass2KHRArgsʳ:
+		return rebuildVkCmdBeginRenderPass2KHR(ctx, cb, commandBuffer, r, s, t)
+	case VkCmdEndRenderPass2KHRArgsʳ:
+		return rebuildVkCmdEndRenderPass2KHR(ctx, cb, commandBuffer, r, s, t)
+	case VkCmdNextSubpass2KHRArgsʳ:
+		return rebuildVkCmdNextSubpass2KHR(ctx, cb, commandBuffer, r, s, t)
 	// @extension("VK_EXT_transform_refactor")
 	case VkCmdBindTransformFeedbackBuffersEXTArgsʳ:
 		return rebuildVkCmdBindTransformFeedbackBuffersEXT(ctx, cb, commandBuffer, r, s, t)
@@ -2004,6 +2105,13 @@ func AddCommand(ctx context.Context,
 		return rebuildVkCmdEndQueryIndexedEXT(ctx, cb, commandBuffer, r, s, t)
 	case VkCmdDrawIndirectByteCountEXTArgsʳ:
 		return rebuildVkCmdDrawIndirectByteCountEXT(ctx, cb, commandBuffer, r, s, t)
+	// @extension("VK_KHR_createRenderpass2")
+	case VkCmdBeginRenderPass2Argsʳ:
+		return rebuildVkCmdBeginRenderPass2(ctx, cb, commandBuffer, r, s, t)
+	case VkCmdEndRenderPass2Argsʳ:
+		return rebuildVkCmdEndRenderPass2(ctx, cb, commandBuffer, r, s, t)
+	case VkCmdNextSubpass2Argsʳ:
+		return rebuildVkCmdNextSubpass2(ctx, cb, commandBuffer, r, s, t)
 	default:
 		x := fmt.Sprintf("Should not reach here: %T", t)
 		panic(x)

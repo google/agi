@@ -578,6 +578,15 @@ cmd VkResult vkCreateRenderPass2(
     return ?
 }
 
+@internal class vkCmdBeginRenderPass2Args {
+    VkRenderPassBeginInfo           PRenderPassBegin
+    VkSubpassBeginInfo              PSubpassBeginInfo
+}
+
+sub void dovkCmdBeginRenderPass2(ref!vkCmdBeginRenderPass2Args args) {
+    // TODO: Implement
+}
+
 @indirect("VkCommandBuffer", "VkDevice")
 cmd void vkCmdBeginRenderPass2(
     VkCommandBuffer                             commandBuffer,
@@ -586,10 +595,27 @@ cmd void vkCmdBeginRenderPass2(
     // TODO: Implement
 }
 
+@internal class vkCmdEndRenderPass2Args {
+    VkSubpassEndInfo                PSubpassEndInfo
+}
+
+sub void dovkCmdEndRenderPass2(ref!vkCmdEndRenderPass2Args args) {
+    // TODO: Implement
+}
+
 @indirect("VkCommandBuffer", "VkDevice")
 cmd void vkCmdEndRenderPass2(
     VkCommandBuffer                             commandBuffer,
     const VkSubpassEndInfo*                     pSubpassEndInfo) {
+    // TODO: Implement
+}
+
+@internal class vkCmdNextSubpass2Args {
+    VkSubpassBeginInfo              PSubpassBeginInfo
+    VkSubpassEndInfo                PSubpassEndInfo
+}
+
+sub void dovkCmdNextSubpass2(ref!vkCmdNextSubpass2Args args) {
     // TODO: Implement
 }
 
