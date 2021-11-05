@@ -68,7 +68,6 @@
   @unused ref!PhysicalDeviceTransformFeedbackPropertiesEXT PhysicalDeviceTransformFeedbackPropertiesEXT
   @unused ref!PhysicalDeviceBlendOperationAdvancedPropertiesEXT PhysicalDeviceBlendOperationAdvancedPropertiesEXT
   @unused ref!PhysicalDeviceCustomBorderColorPropertiesEXT PhysicalDeviceCustomBorderColorPropertiesEXT
-  @unused ref!PhysicalDeviceBufferDeviceAddressFeaturesKHR PhysicalDeviceBufferDeviceAddressFeaturesKHR
 }
 
 @internal class PhysicalDevicesAndProperties {
