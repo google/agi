@@ -567,3 +567,37 @@ sub void useRenderPass() {
 @internal class InputAttachmentAspectInfo{
   @unused dense_map!(u32, VkInputAttachmentAspectReference) AspectReferences
 }
+
+@indirect("VkDevice")
+cmd VkResult vkCreateRenderPass2(
+    VkDevice                                    device,
+    const VkRenderPassCreateInfo2*              pCreateInfo,
+    const VkAllocationCallbacks*                pAllocator,
+    VkRenderPass*                               pRenderPass) {
+    // TODO: Implement
+    return ?
+}
+
+@indirect("VkCommandBuffer", "VkDevice")
+cmd void vkCmdBeginRenderPass2(
+    VkCommandBuffer                             commandBuffer,
+    const VkRenderPassBeginInfo*                pRenderPassBegin,
+    const VkSubpassBeginInfo*                   pSubpassBeginInfo) {
+    // TODO: Implement
+}
+
+@indirect("VkCommandBuffer", "VkDevice")
+cmd void vkCmdEndRenderPass2(
+    VkCommandBuffer                             commandBuffer,
+    const VkSubpassEndInfo*                     pSubpassEndInfo) {
+    // TODO: Implement
+}
+
+@indirect("VkCommandBuffer", "VkDevice")
+cmd void vkCmdNextSubpass2(
+    VkCommandBuffer                             commandBuffer,
+    const VkSubpassBeginInfo*                   pSubpassBeginInfo,
+    const VkSubpassEndInfo*                     pSubpassEndInfo) {
+    // TODO: Implement
+}
+

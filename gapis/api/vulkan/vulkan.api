@@ -88,6 +88,7 @@ import "extensions/khr_maintenance2.api"
 import "extensions/khr_maintenance3.api"
 import "extensions/khr_bind_memory2.api"
 import "extensions/khr_16bit_storage.api"
+import "extensions/khr_create_renderpass2.api"
 import "extensions/khr_external_fence_capabilities.api"
 import "extensions/khr_external_memory_capabilities.api"
 import "extensions/android_external_memory_android_hardware_buffer.api"
@@ -266,6 +267,7 @@ sub ref!ExtensionSet supportedDeviceExtensions() {
   supported.ExtensionNames["VK_KHR_sampler_ycbcr_conversion"] = true
   supported.ExtensionNames["VK_KHR_image_format_list"] = true
   supported.ExtensionNames["VK_KHR_sampler_mirror_clamp_to_edge"] = true
+  supported.ExtensionNames["VK_KHR_create_renderpass2"] = true
   supported.ExtensionNames["VK_EXT_pipeline_creation_feedback"] = true
   supported.ExtensionNames["VK_EXT_scalar_block_layout"] = true
   supported.ExtensionNames["VK_EXT_hdr_metadata"] = true
