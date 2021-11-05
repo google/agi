@@ -2393,12 +2393,12 @@ func (sb *stateBuilder) createRenderPass(rp RenderPassObjectʳ) {
 			NewVkRenderPassMultiviewCreateInfo(
 				VkStructureType_VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO, // sType
 				pNext, // pNext
-				uint32(rp.MultiviewInfo().PViewMasks().Len()),
-				NewU32ᶜᵖ(sb.MustUnpackReadMap(rp.MultiviewInfo().PViewMasks().All()).Ptr()),
-				uint32(rp.MultiviewInfo().PViewOffsets().Len()),
-				NewS32ᶜᵖ(sb.MustUnpackReadMap(rp.MultiviewInfo().PViewOffsets().All()).Ptr()),
-				uint32(rp.MultiviewInfo().PCorrelationMasks().Len()),
-				NewU32ᶜᵖ(sb.MustUnpackReadMap(rp.MultiviewInfo().PCorrelationMasks().All()).Ptr()),
+				uint32(rp.MultiviewInfo().PViewMasks().Count()),
+				NewU32ᶜᵖ(sb.mustReadSlice(rp.MultiviewInfo().PViewMasks()).Ptr()),
+				uint32(rp.MultiviewInfo().PViewOffsets().Count()),
+				NewS32ᶜᵖ(sb.mustReadSlice(rp.MultiviewInfo().PViewOffsets()).Ptr()),
+				uint32(rp.MultiviewInfo().PCorrelationMasks().Count()),
+				NewU32ᶜᵖ(sb.mustReadSlice(rp.MultiviewInfo().PCorrelationMasks()).Ptr()),
 			),
 		).Ptr())
 	}

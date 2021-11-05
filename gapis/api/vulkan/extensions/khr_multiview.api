@@ -90,10 +90,10 @@ class PhysicalDeviceMultiviewProperties {
 
 @internal
 class RenderPassMultiviewCreateInfo {
-    u32                 SubpassCount
-    map!(u32, u32)      PViewMasks
-    u32                 DependencyCount
-    map!(u32, s32)      PViewOffsets
-    u32                 CorrelationMaskCount
-    map!(u32, u32)      PCorrelationMasks
+    u32   SubpassCount
+    u32[] PViewMasks
+    u32   DependencyCount
+    s32[] PViewOffsets
+    u32   CorrelationMaskCount
+    u32[] PCorrelationMasks
 }

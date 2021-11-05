@@ -191,24 +191,18 @@ cmd VkResult vkCreateRenderPass(
           )
 
           if ext.pViewMasks != null {
-            viewMasks := ext.pViewMasks[0:ext.subpassCount]
-            for j in (0 .. ext.subpassCount) {
-                renderPass.MultiviewInfo.PViewMasks[j] = viewMasks[j]
-            }
+            renderPass.MultiviewInfo.PViewMasks = clone(
+              as!const u32*(ext.pViewMasks)[0:ext.subpassCount])
           }
 
           if ext.pViewOffsets != null {
-            viewOffsets := ext.pViewOffsets[0:ext.dependencyCount]
-            for j in (0 .. ext.dependencyCount) {
-                renderPass.MultiviewInfo.PViewOffsets[j] = viewOffsets[j]
-            }
+            renderPass.MultiviewInfo.PViewOffsets = clone(
+              as!const s32*(ext.pViewOffsets)[0:ext.dependencyCount])
           }
 
           if ext.pCorrelationMasks != null {
-            correlationMasks := ext.pCorrelationMasks[0:ext.correlationMaskCount]
-            for j in (0 .. ext.correlationMaskCount) {
-                renderPass.MultiviewInfo.PCorrelationMasks[j] = correlationMasks[j]
-            }
+            renderPass.MultiviewInfo.PCorrelationMasks = clone(
+              as!const u32*(ext.pCorrelationMasks)[0:ext.correlationMaskCount])
           }
         }
       }
