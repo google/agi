@@ -21,8 +21,6 @@ import (
 	"github.com/google/gapid/gapis/api/sync"
 	"github.com/google/gapid/gapis/service/path"
 	"github.com/google/gapid/gapis/capture"
-
-	"github.com/google/gapid/core/log"
 )
 
 // CommandFilter is a predicate used for filtering commands.
@@ -82,7 +80,6 @@ func buildFilter(
 		filters = append(filters, func(id api.CmdID, cmd api.Cmd, s *api.GlobalState, idx api.SubCmdIdx) bool {
 			for _, e := range cmd.Extras().All() {
 				if _, ok := e.(*capture.FramebufferObservation); ok {
-					log.W(ctx, "AAAAA %v : %v", id, cmd)
 					return true
 				}
 			}

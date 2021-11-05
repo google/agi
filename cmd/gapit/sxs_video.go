@@ -107,15 +107,6 @@ func (verb *videoVerb) sxsVideoSource(
 	videoFrames := []*videoFrame{}
 	w, h := 0, 0
 	frameIndex, numDrawCalls := 0, 0
-
-	// // Some traces call eglSwapBuffers without actually drawing to or clearing
-	// // the framebuffer. This is most common during loading screens.
-	// // These would result in a failed comparison as the observed frame could
-	// // be anything and the replayed frame will show the undefined framebuffer
-	// // pattern.
-	// // Permit the first run of frames to have no content. If there are no
-	// // draw-calls or clear calls at all however, then do not permit this.
-	// permitNoMatch := false
 	
 	for _, cmd := range allFBOCommands {
 

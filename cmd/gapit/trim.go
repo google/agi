@@ -104,7 +104,7 @@ func (verb *trimVerb) eofCommands(ctx context.Context, capture *path.Capture, cl
 		return nil
 	}, "", true)
 
-	lastFrame := len(eofCommands)
+	lastFrame := len(eofCommands) -1
 	if verb.Frames.Count > 0 {
 		lastFrame += verb.Frames.Count - 1
 	}

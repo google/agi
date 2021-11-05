@@ -98,17 +98,12 @@ func (verb *dumpFBOVerb) frameSource(ctx context.Context, client client.Client, 
 		return nil
 	}, "", true)
 
-	_ = allFBOCommands
-
 	return func(ch chan<- image.Image) error {
-		
 		for _, cmd := range allFBOCommands {
-
 			fbo, err := getFBO(ctx, client, cmd)
 			if err != nil {
 				return err
 			}
-
 			ch <- flipImg(&image.NRGBA{
 				Pix:    fbo.Bytes,
 				Stride: int(fbo.Width) * 4,
