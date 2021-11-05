@@ -47,56 +47,15 @@
 @extension("VK_KHR_buffer_device_address") define VK_KHR_BUFFER_DEVICE_ADDRESS_SPEC_VERSION 1
 @extension("VK_KHR_buffer_device_address") define VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME "VK_KHR_buffer_device_address"
 
-@extension("VK_KHR_buffer_device_address")
-class VkBufferDeviceAddressInfoKHR {
-    VkStructureType    sType
-    const void*        pNext
-    VkBuffer           buffer
-}
-
-@extension("VK_KHR_buffer_device_address")
-class VkDeviceMemoryOpaqueCaptureAddressInfoKHR {
-    VkStructureType     sType
-    const void*         pNext
-    VkDeviceMemory      memory
-}
-
-@extension("VK_KHR_buffer_device_address")
-class VkBufferOpaqueCaptureAddressCreateInfoKHR {
-    VkStructureType     sType
-    const void*         pNext
-    u64                 opaqueCaptureAddress
-}
-
-@extension("VK_KHR_buffer_device_address")
-class VkMemoryOpaqueCaptureAddressAllocateInfoKHR {
-    VkStructureType     sType
-    const void*         pNext
-    u64                 opaqueCaptureAddress
-}
-
-@extension("VK_KHR_buffer_device_address")
-class VkPhysicalDeviceBufferDeviceAddressFeaturesKHR {
-    VkStructureType     sType
-    void*               pNext
-    VkBool32            bufferDeviceAddress
-    VkBool32            bufferDeviceAddressCaptureReplay
-    VkBool32            bufferDeviceAddressMultiDevice
-}
-
-@internal
-class PhysicalDeviceBufferDeviceAddressFeaturesKHR {
-    VkBool32            BufferDeviceAddress
-    VkBool32            BufferDeviceAddressCaptureReplay
-    VkBool32            BufferDeviceAddressMultiDevice
-}
+// Do not repeat the KHR structs as this extensions is alrady in core
+// Use the core structs as spec states.
 
 @extension("VK_KHR_buffer_device_address")
 @indirect("VkDevice")
 cmd VkDeviceAddress vkGetBufferDeviceAddressKHR(
     VkDevice                            device,
-    const VkBufferDeviceAddressInfoKHR*    pInfo) {
-    buffer := preGetBufferDeviceAddress(device, as!const VkBufferDeviceAddressInfo*(pInfo))
+    const VkBufferDeviceAddressInfo*    pInfo) {
+    buffer := preGetBufferDeviceAddress(device, pInfo)
     deviceAddress := ?
     postGetBufferDeviceAddress(buffer, deviceAddress)
     return deviceAddress
@@ -106,8 +65,8 @@ cmd VkDeviceAddress vkGetBufferDeviceAddressKHR(
 @indirect("VkDevice")
 cmd u64 vkGetBufferOpaqueCaptureAddressKHR(
     VkDevice                            device,
-    const VkBufferDeviceAddressInfoKHR*    pInfo) {
-    buffer := preGetBufferOpaqueCaptureAddress(device, as!const VkBufferDeviceAddressInfo*(pInfo))
+    const VkBufferDeviceAddressInfo*    pInfo) {
+    buffer := preGetBufferOpaqueCaptureAddress(device, pInfo)
     bufferOpaqueCaptureAddress := ?
     postGetBufferOpaqueCaptureAddress(buffer, bufferOpaqueCaptureAddress)
     return bufferOpaqueCaptureAddress
@@ -117,8 +76,8 @@ cmd u64 vkGetBufferOpaqueCaptureAddressKHR(
 @indirect("VkDevice")
 cmd u64 vkGetDeviceMemoryOpaqueCaptureAddressKHR (
     VkDevice                                        device,
-    const VkDeviceMemoryOpaqueCaptureAddressInfoKHR*   pInfo) {
-    memory := preGetDeviceMemoryOpaqueCaptureAddress(device, as!const VkDeviceMemoryOpaqueCaptureAddressInfo*(pInfo))
+    const VkDeviceMemoryOpaqueCaptureAddressInfo*   pInfo) {
+    memory := preGetDeviceMemoryOpaqueCaptureAddress(device, pInfo)
     deviceMemoryOpaqueCaptureAddress := ?
     postGetDeviceMemoryOpaqueCaptureAddress(memory, deviceMemoryOpaqueCaptureAddress)
     return deviceMemoryOpaqueCaptureAddress
