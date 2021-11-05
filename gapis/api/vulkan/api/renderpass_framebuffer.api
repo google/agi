@@ -592,7 +592,20 @@ cmd void vkCmdBeginRenderPass2(
     VkCommandBuffer                             commandBuffer,
     const VkRenderPassBeginInfo*                pRenderPassBegin,
     const VkSubpassBeginInfo*                   pSubpassBeginInfo) {
-    // TODO: Implement
+  if !(commandBuffer in CommandBuffers) {
+    vkErrorInvalidCommandBuffer(commandBuffer)
+  } else {
+    args := new!vkCmdBeginRenderPass2Args(
+        PRenderPassBegin: pRenderPassBegin[0],
+        PSubpassBeginInfo: pSubpassBeginInfo[0],
+    )
+
+    cmdBuf := CommandBuffers[commandBuffer]
+    mapPos := as!u32(len(cmdBuf.BufferCommands.vkCmdBeginRenderPass2))
+    cmdBuf.BufferCommands.vkCmdBeginRenderPass2[mapPos] = args
+
+    AddCommand(commandBuffer, cmd_vkCmdBeginRenderPass2, mapPos)
+  }
 }
 
 @internal class vkCmdEndRenderPass2Args {
@@ -607,7 +620,19 @@ sub void dovkCmdEndRenderPass2(ref!vkCmdEndRenderPass2Args args) {
 cmd void vkCmdEndRenderPass2(
     VkCommandBuffer                             commandBuffer,
     const VkSubpassEndInfo*                     pSubpassEndInfo) {
-    // TODO: Implement
+  if !(commandBuffer in CommandBuffers) {
+      vkErrorInvalidCommandBuffer(commandBuffer)
+  } else {
+      args := new!vkCmdEndRenderPass2Args(
+          PSubpassEndInfo: pSubpassEndInfo[0],
+      )
+
+      cmdBuf := CommandBuffers[commandBuffer]
+      mapPos := as!u32(len(cmdBuf.BufferCommands.vkCmdEndRenderPass2))
+      cmdBuf.BufferCommands.vkCmdEndRenderPass2[mapPos] = args
+
+      AddCommand(commandBuffer, cmd_vkCmdEndRenderPass2, mapPos)
+  }
 }
 
 @internal class vkCmdNextSubpass2Args {
@@ -624,6 +649,19 @@ cmd void vkCmdNextSubpass2(
     VkCommandBuffer                             commandBuffer,
     const VkSubpassBeginInfo*                   pSubpassBeginInfo,
     const VkSubpassEndInfo*                     pSubpassEndInfo) {
-    // TODO: Implement
+  if !(commandBuffer in CommandBuffers) {
+      vkErrorInvalidCommandBuffer(commandBuffer)
+  } else {
+      args := new!vkCmdNextSubpass2Args(
+          PSubpassBeginInfo: pSubpassBeginInfo[0],
+          PSubpassEndInfo: pSubpassEndInfo[0],
+      )
+
+      cmdBuf := CommandBuffers[commandBuffer]
+      mapPos := as!u32(len(cmdBuf.BufferCommands.vkCmdNextSubpass2))
+      cmdBuf.BufferCommands.vkCmdNextSubpass2[mapPos] = args
+
+      AddCommand(commandBuffer, cmd_vkCmdNextSubpass2, mapPos)
+  }
 }
 

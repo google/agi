@@ -78,7 +78,20 @@ cmd void vkCmdBeginRenderPass2KHR(
     VkCommandBuffer                             commandBuffer,
     const VkRenderPassBeginInfo*                pRenderPassBegin,
     const VkSubpassBeginInfo*                   pSubpassBeginInfo) {
-    // TODO: Implement
+    if !(commandBuffer in CommandBuffers) {
+        vkErrorInvalidCommandBuffer(commandBuffer)
+    } else {
+        args := new!vkCmdBeginRenderPass2KHRArgs(
+            PRenderPassBegin: pRenderPassBegin[0],
+            PSubpassBeginInfo: pSubpassBeginInfo[0],
+        )
+
+        cmdBuf := CommandBuffers[commandBuffer]
+        mapPos := as!u32(len(cmdBuf.BufferCommands.vkCmdBeginRenderPass2KHR))
+        cmdBuf.BufferCommands.vkCmdBeginRenderPass2KHR[mapPos] = args
+
+        AddCommand(commandBuffer, cmd_vkCmdBeginRenderPass2KHR, mapPos)
+    }
 }
 
 @internal class vkCmdEndRenderPass2KHRArgs {
@@ -94,7 +107,19 @@ sub void dovkCmdEndRenderPass2KHR(ref!vkCmdEndRenderPass2KHRArgs args) {
 cmd void vkCmdEndRenderPass2KHR(
     VkCommandBuffer                             commandBuffer,
     const VkSubpassEndInfo*                     pSubpassEndInfo) {
-    // TODO: Implement
+    if !(commandBuffer in CommandBuffers) {
+        vkErrorInvalidCommandBuffer(commandBuffer)
+    } else {
+        args := new!vkCmdEndRenderPass2KHRArgs(
+            PSubpassEndInfo: pSubpassEndInfo[0],
+        )
+
+        cmdBuf := CommandBuffers[commandBuffer]
+        mapPos := as!u32(len(cmdBuf.BufferCommands.vkCmdEndRenderPass2KHR))
+        cmdBuf.BufferCommands.vkCmdEndRenderPass2KHR[mapPos] = args
+
+        AddCommand(commandBuffer, cmd_vkCmdEndRenderPass2KHR, mapPos)
+    }
 }
 
 @internal class vkCmdNextSubpass2KHRArgs {
@@ -112,5 +137,18 @@ cmd void vkCmdNextSubpass2KHR(
     VkCommandBuffer                             commandBuffer,
     const VkSubpassBeginInfo*                   pSubpassBeginInfo,
     const VkSubpassEndInfo*                     pSubpassEndInfo) {
-    // TODO: Implement
+    if !(commandBuffer in CommandBuffers) {
+        vkErrorInvalidCommandBuffer(commandBuffer)
+    } else {
+        args := new!vkCmdNextSubpass2KHRArgs(
+            PSubpassBeginInfo: pSubpassBeginInfo[0],
+            PSubpassEndInfo: pSubpassEndInfo[0],
+        )
+
+        cmdBuf := CommandBuffers[commandBuffer]
+        mapPos := as!u32(len(cmdBuf.BufferCommands.vkCmdNextSubpass2KHR))
+        cmdBuf.BufferCommands.vkCmdNextSubpass2KHR[mapPos] = args
+
+        AddCommand(commandBuffer, cmd_vkCmdNextSubpass2KHR, mapPos)
+    }
 }
