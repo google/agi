@@ -18,7 +18,6 @@ package com.google.android.gapid;
 
 import android.app.NativeActivity;
 import android.os.Bundle;
-import android.view.WindowManager;
 import android.view.Window;
 
 // This class exists to disambiguate activity names between native activities inside the GAPID
