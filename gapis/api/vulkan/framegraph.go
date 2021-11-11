@@ -227,7 +227,7 @@ func storeOp2LoadStoreOp(storeOp VkAttachmentStoreOp) api.LoadStoreOp {
 	panic("Unknown storeOp")
 }
 
-func newFramegraphAttachment(desc VkAttachmentDescription, state *State, imgView ImageViewObjectʳ, isDepthStencil bool) *api.FramegraphAttachment {
+func newFramegraphAttachment(desc AttachmentDescription2, state *State, imgView ImageViewObjectʳ, isDepthStencil bool) *api.FramegraphAttachment {
 	var loadOp VkAttachmentLoadOp
 	var storeOp VkAttachmentStoreOp
 	if isDepthStencil {
@@ -246,7 +246,7 @@ func newFramegraphAttachment(desc VkAttachmentDescription, state *State, imgView
 	}
 }
 
-func newFramegraphSubpass(subpassDesc SubpassDescription, state *State, framebuffer FramebufferObjectʳ, renderpass RenderPassObjectʳ) *api.FramegraphSubpass {
+func newFramegraphSubpass(subpassDesc SubpassDescription2, state *State, framebuffer FramebufferObjectʳ, renderpass RenderPassObjectʳ) *api.FramegraphSubpass {
 	inputAtts := subpassDesc.InputAttachments()
 	colorAtts := subpassDesc.ColorAttachments()
 	resolveAtts := subpassDesc.ResolveAttachments()

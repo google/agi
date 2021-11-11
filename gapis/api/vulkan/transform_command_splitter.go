@@ -449,7 +449,7 @@ func (splitTransform *commandSplitter) splitRenderPass(ctx context.Context, rp R
 		lastSubpass := (i == uint32(rp.SubpassDescriptions().Len()-1))
 		firstSubpass := (i == 0)
 
-		patchFinalLayout := func(rpo RenderPassObjectʳ, ar U32ːVkAttachmentReferenceᵐ) {
+		patchFinalLayout := func(rpo RenderPassObjectʳ, ar U32ːAttachmentReference2ᵐ) {
 			for k := 0; k < len(ar.All()); k++ {
 				ia := ar.Get(uint32(k))
 				if ia.Attachment() != VK_ATTACHMENT_UNUSED {

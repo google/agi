@@ -484,14 +484,26 @@ func (overdrawTransform *stencilOverdraw) createRenderPass(ctx context.Context,
 		return res
 	}
 
-	attachments := rpInfo.AttachmentDescriptions().All()
-	newAttachments := rpInfo.AttachmentDescriptions().Clone(api.CloneContext{})
-	newAttachments.Add(uint32(newAttachments.Len()), stencilAttachment)
-	newAttachmentsData, newAttachmentsLen := unpackMapWithAllocator(allocAndRead,
-		newAttachments)
+	newAttachments := []VkAttachmentDescription{}
+	for _, k := range rpInfo.AttachmentDescriptions().Keys() {
+		ad := rpInfo.AttachmentDescriptions().Get(k)
+		newAttachments = append(newAttachments, NewVkAttachmentDescription(
+			ad.Flags(),
+			ad.Fmt(),
+			ad.Samples(),
+			ad.LoadOp(),
+			ad.StoreOp(),
+			ad.StencilLoadOp(),
+			ad.StencilStoreOp(),
+			ad.InitialLayout(),
+			ad.FinalLayout(),
+		))
+	}
+	newAttachments = append(newAttachments, stencilAttachment)
+	newAttachmentsPtr := allocAndRead(newAttachments).Ptr()
 
 	stencilAttachmentReference := NewVkAttachmentReference(
-		uint32(len(attachments)),
+		uint32(len(newAttachments)-1),
 		stencilAttachment.InitialLayout(),
 	)
 	stencilAttachmentReferencePtr := allocAndRead(stencilAttachmentReference).Ptr()
@@ -509,10 +521,10 @@ func (overdrawTransform *stencilOverdraw) createRenderPass(ctx context.Context,
 
 	renderPassCreateInfo := NewVkRenderPassCreateInfo(
 		VkStructureType_VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // sType
-		0,                 // pNext
-		0,                 // flags
-		newAttachmentsLen, // attachmentCount
-		NewVkAttachmentDescriptionᶜᵖ(newAttachmentsData.Ptr()), // pAttachments
+		0,                           // pNext
+		0,                           // flags
+		uint32(len(newAttachments)), // attachmentCount
+		NewVkAttachmentDescriptionᶜᵖ(newAttachmentsPtr),         // pAttachments
 		uint32(len(subpasses)),                                  // subpassCount
 		NewVkSubpassDescriptionᶜᵖ(subpassesData.Ptr()),          // pSubpasses
 		subpassDependenciesLen,                                  // dependencyCount
@@ -2822,7 +2834,7 @@ func createSpecializationInfo(ctx context.Context,
 
 func subpassToSubpassDescription(
 	inputState *api.GlobalState,
-	subpass SubpassDescription,
+	subpass SubpassDescription2,
 	attachRefPtr memory.Pointer,
 	allocAndRead func(v ...interface{}) api.AllocResult,
 ) VkSubpassDescription {
@@ -2988,7 +3000,19 @@ func getDepthAttachment(rpInfo RenderPassObjectʳ) (VkAttachmentDescription, uin
 			fmt.Errorf("Invalid depth attachment")
 	}
 
-	return attachmentDesc, attachment0.Attachment(), nil
+	newAttachment := NewVkAttachmentDescription(
+		attachmentDesc.Flags(),
+		attachmentDesc.Fmt(),
+		attachmentDesc.Samples(),
+		attachmentDesc.LoadOp(),
+		attachmentDesc.StoreOp(),
+		attachmentDesc.StencilLoadOp(),
+		attachmentDesc.StencilStoreOp(),
+		attachmentDesc.InitialLayout(),
+		attachmentDesc.FinalLayout(),
+	)
+
+	return newAttachment, attachment0.Attachment(), nil
 }
 
 func getLastRenderPass(ctx context.Context,
