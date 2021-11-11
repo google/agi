@@ -182,6 +182,11 @@ public class DeviceDialog implements Devices.Listener, Capture.Listener {
       return Messages.SELECT_DEVICE_TITLE;
     }
 
+    public void packColumns() {
+      Widgets.packColumns(compatibleDeviceTable.getTable());
+      Widgets.packColumns(incompatibleDeviceTable.getTable());
+    }
+
     @Override
     protected Control createDialogArea(Composite parent) {
       Composite composite = (Composite) super.createDialogArea(parent);
@@ -258,6 +263,7 @@ public class DeviceDialog implements Devices.Listener, Capture.Listener {
       Widgets.createTableColumn(incompatibleDeviceTable, "GPU", dev -> ((ReplayDeviceInfo)dev).instance.getConfiguration().getHardware().getGPU().getName());
       Widgets.createTableColumn(incompatibleDeviceTable, "Driver version", dev -> Devices.getDriverVersion(((ReplayDeviceInfo)dev).instance));
       Widgets.createTableColumn(incompatibleDeviceTable, "Incompatibility", dev -> Strings.getMessage(((ReplayDeviceInfo)dev).reason));
+      
       incompatibleDeviceTable.getTable().setBackground(theme.invalidDeviceBackground());
 
       // Refresh button
