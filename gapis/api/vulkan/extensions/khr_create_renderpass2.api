@@ -88,6 +88,10 @@ Thefore there is no need to repeat the KHR structs
     s32                     ViewOffset
 }
 
+@internal class SubpassBeginInfo {
+    VkSubpassContents   Contents
+}
+
 //////////////
 // Commands //
 //////////////
@@ -111,15 +115,6 @@ cmd VkResult vkCreateRenderPass2KHR(
     return ?
 }
 
-@internal class vkCmdBeginRenderPass2KHRArgs {
-    VkRenderPassBeginInfo           PRenderPassBegin
-    VkSubpassBeginInfo              PSubpassBeginInfo
-}
-
-sub void dovkCmdBeginRenderPass2KHR(ref!vkCmdBeginRenderPass2KHRArgs args) {
-    // TODO: Implement
-}
-
 @extension("VK_KHR_create_renderpass2")
 @indirect("VkCommandBuffer", "VkDevice")
 cmd void vkCmdBeginRenderPass2KHR(
@@ -129,15 +124,21 @@ cmd void vkCmdBeginRenderPass2KHR(
     if !(commandBuffer in CommandBuffers) {
         vkErrorInvalidCommandBuffer(commandBuffer)
     } else {
-        args := new!vkCmdBeginRenderPass2KHRArgs(
-            PRenderPassBegin: pRenderPassBegin[0],
-            PSubpassBeginInfo: pSubpassBeginInfo[0],
+        if pRenderPassBegin == null { vkErrorNullPointer("VkRenderPassBeginInfo2KHR") }
+        renderPassBeginInfo := createInternalRenderPassBeginInfo(pRenderPassBegin)
+        subpassBeginInfo := createInternalSubpassBeginInfoFromInfo(pSubpassBeginInfo)
+
+        args := new!vkCmdBeginRenderPassCommonArgs(
+            PRenderPassBeginInfo: renderPassBeginInfo,
+            PSubpassBeginInfo: subpassBeginInfo,
+            Version: Renderpass2KHR,
         )
 
-        cmdBuf := CommandBuffers[commandBuffer]
-        mapPos := as!u32(len(cmdBuf.BufferCommands.vkCmdBeginRenderPass2KHR))
-        cmdBuf.BufferCommands.vkCmdBeginRenderPass2KHR[mapPos] = args
+        cb := CommandBuffers[commandBuffer]
+        recordBeginRenderPass(cb, renderPassBeginInfo)
 
+        mapPos := as!u32(len(cb.BufferCommands.vkCmdBeginRenderPass2KHR))
+        cb.BufferCommands.vkCmdBeginRenderPass2KHR[mapPos] = args
         AddCommand(commandBuffer, cmd_vkCmdBeginRenderPass2KHR, mapPos)
     }
 }

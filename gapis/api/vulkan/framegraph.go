@@ -514,13 +514,13 @@ func (helpers *framegraphInfoHelpers) processSubCommand(ctx context.Context, dep
 	switch args := cmdArgs.(type) {
 
 	// Beginning of renderpass
-	case VkCmdBeginRenderPassArgsʳ:
+	case VkCmdBeginRenderPassCommonArgsʳ:
 		if helpers.wlInfo != nil {
 			panic("Renderpass starts within another workload")
 		}
-
-		framebuffer := vkState.Framebuffers().Get(args.Framebuffer())
-		renderpassObj := vkState.RenderPasses().Get(args.RenderPass())
+		renderPassBeginInfo := args.PRenderPassBeginInfo()
+		framebuffer := vkState.Framebuffers().Get(renderPassBeginInfo.Framebuffer())
+		renderpassObj := vkState.RenderPasses().Get(renderPassBeginInfo.RenderPass())
 		subpassesDesc := renderpassObj.SubpassDescriptions()
 		subpasses := make([]*api.FramegraphSubpass, subpassesDesc.Len())
 		for i := 0; i < len(subpasses); i++ {

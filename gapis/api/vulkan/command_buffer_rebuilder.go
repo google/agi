@@ -141,33 +141,31 @@ func allocateNewCmdBufFromExistingOneAndBegin(
 	return newCmdBufID, x, cleanup
 }
 
-func rebuildVkCmdBeginRenderPass(
+
+func createVkRenderPassBeginInfo(
 	ctx context.Context,
-	cb CommandBuilder,
-	commandBuffer VkCommandBuffer,
-	r *api.GlobalState,
 	s *api.GlobalState,
-	d VkCmdBeginRenderPassArgsʳ) (func(), api.Cmd, error) {
+	renderPassBeginInfo RenderPassBeginInfoʳ) (VkRenderPassBeginInfo, []api.AllocResult, error) {
 	mem := []api.AllocResult{}
 
-	if !GetState(s).RenderPasses().Contains(d.RenderPass()) {
-		return nil, nil, fmt.Errorf("Cannot find Renderpass %v", d.RenderPass())
+	if !GetState(s).RenderPasses().Contains(renderPassBeginInfo.RenderPass()) {
+		return VkRenderPassBeginInfo{}, nil, fmt.Errorf("Cannot find Renderpass %v", renderPassBeginInfo.RenderPass())
 	}
-	if !GetState(s).Framebuffers().Contains(d.Framebuffer()) {
-		return nil, nil, fmt.Errorf("Cannot find Framebuffer %v", d.Framebuffer())
+	if !GetState(s).Framebuffers().Contains(renderPassBeginInfo.Framebuffer()) {
+		return VkRenderPassBeginInfo{}, nil, fmt.Errorf("Cannot find Framebuffer %v", renderPassBeginInfo.Framebuffer())
 	}
 
-	clearValues := make([]VkClearValue, d.ClearValues().Len())
+	clearValues := make([]VkClearValue, renderPassBeginInfo.ClearValues().Len())
 	for i := range clearValues {
-		clearValues[i] = d.ClearValues().Get(uint32(i))
+		clearValues[i] = renderPassBeginInfo.ClearValues().Get(uint32(i))
 	}
 
 	clearValuesData := s.AllocDataOrPanic(ctx, clearValues)
 	mem = append(mem, clearValuesData)
 	pNext := NewVoidᶜᵖ(memory.Nullptr)
 
-	if !d.DeviceGroupBeginInfo().IsNil() {
-		dgbi := d.DeviceGroupBeginInfo()
+	if !renderPassBeginInfo.DeviceGroupBeginInfo().IsNil() {
+		dgbi := renderPassBeginInfo.DeviceGroupBeginInfo()
 
 		rects := make([]VkRect2D, dgbi.RenderAreas().Len())
 		for i := range rects {
@@ -192,24 +190,63 @@ func rebuildVkCmdBeginRenderPass(
 	begin := NewVkRenderPassBeginInfo(
 		VkStructureType_VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO, // sType
 		0,                        // pNext
-		d.RenderPass(),           // renderPass
-		d.Framebuffer(),          // framebuffer
-		d.RenderArea(),           // renderArea
+		renderPassBeginInfo.RenderPass(),           // renderPass
+		renderPassBeginInfo.Framebuffer(),          // framebuffer
+		renderPassBeginInfo.RenderArea(),           // renderArea
 		uint32(len(clearValues)), // clearValueCount
 		NewVkClearValueᶜᵖ(clearValuesData.Ptr()), // pClearValues
 	)
-	beginData := s.AllocDataOrPanic(ctx, begin)
-	mem = append(mem, beginData)
+
+	return begin, mem, nil
+}
+
+func rebuildVkCmdBeginRenderPassCommon(
+	ctx context.Context,
+	cb CommandBuilder,
+	commandBuffer VkCommandBuffer,
+	r *api.GlobalState,
+	s *api.GlobalState,
+	d VkCmdBeginRenderPassCommonArgsʳ) (func(), api.Cmd, error) {
+	switch d.Version() {
+	case RenderPassVersion_Renderpass:
+		return rebuildVkCmdBeginRenderPass(ctx, cb, commandBuffer, r, s, d)
+	case RenderPassVersion_Renderpass2:
+		return rebuildVkCmdBeginRenderPass2(ctx, cb, commandBuffer, r, s, d)
+	case RenderPassVersion_Renderpass2KHR:
+		return rebuildVkCmdBeginRenderPass2KHR(ctx, cb, commandBuffer, r, s, d)
+	default:
+		panic("There should be a renderpass version")
+	}
+}
+
+func rebuildVkCmdBeginRenderPass(
+	ctx context.Context,
+	cb CommandBuilder,
+	commandBuffer VkCommandBuffer,
+	r *api.GlobalState,
+	s *api.GlobalState,
+	d VkCmdBeginRenderPassCommonArgsʳ) (func(), api.Cmd, error) {
+
+	renderPassBeginInfo, mem, err := createVkRenderPassBeginInfo(ctx, s, d.PRenderPassBeginInfo())
+	if err != nil {
+		return nil, nil, err
+	}
+	renderPassBeginData := s.AllocDataOrPanic(ctx, renderPassBeginInfo)
+	mem = append(mem, renderPassBeginData)
+
+	contents := d.PSubpassBeginInfo().Contents()
 
 	cleanup := func() {
 		for _, d := range mem {
 			d.Free()
 		}
 	}
+
 	cmd := cb.VkCmdBeginRenderPass(
 		commandBuffer,
-		beginData.Ptr(),
-		d.Contents())
+		renderPassBeginData.Ptr(),
+		contents,
+	)
 	for _, d := range mem {
 		cmd.AddRead(d.Data())
 	}
@@ -1579,15 +1616,48 @@ func rebuildVkCmdDrawIndirectByteCountEXT(
 	), nil
 }
 
+func createVkSubpassBeginInfo(subpassBeginInfo SubpassBeginInfoʳ) VkSubpassBeginInfo {
+	return NewVkSubpassBeginInfo(
+		VkStructureType_VK_STRUCTURE_TYPE_SUBPASS_BEGIN_INFO, // sType
+		0,                        // pNext
+		subpassBeginInfo.Contents(),
+	)
+}
+
 func rebuildVkCmdBeginRenderPass2(
 	ctx context.Context,
 	cb CommandBuilder,
 	commandBuffer VkCommandBuffer,
 	r *api.GlobalState,
 	s *api.GlobalState,
-	d VkCmdBeginRenderPass2Argsʳ) (func(), api.Cmd, error) {
-	// MELIH TODO: Implement
-	return nil, nil, fmt.Errorf("Not implemented")
+	d VkCmdBeginRenderPassCommonArgsʳ) (func(), api.Cmd, error) {
+
+	renderPassBeginInfo, mem, err := createVkRenderPassBeginInfo(ctx, s, d.PRenderPassBeginInfo())
+	if err != nil {
+		return nil, nil, err
+	}
+	renderPassBeginData := s.AllocDataOrPanic(ctx, renderPassBeginInfo)
+	mem = append(mem, renderPassBeginData)
+
+	subpassBeginInfo := createVkSubpassBeginInfo(d.PSubpassBeginInfo())
+	subpassBeginData := s.AllocDataOrPanic(ctx, subpassBeginInfo)
+	mem = append(mem, subpassBeginData)
+
+	cleanup := func() {
+		for _, d := range mem {
+			d.Free()
+		}
+	}
+
+	cmd := cb.VkCmdBeginRenderPass2(
+		commandBuffer,
+		renderPassBeginData.Ptr(),
+		subpassBeginData.Ptr(),
+	)
+	for _, d := range mem {
+		cmd.AddRead(d.Data())
+	}
+	return cleanup, cmd, nil
 }
 
 func rebuildVkCmdEndRenderPass2(
@@ -1618,9 +1688,34 @@ func rebuildVkCmdBeginRenderPass2KHR(
 	commandBuffer VkCommandBuffer,
 	r *api.GlobalState,
 	s *api.GlobalState,
-	d VkCmdBeginRenderPass2KHRArgsʳ) (func(), api.Cmd, error) {
-	// MELIH TODO: Implement
-	return nil, nil, fmt.Errorf("Not implemented")
+	d VkCmdBeginRenderPassCommonArgsʳ) (func(), api.Cmd, error) {
+
+	renderPassBeginInfo, mem, err := createVkRenderPassBeginInfo(ctx, s, d.PRenderPassBeginInfo())
+	if err != nil {
+		return nil, nil, err
+	}
+	renderPassBeginData := s.AllocDataOrPanic(ctx, renderPassBeginInfo)
+	mem = append(mem, renderPassBeginData)
+
+	subpassBeginInfo := createVkSubpassBeginInfo(d.PSubpassBeginInfo())
+	subpassBeginData := s.AllocDataOrPanic(ctx, subpassBeginInfo)
+	mem = append(mem, subpassBeginData)
+
+	cleanup := func() {
+		for _, d := range mem {
+			d.Free()
+		}
+	}
+
+	cmd := cb.VkCmdBeginRenderPass2KHR(
+		commandBuffer,
+		renderPassBeginData.Ptr(),
+		subpassBeginData.Ptr(),
+	)
+	for _, d := range mem {
+		cmd.AddRead(d.Data())
+	}
+	return cleanup, cmd, nil
 }
 
 func rebuildVkCmdEndRenderPass2KHR(
@@ -1809,7 +1904,7 @@ func GetCommandArgs(ctx context.Context,
 func GetCommandFunction(cr *CommandReference) interface{} {
 	switch cr.Type() {
 	case CommandType_cmd_vkCmdBeginRenderPass:
-		return subDovkCmdBeginRenderPass
+		return subDovkCmdBeginRenderPassCommon
 	case CommandType_cmd_vkCmdEndRenderPass:
 		return subDovkCmdEndRenderPass
 	case CommandType_cmd_vkCmdNextSubpass:
@@ -1926,7 +2021,7 @@ func GetCommandFunction(cr *CommandReference) interface{} {
 		return subDovkCmdDispatchBase
 	// Vulkan 1.2
 	case CommandType_cmd_vkCmdBeginRenderPass2:
-		return subDovkCmdBeginRenderPass2
+		return subDovkCmdBeginRenderPassCommon
 	case CommandType_cmd_vkCmdEndRenderPass2:
 		return subDovkCmdEndRenderPass2
 	case CommandType_cmd_vkCmdNextSubpass2:
@@ -1946,7 +2041,7 @@ func GetCommandFunction(cr *CommandReference) interface{} {
 		return subDovkCmdDrawIndirectByteCountEXT
 	// @extension("VK_KHR_createRenderpass2")
 	case CommandType_cmd_vkCmdBeginRenderPass2KHR:
-		return subDovkCmdBeginRenderPass2KHR
+		return subDovkCmdBeginRenderPassCommon
 	case CommandType_cmd_vkCmdEndRenderPass2KHR:
 		return subDovkCmdEndRenderPass2KHR
 	case CommandType_cmd_vkCmdNextSubpass2KHR:
@@ -1969,8 +2064,8 @@ func AddCommand(ctx context.Context,
 	rebuildInfo interface{}) (func(), api.Cmd, error) {
 
 	switch t := rebuildInfo.(type) {
-	case VkCmdBeginRenderPassArgsʳ:
-		return rebuildVkCmdBeginRenderPass(ctx, cb, commandBuffer, r, s, t)
+	case VkCmdBeginRenderPassCommonArgsʳ:
+		return rebuildVkCmdBeginRenderPassCommon(ctx, cb, commandBuffer, r, s, t)
 	case VkCmdEndRenderPassArgsʳ:
 		return rebuildVkCmdEndRenderPass(ctx, cb, commandBuffer, r, s, t)
 	case VkCmdNextSubpassArgsʳ:
@@ -2086,8 +2181,6 @@ func AddCommand(ctx context.Context,
 	case VkCmdDispatchBaseArgsʳ:
 		return rebuildVkCmdDispatchBase(ctx, cb, commandBuffer, r, s, t)
 	// Vulkan 1.2
-	case VkCmdBeginRenderPass2KHRArgsʳ:
-		return rebuildVkCmdBeginRenderPass2KHR(ctx, cb, commandBuffer, r, s, t)
 	case VkCmdEndRenderPass2KHRArgsʳ:
 		return rebuildVkCmdEndRenderPass2KHR(ctx, cb, commandBuffer, r, s, t)
 	case VkCmdNextSubpass2KHRArgsʳ:
@@ -2106,8 +2199,6 @@ func AddCommand(ctx context.Context,
 	case VkCmdDrawIndirectByteCountEXTArgsʳ:
 		return rebuildVkCmdDrawIndirectByteCountEXT(ctx, cb, commandBuffer, r, s, t)
 	// @extension("VK_KHR_createRenderpass2")
-	case VkCmdBeginRenderPass2Argsʳ:
-		return rebuildVkCmdBeginRenderPass2(ctx, cb, commandBuffer, r, s, t)
 	case VkCmdEndRenderPass2Argsʳ:
 		return rebuildVkCmdEndRenderPass2(ctx, cb, commandBuffer, r, s, t)
 	case VkCmdNextSubpass2Argsʳ:

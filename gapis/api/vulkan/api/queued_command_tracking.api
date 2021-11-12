@@ -265,7 +265,7 @@ sub void callCommand(ref!CommandReference reference) {
     case cmd_vkCmdPushConstants:
       dovkCmdPushConstants(CommandBuffers[reference.Buffer].BufferCommands.vkCmdPushConstants[reference.MapIndex])
     case cmd_vkCmdBeginRenderPass:
-      dovkCmdBeginRenderPass(CommandBuffers[reference.Buffer].BufferCommands.vkCmdBeginRenderPass[reference.MapIndex])
+      dovkCmdBeginRenderPassCommon(CommandBuffers[reference.Buffer].BufferCommands.vkCmdBeginRenderPass[reference.MapIndex])
     case cmd_vkCmdNextSubpass:
       dovkCmdNextSubpass(CommandBuffers[reference.Buffer].BufferCommands.vkCmdNextSubpass[reference.MapIndex])
     case cmd_vkCmdEndRenderPass:
@@ -304,7 +304,7 @@ sub void callCommand(ref!CommandReference reference) {
       dovkCmdSetLineStippleEXT(CommandBuffers[reference.Buffer].BufferCommands.vkCmdSetLineStippleEXT[reference.MapIndex])
     // Vulkan 1.2
     case cmd_vkCmdBeginRenderPass2:
-      dovkCmdBeginRenderPass2(CommandBuffers[reference.Buffer].BufferCommands.vkCmdBeginRenderPass2[reference.MapIndex])
+      dovkCmdBeginRenderPassCommon(CommandBuffers[reference.Buffer].BufferCommands.vkCmdBeginRenderPass2[reference.MapIndex])
     case cmd_vkCmdEndRenderPass2:
       dovkCmdEndRenderPass2(CommandBuffers[reference.Buffer].BufferCommands.vkCmdEndRenderPass2[reference.MapIndex])
     case cmd_vkCmdNextSubpass2:
@@ -324,7 +324,7 @@ sub void callCommand(ref!CommandReference reference) {
       dovkCmdDrawIndirectByteCountEXT(CommandBuffers[reference.Buffer].BufferCommands.vkCmdDrawIndirectByteCountEXT[reference.MapIndex])
     // @extension("VK_KHR_create_renderpass2")
     case cmd_vkCmdBeginRenderPass2KHR:
-      dovkCmdBeginRenderPass2KHR(CommandBuffers[reference.Buffer].BufferCommands.vkCmdBeginRenderPass2KHR[reference.MapIndex])
+      dovkCmdBeginRenderPassCommon(CommandBuffers[reference.Buffer].BufferCommands.vkCmdBeginRenderPass2KHR[reference.MapIndex])
     case cmd_vkCmdEndRenderPass2KHR:
       dovkCmdEndRenderPass2KHR(CommandBuffers[reference.Buffer].BufferCommands.vkCmdEndRenderPass2KHR[reference.MapIndex])
     case cmd_vkCmdNextSubpass2KHR:

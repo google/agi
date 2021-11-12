@@ -311,14 +311,14 @@ func resolveCurrentRenderPass2(ctx context.Context, s *api.GlobalState, submit *
 	l := s.MemoryLayout
 
 	walkCommandsCallback := func(o CommandReferenceʳ) {
-		switch o.Type() {
-		case CommandType_cmd_vkCmdBeginRenderPass:
-			t := c.CommandBuffers().Get(o.Buffer()).BufferCommands().VkCmdBeginRenderPass().Get(o.MapIndex())
-			lrp = c.RenderPasses().Get(t.RenderPass())
+		args := GetCommandArgs(ctx, o, GetState(s))
+		switch ar := args.(type) {
+		case VkCmdBeginRenderPassCommonArgsʳ: // Melih TODO: Ask Andrew
+			lrp = c.RenderPasses().Get(ar.PRenderPassBeginInfo().RenderPass())
 			subpass = 0
-		case CommandType_cmd_vkCmdNextSubpass:
+		case VkCmdNextSubpassArgsʳ:
 			subpass++
-		case CommandType_cmd_vkCmdEndRenderPass:
+		case VkCmdEndRenderPassArgsʳ:
 			lrp = NilRenderPassObjectʳ
 			subpass = 0
 		}

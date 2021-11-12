@@ -498,8 +498,8 @@ func (API) ResolveSynchronization(ctx context.Context, d *sync.Data, c *path.Cap
 					}
 					mergeExperimentalCmds(append(idx, uint64(i)))
 				}
-			case VkCmdBeginRenderPassArgsʳ:
-				rp := st.RenderPasses().Get(args.RenderPass())
+			case VkCmdBeginRenderPassCommonArgsʳ:
+				rp := st.RenderPasses().Get(args.PRenderPassBeginInfo().RenderPass())
 				name := fmt.Sprintf("RenderPass: %v", rp.VulkanHandle())
 				if label := rp.Label(ctx, s); len(label) > 0 {
 					name = label
@@ -537,15 +537,15 @@ func (API) ResolveSynchronization(ctx context.Context, d *sync.Data, c *path.Cap
 			// Markdown RenderPasses' ans SubPasses' command index, for helping
 			// connect a command and its correlated GPU slices.
 			switch args := GetCommandArgs(ctx, cb.CommandReferences().Get(uint32(i)), st).(type) {
-			case VkCmdBeginRenderPassArgsʳ:
-				rp := st.RenderPasses().Get(args.RenderPass())
+			case VkCmdBeginRenderPassCommonArgsʳ:
+				rp := st.RenderPasses().Get(args.PRenderPassBeginInfo().RenderPass())
 				if id.IsReal() {
 					submissionKey := api.CmdSubmissionKey{order, 0, 0, 0}
 					commandBufferKey := api.CmdSubmissionKey{order, uint64(cb.VulkanHandle()), 0, 0}
 					d.SubmissionIndices[submissionKey] = []api.SubCmdIdx{idx[:len(idx)-1]}
 					d.SubmissionIndices[commandBufferKey] = []api.SubCmdIdx{idx}
 
-					key := api.CmdSubmissionKey{order, uint64(cb.VulkanHandle()), uint64(rp.VulkanHandle()), uint64(args.Framebuffer())}
+					key := api.CmdSubmissionKey{order, uint64(cb.VulkanHandle()), uint64(rp.VulkanHandle()), uint64(args.PRenderPassBeginInfo().Framebuffer())}
 					currentRenderpassCmdSubmissionKey = key
 					if _, ok := d.SubmissionIndices[key]; ok {
 						d.SubmissionIndices[key] = append(d.SubmissionIndices[key], append(idx, uint64(i)))
