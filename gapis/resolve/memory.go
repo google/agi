@@ -439,7 +439,6 @@ func memoryAsType(ctx context.Context, s *api.GlobalState, rng memory.Range, poo
 	}))
 
 	ty, err := types.GetType(typeIndex)
-
 	if err != nil {
 		return nil, err
 	}

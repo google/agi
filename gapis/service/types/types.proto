@@ -34,7 +34,8 @@ message Type {
     MapType map = 8;
     ArrayType array = 9;
     PseudonymType pseudonym = 10;
-    EnumType enum = 11;
+    EnumType enum
+    = 11;
     SizedType sized = 12;
   }
 }
