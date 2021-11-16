@@ -92,6 +92,10 @@ Thefore there is no need to repeat the KHR structs
     VkSubpassContents   Contents
 }
 
+@internal class SubpassEndInfo {
+    // Intentionally left blank
+}
+
 //////////////
 // Commands //
 //////////////
@@ -108,6 +112,7 @@ cmd VkResult vkCreateRenderPass2KHR(
     if pRenderPass == null { vkErrorNullPointer("VkRenderPass") }
 
     renderPass := createRenderPassObjectFromInfo2(pCreateInfo, device)
+    renderPass.Version = Renderpass2KHR
 
     handle := ?
     pRenderPass[0] = handle
@@ -125,8 +130,8 @@ cmd void vkCmdBeginRenderPass2KHR(
         vkErrorInvalidCommandBuffer(commandBuffer)
     } else {
         if pRenderPassBegin == null { vkErrorNullPointer("VkRenderPassBeginInfo2KHR") }
-        renderPassBeginInfo := createInternalRenderPassBeginInfo(pRenderPassBegin)
-        subpassBeginInfo := createInternalSubpassBeginInfoFromInfo(pSubpassBeginInfo)
+        renderPassBeginInfo := createRenderPassBeginInfo(pRenderPassBegin)
+        subpassBeginInfo := createSubpassBeginInfoFromInfo(pSubpassBeginInfo)
 
         args := new!vkCmdBeginRenderPassCommonArgs(
             PRenderPassBeginInfo: renderPassBeginInfo,
@@ -171,15 +176,6 @@ cmd void vkCmdEndRenderPass2KHR(
     }
 }
 
-@internal class vkCmdNextSubpass2KHRArgs {
-    VkSubpassBeginInfo              PSubpassBeginInfo
-    VkSubpassEndInfo                PSubpassEndInfo
-}
-
-sub void dovkCmdNextSubpass2KHR(ref!vkCmdNextSubpass2KHRArgs args) {
-    // TODO: Implement
-}
-
 @extension("VK_KHR_create_renderpass2")
 @indirect("VkCommandBuffer", "VkDevice")
 cmd void vkCmdNextSubpass2KHR(
@@ -189,12 +185,17 @@ cmd void vkCmdNextSubpass2KHR(
     if !(commandBuffer in CommandBuffers) {
         vkErrorInvalidCommandBuffer(commandBuffer)
     } else {
-        args := new!vkCmdNextSubpass2KHRArgs(
-            PSubpassBeginInfo: pSubpassBeginInfo[0],
-            PSubpassEndInfo: pSubpassEndInfo[0],
+        cmdBuf := CommandBuffers[commandBuffer]
+        recordSubpassBegin(cmdBuf, cmdBuf.CurrentRecordingSubpass + 1)
+
+        subpassBeginInfo := createSubpassBeginInfoFromInfo(pSubpassBeginInfo)
+        subpassEndInfo := createSubpassEndInfo()
+        args := new!vkCmdNextSubpassCommonArgs(
+            PSubpassBeginInfo: subpassBeginInfo,
+            PSubpassEndInfo: subpassEndInfo,
+            Version: Renderpass2KHR,
         )
 
-        cmdBuf := CommandBuffers[commandBuffer]
         mapPos := as!u32(len(cmdBuf.BufferCommands.vkCmdNextSubpass2KHR))
         cmdBuf.BufferCommands.vkCmdNextSubpass2KHR[mapPos] = args
 

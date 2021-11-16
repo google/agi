@@ -236,7 +236,13 @@ func (vtTransform *vulkanTerminator) cutCommandBuffer(ctx context.Context, id ap
 		numSubpasses := uint32(lrp.SubpassDescriptions().Len())
 		for i := 0; uint32(i) < numSubpasses-lsp-1; i++ {
 			extraCommands = append(extraCommands,
-				NewVkCmdNextSubpassArgsʳ(VkSubpassContents_VK_SUBPASS_CONTENTS_INLINE))
+				NewVkCmdNextSubpassCommonArgsʳ(
+					NewSubpassBeginInfoʳ(
+						VkSubpassContents_VK_SUBPASS_CONTENTS_INLINE,
+					),
+					NewSubpassEndInfoʳ(),
+					lrp.Version(),
+				))
 		}
 		extraCommands = append(extraCommands, NewVkCmdEndRenderPassArgsʳ())
 	}
@@ -316,7 +322,7 @@ func resolveCurrentRenderPass2(ctx context.Context, s *api.GlobalState, submit *
 		case VkCmdBeginRenderPassCommonArgsʳ: // Melih TODO: Ask Andrew
 			lrp = c.RenderPasses().Get(ar.PRenderPassBeginInfo().RenderPass())
 			subpass = 0
-		case VkCmdNextSubpassArgsʳ:
+		case VkCmdNextSubpassCommonArgsʳ:
 			subpass++
 		case VkCmdEndRenderPassArgsʳ:
 			lrp = NilRenderPassObjectʳ

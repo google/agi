@@ -2366,10 +2366,12 @@ func (sb *stateBuilder) createPipelineLayout(pl PipelineLayoutObjectʳ) {
 }
 
 func (sb *stateBuilder) createRenderPass(rp RenderPassObjectʳ) {
-	if rp.IsRenderPass2() {
-		sb.createRenderPass2(rp)
-	} else {
+	switch rp.Version() {
+	case RenderPassVersion_Renderpass:
 		sb.createRenderPassOld(rp)
+	case RenderPassVersion_Renderpass2:
+	case RenderPassVersion_Renderpass2KHR:
+		sb.createRenderPass2(rp)
 	}
 }
 
@@ -2526,26 +2528,54 @@ func (sb *stateBuilder) createRenderPass2(rp RenderPassObjectʳ) {
 	pNext := NewVoidᶜᵖ(memory.Nullptr)
 	// We do not support any extension for this functionality yet
 
-	sb.write(sb.cb.VkCreateRenderPass2(
-		rp.Device(),
-		sb.MustAllocReadData(NewVkRenderPassCreateInfo2(
-			VkStructureType_VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO_2, // sType
-			pNext, // pNext
-			0,     // flags
-			uint32(rp.AttachmentDescriptions().Len()),                            // attachmentCount
-			newAttachmentDescriptions,                                            // pAttachments
-			uint32(rp.SubpassDescriptions().Len()),                               // subpassCount
-			newSubpassDescriptions,                                               // pSubpasses
-			uint32(rp.SubpassDependencies().Len()),                               // dependencyCount
-			newSubpassDependencies,                                               // pDependencies
-			uint32(rp.CorrelatedViewMasks().Len()),                               // correlatedViewMaskCount
-			NewU32ᶜᵖ(sb.MustUnpackReadMap(rp.CorrelatedViewMasks().All()).Ptr()), // pCorrelatedViewMasks
-		)).Ptr(),
-		memory.Nullptr,
-		sb.MustAllocWriteData(rp.VulkanHandle()).Ptr(),
-		VkResult_VK_SUCCESS,
-	))
+	newCreateRenderPassCmd := api.Cmd(nil)
 
+	switch rp.Version() {
+	case RenderPassVersion_Renderpass2:
+		newCreateRenderPassCmd = sb.cb.VkCreateRenderPass2(
+			rp.Device(),
+			sb.MustAllocReadData(NewVkRenderPassCreateInfo2(
+				VkStructureType_VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO_2, // sType
+				pNext, // pNext
+				0,     // flags
+				uint32(rp.AttachmentDescriptions().Len()),                            // attachmentCount
+				newAttachmentDescriptions,                                            // pAttachments
+				uint32(rp.SubpassDescriptions().Len()),                               // subpassCount
+				newSubpassDescriptions,                                               // pSubpasses
+				uint32(rp.SubpassDependencies().Len()),                               // dependencyCount
+				newSubpassDependencies,                                               // pDependencies
+				uint32(rp.CorrelatedViewMasks().Len()),                               // correlatedViewMaskCount
+				NewU32ᶜᵖ(sb.MustUnpackReadMap(rp.CorrelatedViewMasks().All()).Ptr()), // pCorrelatedViewMasks
+			)).Ptr(),
+			memory.Nullptr,
+			sb.MustAllocWriteData(rp.VulkanHandle()).Ptr(),
+			VkResult_VK_SUCCESS,
+		)
+	case RenderPassVersion_Renderpass2KHR:
+		newCreateRenderPassCmd = sb.cb.VkCreateRenderPass2KHR(
+			rp.Device(),
+			sb.MustAllocReadData(NewVkRenderPassCreateInfo2(
+				VkStructureType_VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO_2, // sType
+				pNext, // pNext
+				0,     // flags
+				uint32(rp.AttachmentDescriptions().Len()),                            // attachmentCount
+				newAttachmentDescriptions,                                            // pAttachments
+				uint32(rp.SubpassDescriptions().Len()),                               // subpassCount
+				newSubpassDescriptions,                                               // pSubpasses
+				uint32(rp.SubpassDependencies().Len()),                               // dependencyCount
+				newSubpassDependencies,                                               // pDependencies
+				uint32(rp.CorrelatedViewMasks().Len()),                               // correlatedViewMaskCount
+				NewU32ᶜᵖ(sb.MustUnpackReadMap(rp.CorrelatedViewMasks().All()).Ptr()), // pCorrelatedViewMasks
+			)).Ptr(),
+			memory.Nullptr,
+			sb.MustAllocWriteData(rp.VulkanHandle()).Ptr(),
+			VkResult_VK_SUCCESS,
+		)
+	default:
+		panic("Renderpass version must be Renderpass2 or Renderpass2KHR")
+	}
+
+	sb.write(newCreateRenderPassCmd)
 	sb.addDebugInfo(rp.Device(), rp.VulkanHandle(), VkObjectType_VK_OBJECT_TYPE_RENDER_PASS, rp.DebugInfo())
 }
 

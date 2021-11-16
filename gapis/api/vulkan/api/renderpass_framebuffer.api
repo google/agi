@@ -131,7 +131,8 @@ cmd void vkDestroyFramebuffer(
 
   @unused ref!VulkanDebugMarkerInfo          DebugInfo
 
-  @unused bool IsRenderPass2
+  // internal
+  @unused RenderPassVersion                  Version
 }
 
 sub AttachmentReference2 convertAttachment(VkAttachmentReference attachment) {
@@ -148,7 +149,6 @@ sub ref!RenderPassObject createRenderPassObjectFromInfo(
   info := pCreateInfo[0]
   renderPass := new!RenderPassObject()
   renderPass.Device = device
-  renderPass.IsRenderPass2 = false
 
   attachments := info.pAttachments[0:info.attachmentCount]
   for i in (0 .. info.attachmentCount) {
@@ -301,6 +301,7 @@ cmd VkResult vkCreateRenderPass(
   if pRenderPass == null { vkErrorNullPointer("VkRenderPass") }
 
   renderPass := createRenderPassObjectFromInfo(pCreateInfo, device)
+  renderPass.Version = Renderpass
 
   handle := ?
   pRenderPass[0] = handle
@@ -401,7 +402,7 @@ sub void recordSubpassBegin(ref!CommandBufferObject cb, u32 subpass) {
   }
 }
 
-sub ref!RenderPassBeginInfo createInternalRenderPassBeginInfo(const VkRenderPassBeginInfo* pRenderPassBegin) {
+sub ref!RenderPassBeginInfo createRenderPassBeginInfo(const VkRenderPassBeginInfo* pRenderPassBegin) {
   info := pRenderPassBegin[0]
   if !(info.renderPass in RenderPasses) { vkErrorInvalidRenderPass(info.renderPass) }
   if !(info.framebuffer in Framebuffers) { vkErrorInvalidFramebuffer(info.framebuffer) }
@@ -442,7 +443,7 @@ sub ref!RenderPassBeginInfo createInternalRenderPassBeginInfo(const VkRenderPass
   return beginInfo
 }
 
-sub ref!SubpassBeginInfo createInternalSubpassBeginInfoFromContents(VkSubpassContents contents) {
+sub ref!SubpassBeginInfo createSubpassBeginInfoFromContents(VkSubpassContents contents) {
   return new!SubpassBeginInfo(
     Contents: contents,
   )
@@ -466,8 +467,8 @@ cmd void vkCmdBeginRenderPass(
     vkErrorInvalidCommandBuffer(commandBuffer)
   } else {
     if pRenderPassBegin == null { vkErrorNullPointer("VkRenderPassBeginInfo") }
-    renderPassBeginInfo := createInternalRenderPassBeginInfo(pRenderPassBegin)
-    subpassBeginInfo := createInternalSubpassBeginInfoFromContents(contents)
+    renderPassBeginInfo := createRenderPassBeginInfo(pRenderPassBegin)
+    subpassBeginInfo := createSubpassBeginInfoFromContents(contents)
 
     args := new!vkCmdBeginRenderPassCommonArgs(
       PRenderPassBeginInfo: renderPassBeginInfo,
@@ -485,8 +486,16 @@ cmd void vkCmdBeginRenderPass(
 }
 
 @internal class
-vkCmdNextSubpassArgs {
-  VkSubpassContents Contents
+vkCmdNextSubpassCommonArgs {
+  ref!SubpassBeginInfo              PSubpassBeginInfo
+  ref!SubpassEndInfo                PSubpassEndInfo
+
+  // internal
+  RenderPassVersion Version
+}
+
+sub ref!SubpassEndInfo createSubpassEndInfo() {
+  return new!SubpassEndInfo()
 }
 
 sub void transitionSubpassAttachmentLayouts(u32 subpass) {
@@ -513,7 +522,7 @@ sub void transitionSubpassAttachmentLayouts(u32 subpass) {
   }
 }
 
-sub void dovkCmdNextSubpass(ref!vkCmdNextSubpassArgs Unused) {
+sub void dovkCmdNextSubpassCommon(ref!vkCmdNextSubpassCommonArgs Unused) {
   useRenderPass()
   ldi := lastDrawInfo()
   ldi.LastSubpass += 1
@@ -528,9 +537,15 @@ cmd void vkCmdNextSubpass(
     vkErrorInvalidCommandBuffer(commandBuffer)
   } else {
     cmdBuf := CommandBuffers[commandBuffer]
-    args := new!vkCmdNextSubpassArgs(contents)
-
     recordSubpassBegin(cmdBuf, cmdBuf.CurrentRecordingSubpass + 1)
+
+    subpassBeginInfo := createSubpassBeginInfoFromContents(contents)
+    subpassEndInfo := createSubpassEndInfo()
+    args := new!vkCmdNextSubpassCommonArgs(
+      PSubpassBeginInfo: subpassBeginInfo,
+      PSubpassEndInfo: subpassEndInfo,
+      Version: Renderpass,
+    )
 
     mapPos := as!u32(len(cmdBuf.BufferCommands.vkCmdNextSubpass))
     cmdBuf.BufferCommands.vkCmdNextSubpass[mapPos] = args
@@ -651,7 +666,6 @@ sub ref!RenderPassObject createRenderPassObjectFromInfo2(
 info := pCreateInfo[0]
   renderPass := new!RenderPassObject()
   renderPass.Device = device
-  renderPass.IsRenderPass2 = true
 
   attachments := info.pAttachments[0:info.attachmentCount]
   for i in (0 .. info.attachmentCount) {
@@ -764,6 +778,7 @@ cmd VkResult vkCreateRenderPass2(
   if pRenderPass == null { vkErrorNullPointer("VkRenderPass") }
 
   renderPass := createRenderPassObjectFromInfo2(pCreateInfo, device)
+  renderPass.Version = Renderpass2
 
   handle := ?
   pRenderPass[0] = handle
@@ -771,7 +786,7 @@ cmd VkResult vkCreateRenderPass2(
   return ?
 }
 
-sub ref!SubpassBeginInfo createInternalSubpassBeginInfoFromInfo(const VkSubpassBeginInfo* pSubpassBeginInfo) {
+sub ref!SubpassBeginInfo createSubpassBeginInfoFromInfo(const VkSubpassBeginInfo* pSubpassBeginInfo) {
   info := pSubpassBeginInfo[0]
   // We do not support any extension for this functionality.
   return new!SubpassBeginInfo(
@@ -788,8 +803,8 @@ cmd void vkCmdBeginRenderPass2(
     vkErrorInvalidCommandBuffer(commandBuffer)
   } else {
     if pRenderPassBegin == null { vkErrorNullPointer("VkRenderPassBeginInfo2") }
-    renderPassBeginInfo := createInternalRenderPassBeginInfo(pRenderPassBegin)
-    subpassBeginInfo := createInternalSubpassBeginInfoFromInfo(pSubpassBeginInfo)
+    renderPassBeginInfo := createRenderPassBeginInfo(pRenderPassBegin)
+    subpassBeginInfo := createSubpassBeginInfoFromInfo(pSubpassBeginInfo)
 
     args := new!vkCmdBeginRenderPassCommonArgs(
       PRenderPassBeginInfo: renderPassBeginInfo,
@@ -833,33 +848,29 @@ cmd void vkCmdEndRenderPass2(
   }
 }
 
-@internal class vkCmdNextSubpass2Args {
-    VkSubpassBeginInfo              PSubpassBeginInfo
-    VkSubpassEndInfo                PSubpassEndInfo
-}
-
-sub void dovkCmdNextSubpass2(ref!vkCmdNextSubpass2Args args) {
-    // TODO: Implement
-}
-
 @indirect("VkCommandBuffer", "VkDevice")
 cmd void vkCmdNextSubpass2(
     VkCommandBuffer                             commandBuffer,
     const VkSubpassBeginInfo*                   pSubpassBeginInfo,
     const VkSubpassEndInfo*                     pSubpassEndInfo) {
   if !(commandBuffer in CommandBuffers) {
-      vkErrorInvalidCommandBuffer(commandBuffer)
+    vkErrorInvalidCommandBuffer(commandBuffer)
   } else {
-      args := new!vkCmdNextSubpass2Args(
-          PSubpassBeginInfo: pSubpassBeginInfo[0],
-          PSubpassEndInfo: pSubpassEndInfo[0],
-      )
+    cmdBuf := CommandBuffers[commandBuffer]
+    recordSubpassBegin(cmdBuf, cmdBuf.CurrentRecordingSubpass + 1)
 
-      cmdBuf := CommandBuffers[commandBuffer]
-      mapPos := as!u32(len(cmdBuf.BufferCommands.vkCmdNextSubpass2))
-      cmdBuf.BufferCommands.vkCmdNextSubpass2[mapPos] = args
+    subpassBeginInfo := createSubpassBeginInfoFromInfo(pSubpassBeginInfo)
+    subpassEndInfo := createSubpassEndInfo()
+    args := new!vkCmdNextSubpassCommonArgs(
+      PSubpassBeginInfo: subpassBeginInfo,
+      PSubpassEndInfo: subpassEndInfo,
+      Version: Renderpass2,
+    )
 
-      AddCommand(commandBuffer, cmd_vkCmdNextSubpass2, mapPos)
+    mapPos := as!u32(len(cmdBuf.BufferCommands.vkCmdNextSubpass2))
+    cmdBuf.BufferCommands.vkCmdNextSubpass2[mapPos] = args
+
+    AddCommand(commandBuffer, cmd_vkCmdNextSubpass2, mapPos)
   }
 }
 

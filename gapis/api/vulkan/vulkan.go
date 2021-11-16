@@ -519,7 +519,7 @@ func (API) ResolveSynchronization(ctx context.Context, d *sync.Data, c *path.Cap
 				}
 				popMarker(renderPassMarker, uint64(i))
 				break
-			case VkCmdNextSubpassArgsʳ:
+			case VkCmdNextSubpassCommonArgsʳ:
 				popMarker(renderPassMarker, uint64(i-1))
 				name := fmt.Sprintf("Subpass: %v", nextSubpass)
 				pushMarker(name, renderPassMarker, i, append(api.SubCmdIdx{}, idx...))
@@ -553,7 +553,7 @@ func (API) ResolveSynchronization(ctx context.Context, d *sync.Data, c *path.Cap
 						d.SubmissionIndices[key] = []api.SubCmdIdx{append(idx, uint64(i))}
 					}
 				}
-			case VkCmdNextSubpassArgsʳ:
+			case VkCmdNextSubpassCommonArgsʳ:
 				key := currentRenderpassCmdSubmissionKey
 				if _, ok := d.SubmissionIndices[key]; ok {
 					d.SubmissionIndices[key] = append(d.SubmissionIndices[key], append(idx, uint64(i)))
