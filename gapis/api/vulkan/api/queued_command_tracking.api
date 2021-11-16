@@ -269,7 +269,7 @@ sub void callCommand(ref!CommandReference reference) {
     case cmd_vkCmdNextSubpass:
       dovkCmdNextSubpassCommon(CommandBuffers[reference.Buffer].BufferCommands.vkCmdNextSubpass[reference.MapIndex])
     case cmd_vkCmdEndRenderPass:
-      dovkCmdEndRenderPass(CommandBuffers[reference.Buffer].BufferCommands.vkCmdEndRenderPass[reference.MapIndex])
+      dovkCmdEndRenderPassCommon(CommandBuffers[reference.Buffer].BufferCommands.vkCmdEndRenderPass[reference.MapIndex])
     case cmd_vkCmdExecuteCommands:
       dovkCmdExecuteCommands(CommandBuffers[reference.Buffer].BufferCommands.vkCmdExecuteCommands[reference.MapIndex])
     case cmd_vkCmdDebugMarkerBeginEXT:
@@ -306,7 +306,7 @@ sub void callCommand(ref!CommandReference reference) {
     case cmd_vkCmdBeginRenderPass2:
       dovkCmdBeginRenderPassCommon(CommandBuffers[reference.Buffer].BufferCommands.vkCmdBeginRenderPass2[reference.MapIndex])
     case cmd_vkCmdEndRenderPass2:
-      dovkCmdEndRenderPass2(CommandBuffers[reference.Buffer].BufferCommands.vkCmdEndRenderPass2[reference.MapIndex])
+      dovkCmdEndRenderPassCommon(CommandBuffers[reference.Buffer].BufferCommands.vkCmdEndRenderPass2[reference.MapIndex])
     case cmd_vkCmdNextSubpass2:
       dovkCmdNextSubpassCommon(CommandBuffers[reference.Buffer].BufferCommands.vkCmdNextSubpass2[reference.MapIndex])
     // @extension("VK_EXT_transform_feedback")
@@ -326,7 +326,7 @@ sub void callCommand(ref!CommandReference reference) {
     case cmd_vkCmdBeginRenderPass2KHR:
       dovkCmdBeginRenderPassCommon(CommandBuffers[reference.Buffer].BufferCommands.vkCmdBeginRenderPass2KHR[reference.MapIndex])
     case cmd_vkCmdEndRenderPass2KHR:
-      dovkCmdEndRenderPass2KHR(CommandBuffers[reference.Buffer].BufferCommands.vkCmdEndRenderPass2KHR[reference.MapIndex])
+      dovkCmdEndRenderPassCommon(CommandBuffers[reference.Buffer].BufferCommands.vkCmdEndRenderPass2KHR[reference.MapIndex])
     case cmd_vkCmdNextSubpass2KHR:
       dovkCmdNextSubpassCommon(CommandBuffers[reference.Buffer].BufferCommands.vkCmdNextSubpass2KHR[reference.MapIndex])
     default:

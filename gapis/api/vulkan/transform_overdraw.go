@@ -1666,7 +1666,7 @@ func (overdrawTransform *stencilOverdraw) createCommandBuffer(ctx context.Contex
 				newArgs.PRenderPassBeginInfo().ClearValues().Add(attachmentIdx, NewVkClearValue(
 					NewVkClearColorValue(newClear)))
 				args = newArgs
-			case VkCmdEndRenderPassArgsʳ:
+			case VkCmdEndRenderPassCommonArgsʳ:
 				rpEnded = true
 			case VkCmdBindPipelineArgsʳ:
 				newArgs := ar
@@ -1716,7 +1716,7 @@ func (overdrawTransform *stencilOverdraw) createCommandBuffer(ctx context.Contex
 
 		cleanup()
 
-		if _, ok := args.(VkCmdEndRenderPassArgsʳ); ok {
+		if _, ok := args.(VkCmdEndRenderPassCommonArgsʳ); ok {
 			// Add commands to handle storing the new depth values if necessary
 			if err := overdrawTransform.storeNewDepthValues(ctx, inputState,
 				device, queue, newCmdBuffer, renderInfo); err != nil {

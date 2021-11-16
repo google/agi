@@ -281,8 +281,8 @@ enum SemaphoreUpdate {
   @untrackedMap dense_map!(u32, ref!vkCmdCopyQueryPoolResultsArgs)   vkCmdCopyQueryPoolResults
   @untrackedMap dense_map!(u32, ref!vkCmdPushConstantsArgs)          vkCmdPushConstants
   @untrackedMap dense_map!(u32, ref!vkCmdBeginRenderPassCommonArgs)  vkCmdBeginRenderPass
-  @untrackedMap dense_map!(u32, ref!vkCmdNextSubpassCommonArgs)            vkCmdNextSubpass
-  @untrackedMap dense_map!(u32, ref!vkCmdEndRenderPassArgs)          vkCmdEndRenderPass
+  @untrackedMap dense_map!(u32, ref!vkCmdNextSubpassCommonArgs)      vkCmdNextSubpass
+  @untrackedMap dense_map!(u32, ref!vkCmdEndRenderPassCommonArgs)    vkCmdEndRenderPass
   @untrackedMap dense_map!(u32, ref!vkCmdExecuteCommandsArgs)        vkCmdExecuteCommands
   @untrackedMap dense_map!(u32, ref!vkCmdDebugMarkerBeginEXTArgs)    vkCmdDebugMarkerBeginEXT
   @untrackedMap dense_map!(u32, ref!vkCmdDebugMarkerEndEXTArgs)      vkCmdDebugMarkerEndEXT
@@ -302,7 +302,7 @@ enum SemaphoreUpdate {
 
   // Vulkan 1.2
   @untrackedMap dense_map!(u32, ref!vkCmdBeginRenderPassCommonArgs) vkCmdBeginRenderPass2
-  @untrackedMap dense_map!(u32, ref!vkCmdEndRenderPass2Args) vkCmdEndRenderPass2
+  @untrackedMap dense_map!(u32, ref!vkCmdEndRenderPassCommonArgs) vkCmdEndRenderPass2
   @untrackedMap dense_map!(u32, ref!vkCmdNextSubpassCommonArgs) vkCmdNextSubpass2
 
   // @extension("VK_EXT_transform_feedback")
@@ -315,7 +315,7 @@ enum SemaphoreUpdate {
 
   // @extension("VK_KHR_create_renderpass2")
   @untrackedMap dense_map!(u32, ref!vkCmdBeginRenderPassCommonArgs) vkCmdBeginRenderPass2KHR
-  @untrackedMap dense_map!(u32, ref!vkCmdEndRenderPass2KHRArgs) vkCmdEndRenderPass2KHR
+  @untrackedMap dense_map!(u32, ref!vkCmdEndRenderPassCommonArgs) vkCmdEndRenderPass2KHR
   @untrackedMap dense_map!(u32, ref!vkCmdNextSubpassCommonArgs) vkCmdNextSubpass2KHR
 }
 

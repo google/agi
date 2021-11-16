@@ -494,7 +494,8 @@ vkCmdNextSubpassCommonArgs {
   RenderPassVersion Version
 }
 
-sub ref!SubpassEndInfo createSubpassEndInfo() {
+sub ref!SubpassEndInfo createSubpassEndInfo(const VkSubpassEndInfo* pSubpassEnd) {
+  _ = pSubpassEnd // this struct is empty and we do not support any extension for this struct
   return new!SubpassEndInfo()
 }
 
@@ -540,7 +541,7 @@ cmd void vkCmdNextSubpass(
     recordSubpassBegin(cmdBuf, cmdBuf.CurrentRecordingSubpass + 1)
 
     subpassBeginInfo := createSubpassBeginInfoFromContents(contents)
-    subpassEndInfo := createSubpassEndInfo()
+    subpassEndInfo := createSubpassEndInfo(null)
     args := new!vkCmdNextSubpassCommonArgs(
       PSubpassBeginInfo: subpassBeginInfo,
       PSubpassEndInfo: subpassEndInfo,
@@ -555,10 +556,13 @@ cmd void vkCmdNextSubpass(
 }
 
 @internal class
-vkCmdEndRenderPassArgs {
+vkCmdEndRenderPassCommonArgs {
+  ref!SubpassEndInfo PSubpassEndInfo
+  // internal
+  RenderPassVersion Version
 }
 
-sub void dovkCmdEndRenderPass(ref!vkCmdEndRenderPassArgs unused) {
+sub void dovkCmdEndRenderPassCommon(ref!vkCmdEndRenderPassCommonArgs unused) {
   ldi := lastDrawInfo()
   attachmentDescriptions := ldi.RenderPass.AttachmentDescriptions
   n := len(attachmentDescriptions)
@@ -569,6 +573,27 @@ sub void dovkCmdEndRenderPass(ref!vkCmdEndRenderPassArgs unused) {
   ldi.InRenderPass = false
 }
 
+sub void recordEndRenderpass(ref!CommandBufferObject commandBuffer) {
+  if (commandBuffer.CurrentRecordingRenderpass == null) {
+      vkErrorInvalidRenderPass(as!VkRenderPass(0))
+    } else if (commandBuffer.CurrentRecordingFramebuffer == null) {
+      vkErrorInvalidFramebuffer(as!VkFramebuffer(0))
+    } else {
+      rpo := commandBuffer.CurrentRecordingRenderpass
+      for _, i, at in rpo.AttachmentDescriptions {
+        if (i < len(commandBuffer.CurrentRecordingFramebuffer.ImageAttachments)) {
+          view := commandBuffer.CurrentRecordingFramebuffer.ImageAttachments[i]
+          rng := view.SubresourceRange
+          RecordLayoutTransition(commandBuffer, view.Image, rng, at.FinalLayout)
+        }
+      }
+    }
+
+    commandBuffer.CurrentRecordingRenderpass = null
+    commandBuffer.CurrentRecordingFramebuffer = null
+    commandBuffer.CurrentRecordingSubpass = 0
+}
+
 @indirect("VkCommandBuffer", "VkDevice")
 @begin_end_renderpass
 cmd void vkCmdEndRenderPass(
@@ -577,25 +602,13 @@ cmd void vkCmdEndRenderPass(
     vkErrorInvalidCommandBuffer(commandBuffer)
   } else {
     cmdBuf := CommandBuffers[commandBuffer]
-    args := new!vkCmdEndRenderPassArgs()
+    recordEndRenderpass(cmdBuf)
 
-    if (cmdBuf.CurrentRecordingRenderpass == null) {
-      vkErrorInvalidRenderPass(as!VkRenderPass(0))
-    } else if (cmdBuf.CurrentRecordingFramebuffer == null) {
-      vkErrorInvalidFramebuffer(as!VkFramebuffer(0))
-    } else {
-      rpo := cmdBuf.CurrentRecordingRenderpass
-      for _, i, at in rpo.AttachmentDescriptions {
-        if (i < len(cmdBuf.CurrentRecordingFramebuffer.ImageAttachments)) {
-          view := cmdBuf.CurrentRecordingFramebuffer.ImageAttachments[i]
-          rng := view.SubresourceRange
-          RecordLayoutTransition(cmdBuf, view.Image, rng, at.FinalLayout)
-        }
-      }
-    }
-    cmdBuf.CurrentRecordingRenderpass = null
-    cmdBuf.CurrentRecordingFramebuffer = null
-    cmdBuf.CurrentRecordingSubpass = 0
+    subpassEndInfo := createSubpassEndInfo(null)
+    args := new!vkCmdEndRenderPassCommonArgs(
+      PSubpassEndInfo: subpassEndInfo,
+      Version: Renderpass,
+    )
 
     mapPos := as!u32(len(cmdBuf.BufferCommands.vkCmdEndRenderPass))
     cmdBuf.BufferCommands.vkCmdEndRenderPass[mapPos] = args
@@ -821,14 +834,6 @@ cmd void vkCmdBeginRenderPass2(
   }
 }
 
-@internal class vkCmdEndRenderPass2Args {
-    VkSubpassEndInfo                PSubpassEndInfo
-}
-
-sub void dovkCmdEndRenderPass2(ref!vkCmdEndRenderPass2Args args) {
-    // TODO: Implement
-}
-
 @indirect("VkCommandBuffer", "VkDevice")
 cmd void vkCmdEndRenderPass2(
     VkCommandBuffer                             commandBuffer,
@@ -836,11 +841,15 @@ cmd void vkCmdEndRenderPass2(
   if !(commandBuffer in CommandBuffers) {
       vkErrorInvalidCommandBuffer(commandBuffer)
   } else {
-      args := new!vkCmdEndRenderPass2Args(
-          PSubpassEndInfo: pSubpassEndInfo[0],
+      cmdBuf := CommandBuffers[commandBuffer]
+      recordEndRenderpass(cmdBuf)
+
+      subpassEndInfo := createSubpassEndInfo(pSubpassEndInfo)
+      args := new!vkCmdEndRenderPassCommonArgs(
+        PSubpassEndInfo: subpassEndInfo,
+        Version: Renderpass2,
       )
 
-      cmdBuf := CommandBuffers[commandBuffer]
       mapPos := as!u32(len(cmdBuf.BufferCommands.vkCmdEndRenderPass2))
       cmdBuf.BufferCommands.vkCmdEndRenderPass2[mapPos] = args
 
@@ -860,7 +869,7 @@ cmd void vkCmdNextSubpass2(
     recordSubpassBegin(cmdBuf, cmdBuf.CurrentRecordingSubpass + 1)
 
     subpassBeginInfo := createSubpassBeginInfoFromInfo(pSubpassBeginInfo)
-    subpassEndInfo := createSubpassEndInfo()
+    subpassEndInfo := createSubpassEndInfo(pSubpassEndInfo)
     args := new!vkCmdNextSubpassCommonArgs(
       PSubpassBeginInfo: subpassBeginInfo,
       PSubpassEndInfo: subpassEndInfo,

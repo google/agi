@@ -148,14 +148,6 @@ cmd void vkCmdBeginRenderPass2KHR(
     }
 }
 
-@internal class vkCmdEndRenderPass2KHRArgs {
-    VkSubpassEndInfo                PSubpassEndInfo
-}
-
-sub void dovkCmdEndRenderPass2KHR(ref!vkCmdEndRenderPass2KHRArgs args) {
-    // TODO: Implement
-}
-
 @extension("VK_KHR_create_renderpass2")
 @indirect("VkCommandBuffer", "VkDevice")
 cmd void vkCmdEndRenderPass2KHR(
@@ -164,11 +156,15 @@ cmd void vkCmdEndRenderPass2KHR(
     if !(commandBuffer in CommandBuffers) {
         vkErrorInvalidCommandBuffer(commandBuffer)
     } else {
-        args := new!vkCmdEndRenderPass2KHRArgs(
-            PSubpassEndInfo: pSubpassEndInfo[0],
+        cmdBuf := CommandBuffers[commandBuffer]
+        recordEndRenderpass(cmdBuf)
+
+        subpassEndInfo := createSubpassEndInfo(pSubpassEndInfo)
+        args := new!vkCmdEndRenderPassCommonArgs(
+            PSubpassEndInfo: subpassEndInfo,
+            Version: Renderpass2,
         )
 
-        cmdBuf := CommandBuffers[commandBuffer]
         mapPos := as!u32(len(cmdBuf.BufferCommands.vkCmdEndRenderPass2KHR))
         cmdBuf.BufferCommands.vkCmdEndRenderPass2KHR[mapPos] = args
 
@@ -189,7 +185,7 @@ cmd void vkCmdNextSubpass2KHR(
         recordSubpassBegin(cmdBuf, cmdBuf.CurrentRecordingSubpass + 1)
 
         subpassBeginInfo := createSubpassBeginInfoFromInfo(pSubpassBeginInfo)
-        subpassEndInfo := createSubpassEndInfo()
+        subpassEndInfo := createSubpassEndInfo(pSubpassEndInfo)
         args := new!vkCmdNextSubpassCommonArgs(
             PSubpassBeginInfo: subpassBeginInfo,
             PSubpassEndInfo: subpassEndInfo,

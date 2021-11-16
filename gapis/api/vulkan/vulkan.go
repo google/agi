@@ -513,7 +513,7 @@ func (API) ResolveSynchronization(ctx context.Context, d *sync.Data, c *path.Cap
 					nextSubpass++
 				}
 				break
-			case VkCmdEndRenderPassArgsʳ:
+			case VkCmdEndRenderPassCommonArgsʳ:
 				if nextSubpass > 0 { // Pop one more time since there were one extra marker pushed.
 					popMarker(renderPassMarker, uint64(i))
 				}

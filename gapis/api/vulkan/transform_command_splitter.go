@@ -657,7 +657,10 @@ func (splitTransform *commandSplitter) splitCommandBuffer(ctx context.Context, e
 			)
 			splitTransform.thisRenderPass = ar
 		case VkCmdNextSubpassCommonArgsʳ:
-			args = NewVkCmdEndRenderPassArgsʳ()
+			args = NewVkCmdEndRenderPassCommonArgsʳ(
+				NewSubpassEndInfoʳ(),
+				splitTransform.thisRenderPass.Version(),
+			)
 			extraArgs = append(extraArgs,
 				NewVkCmdBeginRenderPassCommonArgsʳ(
 					NewRenderPassBeginInfoʳ(
@@ -672,7 +675,10 @@ func (splitTransform *commandSplitter) splitCommandBuffer(ctx context.Context, e
 					),
 					splitTransform.thisRenderPass.Version(),
 				))
-			extraArgs = append(extraArgs, NewVkCmdEndRenderPassArgsʳ())
+			extraArgs = append(extraArgs, NewVkCmdEndRenderPassCommonArgsʳ(
+				NewSubpassEndInfoʳ(),
+				splitTransform.thisRenderPass.Version(),
+			))
 			splitTransform.thisSubpass++
 			extraArgs = append(extraArgs,
 				NewVkCmdBeginRenderPassCommonArgsʳ(
@@ -688,7 +694,7 @@ func (splitTransform *commandSplitter) splitCommandBuffer(ctx context.Context, e
 					),
 					splitTransform.thisRenderPass.Version(),
 				))
-		case VkCmdEndRenderPassArgsʳ:
+		case VkCmdEndRenderPassCommonArgsʳ:
 			extraArgs = append(extraArgs,
 				NewVkCmdBeginRenderPassCommonArgsʳ(
 					NewRenderPassBeginInfoʳ(
@@ -703,7 +709,10 @@ func (splitTransform *commandSplitter) splitCommandBuffer(ctx context.Context, e
 					),
 					splitTransform.thisRenderPass.Version(),
 				))
-			extraArgs = append(extraArgs, NewVkCmdEndRenderPassArgsʳ())
+			extraArgs = append(extraArgs, NewVkCmdEndRenderPassCommonArgsʳ(
+				NewSubpassEndInfoʳ(),
+				splitTransform.thisRenderPass.Version(),
+			))
 			splitTransform.thisRenderPass = NilVkCmdBeginRenderPassCommonArgsʳ
 			splitTransform.thisSubpass = 0
 		case VkCmdBindPipelineArgsʳ:
@@ -763,7 +772,10 @@ func (splitTransform *commandSplitter) splitCommandBuffer(ctx context.Context, e
 			// If we were not in a renderpass then we do not need to drop out
 			// of it.
 			if splitTransform.thisRenderPass != NilVkCmdBeginRenderPassCommonArgsʳ {
-				extraArgs = append(extraArgs, NewVkCmdEndRenderPassArgsʳ())
+				extraArgs = append(extraArgs, NewVkCmdEndRenderPassCommonArgsʳ(
+					NewSubpassEndInfoʳ(),
+					splitTransform.thisRenderPass.Version(),
+				))
 			}
 			extraArgs = append(extraArgs, &InsertionCommand{
 				embedBuffer,

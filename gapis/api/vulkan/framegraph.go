@@ -651,7 +651,7 @@ func (helpers *framegraphInfoHelpers) processSubCommand(ctx context.Context, dep
 	switch cmdArgs.(type) {
 
 	// End of renderpass
-	case VkCmdEndRenderPassArgsʳ:
+	case VkCmdEndRenderPassCommonArgsʳ:
 		if helpers.wlInfo == nil || helpers.wlInfo.renderpass == nil {
 			panic("Renderpass ends without having started")
 		}
