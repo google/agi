@@ -635,7 +635,7 @@ cmd void vkCmdBeginRenderPass2(
     VkCommandBuffer                             commandBuffer,
     const VkRenderPassBeginInfo*                pRenderPassBegin,
     const VkSubpassBeginInfo*                   pSubpassBeginInfo) {
-    if !(commandBuffer in CommandBuffers) {
+  if !(commandBuffer in CommandBuffers) {
     vkErrorInvalidCommandBuffer(commandBuffer)
   } else {
     if pRenderPassBegin == null { vkErrorNullPointer("VkRenderPassBeginInfo2") }
@@ -883,12 +883,4 @@ sub void useRenderPass() {
   _ = lastDrawInfo().InRenderPass
   ldi := lastDrawInfo()
   ldi.InRenderPass = true
-}
-
-// ----------------------------------------------------------------------------
-// Vulkan 1.1 Core
-// ----------------------------------------------------------------------------
-
-@internal class InputAttachmentAspectInfo{
-  @unused dense_map!(u32, VkInputAttachmentAspectReference) AspectReferences
 }
