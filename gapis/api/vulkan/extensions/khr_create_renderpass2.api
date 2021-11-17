@@ -178,5 +178,23 @@ cmd void vkCmdNextSubpass2KHR(
     VkCommandBuffer                             commandBuffer,
     const VkSubpassBeginInfo*                   pSubpassBeginInfo,
     const VkSubpassEndInfo*                     pSubpassEndInfo) {
-    // TODO: Implement
+    if !(commandBuffer in CommandBuffers) {
+        vkErrorInvalidCommandBuffer(commandBuffer)
+    } else {
+        cmdBuf := CommandBuffers[commandBuffer]
+        recordSubpassBegin(cmdBuf, cmdBuf.CurrentRecordingSubpass + 1)
+
+        subpassBeginInfo := createSubpassBeginInfoFromInfo(pSubpassBeginInfo)
+        subpassEndInfo := createSubpassEndInfo(pSubpassEndInfo)
+        args := new!vkCmdNextSubpassCommonArgs(
+            PSubpassBeginInfo: subpassBeginInfo,
+            PSubpassEndInfo: subpassEndInfo,
+            Version: Renderpass2KHR,
+        )
+
+        mapPos := as!u32(len(cmdBuf.BufferCommands.vkCmdNextSubpass2KHR))
+        cmdBuf.BufferCommands.vkCmdNextSubpass2KHR[mapPos] = args
+
+        AddCommand(commandBuffer, cmd_vkCmdNextSubpass2KHR, mapPos)
+    }
 }

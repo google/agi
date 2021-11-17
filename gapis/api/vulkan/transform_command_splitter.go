@@ -656,7 +656,7 @@ func (splitTransform *commandSplitter) splitCommandBuffer(ctx context.Context, e
 				ar.Version(),
 			)
 			splitTransform.thisRenderPass = ar
-		case VkCmdNextSubpassArgsʳ:
+		case VkCmdNextSubpassCommonArgsʳ:
 			args = NewVkCmdEndRenderPassCommonArgsʳ(
 				NewSubpassEndInfoʳ(),
 				splitTransform.thisRenderPass.Version(),

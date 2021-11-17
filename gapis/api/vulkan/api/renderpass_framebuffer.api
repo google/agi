@@ -658,8 +658,12 @@ cmd void vkCmdBeginRenderPass2(
 }
 
 @internal class
-vkCmdNextSubpassArgs {
-  VkSubpassContents Contents
+vkCmdNextSubpassCommonArgs {
+  ref!SubpassBeginInfo              PSubpassBeginInfo
+  ref!SubpassEndInfo                PSubpassEndInfo
+
+  // internal
+  RenderPassVersion Version
 }
 
 sub void transitionSubpassAttachmentLayouts(u32 subpass) {
@@ -686,7 +690,7 @@ sub void transitionSubpassAttachmentLayouts(u32 subpass) {
   }
 }
 
-sub void dovkCmdNextSubpass(ref!vkCmdNextSubpassArgs Unused) {
+sub void dovkCmdNextSubpassCommon(ref!vkCmdNextSubpassCommonArgs Unused) {
   useRenderPass()
   ldi := lastDrawInfo()
   ldi.LastSubpass += 1
@@ -701,9 +705,15 @@ cmd void vkCmdNextSubpass(
     vkErrorInvalidCommandBuffer(commandBuffer)
   } else {
     cmdBuf := CommandBuffers[commandBuffer]
-    args := new!vkCmdNextSubpassArgs(contents)
-
     recordSubpassBegin(cmdBuf, cmdBuf.CurrentRecordingSubpass + 1)
+
+    subpassBeginInfo := createSubpassBeginInfoFromContents(contents)
+    subpassEndInfo := createSubpassEndInfo(null)
+    args := new!vkCmdNextSubpassCommonArgs(
+      PSubpassBeginInfo: subpassBeginInfo,
+      PSubpassEndInfo: subpassEndInfo,
+      Version: Renderpass,
+    )
 
     mapPos := as!u32(len(cmdBuf.BufferCommands.vkCmdNextSubpass))
     cmdBuf.BufferCommands.vkCmdNextSubpass[mapPos] = args
@@ -717,7 +727,25 @@ cmd void vkCmdNextSubpass2(
     VkCommandBuffer                             commandBuffer,
     const VkSubpassBeginInfo*                   pSubpassBeginInfo,
     const VkSubpassEndInfo*                     pSubpassEndInfo) {
-    // TODO: Implement
+  if !(commandBuffer in CommandBuffers) {
+    vkErrorInvalidCommandBuffer(commandBuffer)
+  } else {
+    cmdBuf := CommandBuffers[commandBuffer]
+    recordSubpassBegin(cmdBuf, cmdBuf.CurrentRecordingSubpass + 1)
+
+    subpassBeginInfo := createSubpassBeginInfoFromInfo(pSubpassBeginInfo)
+    subpassEndInfo := createSubpassEndInfo(pSubpassEndInfo)
+    args := new!vkCmdNextSubpassCommonArgs(
+      PSubpassBeginInfo: subpassBeginInfo,
+      PSubpassEndInfo: subpassEndInfo,
+      Version: Renderpass2,
+    )
+
+    mapPos := as!u32(len(cmdBuf.BufferCommands.vkCmdNextSubpass2))
+    cmdBuf.BufferCommands.vkCmdNextSubpass2[mapPos] = args
+
+    AddCommand(commandBuffer, cmd_vkCmdNextSubpass2, mapPos)
+  }
 }
 
 @internal class

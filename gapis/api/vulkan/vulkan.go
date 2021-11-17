@@ -522,7 +522,7 @@ func (API) ResolveSynchronization(ctx context.Context, d *sync.Data, c *path.Cap
 				}
 				popMarker(renderPassMarker, uint64(i))
 				break
-			case VkCmdNextSubpassArgsʳ:
+			case VkCmdNextSubpassCommonArgsʳ:
 				popMarker(renderPassMarker, uint64(i-1))
 				name := fmt.Sprintf("Subpass: %v", nextSubpass)
 				pushMarker(name, renderPassMarker, i, append(api.SubCmdIdx{}, idx...))
@@ -549,7 +549,7 @@ func (API) ResolveSynchronization(ctx context.Context, d *sync.Data, c *path.Cap
 						Framebuffer:   args.PRenderPassBeginInfo().Framebuffer().Handle(),
 					}
 					renderPassStart = append(api.SubCmdIdx{}, nv...)
-				case VkCmdEndRenderPassArgsʳ:
+				case VkCmdNextSubpassCommonArgsʳ:
 					d.RenderPassLookup.AddRenderPass(ctx, renderPassKey, sync.SubCmdRange{renderPassStart, nv})
 				}
 			}

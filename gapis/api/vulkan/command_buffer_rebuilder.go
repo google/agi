@@ -168,14 +168,6 @@ func allocateNewCmdBufFromExistingOneAndBegin(
 	return newCmdBufID, x, cleanup
 }
 
-func createVkSubpassEndInfo(unused SubpassEndInfoʳ) VkSubpassEndInfo {
-	_ = unused // SubpassEndInfo is currently empty.
-	return NewVkSubpassEndInfo(
-		VkStructureType_VK_STRUCTURE_TYPE_SUBPASS_END_INFO, // sType
-		0, // pNext
-	)
-}
-
 func rebuildVkCmdBeginRenderPassCommon(
 	ctx context.Context,
 	cb CommandBuilder,
@@ -388,14 +380,101 @@ func rebuildVkCmdEndRenderPass2KHR(
 	return cleanup, cmd, nil
 }
 
+func rebuildVkCmdNextSubpassCommon(
+	ctx context.Context,
+	cb CommandBuilder,
+	commandBuffer VkCommandBuffer,
+	r *api.GlobalState,
+	s *api.GlobalState,
+	d VkCmdNextSubpassCommonArgsʳ) (func(), api.Cmd, error) {
+	switch d.Version() {
+	case RenderPassVersion_Renderpass:
+		return rebuildVkCmdNextSubpass(ctx, cb, commandBuffer, r, s, d)
+	case RenderPassVersion_Renderpass2:
+		return rebuildVkCmdNextSubpass2(ctx, cb, commandBuffer, r, s, d)
+	case RenderPassVersion_Renderpass2KHR:
+		return rebuildVkCmdNextSubpass2KHR(ctx, cb, commandBuffer, r, s, d)
+	default:
+		panic("There should be a renderpass version")
+	}
+}
+
 func rebuildVkCmdNextSubpass(
 	ctx context.Context,
 	cb CommandBuilder,
 	commandBuffer VkCommandBuffer,
 	r *api.GlobalState,
 	s *api.GlobalState,
-	d VkCmdNextSubpassArgsʳ) (func(), api.Cmd, error) {
-	return func() {}, cb.VkCmdNextSubpass(commandBuffer, d.Contents()), nil
+	d VkCmdNextSubpassCommonArgsʳ) (func(), api.Cmd, error) {
+	return func() {}, cb.VkCmdNextSubpass(commandBuffer, d.PSubpassBeginInfo().Contents()), nil
+}
+
+func rebuildVkCmdNextSubpass2(
+	ctx context.Context,
+	cb CommandBuilder,
+	commandBuffer VkCommandBuffer,
+	r *api.GlobalState,
+	s *api.GlobalState,
+	d VkCmdNextSubpassCommonArgsʳ) (func(), api.Cmd, error) {
+	mem := []api.AllocResult{}
+
+	subpassBeginInfo := createVkSubpassBeginInfo(d.PSubpassBeginInfo())
+	subpassBeginData := s.AllocDataOrPanic(ctx, subpassBeginInfo)
+	mem = append(mem, subpassBeginData)
+
+	subpassEndInfo := createVkSubpassEndInfo(d.PSubpassEndInfo())
+	subpassEndData := s.AllocDataOrPanic(ctx, subpassEndInfo)
+	mem = append(mem, subpassEndData)
+
+	cleanup := func() {
+		for _, d := range mem {
+			d.Free()
+		}
+	}
+
+	cmd := cb.VkCmdNextSubpass2(
+		commandBuffer,
+		subpassBeginData.Ptr(),
+		subpassEndData.Ptr(),
+	)
+	for _, d := range mem {
+		cmd.AddRead(d.Data())
+	}
+	return cleanup, cmd, nil
+}
+
+func rebuildVkCmdNextSubpass2KHR(
+	ctx context.Context,
+	cb CommandBuilder,
+	commandBuffer VkCommandBuffer,
+	r *api.GlobalState,
+	s *api.GlobalState,
+	d VkCmdNextSubpassCommonArgsʳ) (func(), api.Cmd, error) {
+	mem := []api.AllocResult{}
+
+	subpassBeginInfo := createVkSubpassBeginInfo(d.PSubpassBeginInfo())
+	subpassBeginData := s.AllocDataOrPanic(ctx, subpassBeginInfo)
+	mem = append(mem, subpassBeginData)
+
+	subpassEndInfo := createVkSubpassEndInfo(d.PSubpassEndInfo())
+	subpassEndData := s.AllocDataOrPanic(ctx, subpassEndInfo)
+	mem = append(mem, subpassEndData)
+
+	cleanup := func() {
+		for _, d := range mem {
+			d.Free()
+		}
+	}
+
+	cmd := cb.VkCmdNextSubpass2KHR(
+		commandBuffer,
+		subpassBeginData.Ptr(),
+		subpassEndData.Ptr(),
+	)
+	for _, d := range mem {
+		cmd.AddRead(d.Data())
+	}
+	return cleanup, cmd, nil
 }
 
 func createVkRenderPassBeginInfo(
@@ -461,6 +540,14 @@ func createVkSubpassBeginInfo(subpassBeginInfo SubpassBeginInfoʳ) VkSubpassBegi
 		VkStructureType_VK_STRUCTURE_TYPE_SUBPASS_BEGIN_INFO, // sType
 		0, // pNext
 		subpassBeginInfo.Contents(),
+	)
+}
+
+func createVkSubpassEndInfo(unused SubpassEndInfoʳ) VkSubpassEndInfo {
+	_ = unused // SubpassEndInfo is currently empty.
+	return NewVkSubpassEndInfo(
+		VkStructureType_VK_STRUCTURE_TYPE_SUBPASS_END_INFO, // sType
+		0, // pNext
 	)
 }
 
@@ -1936,6 +2023,8 @@ func GetCommandArgs(ctx context.Context,
 		return cmds.VkCmdBeginRenderPass2().Get(cr.MapIndex())
 	case CommandType_cmd_vkCmdEndRenderPass2:
 		return cmds.VkCmdEndRenderPass2().Get(cr.MapIndex())
+	case CommandType_cmd_vkCmdNextSubpass2:
+		return cmds.VkCmdNextSubpass2().Get(cr.MapIndex())
 	// @extension("VK_EXT_transform_refactor")
 	case CommandType_cmd_vkCmdBindTransformFeedbackBuffersEXT:
 		return cmds.VkCmdBindTransformFeedbackBuffersEXT().Get(cr.MapIndex())
@@ -1954,6 +2043,8 @@ func GetCommandArgs(ctx context.Context,
 		return cmds.VkCmdBeginRenderPass2KHR().Get(cr.MapIndex())
 	case CommandType_cmd_vkCmdEndRenderPass2KHR:
 		return cmds.VkCmdEndRenderPass2KHR().Get(cr.MapIndex())
+	case CommandType_cmd_vkCmdNextSubpass2KHR:
+		return cmds.VkCmdNextSubpass2KHR().Get(cr.MapIndex())
 	default:
 		x := fmt.Sprintf("Should not reach here: %T", cr)
 		panic(x)
@@ -1970,7 +2061,7 @@ func GetCommandFunction(cr *CommandReference) interface{} {
 	case CommandType_cmd_vkCmdEndRenderPass:
 		return subDovkCmdEndRenderPassCommon
 	case CommandType_cmd_vkCmdNextSubpass:
-		return subDovkCmdNextSubpass
+		return subDovkCmdNextSubpassCommon
 	case CommandType_cmd_vkCmdBindPipeline:
 		return subDovkCmdBindPipeline
 	case CommandType_cmd_vkCmdBindDescriptorSets:
@@ -2086,6 +2177,8 @@ func GetCommandFunction(cr *CommandReference) interface{} {
 		return subDovkCmdBeginRenderPassCommon
 	case CommandType_cmd_vkCmdEndRenderPass2:
 		return subDovkCmdEndRenderPassCommon
+	case CommandType_cmd_vkCmdNextSubpass2:
+		return subDovkCmdNextSubpassCommon
 	// @extension("VK_EXT_transform_refactor")
 	case CommandType_cmd_vkCmdBindTransformFeedbackBuffersEXT:
 		return subDovkCmdBindTransformFeedbackBuffersEXT
@@ -2104,6 +2197,8 @@ func GetCommandFunction(cr *CommandReference) interface{} {
 		return subDovkCmdBeginRenderPassCommon
 	case CommandType_cmd_vkCmdEndRenderPass2KHR:
 		return subDovkCmdEndRenderPassCommon
+	case CommandType_cmd_vkCmdNextSubpass2KHR:
+		return subDovkCmdNextSubpassCommon
 	default:
 		x := fmt.Sprintf("Should not reach here: %T", cr)
 		panic(x)
@@ -2126,8 +2221,8 @@ func AddCommand(ctx context.Context,
 		return rebuildVkCmdBeginRenderPassCommon(ctx, cb, commandBuffer, r, s, t)
 	case VkCmdEndRenderPassCommonArgsʳ:
 		return rebuildVkCmdEndRenderPassCommon(ctx, cb, commandBuffer, r, s, t)
-	case VkCmdNextSubpassArgsʳ:
-		return rebuildVkCmdNextSubpass(ctx, cb, commandBuffer, r, s, t)
+	case VkCmdNextSubpassCommonArgsʳ:
+		return rebuildVkCmdNextSubpassCommon(ctx, cb, commandBuffer, r, s, t)
 	case VkCmdBindPipelineArgsʳ:
 		return rebuildVkCmdBindPipeline(ctx, cb, commandBuffer, r, s, t)
 	case VkCmdBindDescriptorSetsArgsʳ:
