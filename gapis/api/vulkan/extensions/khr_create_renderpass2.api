@@ -107,7 +107,16 @@ cmd VkResult vkCreateRenderPass2KHR(
     const VkRenderPassCreateInfo2*              pCreateInfo,
     const VkAllocationCallbacks*                pAllocator,
     VkRenderPass*                               pRenderPass) {
-    // TODO: Implement
+    if !(device in Devices) { vkErrorInvalidDevice(device) }
+    if pCreateInfo == null { vkErrorNullPointer("VkRenderPassCreateInfo") }
+    if pRenderPass == null { vkErrorNullPointer("VkRenderPass") }
+
+    renderPass := createRenderPassObjectFromInfo2(pCreateInfo, device)
+    renderPass.Version = Renderpass2KHR
+
+    handle := ?
+    pRenderPass[0] = handle
+    recordNewRenderPass(renderPass, handle)
     return ?
 }
 
