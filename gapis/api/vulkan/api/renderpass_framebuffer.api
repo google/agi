@@ -770,6 +770,13 @@ info := pCreateInfo[0]
     )
   }
 
+  if info.pCorrelatedViewMasks != null {
+    pCorrelatedViewMasks := info.pCorrelatedViewMasks[0:info.correlatedViewMaskCount]
+    for i in (0 .. info.correlatedViewMaskCount) {
+      renderPass.CorrelatedViewMasks[i] = pCorrelatedViewMasks[i]
+    }
+  }
+
   // We do not support any extension for this functionality yet.
 
   return renderPass

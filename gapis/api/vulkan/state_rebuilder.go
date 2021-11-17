@@ -2525,6 +2525,11 @@ func (sb *stateBuilder) createRenderPass2(rp RenderPassObjectʳ) {
 		)
 	}
 
+	newCorrelatedViewMasks := NewU32ᶜᵖ(memory.Nullptr)
+	if rp.CorrelatedViewMasks().Len() > 0 {
+		newCorrelatedViewMasks = NewU32ᶜᵖ(sb.MustUnpackReadMap(rp.CorrelatedViewMasks().All()).Ptr())
+	}
+
 	pNext := NewVoidᶜᵖ(memory.Nullptr)
 	// We do not support any extension for this functionality yet
 
@@ -2545,7 +2550,7 @@ func (sb *stateBuilder) createRenderPass2(rp RenderPassObjectʳ) {
 				uint32(rp.SubpassDependencies().Len()),                               // dependencyCount
 				newSubpassDependencies,                                               // pDependencies
 				uint32(rp.CorrelatedViewMasks().Len()),                               // correlatedViewMaskCount
-				NewU32ᶜᵖ(sb.MustUnpackReadMap(rp.CorrelatedViewMasks().All()).Ptr()), // pCorrelatedViewMasks
+				newCorrelatedViewMasks,                                               // pCorrelatedViewMasks
 			)).Ptr(),
 			memory.Nullptr,
 			sb.MustAllocWriteData(rp.VulkanHandle()).Ptr(),
