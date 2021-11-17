@@ -501,8 +501,8 @@ func (API) ResolveSynchronization(ctx context.Context, d *sync.Data, c *path.Cap
 					}
 					mergeExperimentalCmds(append(idx, uint64(i)))
 				}
-			case VkCmdBeginRenderPassArgsʳ:
-				rp := st.RenderPasses().Get(args.RenderPass())
+			case VkCmdBeginRenderPassCommonArgsʳ:
+				rp := st.RenderPasses().Get(args.PRenderPassBeginInfo().RenderPass())
 				name := fmt.Sprintf("RenderPass: %v", rp.VulkanHandle())
 				if label := rp.Label(ctx, s); len(label) > 0 {
 					name = label
@@ -541,12 +541,12 @@ func (API) ResolveSynchronization(ctx context.Context, d *sync.Data, c *path.Cap
 				// Markdown RenderPasses' and SubPasses' command index, for helping
 				// connect a command and its correlated GPU slices.
 				switch args := GetCommandArgs(ctx, cb.CommandReferences().Get(uint32(i)), st).(type) {
-				case VkCmdBeginRenderPassArgsʳ:
+				case VkCmdBeginRenderPassCommonArgsʳ:
 					renderPassKey = sync.RenderPassKey{
 						Submission:    order,
 						CommandBuffer: cb.VulkanHandle().Handle(),
-						RenderPass:    args.RenderPass().Handle(),
-						Framebuffer:   args.Framebuffer().Handle(),
+						RenderPass:    args.PRenderPassBeginInfo().RenderPass().Handle(),
+						Framebuffer:   args.PRenderPassBeginInfo().Framebuffer().Handle(),
 					}
 					renderPassStart = append(api.SubCmdIdx{}, nv...)
 				case VkCmdEndRenderPassArgsʳ:

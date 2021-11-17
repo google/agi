@@ -476,21 +476,32 @@ cmd void vkGetRenderAreaGranularity(
   map!(u32, VkRect2D) RenderAreas
 }
 
-@internal class
-vkCmdBeginRenderPassArgs {
-  VkSubpassContents        Contents
-  VkRenderPass             RenderPass
-  VkFramebuffer            Framebuffer
-  VkRect2D                 RenderArea
-  map!(u32, VkClearValue)  ClearValues
+@internal class RenderPassBeginInfo {
+  VkRenderPass            RenderPass
+  VkFramebuffer           Framebuffer
+  VkRect2D                RenderArea
+  map!(u32, VkClearValue) ClearValues
+
+  // @extension("VK_KHR_device_group_creation")
   ref!DeviceGroupBeginInfo DeviceGroupBeginInfo
 }
 
-sub void dovkCmdBeginRenderPass(ref!vkCmdBeginRenderPassArgs args) {
+@internal class
+vkCmdBeginRenderPassCommonArgs {
+  ref!RenderPassBeginInfo PRenderPassBeginInfo
+  ref!SubpassBeginInfo    PSubpassBeginInfo
+
+  // internal
+  RenderPassVersion Version
+}
+
+sub void dovkCmdBeginRenderPassCommon(ref!vkCmdBeginRenderPassCommonArgs args) {
+  renderPassBeginInfo := args.PRenderPassBeginInfo
+
   ldi := lastDrawInfo()
-  ldi.Framebuffer = Framebuffers[args.Framebuffer]
+  ldi.Framebuffer = Framebuffers[renderPassBeginInfo.Framebuffer]
   ldi.LastSubpass = 0
-  ldi.RenderPass = RenderPasses[args.RenderPass]
+  ldi.RenderPass = RenderPasses[renderPassBeginInfo.RenderPass]
   ldi.InRenderPass = true
   attachments := ldi.Framebuffer.ImageAttachments
   n := len(attachments)
@@ -505,7 +516,7 @@ class MutableAspect {
   VkImageAspectFlags aspect
 }
 
-sub void RecordSubpassBegin(ref!CommandBufferObject cb, u32 subpass) {
+sub void recordSubpassBegin(ref!CommandBufferObject cb, u32 subpass) {
   cb.CurrentRecordingSubpass = subpass
   rp := cb.CurrentRecordingRenderpass
   for _, _, v in rp.SubpassDescriptions[subpass].InputAttachments {
@@ -523,6 +534,68 @@ sub void RecordSubpassBegin(ref!CommandBufferObject cb, u32 subpass) {
   }
 }
 
+sub ref!RenderPassBeginInfo createRenderPassBeginInfo(const VkRenderPassBeginInfo* pRenderPassBegin) {
+  info := pRenderPassBegin[0]
+  if !(info.renderPass in RenderPasses) { vkErrorInvalidRenderPass(info.renderPass) }
+  if !(info.framebuffer in Framebuffers) { vkErrorInvalidFramebuffer(info.framebuffer) }
+
+  beginInfo := new!RenderPassBeginInfo(
+    RenderPass: info.renderPass,
+    Framebuffer: info.framebuffer,
+    RenderArea: info.renderArea,
+  )
+
+  clearValues := info.pClearValues[0:info.clearValueCount]
+  for i in (0 .. info.clearValueCount) {
+    beginInfo.ClearValues[i] = clearValues[i]
+  }
+
+  // handle pNext
+  if info.pNext != null {
+    numPNext := numberOfPNext(info.pNext)
+    next := MutableVoidPtr(as!void*(info.pNext))
+    for i in (0 .. numPNext) {
+      sType := as!const VkStructureType*(next.Ptr)[0]
+      switch sType {
+        case VK_STRUCTURE_TYPE_DEVICE_GROUP_RENDER_PASS_BEGIN_INFO: {
+          ext := as!VkDeviceGroupRenderPassBeginInfo*(next.Ptr)[0]
+          beginInfo.DeviceGroupBeginInfo = new!DeviceGroupBeginInfo(
+            DeviceMask: ext.deviceMask,
+          )
+          rects := ext.pDeviceRenderAreas[0:ext.deviceRenderAreaCount]
+          for j in (0 .. ext.deviceRenderAreaCount) {
+            beginInfo.DeviceGroupBeginInfo.RenderAreas[j] = rects[j]
+          }
+        }
+      }
+      next.Ptr = as!VulkanStructHeader*(next.Ptr)[0].PNext
+    }
+  }
+
+  return beginInfo
+}
+
+sub ref!SubpassBeginInfo createSubpassBeginInfoFromContents(VkSubpassContents contents) {
+  return new!SubpassBeginInfo(
+    Contents: contents,
+  )
+}
+
+sub ref!SubpassBeginInfo createSubpassBeginInfoFromInfo(const VkSubpassBeginInfo* pSubpassBeginInfo) {
+  info := pSubpassBeginInfo[0]
+  // We do not support any extension for this functionality.
+  return new!SubpassBeginInfo(
+    Contents: info.contents,
+  )
+}
+
+sub void recordBeginRenderPass(ref!CommandBufferObject commandBuffer, ref!RenderPassBeginInfo beginInfo) {
+  commandBuffer.CurrentRecordingRenderpass = RenderPasses[beginInfo.RenderPass]
+  commandBuffer.CurrentRecordingFramebuffer = Framebuffers[beginInfo.Framebuffer]
+  commandBuffer.PreviouslyStartedRenderpass = RenderPasses[beginInfo.RenderPass]
+  commandBuffer.PreviousFramebuffer = Framebuffers[beginInfo.Framebuffer]
+  recordSubpassBegin(commandBuffer, 0)
+}
 
 @indirect("VkCommandBuffer", "VkDevice")
 @begin_end_renderpass
@@ -533,55 +606,21 @@ cmd void vkCmdBeginRenderPass(
   if !(commandBuffer in CommandBuffers) {
     vkErrorInvalidCommandBuffer(commandBuffer)
   } else {
-    cb := CommandBuffers[commandBuffer]
     if pRenderPassBegin == null { vkErrorNullPointer("VkRenderPassBeginInfo") }
-    begin_info := pRenderPassBegin[0]
-    if !(begin_info.renderPass in RenderPasses) { vkErrorInvalidRenderPass(begin_info.renderPass) }
-    if !(begin_info.framebuffer in Framebuffers) { vkErrorInvalidFramebuffer(begin_info.framebuffer) }
+    renderPassBeginInfo := createRenderPassBeginInfo(pRenderPassBegin)
+    subpassBeginInfo := createSubpassBeginInfoFromContents(contents)
 
-    args := new!vkCmdBeginRenderPassArgs(
-      Contents:     contents,
-      RenderPass:   begin_info.renderPass,
-      Framebuffer:  begin_info.framebuffer,
-      RenderArea:   begin_info.renderArea
+    args := new!vkCmdBeginRenderPassCommonArgs(
+      PRenderPassBeginInfo: renderPassBeginInfo,
+      PSubpassBeginInfo: subpassBeginInfo,
+      Version: Renderpass,
     )
 
-    // handle pNext
-    if begin_info.pNext != null {
-      numPNext := numberOfPNext(begin_info.pNext)
-      next := MutableVoidPtr(as!void*(begin_info.pNext))
-      for i in (0 .. numPNext) {
-        sType := as!const VkStructureType*(next.Ptr)[0]
-        switch sType {
-          case VK_STRUCTURE_TYPE_DEVICE_GROUP_RENDER_PASS_BEGIN_INFO: {
-            ext := as!VkDeviceGroupRenderPassBeginInfo*(next.Ptr)[0]
-            args.DeviceGroupBeginInfo = new!DeviceGroupBeginInfo(
-              DeviceMask: ext.deviceMask,
-            )
-            rects := ext.pDeviceRenderAreas[0:ext.deviceRenderAreaCount]
-            for j in (0 .. ext.deviceRenderAreaCount) {
-              args.DeviceGroupBeginInfo.RenderAreas[j] = rects[j]
-            }
-          }
-        }
-        next.Ptr = as!VulkanStructHeader*(next.Ptr)[0].PNext
-      }
-    }
-
-    clear_values := begin_info.pClearValues[0:begin_info.clearValueCount]
-    for i in (0 .. begin_info.clearValueCount) {
-      args.ClearValues[i] = clear_values[i]
-    }
-
-    cb.CurrentRecordingRenderpass = RenderPasses[begin_info.renderPass]
-    cb.CurrentRecordingFramebuffer = Framebuffers[begin_info.framebuffer]
-    cb.PreviouslyStartedRenderpass = RenderPasses[begin_info.renderPass]
-    cb.PreviousFramebuffer = Framebuffers[begin_info.framebuffer]
-    RecordSubpassBegin(cb, 0)
+    cb := CommandBuffers[commandBuffer]
+    recordBeginRenderPass(cb, renderPassBeginInfo)
 
     mapPos := as!u32(len(cb.BufferCommands.vkCmdBeginRenderPass))
     cb.BufferCommands.vkCmdBeginRenderPass[mapPos] = args
-
     AddCommand(commandBuffer, cmd_vkCmdBeginRenderPass, mapPos)
   }
 }
@@ -591,7 +630,26 @@ cmd void vkCmdBeginRenderPass2(
     VkCommandBuffer                             commandBuffer,
     const VkRenderPassBeginInfo*                pRenderPassBegin,
     const VkSubpassBeginInfo*                   pSubpassBeginInfo) {
-    // TODO: Implement
+    if !(commandBuffer in CommandBuffers) {
+    vkErrorInvalidCommandBuffer(commandBuffer)
+  } else {
+    if pRenderPassBegin == null { vkErrorNullPointer("VkRenderPassBeginInfo2") }
+    renderPassBeginInfo := createRenderPassBeginInfo(pRenderPassBegin)
+    subpassBeginInfo := createSubpassBeginInfoFromInfo(pSubpassBeginInfo)
+
+    args := new!vkCmdBeginRenderPassCommonArgs(
+      PRenderPassBeginInfo: renderPassBeginInfo,
+      PSubpassBeginInfo: subpassBeginInfo,
+      Version: Renderpass2,
+    )
+
+    cb := CommandBuffers[commandBuffer]
+    recordBeginRenderPass(cb, renderPassBeginInfo)
+
+    mapPos := as!u32(len(cb.BufferCommands.vkCmdBeginRenderPass2))
+    cb.BufferCommands.vkCmdBeginRenderPass2[mapPos] = args
+    AddCommand(commandBuffer, cmd_vkCmdBeginRenderPass2, mapPos)
+  }
 }
 
 @internal class
@@ -640,7 +698,7 @@ cmd void vkCmdNextSubpass(
     cmdBuf := CommandBuffers[commandBuffer]
     args := new!vkCmdNextSubpassArgs(contents)
 
-    RecordSubpassBegin(cmdBuf, cmdBuf.CurrentRecordingSubpass + 1)
+    recordSubpassBegin(cmdBuf, cmdBuf.CurrentRecordingSubpass + 1)
 
     mapPos := as!u32(len(cmdBuf.BufferCommands.vkCmdNextSubpass))
     cmdBuf.BufferCommands.vkCmdNextSubpass[mapPos] = args

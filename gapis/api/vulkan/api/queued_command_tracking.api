@@ -265,7 +265,7 @@ sub void callCommand(ref!CommandReference reference) {
     case cmd_vkCmdPushConstants:
       dovkCmdPushConstants(CommandBuffers[reference.Buffer].BufferCommands.vkCmdPushConstants[reference.MapIndex])
     case cmd_vkCmdBeginRenderPass:
-      dovkCmdBeginRenderPass(CommandBuffers[reference.Buffer].BufferCommands.vkCmdBeginRenderPass[reference.MapIndex])
+      dovkCmdBeginRenderPassCommon(CommandBuffers[reference.Buffer].BufferCommands.vkCmdBeginRenderPass[reference.MapIndex])
     case cmd_vkCmdNextSubpass:
       dovkCmdNextSubpass(CommandBuffers[reference.Buffer].BufferCommands.vkCmdNextSubpass[reference.MapIndex])
     case cmd_vkCmdEndRenderPass:
@@ -302,6 +302,9 @@ sub void callCommand(ref!CommandReference reference) {
       dovkCmdDispatchBase(CommandBuffers[reference.Buffer].BufferCommands.vkCmdDispatchBase[reference.MapIndex])
     case cmd_vkCmdSetLineStippleEXT:
       dovkCmdSetLineStippleEXT(CommandBuffers[reference.Buffer].BufferCommands.vkCmdSetLineStippleEXT[reference.MapIndex])
+    // Vulkan 1.2
+    case cmd_vkCmdBeginRenderPass2:
+      dovkCmdBeginRenderPassCommon(CommandBuffers[reference.Buffer].BufferCommands.vkCmdBeginRenderPass2[reference.MapIndex])
     // @extension("VK_EXT_transform_feedback")
     case cmd_vkCmdBindTransformFeedbackBuffersEXT:
       dovkCmdBindTransformFeedbackBuffersEXT(CommandBuffers[reference.Buffer].BufferCommands.vkCmdBindTransformFeedbackBuffersEXT[reference.MapIndex])
@@ -315,6 +318,9 @@ sub void callCommand(ref!CommandReference reference) {
       dovkCmdEndQueryIndexedEXT(CommandBuffers[reference.Buffer].BufferCommands.vkCmdEndQueryIndexedEXT[reference.MapIndex])
     case cmd_vkCmdDrawIndirectByteCountEXT:
       dovkCmdDrawIndirectByteCountEXT(CommandBuffers[reference.Buffer].BufferCommands.vkCmdDrawIndirectByteCountEXT[reference.MapIndex])
+    // @extension("VK_KHR_create_renderpass2")
+    case cmd_vkCmdBeginRenderPass2KHR:
+      dovkCmdBeginRenderPassCommon(CommandBuffers[reference.Buffer].BufferCommands.vkCmdBeginRenderPass2KHR[reference.MapIndex])
     default:
       vkErrorInvalidCommandBuffer(reference.Buffer)
   }
