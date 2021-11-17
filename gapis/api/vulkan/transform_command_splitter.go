@@ -674,7 +674,7 @@ func (splitTransform *commandSplitter) splitCommandBuffer(ctx context.Context, e
 						VkSubpassContents_VK_SUBPASS_CONTENTS_INLINE,
 					),
 					splitTransform.thisRenderPass.Version(),
-			))
+				))
 			extraArgs = append(extraArgs, NewVkCmdEndRenderPassCommonArgsʳ(
 				NewSubpassEndInfoʳ(),
 				splitTransform.thisRenderPass.Version(),
@@ -695,7 +695,7 @@ func (splitTransform *commandSplitter) splitCommandBuffer(ctx context.Context, e
 						VkSubpassContents_VK_SUBPASS_CONTENTS_INLINE,
 					),
 					splitTransform.thisRenderPass.Version(),
-			))
+				))
 		case VkCmdEndRenderPassCommonArgsʳ:
 			extraArgs = append(extraArgs,
 				NewVkCmdBeginRenderPassCommonArgsʳ(
@@ -710,7 +710,7 @@ func (splitTransform *commandSplitter) splitCommandBuffer(ctx context.Context, e
 						VkSubpassContents_VK_SUBPASS_CONTENTS_INLINE,
 					),
 					splitTransform.thisRenderPass.Version(),
-			))
+				))
 			extraArgs = append(extraArgs, NewVkCmdEndRenderPassCommonArgsʳ(
 				NewSubpassEndInfoʳ(),
 				splitTransform.thisRenderPass.Version(),
@@ -801,7 +801,7 @@ func (splitTransform *commandSplitter) splitCommandBuffer(ctx context.Context, e
 							VkSubpassContents_VK_SUBPASS_CONTENTS_INLINE,
 						),
 						splitTransform.thisRenderPass.Version(),
-				))
+					))
 			}
 		}
 		if !replaceCommand {
