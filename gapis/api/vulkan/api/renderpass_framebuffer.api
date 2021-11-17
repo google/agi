@@ -260,6 +260,16 @@ cmd VkResult vkCreateRenderPass(
 }
 
 @indirect("VkDevice")
+cmd VkResult vkCreateRenderPass2(
+    VkDevice                                    device,
+    const VkRenderPassCreateInfo2*              pCreateInfo,
+    const VkAllocationCallbacks*                pAllocator,
+    VkRenderPass*                               pRenderPass) {
+    // TODO: Implement
+    return ?
+}
+
+@indirect("VkDevice")
 cmd void vkDestroyRenderPass(
     VkDevice                     device,
     VkRenderPass                 renderPass,
@@ -403,6 +413,14 @@ cmd void vkCmdBeginRenderPass(
   }
 }
 
+@indirect("VkCommandBuffer", "VkDevice")
+cmd void vkCmdBeginRenderPass2(
+    VkCommandBuffer                             commandBuffer,
+    const VkRenderPassBeginInfo*                pRenderPassBegin,
+    const VkSubpassBeginInfo*                   pSubpassBeginInfo) {
+    // TODO: Implement
+}
+
 @internal class
 vkCmdNextSubpassArgs {
   VkSubpassContents Contents
@@ -458,6 +476,14 @@ cmd void vkCmdNextSubpass(
   }
 }
 
+@indirect("VkCommandBuffer", "VkDevice")
+cmd void vkCmdNextSubpass2(
+    VkCommandBuffer                             commandBuffer,
+    const VkSubpassBeginInfo*                   pSubpassBeginInfo,
+    const VkSubpassEndInfo*                     pSubpassEndInfo) {
+    // TODO: Implement
+}
+
 @internal class
 vkCmdEndRenderPassArgs {
 }
@@ -506,6 +532,13 @@ cmd void vkCmdEndRenderPass(
 
     AddCommand(commandBuffer, cmd_vkCmdEndRenderPass, mapPos)
   }
+}
+
+@indirect("VkCommandBuffer", "VkDevice")
+cmd void vkCmdEndRenderPass2(
+    VkCommandBuffer                             commandBuffer,
+    const VkSubpassEndInfo*                     pSubpassEndInfo) {
+    // TODO: Implement
 }
 
 sub void loadImageAttachment(u32 attachmentID) {

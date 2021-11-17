@@ -1,0 +1,138 @@
+// Copyright (C) 2021 Google Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Based off of the original vulkan.h header file which has the following
+// license.
+
+// Copyright (c) 2015 The Khronos Group Inc.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and/or associated documentation files (the
+// "Materials"), to deal in the Materials without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Materials, and to
+// permit persons to whom the Materials are furnished to do so, subject to
+// the following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Materials.
+//
+// THE MATERIALS ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+// IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+// CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+// TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+// MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
+
+@extension("VK_KHR_create_renderpass2") define VK_KHR_CREATE_RENDERPASS_2_SPEC_VERSION   1
+@extension("VK_KHR_create_renderpass2") define VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME "VK_KHR_create_renderpass2"
+
+/////////////
+// Structs //
+/////////////
+
+/*
+This extension is already in the Vulkan core.
+Thefore there is no need to repeat the KHR structs
+*/
+
+@internal class AttachmentDescription2 {
+    VkAttachmentDescriptionFlags    Flags
+    VkFormat                        Format
+    VkSampleCountFlagBits           Samples
+    VkAttachmentLoadOp              LoadOp
+    VkAttachmentStoreOp             StoreOp
+    VkAttachmentLoadOp              StencilLoadOp
+    VkAttachmentStoreOp             StencilStoreOp
+    VkImageLayout                   InitialLayout
+    VkImageLayout                   FinalLayout
+}
+
+@internal class AttachmentReference2 {
+    u32                 Attachment
+    VkImageLayout       Layout
+    VkImageAspectFlags  AspectMask
+}
+
+@internal class SubpassDescription2 {
+  VkSubpassDescriptionFlags         Flags
+  u32                               ViewMask
+  VkPipelineBindPoint               PipelineBindPoint
+  map!(u32, AttachmentReference2)   InputAttachments
+  map!(u32, AttachmentReference2)   ColorAttachments
+  map!(u32, AttachmentReference2)   ResolveAttachments
+  ref!AttachmentReference2          DepthStencilAttachment
+  map!(u32, u32)                    PreserveAttachments
+}
+
+@internal class SubpassDependency2 {
+    u32                     SrcSubpass
+    u32                     DstSubpass
+    VkPipelineStageFlags    SrcStageMask
+    VkPipelineStageFlags    DstStageMask
+    VkAccessFlags           SrcAccessMask
+    VkAccessFlags           DstAccessMask
+    VkDependencyFlags       DependencyFlags
+    s32                     ViewOffset
+}
+
+@internal class SubpassBeginInfo {
+    VkSubpassContents   Contents
+}
+
+@internal class SubpassEndInfo {
+    // Intentionally left blank
+}
+
+//////////////
+// Commands //
+//////////////
+
+@extension("VK_KHR_create_renderpass2")
+@indirect("VkDevice")
+cmd VkResult vkCreateRenderPass2KHR(
+    VkDevice                                    device,
+    const VkRenderPassCreateInfo2*              pCreateInfo,
+    const VkAllocationCallbacks*                pAllocator,
+    VkRenderPass*                               pRenderPass) {
+    // TODO: Implement
+    return ?
+}
+
+@extension("VK_KHR_create_renderpass2")
+@indirect("VkCommandBuffer", "VkDevice")
+cmd void vkCmdBeginRenderPass2KHR(
+    VkCommandBuffer                             commandBuffer,
+    const VkRenderPassBeginInfo*                pRenderPassBegin,
+    const VkSubpassBeginInfo*                   pSubpassBeginInfo) {
+    // TODO: Implement
+}
+
+@extension("VK_KHR_create_renderpass2")
+@indirect("VkCommandBuffer", "VkDevice")
+cmd void vkCmdEndRenderPass2KHR(
+    VkCommandBuffer                             commandBuffer,
+    const VkSubpassEndInfo*                     pSubpassEndInfo) {
+    // TODO: Implement
+}
+
+@extension("VK_KHR_create_renderpass2")
+@indirect("VkCommandBuffer", "VkDevice")
+cmd void vkCmdNextSubpass2KHR(
+    VkCommandBuffer                             commandBuffer,
+    const VkSubpassBeginInfo*                   pSubpassBeginInfo,
+    const VkSubpassEndInfo*                     pSubpassEndInfo) {
+    // TODO: Implement
+}
