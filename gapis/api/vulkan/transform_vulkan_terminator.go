@@ -238,7 +238,10 @@ func (vtTransform *vulkanTerminator) cutCommandBuffer(ctx context.Context, id ap
 			extraCommands = append(extraCommands,
 				NewVkCmdNextSubpassArgsʳ(VkSubpassContents_VK_SUBPASS_CONTENTS_INLINE))
 		}
-		extraCommands = append(extraCommands, NewVkCmdEndRenderPassArgsʳ())
+		extraCommands = append(extraCommands, NewVkCmdEndRenderPassCommonArgsʳ(
+			NewSubpassEndInfoʳ(),
+			lrp.Version(),
+		))
 	}
 	cmdBuffer := stateObject.CommandBuffers().Get(newCommandBuffers[lastCommandBuffer])
 	subIdx := make(api.SubCmdIdx, 0)
@@ -318,7 +321,7 @@ func resolveCurrentRenderPass2(ctx context.Context, s *api.GlobalState, submit *
 			subpass = 0
 		case VkCmdNextSubpassArgsʳ:
 			subpass++
-		case VkCmdEndRenderPassArgsʳ:
+		case VkCmdEndRenderPassCommonArgsʳ:
 			lrp = NilRenderPassObjectʳ
 			subpass = 0
 		}

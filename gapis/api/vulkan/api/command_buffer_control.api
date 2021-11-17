@@ -212,6 +212,8 @@ enum CommandType {
   // @extension("VK_KHR_create_renderpass2")
   cmd_vkCmdBeginRenderPass2 = 65,
   cmd_vkCmdBeginRenderPass2KHR = 66,
+  cmd_vkCmdEndRenderPass2 = 67,
+  cmd_vkCmdEndRenderPass2KHR = 68,
 
   cmd_vkNoCommand = 0xFFFFFFFF
 }
@@ -278,7 +280,7 @@ enum SemaphoreUpdate {
   @untrackedMap dense_map!(u32, ref!vkCmdPushConstantsArgs)          vkCmdPushConstants
   @untrackedMap dense_map!(u32, ref!vkCmdBeginRenderPassCommonArgs)  vkCmdBeginRenderPass
   @untrackedMap dense_map!(u32, ref!vkCmdNextSubpassArgs)            vkCmdNextSubpass
-  @untrackedMap dense_map!(u32, ref!vkCmdEndRenderPassArgs)          vkCmdEndRenderPass
+  @untrackedMap dense_map!(u32, ref!vkCmdEndRenderPassCommonArgs)    vkCmdEndRenderPass
   @untrackedMap dense_map!(u32, ref!vkCmdExecuteCommandsArgs)        vkCmdExecuteCommands
   @untrackedMap dense_map!(u32, ref!vkCmdDebugMarkerBeginEXTArgs)    vkCmdDebugMarkerBeginEXT
   @untrackedMap dense_map!(u32, ref!vkCmdDebugMarkerEndEXTArgs)      vkCmdDebugMarkerEndEXT
@@ -298,6 +300,7 @@ enum SemaphoreUpdate {
 
   // Vulkan 1.2
   @untrackedMap dense_map!(u32, ref!vkCmdBeginRenderPassCommonArgs)  vkCmdBeginRenderPass2
+  @untrackedMap dense_map!(u32, ref!vkCmdEndRenderPassCommonArgs)    vkCmdEndRenderPass2
 
   // @extension("VK_EXT_transform_feedback")
   @untrackedMap dense_map!(u32, ref!vkCmdBindTransformFeedbackBuffersEXTArgs) vkCmdBindTransformFeedbackBuffersEXT
@@ -309,6 +312,7 @@ enum SemaphoreUpdate {
 
   // @extension("VK_KHR_create_renderpass2")
   @untrackedMap dense_map!(u32, ref!vkCmdBeginRenderPassCommonArgs)  vkCmdBeginRenderPass2KHR
+  @untrackedMap dense_map!(u32, ref!vkCmdEndRenderPassCommonArgs)    vkCmdEndRenderPass2KHR
 }
 
 @internal class AspectImageTransition {
@@ -631,6 +635,7 @@ sub void resetBufferCommands(ref!CommandBufferObject obj) {
 
   // Vulkan 1.2
   clear(obj.BufferCommands.vkCmdBeginRenderPass2)
+  clear(obj.BufferCommands.vkCmdEndRenderPass2)
 
   // @extension("VK_EXT_transform_feedback")
   clear(obj.BufferCommands.vkCmdBindTransformFeedbackBuffersEXT)
@@ -642,6 +647,7 @@ sub void resetBufferCommands(ref!CommandBufferObject obj) {
 
   // @extension("VK_KHR_create_renderpass2")
   clear(obj.BufferCommands.vkCmdBeginRenderPass2KHR)
+  clear(obj.BufferCommands.vkCmdEndRenderPass2KHR)
 }
 
 sub void resetCommandBuffer(ref!CommandBufferObject obj) {

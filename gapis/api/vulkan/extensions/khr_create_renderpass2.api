@@ -153,7 +153,23 @@ cmd void vkCmdBeginRenderPass2KHR(
 cmd void vkCmdEndRenderPass2KHR(
     VkCommandBuffer                             commandBuffer,
     const VkSubpassEndInfo*                     pSubpassEndInfo) {
-    // TODO: Implement
+    if !(commandBuffer in CommandBuffers) {
+        vkErrorInvalidCommandBuffer(commandBuffer)
+    } else {
+        cmdBuf := CommandBuffers[commandBuffer]
+        recordEndRenderpass(cmdBuf)
+
+        subpassEndInfo := createSubpassEndInfo(pSubpassEndInfo)
+        args := new!vkCmdEndRenderPassCommonArgs(
+            PSubpassEndInfo: subpassEndInfo,
+            Version: Renderpass2,
+        )
+
+        mapPos := as!u32(len(cmdBuf.BufferCommands.vkCmdEndRenderPass2KHR))
+        cmdBuf.BufferCommands.vkCmdEndRenderPass2KHR[mapPos] = args
+
+        AddCommand(commandBuffer, cmd_vkCmdEndRenderPass2KHR, mapPos)
+    }
 }
 
 @extension("VK_KHR_create_renderpass2")
