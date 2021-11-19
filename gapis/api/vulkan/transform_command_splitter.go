@@ -672,16 +672,18 @@ func (splitTransform *commandSplitter) splitCommandBuffer(ctx context.Context, e
 		case VkCmdBindPipelineArgsʳ:
 			if ar.PipelineBindPoint() == VkPipelineBindPoint_VK_PIPELINE_BIND_POINT_GRAPHICS {
 				// Graphics pipeline, must be split (maybe)
-				if st.RenderPasses().Get(splitTransform.thisRenderPass.RenderPass()).SubpassDescriptions().Len() > 1 {
-					// If we have more than one renderpass, then we should replace
-					newPipeline, err := splitTransform.rewriteGraphicsPipeline(ctx, ar.Pipeline(), queueSubmit, inputState)
-					if err != nil {
-						log.E(ctx, "Failed during rewriting graphics pipeline : %v", err)
-						return VkCommandBuffer(0), err
+				if splitTransform.thisRenderPass != NilVkCmdBeginRenderPassArgsʳ {
+					if st.RenderPasses().Get(splitTransform.thisRenderPass.RenderPass()).SubpassDescriptions().Len() > 1 {
+						// If we have more than one renderpass, then we should replace
+						newPipeline, err := splitTransform.rewriteGraphicsPipeline(ctx, ar.Pipeline(), queueSubmit, inputState)
+						if err != nil {
+							log.E(ctx, "Failed during rewriting graphics pipeline : %v", err)
+							return VkCommandBuffer(0), err
+						}
+						np := ar.Clone(api.CloneContext{})
+						np.SetPipeline(newPipeline)
+						args = np
 					}
-					np := ar.Clone(api.CloneContext{})
-					np.SetPipeline(newPipeline)
-					args = np
 				}
 			}
 		case VkCmdExecuteCommandsArgsʳ:
