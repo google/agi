@@ -214,9 +214,16 @@ func expandCharArrays(ctx context.Context, ranges []*service.TypedMemoryRange) (
 // valAsString combines the values in the array into one string enclosed by quotation marks (")
 func valAsString(values []*memory_box.Value) string {
 	var sb strings.Builder
+	// Pre-allocate array to include quotation marks but not null terminator
+	sb.Grow(len(values) + 1)
 	sb.WriteString("\"")
 	for _, v := range values {
-		sb.WriteString(string(v.GetPod().GetUint8()))
+		char := v.GetPod().GetUint8()
+
+		// Skip null terminator to avoid formatting issues
+		if char != 0 {
+			sb.WriteString(string(char))
+		}
 	}
 	sb.WriteString("\"")
 	return sb.String()
