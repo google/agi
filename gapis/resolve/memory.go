@@ -183,32 +183,32 @@ func pNextPrecision(typeIndex uint64) (int, error) {
 }
 
 // expandCharArrays goes through the range and attaches a human-readable representation to char arrays/slices
-func expandCharArrays(ctx context.Context, ranges []*service.TypedMemoryRange) ([]*service.TypedMemoryRange, error) {
-	if len(ranges) == 0 {
-		return ranges, nil
+func expandCharArrays(ctx context.Context, typedRanges []*service.TypedMemoryRange) ([]*service.TypedMemoryRange, error) {
+	if len(typedRanges) == 0 {
+		return typedRanges, nil
 	}
 
-	for _, rng := range ranges {
-		ty, err := types.GetType(rng.Type.TypeIndex)
+	for _, typedRange := range typedRanges {
+		memType, err := types.GetType(typedRange.Type.TypeIndex)
 		if err != nil {
-			return ranges, err
+			return typedRanges, err
 		}
 
-		if slice := ty.GetSlice(); slice != nil && slice.GetUnderlying() == types.CharType {
-			rng.Value.GetSlice().Representation = &pod.Value{
+		if slice := memType.GetSlice(); slice != nil && slice.GetUnderlying() == types.CharType {
+			typedRange.Value.GetSlice().Representation = &pod.Value{
 				Val: &pod.Value_String_{
-					String_: valAsString(rng.Value.GetSlice().GetValues()),
+					String_: valAsString(typedRange.Value.GetSlice().GetValues()),
 				},
 			}
-		} else if arr := ty.GetArray(); arr != nil && arr.GetElementType() == types.CharType {
-			rng.Value.GetArray().Representation = &pod.Value{
+		} else if arr := memType.GetArray(); arr != nil && arr.GetElementType() == types.CharType {
+			typedRange.Value.GetArray().Representation = &pod.Value{
 				Val: &pod.Value_String_{
-					String_: valAsString(rng.Value.GetArray().GetEntries()),
+					String_: valAsString(typedRange.Value.GetArray().GetEntries()),
 				},
 			}
 		}
 	}
-	return ranges, nil
+	return typedRanges, nil
 }
 
 // valAsString combines the values in the array into one string enclosed by quotation marks (")
