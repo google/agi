@@ -183,7 +183,7 @@ func rebuildVkCmdBeginRenderPassCommon(
 	case RenderPassVersion_Renderpass2KHR:
 		return rebuildVkCmdBeginRenderPass2KHR(ctx, cb, commandBuffer, r, s, d)
 	default:
-		panic("There should be a renderpass version")
+		panic("Unknown renderpass version")
 	}
 }
 
@@ -308,7 +308,7 @@ func rebuildVkCmdEndRenderPassCommon(
 	case RenderPassVersion_Renderpass2KHR:
 		return rebuildVkCmdEndRenderPass2KHR(ctx, cb, commandBuffer, r, s, d)
 	default:
-		panic("There should be a renderpass version")
+		panic("Unknown renderpass version")
 	}
 }
 
@@ -395,7 +395,7 @@ func rebuildVkCmdNextSubpassCommon(
 	case RenderPassVersion_Renderpass2KHR:
 		return rebuildVkCmdNextSubpass2KHR(ctx, cb, commandBuffer, r, s, d)
 	default:
-		panic("There should be a renderpass version")
+		panic("Unknown renderpass version")
 	}
 }
 
