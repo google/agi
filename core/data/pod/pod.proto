@@ -20,6 +20,7 @@ option java_outer_classname = "Pod";
 option go_package = "github.com/google/gapid/core/data/pod";
 
 message Value {
+  // Next tag: 30
   oneof val {
     float float32 = 1;
     double float64 = 2;
@@ -49,6 +50,9 @@ message Value {
     Sint64Array sint64_array = 26;
     BoolArray bool_array = 27;
     StringArray string_array = 28;
+
+    // C++ Types
+    uint32 char = 29;
   }
 }
 

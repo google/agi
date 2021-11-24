@@ -182,8 +182,9 @@ func pNextPrecision(typeIndex uint64) (int, error) {
 	}
 }
 
-// expandCharArrays goes through the range and attaches a human-readable representation to char arrays/slices
-func expandCharArrays(ctx context.Context, typedRanges []*service.TypedMemoryRange) ([]*service.TypedMemoryRange, error) {
+// expandCharArrays goes through the range and converts the int value to a char value
+// and attaches a more human-readable representation to char arrays/slices
+func expandCharArrays(typedRanges []*service.TypedMemoryRange) ([]*service.TypedMemoryRange, error) {
 	if len(typedRanges) == 0 {
 		return typedRanges, nil
 	}
@@ -195,38 +196,49 @@ func expandCharArrays(ctx context.Context, typedRanges []*service.TypedMemoryRan
 		}
 
 		if slice := memType.GetSlice(); slice != nil && slice.GetUnderlying() == types.CharType {
-			typedRange.Value.GetSlice().Representation = &pod.Value{
-				Val: &pod.Value_String_{
-					String_: valAsString(typedRange.Value.GetSlice().GetValues()),
-				},
-			}
+			representation, values := valAsString(typedRange.Value.GetSlice().GetValues())
+			typedRange.Value.GetSlice().Representation = representation
+			typedRange.Value.GetSlice().Values = values
 		} else if arr := memType.GetArray(); arr != nil && arr.GetElementType() == types.CharType {
-			typedRange.Value.GetArray().Representation = &pod.Value{
-				Val: &pod.Value_String_{
-					String_: valAsString(typedRange.Value.GetArray().GetEntries()),
-				},
-			}
+			representation, entries := valAsString(typedRange.Value.GetArray().GetEntries())
+			typedRange.Value.GetArray().Representation = representation
+			typedRange.Value.GetArray().Entries = entries
 		}
 	}
 	return typedRanges, nil
 }
 
-// valAsString combines the values in the array into one string enclosed by quotation marks (")
-func valAsString(values []*memory_box.Value) string {
+// valAsString converts the int values to char and generates a string that omits the
+// null terminator and is enclosed by quotation marks (")
+func valAsString(values []*memory_box.Value) (*pod.Value, []*memory_box.Value) {
 	var sb strings.Builder
+
 	// Pre-allocate array to include quotation marks but not null terminator
 	sb.Grow(len(values) + 1)
 	sb.WriteString("\"")
-	for _, v := range values {
+	for i, v := range values {
 		char := v.GetPod().GetUint8()
+		values[i] = &memory_box.Value{
+			Val: &memory_box.Value_Pod{
+				Pod: &pod.Value{
+					Val: &pod.Value_Char{
+						Char: char,
+					},
+				},
+			},
+		}
 
-		// Skip null terminator to avoid formatting issues
+		// Skip null terminator in string representation to avoid formatting issues
 		if char != 0 {
 			sb.WriteString(string(char))
 		}
 	}
 	sb.WriteString("\"")
-	return sb.String()
+	return &pod.Value{
+		Val: &pod.Value_String_{
+			String_: sb.String(),
+		},
+	}, values
 }
 
 // Memory resolves and returns the memory from the path p.
@@ -343,7 +355,7 @@ func Memory(ctx context.Context, p *path.Memory, rc *path.ResolveConfig) (*servi
 		return nil, err
 	}
 
-	typedRanges, err = expandCharArrays(ctx, typedRanges)
+	typedRanges, err = expandCharArrays(typedRanges)
 	if err != nil {
 		return nil, err
 	}
