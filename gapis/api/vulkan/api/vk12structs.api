@@ -76,4 +76,4 @@ class VkSamplerReductionModeCreateInfo {
 @internal
 class SamplerReductionModeCreateInfo {
     VkSamplerReductionMode    ReductionMode
-} 
+}
