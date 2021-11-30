@@ -56,6 +56,7 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.Tree;
+import org.eclipse.swt.widgets.TreeColumn;
 import org.eclipse.swt.widgets.TreeItem;
 import org.eclipse.swt.widgets.Widget;
 
@@ -152,6 +153,12 @@ public abstract class LinkifiedTree<T, F> extends Composite {
     return new LabelProvider(theme);
   }
 
+  protected void deleteAllColumns() {
+    for (TreeColumn col : viewer.getTree().getColumns()) {
+      col.dispose();
+    }
+  }
+
   // Should be called from the constructor.
   protected void setUpStateForColumnAdding() {
     if (viewer.getTree().getColumnCount() < 1) {
@@ -164,7 +171,7 @@ public abstract class LinkifiedTree<T, F> extends Composite {
     }
   }
 
-  protected TreeViewerColumn addColumn(String title, Function<T, String> labels, int width) {
+  public TreeViewerColumn addColumn(String title, Function<T, String> labels, int width) {
     TreeViewerColumn column = createTreeColumn(viewer, title, labels);
     ((TreeColumnLayout)getLayout())
         .setColumnData(column.getColumn(), new ColumnWeightData(0, width));

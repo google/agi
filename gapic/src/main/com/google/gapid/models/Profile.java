@@ -51,8 +51,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.HashSet;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Logger;
+
+import static java.lang.System.out;
 
 public class Profile
     extends CaptureDependentModel<Profile.Data, Profile.Source, Loadable.Message, Profile.Listener> {
@@ -211,6 +214,7 @@ public class Profile
     public final Service.ProfilingData profile;
     private final Map<Integer, List<TimeSpan>> spansByGroup;
     private final List<Service.ProfilingData.GpuSlices.Group> groups;
+    private final Map<Integer, PerfNode> allPerfNodes;
     private final List<PerfNode> perfNodes;
 
     public Data(Path.Device device, Service.ProfilingData profile) {
@@ -218,7 +222,8 @@ public class Profile
       this.profile = profile;
       this.spansByGroup = aggregateSliceTimeByGroup(profile);
       this.groups = getSortedGroups(profile, spansByGroup.keySet());
-      this.perfNodes = createPerfNodes(profile);
+      this.allPerfNodes = createPerfNodes(profile);
+      this.perfNodes = getRootPerfNodes(allPerfNodes);
     }
 
     private static Map<Integer, List<TimeSpan>>
@@ -240,7 +245,7 @@ public class Profile
           .collect(toList());
     }
 
-    private static List<PerfNode> createPerfNodes(Service.ProfilingData profile) {
+    private static Map<Integer, PerfNode> createPerfNodes(Service.ProfilingData profile) {
       Map<Integer, PerfNode> nodes = Maps.newHashMap(); // groupId -> node.
       // Create the nodes.
       for (Service.ProfilingData.GpuCounters.Entry entry : profile.getGpuCounters().getEntriesList()) {
@@ -252,9 +257,14 @@ public class Profile
           nodes.get(node.getGroup().getParent().getId()).children.add(node);
         }
       }
+
+      return nodes; 
+    }
+
+    private static List<PerfNode> getRootPerfNodes(Map<Integer, PerfNode> allPerfNodes) {
       // Return the root nodes.
       List<PerfNode> rootNodes = Lists.newArrayList();
-      for (PerfNode node : nodes.values()) {
+      for (PerfNode node : allPerfNodes.values()) {
         if (!node.getGroup().hasParent()) {
           rootNodes.add(node);
         }
@@ -294,6 +304,54 @@ public class Profile
         end = Math.max(slice.getTs() + slice.getDur(), end);
       }
       return new TimeSpan(start, end);
+    }
+
+    private PerfNode getPerfNodesCommonAncestor(Set<Integer> groupIds) {
+      if(groupIds.size() == 0) { return null; }
+      if(groupIds.size() == 1) {
+        for(Integer first : groupIds) {
+          return allPerfNodes.get(first);
+        }
+      }
+
+      Set<Integer> parents = new HashSet<Integer>();
+      boolean seenParentless = false;
+      for(Integer groupId : groupIds) {
+        if(allPerfNodes.get(groupId).getGroup().hasParent()) {
+          parents.add(allPerfNodes.get(groupId).getGroup().getParent().getId());
+        }
+        else {
+          seenParentless = true;
+        }
+      }
+
+      if(parents.size() > 0 && seenParentless == true) {
+        return null;
+      }
+
+      return getPerfNodesCommonAncestor(parents);
+    }
+
+    public String getGPUCounterForCommands(Service.ProfilingData.GpuCounters.Metric metric, Path.Commands range) {
+      Set<Integer> groupIds = new HashSet<Integer>();
+
+      int idx = binarySearch(groups, null, (g, $) -> Ranges.compare(range, g.getLink()));
+      if (idx < 0) {
+        return "";
+      }
+      for (int i = idx; i >= 0 && Ranges.contains(range, groups.get(i).getLink()); i--) {
+        groupIds.add(groups.get(i).getId());
+      }
+      for (int i = idx + 1; i < groups.size() && Ranges.contains(range, groups.get(i).getLink()); i++) {
+        groupIds.add(groups.get(i).getId());
+      }
+
+      PerfNode perfNode = getPerfNodesCommonAncestor(groupIds);
+      if(perfNode != null) {
+        Service.ProfilingData.GpuCounters.Perf perf = perfNode.getPerfs().get(metric.getId());
+        return Double.toString(perf.getEstimate());
+      }
+      return "";
     }
 
     public Duration getDuration(Path.Commands range) {
