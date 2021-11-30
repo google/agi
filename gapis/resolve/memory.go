@@ -196,37 +196,28 @@ func expandCharArrays(typedRanges []*service.TypedMemoryRange) ([]*service.Typed
 		}
 
 		if slice := memType.GetSlice(); slice != nil && slice.GetUnderlying() == types.CharType {
-			representation, values := valAsString(typedRange.Value.GetSlice().GetValues())
-			typedRange.Value.GetSlice().Representation = representation
-			typedRange.Value.GetSlice().Values = values
+			values := typedRange.Value.GetSlice().GetValues()
+			typedRange.Value.GetSlice().Representation = stringFromValues(values)
+			typedRange.Value.GetSlice().Values = charsFromValues(values)
 		} else if arr := memType.GetArray(); arr != nil && arr.GetElementType() == types.CharType {
-			representation, entries := valAsString(typedRange.Value.GetArray().GetEntries())
-			typedRange.Value.GetArray().Representation = representation
-			typedRange.Value.GetArray().Entries = entries
+			entries := typedRange.Value.GetArray().GetEntries()
+			typedRange.Value.GetArray().Representation = stringFromValues(entries)
+			typedRange.Value.GetArray().Entries = charsFromValues(entries)
 		}
 	}
 	return typedRanges, nil
 }
 
-// valAsString converts the int values to char and generates a string that omits the
+// stringFromValues converts the int values to a string that omits the
 // null terminator and is enclosed by quotation marks (")
-func valAsString(values []*memory_box.Value) (*pod.Value, []*memory_box.Value) {
+func stringFromValues(values []*memory_box.Value) *pod.Value {
 	var sb strings.Builder
 
 	// Pre-allocate array to include quotation marks but not null terminator
 	sb.Grow(len(values) + 1)
 	sb.WriteString("\"")
-	for i, v := range values {
+	for _, v := range values {
 		char := v.GetPod().GetUint8()
-		values[i] = &memory_box.Value{
-			Val: &memory_box.Value_Pod{
-				Pod: &pod.Value{
-					Val: &pod.Value_Char{
-						Char: char,
-					},
-				},
-			},
-		}
 
 		// Skip null terminator in string representation to avoid formatting issues
 		if char != 0 {
@@ -238,7 +229,17 @@ func valAsString(values []*memory_box.Value) (*pod.Value, []*memory_box.Value) {
 		Val: &pod.Value_String_{
 			String_: sb.String(),
 		},
-	}, values
+	}
+}
+
+// charsFromValues converts the int values in the array to a char array
+func charsFromValues(values []*memory_box.Value) []*memory_box.Value {
+	for i, v := range values {
+		values[i].GetPod().Val = &pod.Value_Char{
+			Char: v.GetPod().GetUint8(),
+		}
+	}
+	return values
 }
 
 // Memory resolves and returns the memory from the path p.
