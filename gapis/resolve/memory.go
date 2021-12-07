@@ -198,11 +198,11 @@ func expandCharArrays(typedRanges []*service.TypedMemoryRange) ([]*service.Typed
 		if slice := memType.GetSlice(); slice != nil && slice.GetUnderlying() == types.CharType {
 			values := typedRange.Value.GetSlice().GetValues()
 			typedRange.Value.GetSlice().Representation = stringFromValues(values)
-			typedRange.Value.GetSlice().Values = convertValueTypeToChar(values)
+			convertValueTypeToChar(values)
 		} else if arr := memType.GetArray(); arr != nil && arr.GetElementType() == types.CharType {
 			entries := typedRange.Value.GetArray().GetEntries()
 			typedRange.Value.GetArray().Representation = stringFromValues(entries)
-			typedRange.Value.GetArray().Entries = convertValueTypeToChar(entries)
+			convertValueTypeToChar(entries)
 		}
 	}
 	return typedRanges, nil
@@ -233,13 +233,12 @@ func stringFromValues(values []*memory_box.Value) *pod.Value {
 }
 
 // convertValueTypeToChar converts the int values in the array to char
-func convertValueTypeToChar(values []*memory_box.Value) []*memory_box.Value {
+func convertValueTypeToChar(values []*memory_box.Value) {
 	for i, v := range values {
 		values[i].GetPod().Val = &pod.Value_Char{
 			Char: v.GetPod().GetUint8(),
 		}
 	}
-	return values
 }
 
 // Memory resolves and returns the memory from the path p.
