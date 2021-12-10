@@ -1481,7 +1481,14 @@ message ValidateDeviceRequest {
 }
 
 message ValidateDeviceResponse {
+  // Error in validating device.
   Error error = 1;
+
+  // Error from downloading trace file.
+  Error download_error = 2;
+
+  // Path to the perfetto trace file.
+  string trace_path = 3;
 }
 
 message FuchsiaTraceConfig {

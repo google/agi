@@ -110,11 +110,14 @@ func ProcessProfilingData(ctx context.Context, device *path.Device, capture *pat
 	return t.ProcessProfilingData(ctx, buffer, capture, handleMapping, syncData)
 }
 
-func Validate(ctx context.Context, device *path.Device) error {
+func Validate(ctx context.Context, device *path.Device) *service.ValidateDeviceResponse {
 	t, err := GetTracer(ctx, device)
 	if err != nil {
-		return err
+		return &service.ValidateDeviceResponse{
+			Error: service.NewError(err),
+		}
 	}
+
 	return t.Validate(ctx)
 }
 

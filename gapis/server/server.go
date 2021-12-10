@@ -903,11 +903,11 @@ func (s *server) PerfettoQuery(ctx context.Context, c *path.Capture, query strin
 	return res, nil
 }
 
-func (s *server) ValidateDevice(ctx context.Context, d *path.Device) error {
+func (s *server) ValidateDevice(ctx context.Context, d *path.Device) (*service.ValidateDeviceResponse, error) {
 	ctx = status.Start(ctx, "RPC ValidateDevice")
 	defer status.Finish(ctx)
 	ctx = log.Enter(ctx, "ValidateDevice")
-	return trace.Validate(ctx, d)
+	return trace.Validate(ctx, d), nil
 }
 
 func (s *server) InstallApp(ctx context.Context, d *path.Device, app string) error {

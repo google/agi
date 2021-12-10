@@ -60,8 +60,8 @@ func (t *DesktopTracer) ProcessProfilingData(ctx context.Context, buffer *bytes.
 	return nil, log.Err(ctx, nil, "Desktop replay profiling is unsupported.")
 }
 
-func (t *DesktopTracer) Validate(ctx context.Context) error {
-	return nil
+func (t *DesktopTracer) Validate(ctx context.Context) *service.ValidateDeviceResponse {
+	return &service.ValidateDeviceResponse{}
 }
 
 // TraceConfiguration returns the device's supported trace configuration.
