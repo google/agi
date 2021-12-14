@@ -17,7 +17,8 @@ title: Android GPU Inspector
 baseurl: ""
 url: "https://gpuinspector.dev" # the base hostname & protocol for your site, e.g. http://example.com
 project-url: "https://github.com/google/agi"
-docurl: "docs/"
+releases-url: "https://github.com/google/agi/releases"
+docurl: "https://developer.android.com/agi"
 feedback-url: "https://github.com/google/agi/issues"
 markdown: kramdown
 sass:
