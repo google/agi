@@ -150,8 +150,8 @@ sub AttachmentReference2 convertAttachment(VkAttachmentReference attachment) {
 }
 
 sub ref!RenderPassObject createRenderPassObjectFromInfo(
-  const VkRenderPassCreateInfo* pCreateInfo,
-  VkDevice device) {
+    const VkRenderPassCreateInfo* pCreateInfo,
+    VkDevice device) {
   info := pCreateInfo[0]
   renderPass := new!RenderPassObject()
   renderPass.Device = device
@@ -297,9 +297,9 @@ sub ref!RenderPassObject createRenderPassObjectFromInfo(
 }
 
 sub ref!RenderPassObject createRenderPassObjectFromInfo2(
-  const VkRenderPassCreateInfo2* pCreateInfo,
-  VkDevice device) {
-info := pCreateInfo[0]
+    const VkRenderPassCreateInfo2* pCreateInfo,
+    VkDevice device) {
+  info := pCreateInfo[0]
   renderPass := new!RenderPassObject()
   renderPass.Device = device
 
