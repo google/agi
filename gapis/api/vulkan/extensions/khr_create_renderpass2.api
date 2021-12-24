@@ -112,7 +112,7 @@ cmd VkResult vkCreateRenderPass2KHR(
     if pRenderPass == null { vkErrorNullPointer("VkRenderPass") }
 
     renderPass := createRenderPassObjectFromInfo2(pCreateInfo, device)
-    renderPass.Version = Renderpass2KHR
+    renderPass.Version = RenderPass2KHR
 
     handle := ?
     pRenderPass[0] = handle
@@ -137,7 +137,7 @@ cmd void vkCmdBeginRenderPass2KHR(
         args := new!vkCmdBeginRenderPassCommonArgs(
             PRenderPassBeginInfo: renderPassBeginInfo,
             PSubpassBeginInfo: subpassBeginInfo,
-            Version: Renderpass2KHR,
+            Version: RenderPass2KHR,
         )
 
         cb := CommandBuffers[commandBuffer]
@@ -164,7 +164,7 @@ cmd void vkCmdEndRenderPass2KHR(
         subpassEndInfo := createSubpassEndInfo(pSubpassEndInfo)
         args := new!vkCmdEndRenderPassCommonArgs(
             PSubpassEndInfo: subpassEndInfo,
-            Version: Renderpass2,
+            Version: RenderPass2,
         )
 
         mapPos := as!u32(len(cmdBuf.BufferCommands.vkCmdEndRenderPass2KHR))
@@ -191,7 +191,7 @@ cmd void vkCmdNextSubpass2KHR(
         args := new!vkCmdNextSubpassCommonArgs(
             PSubpassBeginInfo: subpassBeginInfo,
             PSubpassEndInfo: subpassEndInfo,
-            Version: Renderpass2KHR,
+            Version: RenderPass2KHR,
         )
 
         mapPos := as!u32(len(cmdBuf.BufferCommands.vkCmdNextSubpass2KHR))

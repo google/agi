@@ -176,11 +176,11 @@ func rebuildVkCmdBeginRenderPassCommon(
 	s *api.GlobalState,
 	d VkCmdBeginRenderPassCommonArgsʳ) (func(), api.Cmd, error) {
 	switch d.Version() {
-	case RenderPassVersion_Renderpass:
+	case RenderPassVersion_RenderPass:
 		return rebuildVkCmdBeginRenderPass(ctx, cb, commandBuffer, r, s, d)
-	case RenderPassVersion_Renderpass2:
+	case RenderPassVersion_RenderPass2:
 		return rebuildVkCmdBeginRenderPass2(ctx, cb, commandBuffer, r, s, d)
-	case RenderPassVersion_Renderpass2KHR:
+	case RenderPassVersion_RenderPass2KHR:
 		return rebuildVkCmdBeginRenderPass2KHR(ctx, cb, commandBuffer, r, s, d)
 	default:
 		panic("Unknown renderpass version")
@@ -301,11 +301,11 @@ func rebuildVkCmdEndRenderPassCommon(
 	s *api.GlobalState,
 	d VkCmdEndRenderPassCommonArgsʳ) (func(), api.Cmd, error) {
 	switch d.Version() {
-	case RenderPassVersion_Renderpass:
+	case RenderPassVersion_RenderPass:
 		return rebuildVkCmdEndRenderPass(ctx, cb, commandBuffer, r, s, d)
-	case RenderPassVersion_Renderpass2:
+	case RenderPassVersion_RenderPass2:
 		return rebuildVkCmdEndRenderPass2(ctx, cb, commandBuffer, r, s, d)
-	case RenderPassVersion_Renderpass2KHR:
+	case RenderPassVersion_RenderPass2KHR:
 		return rebuildVkCmdEndRenderPass2KHR(ctx, cb, commandBuffer, r, s, d)
 	default:
 		panic("Unknown renderpass version")
@@ -388,11 +388,11 @@ func rebuildVkCmdNextSubpassCommon(
 	s *api.GlobalState,
 	d VkCmdNextSubpassCommonArgsʳ) (func(), api.Cmd, error) {
 	switch d.Version() {
-	case RenderPassVersion_Renderpass:
+	case RenderPassVersion_RenderPass:
 		return rebuildVkCmdNextSubpass(ctx, cb, commandBuffer, r, s, d)
-	case RenderPassVersion_Renderpass2:
+	case RenderPassVersion_RenderPass2:
 		return rebuildVkCmdNextSubpass2(ctx, cb, commandBuffer, r, s, d)
-	case RenderPassVersion_Renderpass2KHR:
+	case RenderPassVersion_RenderPass2KHR:
 		return rebuildVkCmdNextSubpass2KHR(ctx, cb, commandBuffer, r, s, d)
 	default:
 		panic("Unknown renderpass version")

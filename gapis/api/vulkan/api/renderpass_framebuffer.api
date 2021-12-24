@@ -118,13 +118,13 @@ cmd void vkDestroyFramebuffer(
 }
 
 ////////////////
-// Renderpass //
+// RenderPass //
 ////////////////
 
 @internal enum RenderPassVersion : u32 {
-  Renderpass = 0,
-  Renderpass2 = 1,
-  Renderpass2KHR = 2,
+  RenderPass = 0,
+  RenderPass2 = 1,
+  RenderPass2KHR = 2,
 }
 
 @internal class RenderPassObject {
@@ -421,7 +421,7 @@ cmd VkResult vkCreateRenderPass(
     if pRenderPass == null { vkErrorNullPointer("VkRenderPass") }
 
     renderPass := createRenderPassObjectFromInfo(pCreateInfo, device)
-    renderPass.Version = Renderpass
+    renderPass.Version = RenderPass
 
     handle := ?
     pRenderPass[0] = handle
@@ -440,7 +440,7 @@ cmd VkResult vkCreateRenderPass2(
     if pRenderPass == null { vkErrorNullPointer("VkRenderPass") }
 
     renderPass := createRenderPassObjectFromInfo2(pCreateInfo, device)
-    renderPass.Version = Renderpass2
+    renderPass.Version = RenderPass2
 
     handle := ?
     pRenderPass[0] = handle
@@ -618,7 +618,7 @@ cmd void vkCmdBeginRenderPass(
     args := new!vkCmdBeginRenderPassCommonArgs(
       PRenderPassBeginInfo: renderPassBeginInfo,
       PSubpassBeginInfo: subpassBeginInfo,
-      Version: Renderpass,
+      Version: RenderPass,
     )
 
     cb := CommandBuffers[commandBuffer]
@@ -646,7 +646,7 @@ cmd void vkCmdBeginRenderPass2(
     args := new!vkCmdBeginRenderPassCommonArgs(
       PRenderPassBeginInfo: renderPassBeginInfo,
       PSubpassBeginInfo: subpassBeginInfo,
-      Version: Renderpass2,
+      Version: RenderPass2,
     )
 
     cb := CommandBuffers[commandBuffer]
@@ -713,7 +713,7 @@ cmd void vkCmdNextSubpass(
     args := new!vkCmdNextSubpassCommonArgs(
       PSubpassBeginInfo: subpassBeginInfo,
       PSubpassEndInfo: subpassEndInfo,
-      Version: Renderpass,
+      Version: RenderPass,
     )
 
     mapPos := as!u32(len(cmdBuf.BufferCommands.vkCmdNextSubpass))
@@ -739,7 +739,7 @@ cmd void vkCmdNextSubpass2(
     args := new!vkCmdNextSubpassCommonArgs(
       PSubpassBeginInfo: subpassBeginInfo,
       PSubpassEndInfo: subpassEndInfo,
-      Version: Renderpass2,
+      Version: RenderPass2,
     )
 
     mapPos := as!u32(len(cmdBuf.BufferCommands.vkCmdNextSubpass2))
@@ -801,7 +801,7 @@ cmd void vkCmdEndRenderPass(
     subpassEndInfo := createSubpassEndInfo(null)
     args := new!vkCmdEndRenderPassCommonArgs(
       PSubpassEndInfo: subpassEndInfo,
-      Version: Renderpass,
+      Version: RenderPass,
     )
 
     mapPos := as!u32(len(cmdBuf.BufferCommands.vkCmdEndRenderPass))
@@ -825,7 +825,7 @@ cmd void vkCmdEndRenderPass2(
       subpassEndInfo := createSubpassEndInfo(pSubpassEndInfo)
       args := new!vkCmdEndRenderPassCommonArgs(
         PSubpassEndInfo: subpassEndInfo,
-        Version: Renderpass2,
+        Version: RenderPass2,
       )
 
       mapPos := as!u32(len(cmdBuf.BufferCommands.vkCmdEndRenderPass2))

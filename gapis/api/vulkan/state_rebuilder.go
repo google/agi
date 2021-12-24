@@ -2384,10 +2384,10 @@ func (sb *stateBuilder) createPipelineLayout(pl PipelineLayoutObjectʳ) {
 
 func (sb *stateBuilder) createRenderPass(rp RenderPassObjectʳ) {
 	switch rp.Version() {
-	case RenderPassVersion_Renderpass:
+	case RenderPassVersion_RenderPass:
 		sb.createRenderPassOld(rp)
-	case RenderPassVersion_Renderpass2:
-	case RenderPassVersion_Renderpass2KHR:
+	case RenderPassVersion_RenderPass2:
+	case RenderPassVersion_RenderPass2KHR:
 		sb.createRenderPass2(rp)
 	}
 }
@@ -2553,7 +2553,7 @@ func (sb *stateBuilder) createRenderPass2(rp RenderPassObjectʳ) {
 	newCreateRenderPassCmd := api.Cmd(nil)
 
 	switch rp.Version() {
-	case RenderPassVersion_Renderpass2:
+	case RenderPassVersion_RenderPass2:
 		newCreateRenderPassCmd = sb.cb.VkCreateRenderPass2(
 			rp.Device(),
 			sb.MustAllocReadData(NewVkRenderPassCreateInfo2(
@@ -2573,7 +2573,7 @@ func (sb *stateBuilder) createRenderPass2(rp RenderPassObjectʳ) {
 			sb.MustAllocWriteData(rp.VulkanHandle()).Ptr(),
 			VkResult_VK_SUCCESS,
 		)
-	case RenderPassVersion_Renderpass2KHR:
+	case RenderPassVersion_RenderPass2KHR:
 		newCreateRenderPassCmd = sb.cb.VkCreateRenderPass2KHR(
 			rp.Device(),
 			sb.MustAllocReadData(NewVkRenderPassCreateInfo2(
