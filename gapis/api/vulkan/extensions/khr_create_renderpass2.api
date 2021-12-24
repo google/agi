@@ -122,6 +122,7 @@ cmd VkResult vkCreateRenderPass2KHR(
 
 @extension("VK_KHR_create_renderpass2")
 @indirect("VkCommandBuffer", "VkDevice")
+@begin_end_renderpass
 cmd void vkCmdBeginRenderPass2KHR(
     VkCommandBuffer                             commandBuffer,
     const VkRenderPassBeginInfo*                pRenderPassBegin,
@@ -150,6 +151,7 @@ cmd void vkCmdBeginRenderPass2KHR(
 
 @extension("VK_KHR_create_renderpass2")
 @indirect("VkCommandBuffer", "VkDevice")
+@begin_end_renderpass
 cmd void vkCmdEndRenderPass2KHR(
     VkCommandBuffer                             commandBuffer,
     const VkSubpassEndInfo*                     pSubpassEndInfo) {
