@@ -144,7 +144,7 @@ func (mappingTransform *mappingExporter) recordFramebuffersInSubmittedRenderPass
 				currentCmd := cmdBufferObj.CommandReferences().Get(uint32(cmdIndex))
 				args := GetCommandArgs(ctx, currentCmd, stateObj)
 				if beginRenderPassArgs, ok := args.(VkCmdBeginRenderPassCommonArgsʳ); ok {
-					mappingTransform.usedFrameBuffers[uint64(beginRenderPassArgs.PRenderPassBeginInfo().Framebuffer())] = struct{}{}
+					mappingTransform.usedFrameBuffers[uint64(beginRenderPassArgs.RenderPassBeginInfo().Framebuffer())] = struct{}{}
 				}
 			}
 		}

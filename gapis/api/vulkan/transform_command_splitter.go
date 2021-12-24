@@ -633,7 +633,7 @@ func (splitTransform *commandSplitter) splitCommandBuffer(ctx context.Context, e
 		args := GetCommandArgs(ctx, cr, st)
 		switch ar := args.(type) {
 		case VkCmdBeginRenderPassCommonArgsʳ:
-			renderpassBeginInfo := ar.PRenderPassBeginInfo()
+			renderpassBeginInfo := ar.RenderPassBeginInfo()
 			rp := renderpassBeginInfo.RenderPass()
 			rpo := st.RenderPasses().Get(rp)
 			var err error
@@ -665,10 +665,10 @@ func (splitTransform *commandSplitter) splitCommandBuffer(ctx context.Context, e
 				NewVkCmdBeginRenderPassCommonArgsʳ(
 					NewRenderPassBeginInfoʳ(
 						splitTransform.currentRenderPass[splitTransform.thisSubpass][2],
-						splitTransform.thisRenderPass.PRenderPassBeginInfo().Framebuffer(),
-						splitTransform.thisRenderPass.PRenderPassBeginInfo().RenderArea(),
-						splitTransform.thisRenderPass.PRenderPassBeginInfo().ClearValues(),
-						splitTransform.thisRenderPass.PRenderPassBeginInfo().DeviceGroupBeginInfo(),
+						splitTransform.thisRenderPass.RenderPassBeginInfo().Framebuffer(),
+						splitTransform.thisRenderPass.RenderPassBeginInfo().RenderArea(),
+						splitTransform.thisRenderPass.RenderPassBeginInfo().ClearValues(),
+						splitTransform.thisRenderPass.RenderPassBeginInfo().DeviceGroupBeginInfo(),
 					),
 					NewSubpassBeginInfoʳ(
 						VkSubpassContents_VK_SUBPASS_CONTENTS_INLINE,
@@ -686,10 +686,10 @@ func (splitTransform *commandSplitter) splitCommandBuffer(ctx context.Context, e
 				NewVkCmdBeginRenderPassCommonArgsʳ(
 					NewRenderPassBeginInfoʳ(
 						splitTransform.currentRenderPass[splitTransform.thisSubpass][0],
-						splitTransform.thisRenderPass.PRenderPassBeginInfo().Framebuffer(),
-						splitTransform.thisRenderPass.PRenderPassBeginInfo().RenderArea(),
-						splitTransform.thisRenderPass.PRenderPassBeginInfo().ClearValues(),
-						splitTransform.thisRenderPass.PRenderPassBeginInfo().DeviceGroupBeginInfo(),
+						splitTransform.thisRenderPass.RenderPassBeginInfo().Framebuffer(),
+						splitTransform.thisRenderPass.RenderPassBeginInfo().RenderArea(),
+						splitTransform.thisRenderPass.RenderPassBeginInfo().ClearValues(),
+						splitTransform.thisRenderPass.RenderPassBeginInfo().DeviceGroupBeginInfo(),
 					),
 					NewSubpassBeginInfoʳ(
 						VkSubpassContents_VK_SUBPASS_CONTENTS_INLINE,
@@ -701,10 +701,10 @@ func (splitTransform *commandSplitter) splitCommandBuffer(ctx context.Context, e
 				NewVkCmdBeginRenderPassCommonArgsʳ(
 					NewRenderPassBeginInfoʳ(
 						splitTransform.currentRenderPass[splitTransform.thisSubpass][2],
-						splitTransform.thisRenderPass.PRenderPassBeginInfo().Framebuffer(),
-						splitTransform.thisRenderPass.PRenderPassBeginInfo().RenderArea(),
-						splitTransform.thisRenderPass.PRenderPassBeginInfo().ClearValues(),
-						splitTransform.thisRenderPass.PRenderPassBeginInfo().DeviceGroupBeginInfo(),
+						splitTransform.thisRenderPass.RenderPassBeginInfo().Framebuffer(),
+						splitTransform.thisRenderPass.RenderPassBeginInfo().RenderArea(),
+						splitTransform.thisRenderPass.RenderPassBeginInfo().ClearValues(),
+						splitTransform.thisRenderPass.RenderPassBeginInfo().DeviceGroupBeginInfo(),
 					),
 					NewSubpassBeginInfoʳ(
 						VkSubpassContents_VK_SUBPASS_CONTENTS_INLINE,
@@ -720,7 +720,7 @@ func (splitTransform *commandSplitter) splitCommandBuffer(ctx context.Context, e
 		case VkCmdBindPipelineArgsʳ:
 			if ar.PipelineBindPoint() == VkPipelineBindPoint_VK_PIPELINE_BIND_POINT_GRAPHICS {
 				// Graphics pipeline, must be split (maybe)
-				if st.RenderPasses().Get(splitTransform.thisRenderPass.PRenderPassBeginInfo().RenderPass()).SubpassDescriptions().Len() > 1 {
+				if st.RenderPasses().Get(splitTransform.thisRenderPass.RenderPassBeginInfo().RenderPass()).SubpassDescriptions().Len() > 1 {
 					// If we have more than one renderpass, then we should replace
 					newPipeline, err := splitTransform.rewriteGraphicsPipeline(ctx, ar.Pipeline(), queueSubmit, inputState)
 					if err != nil {
@@ -792,10 +792,10 @@ func (splitTransform *commandSplitter) splitCommandBuffer(ctx context.Context, e
 					NewVkCmdBeginRenderPassCommonArgsʳ(
 						NewRenderPassBeginInfoʳ(
 							splitTransform.currentRenderPass[splitTransform.thisSubpass][1],
-							splitTransform.thisRenderPass.PRenderPassBeginInfo().Framebuffer(),
-							splitTransform.thisRenderPass.PRenderPassBeginInfo().RenderArea(),
-							splitTransform.thisRenderPass.PRenderPassBeginInfo().ClearValues(),
-							splitTransform.thisRenderPass.PRenderPassBeginInfo().DeviceGroupBeginInfo(),
+							splitTransform.thisRenderPass.RenderPassBeginInfo().Framebuffer(),
+							splitTransform.thisRenderPass.RenderPassBeginInfo().RenderArea(),
+							splitTransform.thisRenderPass.RenderPassBeginInfo().ClearValues(),
+							splitTransform.thisRenderPass.RenderPassBeginInfo().DeviceGroupBeginInfo(),
 						),
 						NewSubpassBeginInfoʳ(
 							VkSubpassContents_VK_SUBPASS_CONTENTS_INLINE,

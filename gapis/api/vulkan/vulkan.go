@@ -502,7 +502,7 @@ func (API) ResolveSynchronization(ctx context.Context, d *sync.Data, c *path.Cap
 					mergeExperimentalCmds(append(idx, uint64(i)))
 				}
 			case VkCmdBeginRenderPassCommonArgsʳ:
-				rp := st.RenderPasses().Get(args.PRenderPassBeginInfo().RenderPass())
+				rp := st.RenderPasses().Get(args.RenderPassBeginInfo().RenderPass())
 				name := fmt.Sprintf("RenderPass: %v", rp.VulkanHandle())
 				if label := rp.Label(ctx, s); len(label) > 0 {
 					name = label
@@ -545,8 +545,8 @@ func (API) ResolveSynchronization(ctx context.Context, d *sync.Data, c *path.Cap
 					renderPassKey = sync.RenderPassKey{
 						Submission:    order,
 						CommandBuffer: cb.VulkanHandle().Handle(),
-						RenderPass:    args.PRenderPassBeginInfo().RenderPass().Handle(),
-						Framebuffer:   args.PRenderPassBeginInfo().Framebuffer().Handle(),
+						RenderPass:    args.RenderPassBeginInfo().RenderPass().Handle(),
+						Framebuffer:   args.RenderPassBeginInfo().Framebuffer().Handle(),
 					}
 					renderPassStart = append(api.SubCmdIdx{}, nv...)
 				case VkCmdNextSubpassCommonArgsʳ:

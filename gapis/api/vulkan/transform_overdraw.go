@@ -1636,8 +1636,8 @@ func (overdrawTransform *stencilOverdraw) createCommandBuffer(ctx context.Contex
 				}
 
 				newArgs := ar.Clone(api.CloneContext{})
-				newArgs.PRenderPassBeginInfo().SetRenderPass(renderInfo.renderPass)
-				newArgs.PRenderPassBeginInfo().SetFramebuffer(renderInfo.framebuffer)
+				newArgs.RenderPassBeginInfo().SetRenderPass(renderInfo.renderPass)
+				newArgs.RenderPassBeginInfo().SetFramebuffer(renderInfo.framebuffer)
 
 				rpInfo := GetState(inputState).RenderPasses().Get(renderInfo.renderPass)
 				attachmentIdx := uint32(rpInfo.AttachmentDescriptions().Len()) - 1
@@ -1646,7 +1646,7 @@ func (overdrawTransform *stencilOverdraw) createCommandBuffer(ctx context.Contex
 				if renderInfo.depthIdx != ^uint32(0) &&
 					rpInfo.AttachmentDescriptions().Get(renderInfo.depthIdx).LoadOp() ==
 						VkAttachmentLoadOp_VK_ATTACHMENT_LOAD_OP_CLEAR {
-					newClear.Set(0, newArgs.PRenderPassBeginInfo().
+					newClear.Set(0, newArgs.RenderPassBeginInfo().
 						ClearValues().
 						Get(renderInfo.depthIdx).
 						Color().
@@ -1654,8 +1654,8 @@ func (overdrawTransform *stencilOverdraw) createCommandBuffer(ctx context.Contex
 						Get(0))
 				}
 				for j := uint32(0); j < attachmentIdx; j++ {
-					if !newArgs.PRenderPassBeginInfo().ClearValues().Contains(j) {
-						newArgs.PRenderPassBeginInfo().ClearValues().Add(j, NilVkClearValue)
+					if !newArgs.RenderPassBeginInfo().ClearValues().Contains(j) {
+						newArgs.RenderPassBeginInfo().ClearValues().Add(j, NilVkClearValue)
 					}
 				}
 				// 0 initialize the stencil buffer
@@ -1663,7 +1663,7 @@ func (overdrawTransform *stencilOverdraw) createCommandBuffer(ctx context.Contex
 				// VkClearDepthValue because it doesn't
 				// seem like the union is set up in the
 				// API DSL
-				newArgs.PRenderPassBeginInfo().ClearValues().Add(attachmentIdx, NewVkClearValue(
+				newArgs.RenderPassBeginInfo().ClearValues().Add(attachmentIdx, NewVkClearValue(
 					NewVkClearColorValue(newClear)))
 				args = newArgs
 			case VkCmdEndRenderPassCommonArgsʳ:
@@ -1751,7 +1751,7 @@ func (overdrawTransform *stencilOverdraw) rewriteQueueSubmit(ctx context.Context
 	}
 
 	renderInfo, err := overdrawTransform.createNewRenderPassFramebuffer(
-		ctx, inputState, rpBeginArgs.PRenderPassBeginInfo().RenderPass(), rpBeginArgs.PRenderPassBeginInfo().Framebuffer())
+		ctx, inputState, rpBeginArgs.RenderPassBeginInfo().RenderPass(), rpBeginArgs.RenderPassBeginInfo().Framebuffer())
 	if err != nil {
 		return stencilImage{}, err
 	}

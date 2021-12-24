@@ -323,7 +323,7 @@ func resolveCurrentRenderPass2(ctx context.Context, s *api.GlobalState, submit *
 		args := GetCommandArgs(ctx, o, GetState(s))
 		switch ar := args.(type) {
 		case VkCmdBeginRenderPassCommonArgsʳ:
-			lrp = c.RenderPasses().Get(ar.PRenderPassBeginInfo().RenderPass())
+			lrp = c.RenderPasses().Get(ar.RenderPassBeginInfo().RenderPass())
 			subpass = 0
 		case VkCmdNextSubpassCommonArgsʳ:
 			subpass++

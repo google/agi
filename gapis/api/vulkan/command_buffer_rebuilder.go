@@ -195,14 +195,14 @@ func rebuildVkCmdBeginRenderPass(
 	s *api.GlobalState,
 	d VkCmdBeginRenderPassCommonArgsʳ) (func(), api.Cmd, error) {
 
-	renderPassBeginInfo, mem, err := createVkRenderPassBeginInfo(ctx, s, d.PRenderPassBeginInfo())
+	renderPassBeginInfo, mem, err := createVkRenderPassBeginInfo(ctx, s, d.RenderPassBeginInfo())
 	if err != nil {
 		return nil, nil, err
 	}
 	renderPassBeginData := s.AllocDataOrPanic(ctx, renderPassBeginInfo)
 	mem = append(mem, renderPassBeginData)
 
-	contents := d.PSubpassBeginInfo().Contents()
+	contents := d.SubpassBeginInfo().Contents()
 
 	cleanup := func() {
 		for _, d := range mem {
@@ -229,14 +229,14 @@ func rebuildVkCmdBeginRenderPass2(
 	s *api.GlobalState,
 	d VkCmdBeginRenderPassCommonArgsʳ) (func(), api.Cmd, error) {
 
-	renderPassBeginInfo, mem, err := createVkRenderPassBeginInfo(ctx, s, d.PRenderPassBeginInfo())
+	renderPassBeginInfo, mem, err := createVkRenderPassBeginInfo(ctx, s, d.RenderPassBeginInfo())
 	if err != nil {
 		return nil, nil, err
 	}
 	renderPassBeginData := s.AllocDataOrPanic(ctx, renderPassBeginInfo)
 	mem = append(mem, renderPassBeginData)
 
-	subpassBeginInfo := createVkSubpassBeginInfo(d.PSubpassBeginInfo())
+	subpassBeginInfo := createVkSubpassBeginInfo(d.SubpassBeginInfo())
 	subpassBeginData := s.AllocDataOrPanic(ctx, subpassBeginInfo)
 	mem = append(mem, subpassBeginData)
 
@@ -265,14 +265,14 @@ func rebuildVkCmdBeginRenderPass2KHR(
 	s *api.GlobalState,
 	d VkCmdBeginRenderPassCommonArgsʳ) (func(), api.Cmd, error) {
 
-	renderPassBeginInfo, mem, err := createVkRenderPassBeginInfo(ctx, s, d.PRenderPassBeginInfo())
+	renderPassBeginInfo, mem, err := createVkRenderPassBeginInfo(ctx, s, d.RenderPassBeginInfo())
 	if err != nil {
 		return nil, nil, err
 	}
 	renderPassBeginData := s.AllocDataOrPanic(ctx, renderPassBeginInfo)
 	mem = append(mem, renderPassBeginData)
 
-	subpassBeginInfo := createVkSubpassBeginInfo(d.PSubpassBeginInfo())
+	subpassBeginInfo := createVkSubpassBeginInfo(d.SubpassBeginInfo())
 	subpassBeginData := s.AllocDataOrPanic(ctx, subpassBeginInfo)
 	mem = append(mem, subpassBeginData)
 
@@ -331,7 +331,7 @@ func rebuildVkCmdEndRenderPass2(
 	d VkCmdEndRenderPassCommonArgsʳ) (func(), api.Cmd, error) {
 	mem := []api.AllocResult{}
 
-	subpassEndInfo := createVkSubpassEndInfo(d.PSubpassEndInfo())
+	subpassEndInfo := createVkSubpassEndInfo(d.SubpassEndInfo())
 	subpassEndData := s.AllocDataOrPanic(ctx, subpassEndInfo)
 	mem = append(mem, subpassEndData)
 
@@ -360,7 +360,7 @@ func rebuildVkCmdEndRenderPass2KHR(
 	d VkCmdEndRenderPassCommonArgsʳ) (func(), api.Cmd, error) {
 	mem := []api.AllocResult{}
 
-	subpassEndInfo := createVkSubpassEndInfo(d.PSubpassEndInfo())
+	subpassEndInfo := createVkSubpassEndInfo(d.SubpassEndInfo())
 	subpassEndData := s.AllocDataOrPanic(ctx, subpassEndInfo)
 	mem = append(mem, subpassEndData)
 
@@ -406,7 +406,7 @@ func rebuildVkCmdNextSubpass(
 	r *api.GlobalState,
 	s *api.GlobalState,
 	d VkCmdNextSubpassCommonArgsʳ) (func(), api.Cmd, error) {
-	return func() {}, cb.VkCmdNextSubpass(commandBuffer, d.PSubpassBeginInfo().Contents()), nil
+	return func() {}, cb.VkCmdNextSubpass(commandBuffer, d.SubpassBeginInfo().Contents()), nil
 }
 
 func rebuildVkCmdNextSubpass2(
@@ -418,11 +418,11 @@ func rebuildVkCmdNextSubpass2(
 	d VkCmdNextSubpassCommonArgsʳ) (func(), api.Cmd, error) {
 	mem := []api.AllocResult{}
 
-	subpassBeginInfo := createVkSubpassBeginInfo(d.PSubpassBeginInfo())
+	subpassBeginInfo := createVkSubpassBeginInfo(d.SubpassBeginInfo())
 	subpassBeginData := s.AllocDataOrPanic(ctx, subpassBeginInfo)
 	mem = append(mem, subpassBeginData)
 
-	subpassEndInfo := createVkSubpassEndInfo(d.PSubpassEndInfo())
+	subpassEndInfo := createVkSubpassEndInfo(d.SubpassEndInfo())
 	subpassEndData := s.AllocDataOrPanic(ctx, subpassEndInfo)
 	mem = append(mem, subpassEndData)
 
@@ -452,11 +452,11 @@ func rebuildVkCmdNextSubpass2KHR(
 	d VkCmdNextSubpassCommonArgsʳ) (func(), api.Cmd, error) {
 	mem := []api.AllocResult{}
 
-	subpassBeginInfo := createVkSubpassBeginInfo(d.PSubpassBeginInfo())
+	subpassBeginInfo := createVkSubpassBeginInfo(d.SubpassBeginInfo())
 	subpassBeginData := s.AllocDataOrPanic(ctx, subpassBeginInfo)
 	mem = append(mem, subpassBeginData)
 
-	subpassEndInfo := createVkSubpassEndInfo(d.PSubpassEndInfo())
+	subpassEndInfo := createVkSubpassEndInfo(d.SubpassEndInfo())
 	subpassEndData := s.AllocDataOrPanic(ctx, subpassEndInfo)
 	mem = append(mem, subpassEndData)
 
