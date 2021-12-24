@@ -236,7 +236,7 @@ func (vtTransform *vulkanTerminator) cutCommandBuffer(ctx context.Context, id ap
 		numSubpasses := uint32(lrp.SubpassDescriptions().Len())
 		for i := 0; uint32(i) < numSubpasses-lsp-1; i++ {
 			extraCommands = append(extraCommands,
-				NewVkCmdNextSubpassCommonArgsʳ(
+				NewVkCmdNextSubpassXArgsʳ(
 					NewSubpassBeginInfoʳ(
 						VkSubpassContents_VK_SUBPASS_CONTENTS_INLINE,
 					),
@@ -244,7 +244,7 @@ func (vtTransform *vulkanTerminator) cutCommandBuffer(ctx context.Context, id ap
 					lrp.Version(),
 				))
 		}
-		extraCommands = append(extraCommands, NewVkCmdEndRenderPassCommonArgsʳ(
+		extraCommands = append(extraCommands, NewVkCmdEndRenderPassXArgsʳ(
 			NewSubpassEndInfoʳ(),
 			lrp.Version(),
 		))
@@ -322,12 +322,12 @@ func resolveCurrentRenderPass2(ctx context.Context, s *api.GlobalState, submit *
 	walkCommandsCallback := func(o CommandReferenceʳ) {
 		args := GetCommandArgs(ctx, o, GetState(s))
 		switch ar := args.(type) {
-		case VkCmdBeginRenderPassCommonArgsʳ:
+		case VkCmdBeginRenderPassXArgsʳ:
 			lrp = c.RenderPasses().Get(ar.RenderPassBeginInfo().RenderPass())
 			subpass = 0
-		case VkCmdNextSubpassCommonArgsʳ:
+		case VkCmdNextSubpassXArgsʳ:
 			subpass++
-		case VkCmdEndRenderPassCommonArgsʳ:
+		case VkCmdEndRenderPassXArgsʳ:
 			lrp = NilRenderPassObjectʳ
 			subpass = 0
 		}

@@ -1624,7 +1624,7 @@ func (overdrawTransform *stencilOverdraw) createCommandBuffer(ctx context.Contex
 		args := GetCommandArgs(ctx, cr, GetState(inputState))
 		if uint64(i) >= rpStartIdx && !rpEnded {
 			switch ar := args.(type) {
-			case VkCmdBeginRenderPassCommonArgsʳ:
+			case VkCmdBeginRenderPassXArgsʳ:
 				// Transition the stencil image to the right layout
 				if err := overdrawTransform.transitionStencilImage(ctx, inputState, newCmdBuffer, renderInfo); err != nil {
 					return VkCommandBuffer(0), err
@@ -1666,7 +1666,7 @@ func (overdrawTransform *stencilOverdraw) createCommandBuffer(ctx context.Contex
 				newArgs.RenderPassBeginInfo().ClearValues().Add(attachmentIdx, NewVkClearValue(
 					NewVkClearColorValue(newClear)))
 				args = newArgs
-			case VkCmdEndRenderPassCommonArgsʳ:
+			case VkCmdEndRenderPassXArgsʳ:
 				rpEnded = true
 			case VkCmdBindPipelineArgsʳ:
 				newArgs := ar
@@ -1716,7 +1716,7 @@ func (overdrawTransform *stencilOverdraw) createCommandBuffer(ctx context.Contex
 
 		cleanup()
 
-		if _, ok := args.(VkCmdEndRenderPassCommonArgsʳ); ok {
+		if _, ok := args.(VkCmdEndRenderPassXArgsʳ); ok {
 			// Add commands to handle storing the new depth values if necessary
 			if err := overdrawTransform.storeNewDepthValues(ctx, inputState,
 				device, queue, newCmdBuffer, renderInfo); err != nil {
@@ -1736,7 +1736,7 @@ func (overdrawTransform *stencilOverdraw) createCommandBuffer(ctx context.Contex
 func (overdrawTransform *stencilOverdraw) rewriteQueueSubmit(ctx context.Context,
 	inputState *api.GlobalState,
 	queueSubmitCmd *VkQueueSubmit,
-	rpBeginArgs VkCmdBeginRenderPassCommonArgsʳ,
+	rpBeginArgs VkCmdBeginRenderPassXArgsʳ,
 	rpBeginIdx api.SubCmdIdx) (stencilImage, error) {
 
 	// Need to deep clone all of the submit info so we can mark it as
@@ -3019,13 +3019,13 @@ func getLastRenderPass(ctx context.Context,
 	inputState *api.GlobalState,
 	submit *VkQueueSubmit,
 	lastIdx api.SubCmdIdx,
-) (VkCmdBeginRenderPassCommonArgsʳ, api.SubCmdIdx, error) {
-	lastRenderPassArgs := NilVkCmdBeginRenderPassCommonArgsʳ
+) (VkCmdBeginRenderPassXArgsʳ, api.SubCmdIdx, error) {
+	lastRenderPassArgs := NilVkCmdBeginRenderPassXArgsʳ
 	var lastRenderPassIdx api.SubCmdIdx
 	submit.Extras().Observations().ApplyReads(inputState.Memory.ApplicationPool())
 	submitInfos, err := submit.PSubmits().Slice(0, uint64(submit.SubmitCount()), inputState.MemoryLayout).Read(ctx, submit, inputState, nil)
 	if err != nil {
-		return NilVkCmdBeginRenderPassCommonArgsʳ, nil, err
+		return NilVkCmdBeginRenderPassXArgsʳ, nil, err
 	}
 	for i, si := range submitInfos {
 		if len(lastIdx) >= 1 && lastIdx[0] < uint64(i) {
@@ -3033,7 +3033,7 @@ func getLastRenderPass(ctx context.Context,
 		}
 		cmdBuffers, err := si.PCommandBuffers().Slice(0, uint64(si.CommandBufferCount()), inputState.MemoryLayout).Read(ctx, submit, inputState, nil)
 		if err != nil {
-			return NilVkCmdBeginRenderPassCommonArgsʳ, nil, err
+			return NilVkCmdBeginRenderPassXArgsʳ, nil, err
 		}
 		for j, buf := range cmdBuffers {
 			if len(lastIdx) >= 2 && lastIdx[0] == uint64(i) && lastIdx[1] < uint64(j) {
@@ -3053,7 +3053,7 @@ func getLastRenderPass(ctx context.Context,
 				}
 				cr := commandBuffers.CommandReferences().Get(uint32(k))
 				args := GetCommandArgs(ctx, cr, GetState(inputState))
-				if beginRenderPassArgs, ok := args.(VkCmdBeginRenderPassCommonArgsʳ); ok {
+				if beginRenderPassArgs, ok := args.(VkCmdBeginRenderPassXArgsʳ); ok {
 					lastRenderPassArgs = beginRenderPassArgs
 					lastRenderPassIdx = api.SubCmdIdx{
 						uint64(i), uint64(j), uint64(k)}

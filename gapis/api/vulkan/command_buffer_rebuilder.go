@@ -174,7 +174,7 @@ func rebuildVkCmdBeginRenderPassCommon(
 	commandBuffer VkCommandBuffer,
 	r *api.GlobalState,
 	s *api.GlobalState,
-	d VkCmdBeginRenderPassCommonArgsʳ) (func(), api.Cmd, error) {
+	d VkCmdBeginRenderPassXArgsʳ) (func(), api.Cmd, error) {
 	switch d.Version() {
 	case RenderPassVersion_RenderPass:
 		return rebuildVkCmdBeginRenderPass(ctx, cb, commandBuffer, r, s, d)
@@ -193,7 +193,7 @@ func rebuildVkCmdBeginRenderPass(
 	commandBuffer VkCommandBuffer,
 	r *api.GlobalState,
 	s *api.GlobalState,
-	d VkCmdBeginRenderPassCommonArgsʳ) (func(), api.Cmd, error) {
+	d VkCmdBeginRenderPassXArgsʳ) (func(), api.Cmd, error) {
 
 	renderPassBeginInfo, mem, err := createVkRenderPassBeginInfo(ctx, s, d.RenderPassBeginInfo())
 	if err != nil {
@@ -227,7 +227,7 @@ func rebuildVkCmdBeginRenderPass2(
 	commandBuffer VkCommandBuffer,
 	r *api.GlobalState,
 	s *api.GlobalState,
-	d VkCmdBeginRenderPassCommonArgsʳ) (func(), api.Cmd, error) {
+	d VkCmdBeginRenderPassXArgsʳ) (func(), api.Cmd, error) {
 
 	renderPassBeginInfo, mem, err := createVkRenderPassBeginInfo(ctx, s, d.RenderPassBeginInfo())
 	if err != nil {
@@ -263,7 +263,7 @@ func rebuildVkCmdBeginRenderPass2KHR(
 	commandBuffer VkCommandBuffer,
 	r *api.GlobalState,
 	s *api.GlobalState,
-	d VkCmdBeginRenderPassCommonArgsʳ) (func(), api.Cmd, error) {
+	d VkCmdBeginRenderPassXArgsʳ) (func(), api.Cmd, error) {
 
 	renderPassBeginInfo, mem, err := createVkRenderPassBeginInfo(ctx, s, d.RenderPassBeginInfo())
 	if err != nil {
@@ -299,7 +299,7 @@ func rebuildVkCmdEndRenderPassCommon(
 	commandBuffer VkCommandBuffer,
 	r *api.GlobalState,
 	s *api.GlobalState,
-	d VkCmdEndRenderPassCommonArgsʳ) (func(), api.Cmd, error) {
+	d VkCmdEndRenderPassXArgsʳ) (func(), api.Cmd, error) {
 	switch d.Version() {
 	case RenderPassVersion_RenderPass:
 		return rebuildVkCmdEndRenderPass(ctx, cb, commandBuffer, r, s, d)
@@ -318,7 +318,7 @@ func rebuildVkCmdEndRenderPass(
 	commandBuffer VkCommandBuffer,
 	r *api.GlobalState,
 	s *api.GlobalState,
-	d VkCmdEndRenderPassCommonArgsʳ) (func(), api.Cmd, error) {
+	d VkCmdEndRenderPassXArgsʳ) (func(), api.Cmd, error) {
 	return func() {}, cb.VkCmdEndRenderPass(commandBuffer), nil
 }
 
@@ -328,7 +328,7 @@ func rebuildVkCmdEndRenderPass2(
 	commandBuffer VkCommandBuffer,
 	r *api.GlobalState,
 	s *api.GlobalState,
-	d VkCmdEndRenderPassCommonArgsʳ) (func(), api.Cmd, error) {
+	d VkCmdEndRenderPassXArgsʳ) (func(), api.Cmd, error) {
 	mem := []api.AllocResult{}
 
 	subpassEndInfo := createVkSubpassEndInfo(d.SubpassEndInfo())
@@ -357,7 +357,7 @@ func rebuildVkCmdEndRenderPass2KHR(
 	commandBuffer VkCommandBuffer,
 	r *api.GlobalState,
 	s *api.GlobalState,
-	d VkCmdEndRenderPassCommonArgsʳ) (func(), api.Cmd, error) {
+	d VkCmdEndRenderPassXArgsʳ) (func(), api.Cmd, error) {
 	mem := []api.AllocResult{}
 
 	subpassEndInfo := createVkSubpassEndInfo(d.SubpassEndInfo())
@@ -386,7 +386,7 @@ func rebuildVkCmdNextSubpassCommon(
 	commandBuffer VkCommandBuffer,
 	r *api.GlobalState,
 	s *api.GlobalState,
-	d VkCmdNextSubpassCommonArgsʳ) (func(), api.Cmd, error) {
+	d VkCmdNextSubpassXArgsʳ) (func(), api.Cmd, error) {
 	switch d.Version() {
 	case RenderPassVersion_RenderPass:
 		return rebuildVkCmdNextSubpass(ctx, cb, commandBuffer, r, s, d)
@@ -405,7 +405,7 @@ func rebuildVkCmdNextSubpass(
 	commandBuffer VkCommandBuffer,
 	r *api.GlobalState,
 	s *api.GlobalState,
-	d VkCmdNextSubpassCommonArgsʳ) (func(), api.Cmd, error) {
+	d VkCmdNextSubpassXArgsʳ) (func(), api.Cmd, error) {
 	return func() {}, cb.VkCmdNextSubpass(commandBuffer, d.SubpassBeginInfo().Contents()), nil
 }
 
@@ -415,7 +415,7 @@ func rebuildVkCmdNextSubpass2(
 	commandBuffer VkCommandBuffer,
 	r *api.GlobalState,
 	s *api.GlobalState,
-	d VkCmdNextSubpassCommonArgsʳ) (func(), api.Cmd, error) {
+	d VkCmdNextSubpassXArgsʳ) (func(), api.Cmd, error) {
 	mem := []api.AllocResult{}
 
 	subpassBeginInfo := createVkSubpassBeginInfo(d.SubpassBeginInfo())
@@ -449,7 +449,7 @@ func rebuildVkCmdNextSubpass2KHR(
 	commandBuffer VkCommandBuffer,
 	r *api.GlobalState,
 	s *api.GlobalState,
-	d VkCmdNextSubpassCommonArgsʳ) (func(), api.Cmd, error) {
+	d VkCmdNextSubpassXArgsʳ) (func(), api.Cmd, error) {
 	mem := []api.AllocResult{}
 
 	subpassBeginInfo := createVkSubpassBeginInfo(d.SubpassBeginInfo())
@@ -2217,11 +2217,11 @@ func AddCommand(ctx context.Context,
 	rebuildInfo interface{}) (func(), api.Cmd, error) {
 
 	switch t := rebuildInfo.(type) {
-	case VkCmdBeginRenderPassCommonArgsʳ:
+	case VkCmdBeginRenderPassXArgsʳ:
 		return rebuildVkCmdBeginRenderPassCommon(ctx, cb, commandBuffer, r, s, t)
-	case VkCmdEndRenderPassCommonArgsʳ:
+	case VkCmdEndRenderPassXArgsʳ:
 		return rebuildVkCmdEndRenderPassCommon(ctx, cb, commandBuffer, r, s, t)
-	case VkCmdNextSubpassCommonArgsʳ:
+	case VkCmdNextSubpassXArgsʳ:
 		return rebuildVkCmdNextSubpassCommon(ctx, cb, commandBuffer, r, s, t)
 	case VkCmdBindPipelineArgsʳ:
 		return rebuildVkCmdBindPipeline(ctx, cb, commandBuffer, r, s, t)

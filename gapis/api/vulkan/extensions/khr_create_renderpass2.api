@@ -134,7 +134,7 @@ cmd void vkCmdBeginRenderPass2KHR(
         renderPassBeginInfo := createRenderPassBeginInfo(pRenderPassBegin)
         subpassBeginInfo := createSubpassBeginInfoFromInfo(pSubpassBeginInfo)
 
-        args := new!vkCmdBeginRenderPassCommonArgs(
+        args := new!vkCmdBeginRenderPassXArgs(
             RenderPassBeginInfo: renderPassBeginInfo,
             SubpassBeginInfo: subpassBeginInfo,
             Version: RenderPass2KHR,
@@ -162,7 +162,7 @@ cmd void vkCmdEndRenderPass2KHR(
         recordEndRenderpass(cmdBuf)
 
         subpassEndInfo := createSubpassEndInfo(pSubpassEndInfo)
-        args := new!vkCmdEndRenderPassCommonArgs(
+        args := new!vkCmdEndRenderPassXArgs(
             SubpassEndInfo: subpassEndInfo,
             Version: RenderPass2,
         )
@@ -188,7 +188,7 @@ cmd void vkCmdNextSubpass2KHR(
 
         subpassBeginInfo := createSubpassBeginInfoFromInfo(pSubpassBeginInfo)
         subpassEndInfo := createSubpassEndInfo(pSubpassEndInfo)
-        args := new!vkCmdNextSubpassCommonArgs(
+        args := new!vkCmdNextSubpassXArgs(
             SubpassBeginInfo: subpassBeginInfo,
             SubpassEndInfo: subpassEndInfo,
             Version: RenderPass2KHR,

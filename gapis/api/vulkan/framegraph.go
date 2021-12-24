@@ -514,7 +514,7 @@ func (helpers *framegraphInfoHelpers) processSubCommand(ctx context.Context, dep
 	switch args := cmdArgs.(type) {
 
 	// Beginning of renderpass
-	case VkCmdBeginRenderPassCommonArgsʳ:
+	case VkCmdBeginRenderPassXArgsʳ:
 		if helpers.wlInfo != nil {
 			panic("Renderpass starts within another workload")
 		}
@@ -652,7 +652,7 @@ func (helpers *framegraphInfoHelpers) processSubCommand(ctx context.Context, dep
 	switch cmdArgs.(type) {
 
 	// End of renderpass
-	case VkCmdEndRenderPassCommonArgsʳ:
+	case VkCmdEndRenderPassXArgsʳ:
 		if helpers.wlInfo == nil || helpers.wlInfo.renderpass == nil {
 			panic("Renderpass ends without having started")
 		}

@@ -626,7 +626,7 @@ func (f *loopingVulkanControlFlowGenerator) buildEndState(ctx context.Context, s
 		if ok {
 			args := GetCommandArgs(ctx, cr, st)
 			switch ar := args.(type) {
-			case VkCmdBeginRenderPassCommonArgsʳ:
+			case VkCmdBeginRenderPassXArgsʳ:
 				rp := st.RenderPasses().Get(ar.RenderPassBeginInfo().RenderPass())
 				f.watcher.ignore = true
 				for i := uint32(0); i < uint32(rp.AttachmentDescriptions().Len()); i++ {

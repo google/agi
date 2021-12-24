@@ -280,9 +280,9 @@ enum SemaphoreUpdate {
   @untrackedMap dense_map!(u32, ref!vkCmdWriteTimestampArgs)         vkCmdWriteTimestamp
   @untrackedMap dense_map!(u32, ref!vkCmdCopyQueryPoolResultsArgs)   vkCmdCopyQueryPoolResults
   @untrackedMap dense_map!(u32, ref!vkCmdPushConstantsArgs)          vkCmdPushConstants
-  @untrackedMap dense_map!(u32, ref!vkCmdBeginRenderPassCommonArgs)  vkCmdBeginRenderPass
-  @untrackedMap dense_map!(u32, ref!vkCmdNextSubpassCommonArgs)      vkCmdNextSubpass
-  @untrackedMap dense_map!(u32, ref!vkCmdEndRenderPassCommonArgs)    vkCmdEndRenderPass
+  @untrackedMap dense_map!(u32, ref!vkCmdBeginRenderPassXArgs)  vkCmdBeginRenderPass
+  @untrackedMap dense_map!(u32, ref!vkCmdNextSubpassXArgs)      vkCmdNextSubpass
+  @untrackedMap dense_map!(u32, ref!vkCmdEndRenderPassXArgs)    vkCmdEndRenderPass
   @untrackedMap dense_map!(u32, ref!vkCmdExecuteCommandsArgs)        vkCmdExecuteCommands
   @untrackedMap dense_map!(u32, ref!vkCmdDebugMarkerBeginEXTArgs)    vkCmdDebugMarkerBeginEXT
   @untrackedMap dense_map!(u32, ref!vkCmdDebugMarkerEndEXTArgs)      vkCmdDebugMarkerEndEXT
@@ -301,9 +301,9 @@ enum SemaphoreUpdate {
   @untrackedMap dense_map!(u32, ref!vkCmdSetLineStippleEXTArgs)        vkCmdSetLineStippleEXT
 
   // Vulkan 1.2
-  @untrackedMap dense_map!(u32, ref!vkCmdBeginRenderPassCommonArgs)  vkCmdBeginRenderPass2
-  @untrackedMap dense_map!(u32, ref!vkCmdEndRenderPassCommonArgs)    vkCmdEndRenderPass2
-  @untrackedMap dense_map!(u32, ref!vkCmdNextSubpassCommonArgs)      vkCmdNextSubpass2
+  @untrackedMap dense_map!(u32, ref!vkCmdBeginRenderPassXArgs)  vkCmdBeginRenderPass2
+  @untrackedMap dense_map!(u32, ref!vkCmdEndRenderPassXArgs)    vkCmdEndRenderPass2
+  @untrackedMap dense_map!(u32, ref!vkCmdNextSubpassXArgs)      vkCmdNextSubpass2
 
   // @extension("VK_EXT_transform_feedback")
   @untrackedMap dense_map!(u32, ref!vkCmdBindTransformFeedbackBuffersEXTArgs) vkCmdBindTransformFeedbackBuffersEXT
@@ -314,9 +314,9 @@ enum SemaphoreUpdate {
   @untrackedMap dense_map!(u32, ref!vkCmdDrawIndirectByteCountEXTArgs) vkCmdDrawIndirectByteCountEXT
 
   // @extension("VK_KHR_create_renderpass2")
-  @untrackedMap dense_map!(u32, ref!vkCmdBeginRenderPassCommonArgs)  vkCmdBeginRenderPass2KHR
-  @untrackedMap dense_map!(u32, ref!vkCmdEndRenderPassCommonArgs)    vkCmdEndRenderPass2KHR
-  @untrackedMap dense_map!(u32, ref!vkCmdNextSubpassCommonArgs)      vkCmdNextSubpass2KHR
+  @untrackedMap dense_map!(u32, ref!vkCmdBeginRenderPassXArgs)  vkCmdBeginRenderPass2KHR
+  @untrackedMap dense_map!(u32, ref!vkCmdEndRenderPassXArgs)    vkCmdEndRenderPass2KHR
+  @untrackedMap dense_map!(u32, ref!vkCmdNextSubpassXArgs)      vkCmdNextSubpass2KHR
 }
 
 @internal class AspectImageTransition {

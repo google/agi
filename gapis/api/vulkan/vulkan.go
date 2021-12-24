@@ -501,7 +501,7 @@ func (API) ResolveSynchronization(ctx context.Context, d *sync.Data, c *path.Cap
 					}
 					mergeExperimentalCmds(append(idx, uint64(i)))
 				}
-			case VkCmdBeginRenderPassCommonArgsʳ:
+			case VkCmdBeginRenderPassXArgsʳ:
 				rp := st.RenderPasses().Get(args.RenderPassBeginInfo().RenderPass())
 				name := fmt.Sprintf("RenderPass: %v", rp.VulkanHandle())
 				if label := rp.Label(ctx, s); len(label) > 0 {
@@ -516,13 +516,13 @@ func (API) ResolveSynchronization(ctx context.Context, d *sync.Data, c *path.Cap
 					nextSubpass++
 				}
 				break
-			case VkCmdEndRenderPassCommonArgsʳ:
+			case VkCmdEndRenderPassXArgsʳ:
 				if nextSubpass > 0 { // Pop one more time since there were one extra marker pushed.
 					popMarker(renderPassMarker, uint64(i))
 				}
 				popMarker(renderPassMarker, uint64(i))
 				break
-			case VkCmdNextSubpassCommonArgsʳ:
+			case VkCmdNextSubpassXArgsʳ:
 				popMarker(renderPassMarker, uint64(i-1))
 				name := fmt.Sprintf("Subpass: %v", nextSubpass)
 				pushMarker(name, renderPassMarker, i, append(api.SubCmdIdx{}, idx...))
@@ -541,7 +541,7 @@ func (API) ResolveSynchronization(ctx context.Context, d *sync.Data, c *path.Cap
 				// Markdown RenderPasses' and SubPasses' command index, for helping
 				// connect a command and its correlated GPU slices.
 				switch args := GetCommandArgs(ctx, cb.CommandReferences().Get(uint32(i)), st).(type) {
-				case VkCmdBeginRenderPassCommonArgsʳ:
+				case VkCmdBeginRenderPassXArgsʳ:
 					renderPassKey = sync.RenderPassKey{
 						Submission:    order,
 						CommandBuffer: cb.VulkanHandle().Handle(),
@@ -549,7 +549,7 @@ func (API) ResolveSynchronization(ctx context.Context, d *sync.Data, c *path.Cap
 						Framebuffer:   args.RenderPassBeginInfo().Framebuffer().Handle(),
 					}
 					renderPassStart = append(api.SubCmdIdx{}, nv...)
-				case VkCmdNextSubpassCommonArgsʳ:
+				case VkCmdNextSubpassXArgsʳ:
 					d.RenderPassLookup.AddRenderPass(ctx, renderPassKey, sync.SubCmdRange{renderPassStart, nv})
 				}
 			}

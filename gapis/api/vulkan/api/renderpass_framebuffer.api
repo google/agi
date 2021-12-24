@@ -487,7 +487,7 @@ cmd void vkGetRenderAreaGranularity(
 }
 
 @internal class
-vkCmdBeginRenderPassCommonArgs {
+vkCmdBeginRenderPassXArgs {
   ref!RenderPassBeginInfo RenderPassBeginInfo
   ref!SubpassBeginInfo    SubpassBeginInfo
 
@@ -495,7 +495,7 @@ vkCmdBeginRenderPassCommonArgs {
   RenderPassVersion Version
 }
 
-sub void dovkCmdBeginRenderPassCommon(ref!vkCmdBeginRenderPassCommonArgs args) {
+sub void dovkCmdBeginRenderPassCommon(ref!vkCmdBeginRenderPassXArgs args) {
   renderPassBeginInfo := args.RenderPassBeginInfo
 
   ldi := lastDrawInfo()
@@ -615,7 +615,7 @@ cmd void vkCmdBeginRenderPass(
     renderPassBeginInfo := createRenderPassBeginInfo(pRenderPassBegin)
     subpassBeginInfo := createSubpassBeginInfoFromContents(contents)
 
-    args := new!vkCmdBeginRenderPassCommonArgs(
+    args := new!vkCmdBeginRenderPassXArgs(
       RenderPassBeginInfo: renderPassBeginInfo,
       SubpassBeginInfo: subpassBeginInfo,
       Version: RenderPass,
@@ -643,7 +643,7 @@ cmd void vkCmdBeginRenderPass2(
     renderPassBeginInfo := createRenderPassBeginInfo(pRenderPassBegin)
     subpassBeginInfo := createSubpassBeginInfoFromInfo(pSubpassBeginInfo)
 
-    args := new!vkCmdBeginRenderPassCommonArgs(
+    args := new!vkCmdBeginRenderPassXArgs(
       RenderPassBeginInfo: renderPassBeginInfo,
       SubpassBeginInfo: subpassBeginInfo,
       Version: RenderPass2,
@@ -659,7 +659,7 @@ cmd void vkCmdBeginRenderPass2(
 }
 
 @internal class
-vkCmdNextSubpassCommonArgs {
+vkCmdNextSubpassXArgs {
   ref!SubpassBeginInfo              SubpassBeginInfo
   ref!SubpassEndInfo                SubpassEndInfo
 
@@ -691,7 +691,7 @@ sub void transitionSubpassAttachmentLayouts(u32 subpass) {
   }
 }
 
-sub void dovkCmdNextSubpassCommon(ref!vkCmdNextSubpassCommonArgs Unused) {
+sub void dovkCmdNextSubpassCommon(ref!vkCmdNextSubpassXArgs Unused) {
   useRenderPass()
   ldi := lastDrawInfo()
   ldi.LastSubpass += 1
@@ -710,7 +710,7 @@ cmd void vkCmdNextSubpass(
 
     subpassBeginInfo := createSubpassBeginInfoFromContents(contents)
     subpassEndInfo := createSubpassEndInfo(null)
-    args := new!vkCmdNextSubpassCommonArgs(
+    args := new!vkCmdNextSubpassXArgs(
       SubpassBeginInfo: subpassBeginInfo,
       SubpassEndInfo: subpassEndInfo,
       Version: RenderPass,
@@ -736,7 +736,7 @@ cmd void vkCmdNextSubpass2(
 
     subpassBeginInfo := createSubpassBeginInfoFromInfo(pSubpassBeginInfo)
     subpassEndInfo := createSubpassEndInfo(pSubpassEndInfo)
-    args := new!vkCmdNextSubpassCommonArgs(
+    args := new!vkCmdNextSubpassXArgs(
       SubpassBeginInfo: subpassBeginInfo,
       SubpassEndInfo: subpassEndInfo,
       Version: RenderPass2,
@@ -750,13 +750,13 @@ cmd void vkCmdNextSubpass2(
 }
 
 @internal class
-vkCmdEndRenderPassCommonArgs {
+vkCmdEndRenderPassXArgs {
   ref!SubpassEndInfo SubpassEndInfo
   // internal
   RenderPassVersion Version
 }
 
-sub void dovkCmdEndRenderPassCommon(ref!vkCmdEndRenderPassCommonArgs unused) {
+sub void dovkCmdEndRenderPassCommon(ref!vkCmdEndRenderPassXArgs unused) {
   ldi := lastDrawInfo()
   attachmentDescriptions := ldi.RenderPass.AttachmentDescriptions
   n := len(attachmentDescriptions)
@@ -799,7 +799,7 @@ cmd void vkCmdEndRenderPass(
     recordEndRenderpass(cmdBuf)
 
     subpassEndInfo := createSubpassEndInfo(null)
-    args := new!vkCmdEndRenderPassCommonArgs(
+    args := new!vkCmdEndRenderPassXArgs(
       SubpassEndInfo: subpassEndInfo,
       Version: RenderPass,
     )
@@ -823,7 +823,7 @@ cmd void vkCmdEndRenderPass2(
       recordEndRenderpass(cmdBuf)
 
       subpassEndInfo := createSubpassEndInfo(pSubpassEndInfo)
-      args := new!vkCmdEndRenderPassCommonArgs(
+      args := new!vkCmdEndRenderPassXArgs(
         SubpassEndInfo: subpassEndInfo,
         Version: RenderPass2,
       )
