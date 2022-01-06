@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Google Inc.
+ * Copyright (C) 2022 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,6 @@ package com.google.gapid.views;
 
 import static com.google.gapid.util.Logging.throttleLogRpcError;
 import static com.google.gapid.widgets.Widgets.createLink;
-import static com.google.gapid.widgets.Widgets.withLayoutData;
-import static com.google.gapid.widgets.Widgets.createGroup;
-import static com.google.gapid.widgets.Widgets.createComposite;
-import static com.google.gapid.widgets.Widgets.createTextbox;
 import static java.util.logging.Level.WARNING;
 
 import com.google.gapid.models.Devices.DeviceValidationResult;
@@ -34,22 +30,16 @@ import com.google.gapid.rpc.SingleInFlight;
 import com.google.gapid.rpc.UiErrorCallback;
 import com.google.gapid.widgets.LoadingIndicator;
 import com.google.gapid.widgets.Widgets;
-import com.google.gapid.widgets.Theme;
 import com.google.gapid.util.Messages;
 import com.google.gapid.util.URLs;
 
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.swt.program.Program;
-import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Link;
 import org.eclipse.swt.widgets.Text;
-import org.eclipse.swt.widgets.Group;
-import org.eclipse.swt.widgets.ExpandBar;
-import org.eclipse.swt.widgets.ExpandItem;
 import org.eclipse.swt.SWT;
 
 import java.util.concurrent.ExecutionException;
