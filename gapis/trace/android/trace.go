@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/fs"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -65,7 +66,7 @@ const (
 	durationMs                              = 7000
 	gpuCountersDataSourceDescriptorName     = "gpu.counters"
 	gpuRenderStagesDataSourceDescriptorName = "gpu.renderstages"
-	minimumSupportedApiLevel                = 29
+	minimumSupportedApiLevel                = 19
 )
 
 // Only update the package list every 30 seconds at most
@@ -215,6 +216,8 @@ func (t *androidTracer) Validate(ctx context.Context) *service.ValidateDeviceRes
 
 	var buf bytes.Buffer
 	var written int64
+	timeout := false
+
 	// Start to capture.
 	status.Do(ctx, "Tracing", func(ctx context.Context) {
 		startSignal, startFunc := task.NewSignal()
@@ -232,16 +235,18 @@ func (t *androidTracer) Validate(ctx context.Context) *service.ValidateDeviceRes
 
 		startFunc(ctx)
 		if !doneSignal.Wait(ctx) {
-			err = log.Err(ctx, err, "Fail to wait for done signal from Perfetto.")
+			err = log.Err(ctx, err, "Failed to wait for done signal from Perfetto.")
+			timeout = true
 		}
 		log.I(ctx, "Perfetto trace size %v bytes", written)
 	})
-	if err != nil {
+	if timeout == true {
 		return &service.ValidateDeviceResponse{
 			Error: service.NewError(err),
 		}
 	}
 
+	// Attempt to download perfetto trace.
 	res := &service.ValidateDeviceResponse{}
 	temp, err := file.TempWithExt("validation", "perfetto")
 	if err != nil {
@@ -251,23 +256,39 @@ func (t *androidTracer) Validate(ctx context.Context) *service.ValidateDeviceRes
 
 	var processor *perfetto.Processor
 	status.Do(ctx, "Trace loading", func(ctx context.Context) {
-		out, err := os.Open(temp.System())
+		processor, err = perfetto.NewProcessor(ctx, buf.Bytes())
 		if err != nil {
-			res.DownloadError = service.NewError(err)
-		} else {
-			out.Write(buf.Bytes())
-			out.Close()
-			res.TracePath = temp.System()
+			log.Err(ctx, err, "Failed to initialize the perfetto processor")
+			res.Error = service.NewError(err)
 		}
 
-		processor, err = perfetto.NewProcessor(ctx, buf.Bytes())
-	})
-	if err != nil {
-		return &service.ValidateDeviceResponse{
-			Error: service.NewError(err),
+		// Skip loading trace to temp file if couldn't create temp file.
+		if res.DownloadError != nil {
+			return
 		}
+
+		file, err := os.OpenFile(temp.System(), os.O_APPEND|os.O_WRONLY, fs.ModeAppend)
+		if err != nil {
+			log.Err(ctx, err, "Failed to open temp file")
+			res.DownloadError = service.NewError(err)
+			return
+		}
+		defer file.Close()
+
+		numWritten, err := file.Write(buf.Bytes())
+		if err != nil {
+			log.Err(ctx, err, "Failed to write trace to temp file")
+			res.DownloadError = service.NewError(err)
+			return
+		}
+		log.I(ctx, "Writing trace size %v bytes to %v", numWritten, file.Name())
+		res.TracePath = temp.System()
+	})
+	if res.Error != nil {
+		return res
 	}
 	defer processor.Close()
+
 	ctx = status.Start(ctx, "Validation")
 	defer status.Finish(ctx)
 
