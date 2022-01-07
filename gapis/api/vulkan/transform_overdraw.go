@@ -2834,7 +2834,7 @@ func createSpecializationInfo(ctx context.Context,
 
 func subpassToSubpassDescription(
 	inputState *api.GlobalState,
-	subpass SubpassDescription2,
+	subpass SubpassDescription,
 	attachRefPtr memory.Pointer,
 	allocAndRead func(v ...interface{}) api.AllocResult,
 ) VkSubpassDescription {
