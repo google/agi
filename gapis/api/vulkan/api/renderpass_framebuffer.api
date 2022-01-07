@@ -400,7 +400,12 @@ sub ref!RenderPassObject createRenderPassObjectFromInfo2(
     }
   }
 
-  // We do not support any extension for this functionality yet.
+  if info.pNext != null {
+    // We do not support any extension for this functionality.
+    next := MutableVoidPtr(as!void*(info.pNext))
+    sType := as!const VkStructureType*(next.Ptr)[0]
+    vkErrorUnrecognizedExtensionPNext(sType)
+  }
 
   return renderPass
 }
@@ -583,14 +588,29 @@ sub ref!SubpassBeginInfo createSubpassBeginInfoFromContents(VkSubpassContents co
 
 sub ref!SubpassBeginInfo createSubpassBeginInfoFromInfo(const VkSubpassBeginInfo* pSubpassBeginInfo) {
   info := pSubpassBeginInfo[0]
-  // We do not support any extension for this functionality.
+
+  if info.pNext != null {
+    // We do not support any extension for this functionality.
+    next := MutableVoidPtr(as!void*(info.pNext))
+    sType := as!const VkStructureType*(next.Ptr)[0]
+    vkErrorUnrecognizedExtensionPNext(sType)
+  }
+
   return new!SubpassBeginInfo(
     Contents: info.contents,
   )
 }
 
-sub ref!SubpassEndInfo createSubpassEndInfo(const VkSubpassEndInfo* pSubpassEnd) {
-  _ = pSubpassEnd // this struct is empty and we do not support any extension for this struct
+sub ref!SubpassEndInfo createSubpassEndInfo(const VkSubpassEndInfo* pSubpassEndInfo) {
+  info := pSubpassEndInfo[0]
+
+  if info.pNext != null {
+    // We do not support any extension for this functionality.
+    next := MutableVoidPtr(as!void*(info.pNext))
+    sType := as!const VkStructureType*(next.Ptr)[0]
+    vkErrorUnrecognizedExtensionPNext(sType)
+  }
+
   return new!SubpassEndInfo()
 }
 

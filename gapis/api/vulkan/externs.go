@@ -299,6 +299,14 @@ func (e externs) vkErrUnrecognizedExtension(name string) {
 	e.onVkError(issue)
 }
 
+func (e externs) vkErrUnrecognizedExtensionPNext(sType uint32) {
+	var issue replay.Issue
+	issue.Command = e.cmdID
+	issue.Severity = service.Severity_ErrorLevel
+	issue.Error = fmt.Errorf("Unsupported extension structure type : %v", sType)
+	e.onVkError(issue)
+}
+
 func (e externs) vkErrExpectNVDedicatedlyAllocatedHandle(handleType string, handle uint64) {
 	var issue replay.Issue
 	issue.Command = e.cmdID
