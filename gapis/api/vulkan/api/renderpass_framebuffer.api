@@ -296,7 +296,7 @@ sub ref!RenderPassObject createRenderPassObjectFromInfo(
             // TODO: Once the CL that enables us getting used descriptors from shader is in,
             // we can pull input_attachment_index from the information of the used descriptors
             // then use the input attachment aspect info to fix the dependency.
-            aspectReference := ext.pAspectReferences[0]
+            aspectReference := ext.pAspectReferences[j]
             subPassIndex := aspectReference.subpass
             attachmentIndex := aspectReference.inputAttachmentIndex
 
