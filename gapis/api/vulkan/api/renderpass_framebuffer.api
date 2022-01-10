@@ -288,6 +288,7 @@ sub ref!RenderPassObject createRenderPassObjectFromInfo(
         case VK_STRUCTURE_TYPE_RENDER_PASS_INPUT_ATTACHMENT_ASPECT_CREATE_INFO: {
           ext := as!VkRenderPassInputAttachmentAspectCreateInfo*(next.Ptr)[0]
 
+          aspectReferences := ext.pAspectReferences[0:ext.aspectReferenceCount]
           for j in (0 .. ext.aspectReferenceCount) {
             // The input attachment aspect info is only cached but not used for now, so the
             // dependency can be wrong as a draw call may depends on just one aspect of a
@@ -296,7 +297,7 @@ sub ref!RenderPassObject createRenderPassObjectFromInfo(
             // TODO: Once the CL that enables us getting used descriptors from shader is in,
             // we can pull input_attachment_index from the information of the used descriptors
             // then use the input attachment aspect info to fix the dependency.
-            aspectReference := ext.pAspectReferences[j]
+            aspectReference := aspectReferences[j]
             subPassIndex := aspectReference.subpass
             attachmentIndex := aspectReference.inputAttachmentIndex
 
