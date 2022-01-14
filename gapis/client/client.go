@@ -577,7 +577,7 @@ func (c *client) PerfettoQuery(ctx context.Context, capture *path.Capture, query
 	return res.GetResult(), nil
 }
 
-func (c *client) ValidateDevice(ctx context.Context, device *path.Device) (*service.ValidateDeviceResponse, error) {
+func (c *client) ValidateDevice(ctx context.Context, device *path.Device) (*service.DeviceValidationResult, error) {
 	res, err := c.client.ValidateDevice(ctx, &service.ValidateDeviceRequest{
 		Device: device,
 	})
@@ -587,7 +587,11 @@ func (c *client) ValidateDevice(ctx context.Context, device *path.Device) (*serv
 	if err := res.GetError(); err != nil {
 		return nil, err.Get()
 	}
-	return res, nil
+	return &service.DeviceValidationResult{
+		Error:         res.Error,
+		DownloadError: res.DownloadError,
+		TracePath:     res.TracePath,
+	}, nil
 }
 
 func (c *client) InstallApp(ctx context.Context, d *path.Device, app string) error {

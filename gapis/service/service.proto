@@ -1481,13 +1481,13 @@ message ValidateDeviceRequest {
 }
 
 message ValidateDeviceResponse {
-  // Error in validating device.
+  // Error from obtaining the trace or from validiting the device.
   Error error = 1;
 
-  // Error from downloading trace file.
+  // Error creating temp file or from copying trace to temp file.
   Error download_error = 2;
 
-  // Path to the perfetto trace file.
+  // Path to the perfetto trace file to help debug validation issues.
   string trace_path = 3;
 }
 

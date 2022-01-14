@@ -66,7 +66,7 @@ const (
 	durationMs                              = 7000
 	gpuCountersDataSourceDescriptorName     = "gpu.counters"
 	gpuRenderStagesDataSourceDescriptorName = "gpu.renderstages"
-	minimumSupportedApiLevel                = 19
+	minimumSupportedApiLevel                = 29
 )
 
 // Only update the package list every 30 seconds at most
@@ -151,29 +151,29 @@ func (t *androidTracer) ProcessProfilingData(ctx context.Context, buffer *bytes.
 	return nil, log.Errf(ctx, nil, "Failed to process Perfetto trace for device %v", gpuName)
 }
 
-func (t *androidTracer) Validate(ctx context.Context) *service.ValidateDeviceResponse {
+func (t *androidTracer) Validate(ctx context.Context, enableLocalFiles bool) *service.DeviceValidationResult {
 	ctx = status.Start(ctx, "Android Device Validation")
 	defer status.Finish(ctx)
 
 	if t.v == nil {
-		return &service.ValidateDeviceResponse{
+		return &service.DeviceValidationResult{
 			Error: service.NewError(log.Errf(ctx, nil, "No validator found for device %d", t.b.Instance().ID.ID())),
 		}
 	}
 	d := t.b.(adb.Device)
 	osConfiguration := d.Instance().GetConfiguration()
 	if osConfiguration.GetOS().GetAPIVersion() < minimumSupportedApiLevel {
-		return &service.ValidateDeviceResponse{
+		return &service.DeviceValidationResult{
 			Error: service.NewError(log.Errf(ctx, nil, "Unsupported OS version on device %d", d.Instance().ID.ID())),
 		}
 	}
 	if osConfiguration.GetPerfettoCapability() == nil {
-		return &service.ValidateDeviceResponse{
+		return &service.DeviceValidationResult{
 			Error: service.NewError(log.Errf(ctx, nil, "No Perfetto Capability found on device %d", d.Instance().ID.ID())),
 		}
 	}
 	if gpuProfiling := osConfiguration.GetPerfettoCapability().GetGpuProfiling(); gpuProfiling == nil || gpuProfiling.GetGpuCounterDescriptor() == nil {
-		return &service.ValidateDeviceResponse{
+		return &service.DeviceValidationResult{
 			Error: service.NewError(log.Errf(ctx, nil, "No GPU profiling capabilities found on device %d", d.Instance().ID.ID())),
 		}
 	}
@@ -183,13 +183,13 @@ func (t *androidTracer) Validate(ctx context.Context) *service.ValidateDeviceRes
 	packages, _ := d.InstalledPackages(ctx)
 	pkg := packages.FindByName(gapidPackage)
 	if pkg == nil {
-		return &service.ValidateDeviceResponse{
+		return &service.DeviceValidationResult{
 			Error: service.NewError(log.Errf(ctx, nil, "Package %v not found", gapidPackage)),
 		}
 	}
 	activityAction := pkg.ActivityActions.FindByName(intentAction, activityName)
 	if activityAction == nil {
-		return &service.ValidateDeviceResponse{
+		return &service.DeviceValidationResult{
 			Error: service.NewError(log.Errf(ctx, nil, "Activity %v not found in %v", activityName, gapidPackage)),
 		}
 	}
@@ -197,14 +197,14 @@ func (t *androidTracer) Validate(ctx context.Context) *service.ValidateDeviceRes
 	// Construct trace config
 	traceOpts, err := deviceValidationTraceOptions(ctx, t.v)
 	if err != nil {
-		return &service.ValidateDeviceResponse{
+		return &service.DeviceValidationResult{
 			Error: service.NewError(log.Err(ctx, err, "Could not get the trace configuration")),
 		}
 	}
 	process, cleanup, err := perfetto_android.Start(ctx, d, activityAction, traceOpts, nil, []string{})
 	if err != nil {
 		cleanup.Invoke(ctx)
-		return &service.ValidateDeviceResponse{
+		return &service.DeviceValidationResult{
 			Error: service.NewError(log.Err(ctx, err, "Error when start Perfetto tracing.")),
 		}
 	}
@@ -216,7 +216,6 @@ func (t *androidTracer) Validate(ctx context.Context) *service.ValidateDeviceRes
 
 	var buf bytes.Buffer
 	var written int64
-	timeout := false
 
 	// Start to capture.
 	status.Do(ctx, "Tracing", func(ctx context.Context) {
@@ -236,22 +235,24 @@ func (t *androidTracer) Validate(ctx context.Context) *service.ValidateDeviceRes
 		startFunc(ctx)
 		if !doneSignal.Wait(ctx) {
 			err = log.Err(ctx, err, "Failed to wait for done signal from Perfetto.")
-			timeout = true
 		}
 		log.I(ctx, "Perfetto trace size %v bytes", written)
 	})
-	if timeout == true {
-		return &service.ValidateDeviceResponse{
+	if err != nil {
+		return &service.DeviceValidationResult{
 			Error: service.NewError(err),
 		}
 	}
 
 	// Attempt to download perfetto trace.
-	res := &service.ValidateDeviceResponse{}
-	temp, err := file.TempWithExt("validation", "perfetto")
-	if err != nil {
-		log.Err(ctx, err, "Failed to create a temp file for trace")
-		res.DownloadError = service.NewError(err)
+	res := &service.DeviceValidationResult{}
+	var temp file.Path
+	if enableLocalFiles {
+		temp, err = file.TempWithExt("validation", "perfetto")
+		if err != nil {
+			log.Err(ctx, err, "Failed to create a temp file for trace")
+			res.DownloadError = service.NewError(err)
+		}
 	}
 
 	var processor *perfetto.Processor
@@ -263,7 +264,7 @@ func (t *androidTracer) Validate(ctx context.Context) *service.ValidateDeviceRes
 		}
 
 		// Skip loading trace to temp file if couldn't create temp file.
-		if res.DownloadError != nil {
+		if res.DownloadError != nil || !enableLocalFiles {
 			return
 		}
 
