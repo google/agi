@@ -446,11 +446,18 @@ sub ref!RenderPassObject createRenderPassObjectFromInfo2(
     }
   }
 
+  // This looks like it doesn't do anything but in reality
+  // it generates a switch statement with a default case that
+  // returns error.
   if info.pNext != null {
-    // We do not support any extension for this functionality.
+    numPNext := numberOfPNext(info.pNext)
     next := MutableVoidPtr(as!void*(info.pNext))
-    sType := as!const VkStructureType*(next.Ptr)[0]
-    vkErrorUnrecognizedExtensionPNext(sType)
+    for i in (0 .. numPNext) {
+      sType := as!const VkStructureType*(next.Ptr)[0]
+      switch (sType) {
+      }
+      next.Ptr = as!VulkanStructHeader*(next.Ptr)[0].PNext
+    }
   }
 
   return renderPass
@@ -635,11 +642,18 @@ sub ref!SubpassBeginInfo createSubpassBeginInfoFromContents(VkSubpassContents co
 sub ref!SubpassBeginInfo createSubpassBeginInfoFromInfo(const VkSubpassBeginInfo* pSubpassBeginInfo) {
   info := pSubpassBeginInfo[0]
 
+  // This looks like it doesn't do anything but in reality
+  // it generates a switch statement with a default case that
+  // returns error.
   if info.pNext != null {
-    // We do not support any extension for this functionality.
+    numPNext := numberOfPNext(info.pNext)
     next := MutableVoidPtr(as!void*(info.pNext))
-    sType := as!const VkStructureType*(next.Ptr)[0]
-    vkErrorUnrecognizedExtensionPNext(sType)
+    for i in (0 .. numPNext) {
+      sType := as!const VkStructureType*(next.Ptr)[0]
+      switch (sType) {
+      }
+      next.Ptr = as!VulkanStructHeader*(next.Ptr)[0].PNext
+    }
   }
 
   return new!SubpassBeginInfo(
@@ -648,15 +662,23 @@ sub ref!SubpassBeginInfo createSubpassBeginInfoFromInfo(const VkSubpassBeginInfo
 }
 
 sub ref!SubpassEndInfo createSubpassEndInfo(const VkSubpassEndInfo* pSubpassEndInfo) {
-  info := pSubpassEndInfo[0]
+  if pSubpassEndInfo != null {
+    info := pSubpassEndInfo[0]
 
-  if info.pNext != null {
-    // We do not support any extension for this functionality.
-    next := MutableVoidPtr(as!void*(info.pNext))
-    sType := as!const VkStructureType*(next.Ptr)[0]
-    vkErrorUnrecognizedExtensionPNext(sType)
+    // This looks like it doesn't do anything but in reality
+    // it generates a switch statement with a default case that
+    // returns error.
+    if info.pNext != null {
+      numPNext := numberOfPNext(info.pNext)
+      next := MutableVoidPtr(as!void*(info.pNext))
+      for i in (0 .. numPNext) {
+        sType := as!const VkStructureType*(next.Ptr)[0]
+        switch (sType) {
+        }
+        next.Ptr = as!VulkanStructHeader*(next.Ptr)[0].PNext
+      }
+    }
   }
-
   return new!SubpassEndInfo()
 }
 

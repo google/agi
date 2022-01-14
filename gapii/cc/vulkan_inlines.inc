@@ -37,10 +37,6 @@ inline void VulkanSpy::vkErrUnrecognizedExtension(CallObserver*, std::string nam
     GAPID_WARNING("Error: Unrecognized extension: %s", name.c_str())
 }
 
-inline void VulkanSpy::vkErrUnrecognizedExtensionPNext(CallObserver*, uint32_t sType) {
-    GAPID_WARNING("Error: Unrecognized extension PNext: %d", sType)
-}
-
 inline void VulkanSpy::vkErrExpectNVDedicatedlyAllocatedHandle(CallObserver*, std::string handleType, uint64_t handle) {
     GAPID_DEBUG("Error: Expected handle that was allocated with a dedicated allocation: %s: %" PRIu64, handleType.c_str(), handle)
 }

@@ -43,7 +43,6 @@ extern void vkErrNullPointer(string pointerType)
 extern void vkErrUnsupported(string pointerType)
 extern void vkErrNotNullPointer(string pointerType)
 extern void vkErrUnrecognizedExtension(string name)
-extern void vkErrUnrecognizedExtensionPNext(u32 sType)
 extern void vkErrExpectNVDedicatedlyAllocatedHandle(string handleType, u64 handle)
 extern void vkErrInvalidDescriptorArrayElement(u64 set, u32 binding, u32 arrayIndex)
 extern void vkErrInvalidDescriptorBindingType(VkDescriptorSet set, u32 binding, VkDescriptorType layoutType, VkDescriptorType updateType)
@@ -250,11 +249,6 @@ sub void vkErrorNotNullPointer(string pointerType) {
 sub void vkErrorUnrecognizedExtension(const char* name) {
   vkErrUnrecognizedExtension(as!string(name))
   // Continue the mutation as this may not cause problem.
-}
-
-sub void vkErrorUnrecognizedExtensionPNext(VkStructureType sType) {
-  vkErrUnrecognizedExtensionPNext(as!u32(sType))
-  abort
 }
 
 sub void vkErrorExpectNVDedicatedlyAllocatedHandle(string handleType, u64 handle) {
