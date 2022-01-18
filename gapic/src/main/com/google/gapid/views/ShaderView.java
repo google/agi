@@ -73,7 +73,6 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
-import java.util.Arrays;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Logger;
@@ -307,9 +306,7 @@ public class ShaderView extends Composite
           sourceTab.setText(shaderMessage.getSourceLanguage());
         }
       } else if (sourceTab != null) {
-        if (Arrays.asList(tabFolder.getSelection()).contains(sourceTab)) {
-          tabFolder.setSelection(spirvTab);
-        }
+        tabFolder.setSelection(spirvTab);
         sourceTab.dispose();
         sourceTab = null;
       }
