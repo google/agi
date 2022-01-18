@@ -73,6 +73,7 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Logger;
@@ -128,6 +129,7 @@ public class ShaderView extends Composite
     private final SourceViewer spirvViewer;
     private final SourceViewer sourceViewer;
     private final Optional<Button> pushButton;
+    private TabItem spirvTab;
     private TabItem sourceTab;
     private Service.Resource shaderResource = null;
     private API.Shader shaderMessage = null;
@@ -176,7 +178,7 @@ public class ShaderView extends Composite
           spirvViewer.doOperation(ITextOperationTarget.REDO);
         }
       });
-      createStandardTabItem(tabFolder, "SPIR-V", spirvViewer.getControl());
+      spirvTab = createStandardTabItem(tabFolder, "SPIR-V", spirvViewer.getControl());
 
       sourceContainer = createComposite(
           tabFolder, withMargin(new GridLayout(1, false), 0, 0), SWT.NONE);
@@ -305,6 +307,9 @@ public class ShaderView extends Composite
           sourceTab.setText(shaderMessage.getSourceLanguage());
         }
       } else if (sourceTab != null) {
+        if (Arrays.asList(tabFolder.getSelection()).contains(sourceTab)) {
+          tabFolder.setSelection(spirvTab);
+        }
         sourceTab.dispose();
         sourceTab = null;
       }
