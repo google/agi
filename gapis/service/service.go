@@ -50,13 +50,13 @@ const (
 // Internal device validation metadata that mirrors the one in the proto file.
 type DeviceValidationResult struct {
 	// Error from obtaining the trace or from validiting the device.
-	Error         *Error
+	Error *Error
 
 	// Error creating temp file or from copying trace to temp file.
 	DownloadError *Error
 
 	// Path to the perfetto trace file to help debug validation issues.
-	TracePath     string
+	TracePath string
 }
 
 type Service interface {
