@@ -47,18 +47,6 @@ const (
 	Severity_FatalLevel   Severity = 5
 )
 
-// Internal device validation metadata that mirrors the one in the proto file.
-type DeviceValidationResult struct {
-	// Error from obtaining the trace or from validiting the device.
-	Error *Error
-
-	// Error creating temp file or from copying trace to temp file.
-	DownloadError *Error
-
-	// Path to the perfetto trace file to help debug validation issues.
-	TracePath string
-}
-
 type Service interface {
 	// Ping is a no-op function that returns immediately.
 	// It can be used to measure connection latency or to keep the

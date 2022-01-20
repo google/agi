@@ -587,11 +587,7 @@ func (c *client) ValidateDevice(ctx context.Context, device *path.Device) (*serv
 	if err := res.GetError(); err != nil {
 		return nil, err.Get()
 	}
-	return &service.DeviceValidationResult{
-		Error:         res.Error,
-		DownloadError: res.DownloadError,
-		TracePath:     res.TracePath,
-	}, nil
+	return res.GetResult(), nil
 }
 
 func (c *client) InstallApp(ctx context.Context, d *path.Device, app string) error {

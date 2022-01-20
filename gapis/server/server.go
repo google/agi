@@ -907,7 +907,7 @@ func (s *server) ValidateDevice(ctx context.Context, d *path.Device) (*service.D
 	ctx = status.Start(ctx, "RPC ValidateDevice")
 	defer status.Finish(ctx)
 	ctx = log.Enter(ctx, "ValidateDevice")
-	return trace.Validate(ctx, d, s.enableLocalFiles), nil
+	return trace.Validate(ctx, d, s.enableLocalFiles)
 }
 
 func (s *server) InstallApp(ctx context.Context, d *path.Device, app string) error {

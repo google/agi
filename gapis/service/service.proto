@@ -1481,14 +1481,19 @@ message ValidateDeviceRequest {
 }
 
 message ValidateDeviceResponse {
-  // Error from obtaining the trace or from validiting the device.
-  Error error = 1;
+  reserved 1;
+  oneof res {
+    DeviceValidationResult result = 2;
+    Error error = 3;
+  }
+}
 
-  // Error creating temp file or from copying trace to temp file.
-  Error download_error = 2;
+message DeviceValidationResult {
+  // Error from validiting the device.
+  string validation_error_msg = 1;
 
   // Path to the perfetto trace file to help debug validation issues.
-  string trace_path = 3;
+  string trace_path = 2;
 }
 
 message FuchsiaTraceConfig {

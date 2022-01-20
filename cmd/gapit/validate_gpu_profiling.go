@@ -51,9 +51,13 @@ func (verb *validateGpuProfilingVerb) Run(ctx context.Context, flags flag.FlagSe
 	someDeviceFailed := false
 	for i, p := range devices {
 		fmt.Fprintf(stdout, "-- Device %v: %v --\n", i, p.ID.ID())
-		_, err := client.ValidateDevice(ctx, p)
+		res, err := client.ValidateDevice(ctx, p)
 		if err != nil {
 			fmt.Fprintf(stdout, "%v\n", log.Err(ctx, err, "Failed to validate device"))
+			someDeviceFailed = true
+			continue
+		} else if len(res.ValidationErrorMsg) > 0 {
+			fmt.Fprintf(stdout, "%v\n", log.Errf(ctx, nil, "Failed to validate device: %s", res.ValidationErrorMsg))
 			someDeviceFailed = true
 			continue
 		}
