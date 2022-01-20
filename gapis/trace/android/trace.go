@@ -161,8 +161,6 @@ func (t *androidTracer) Validate(ctx context.Context, enableLocalFiles bool) (*s
 	d := t.b.(adb.Device)
 	osConfiguration := d.Instance().GetConfiguration()
 	if osConfiguration.GetOS().GetAPIVersion() < minimumSupportedApiLevel {
-		return nil, log.Errf(ctx, nil, "No validator found for device %d", t.b.Instance().ID.ID())
-
 		return &service.DeviceValidationResult{
 			ValidationErrorMsg: fmt.Sprintf("Unsupported OS version on device %d", d.Instance().ID.ID()),
 		}, nil
