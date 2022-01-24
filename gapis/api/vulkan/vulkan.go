@@ -549,7 +549,7 @@ func (API) ResolveSynchronization(ctx context.Context, d *sync.Data, c *path.Cap
 						Framebuffer:   args.RenderPassBeginInfo().Framebuffer().Handle(),
 					}
 					renderPassStart = append(api.SubCmdIdx{}, nv...)
-				case VkCmdNextSubpassXArgsʳ:
+				case VkCmdEndRenderPassXArgsʳ:
 					d.RenderPassLookup.AddRenderPass(ctx, renderPassKey, sync.SubCmdRange{renderPassStart, nv})
 				}
 			}
