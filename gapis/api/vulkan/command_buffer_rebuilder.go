@@ -168,7 +168,7 @@ func allocateNewCmdBufFromExistingOneAndBegin(
 	return newCmdBufID, x, cleanup
 }
 
-func rebuildVkCmdBeginRenderPassCommon(
+func rebuildVkCmdBeginRenderPassX(
 	ctx context.Context,
 	cb CommandBuilder,
 	commandBuffer VkCommandBuffer,
@@ -293,7 +293,7 @@ func rebuildVkCmdBeginRenderPass2KHR(
 	return cleanup, cmd, nil
 }
 
-func rebuildVkCmdEndRenderPassCommon(
+func rebuildVkCmdEndRenderPassX(
 	ctx context.Context,
 	cb CommandBuilder,
 	commandBuffer VkCommandBuffer,
@@ -380,7 +380,7 @@ func rebuildVkCmdEndRenderPass2KHR(
 	return cleanup, cmd, nil
 }
 
-func rebuildVkCmdNextSubpassCommon(
+func rebuildVkCmdNextSubpassX(
 	ctx context.Context,
 	cb CommandBuilder,
 	commandBuffer VkCommandBuffer,
@@ -2057,11 +2057,11 @@ func GetCommandArgs(ctx context.Context,
 func GetCommandFunction(cr *CommandReference) interface{} {
 	switch cr.Type() {
 	case CommandType_cmd_vkCmdBeginRenderPass:
-		return subDovkCmdBeginRenderPassCommon
+		return subDovkCmdBeginRenderPassX
 	case CommandType_cmd_vkCmdEndRenderPass:
-		return subDovkCmdEndRenderPassCommon
+		return subDovkCmdEndRenderPassX
 	case CommandType_cmd_vkCmdNextSubpass:
-		return subDovkCmdNextSubpassCommon
+		return subDovkCmdNextSubpassX
 	case CommandType_cmd_vkCmdBindPipeline:
 		return subDovkCmdBindPipeline
 	case CommandType_cmd_vkCmdBindDescriptorSets:
@@ -2174,11 +2174,11 @@ func GetCommandFunction(cr *CommandReference) interface{} {
 		return subDovkCmdDispatchBase
 	// Vulkan 1.2
 	case CommandType_cmd_vkCmdBeginRenderPass2:
-		return subDovkCmdBeginRenderPassCommon
+		return subDovkCmdBeginRenderPassX
 	case CommandType_cmd_vkCmdEndRenderPass2:
-		return subDovkCmdEndRenderPassCommon
+		return subDovkCmdEndRenderPassX
 	case CommandType_cmd_vkCmdNextSubpass2:
-		return subDovkCmdNextSubpassCommon
+		return subDovkCmdNextSubpassX
 	// @extension("VK_EXT_transform_refactor")
 	case CommandType_cmd_vkCmdBindTransformFeedbackBuffersEXT:
 		return subDovkCmdBindTransformFeedbackBuffersEXT
@@ -2194,11 +2194,11 @@ func GetCommandFunction(cr *CommandReference) interface{} {
 		return subDovkCmdDrawIndirectByteCountEXT
 	// @extension("VK_KHR_create_renderpass2")
 	case CommandType_cmd_vkCmdBeginRenderPass2KHR:
-		return subDovkCmdBeginRenderPassCommon
+		return subDovkCmdBeginRenderPassX
 	case CommandType_cmd_vkCmdEndRenderPass2KHR:
-		return subDovkCmdEndRenderPassCommon
+		return subDovkCmdEndRenderPassX
 	case CommandType_cmd_vkCmdNextSubpass2KHR:
-		return subDovkCmdNextSubpassCommon
+		return subDovkCmdNextSubpassX
 	default:
 		x := fmt.Sprintf("Should not reach here: %T", cr)
 		panic(x)
@@ -2218,11 +2218,11 @@ func AddCommand(ctx context.Context,
 
 	switch t := rebuildInfo.(type) {
 	case VkCmdBeginRenderPassXArgsʳ:
-		return rebuildVkCmdBeginRenderPassCommon(ctx, cb, commandBuffer, r, s, t)
+		return rebuildVkCmdBeginRenderPassX(ctx, cb, commandBuffer, r, s, t)
 	case VkCmdEndRenderPassXArgsʳ:
-		return rebuildVkCmdEndRenderPassCommon(ctx, cb, commandBuffer, r, s, t)
+		return rebuildVkCmdEndRenderPassX(ctx, cb, commandBuffer, r, s, t)
 	case VkCmdNextSubpassXArgsʳ:
-		return rebuildVkCmdNextSubpassCommon(ctx, cb, commandBuffer, r, s, t)
+		return rebuildVkCmdNextSubpassX(ctx, cb, commandBuffer, r, s, t)
 	case VkCmdBindPipelineArgsʳ:
 		return rebuildVkCmdBindPipeline(ctx, cb, commandBuffer, r, s, t)
 	case VkCmdBindDescriptorSetsArgsʳ:

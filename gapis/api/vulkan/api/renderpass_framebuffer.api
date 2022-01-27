@@ -553,7 +553,7 @@ vkCmdBeginRenderPassXArgs {
   RenderPassVersion Version
 }
 
-sub void dovkCmdBeginRenderPassCommon(ref!vkCmdBeginRenderPassXArgs args) {
+sub void dovkCmdBeginRenderPassX(ref!vkCmdBeginRenderPassXArgs args) {
   renderPassBeginInfo := args.RenderPassBeginInfo
 
   ldi := lastDrawInfo()
@@ -787,7 +787,7 @@ sub void transitionSubpassAttachmentLayouts(u32 subpass) {
   }
 }
 
-sub void dovkCmdNextSubpassCommon(ref!vkCmdNextSubpassXArgs Unused) {
+sub void dovkCmdNextSubpassX(ref!vkCmdNextSubpassXArgs Unused) {
   useRenderPass()
   ldi := lastDrawInfo()
   ldi.LastSubpass += 1
@@ -852,7 +852,7 @@ vkCmdEndRenderPassXArgs {
   RenderPassVersion Version
 }
 
-sub void dovkCmdEndRenderPassCommon(ref!vkCmdEndRenderPassXArgs unused) {
+sub void dovkCmdEndRenderPassX(ref!vkCmdEndRenderPassXArgs unused) {
   ldi := lastDrawInfo()
   attachmentDescriptions := ldi.RenderPass.AttachmentDescriptions
   n := len(attachmentDescriptions)
