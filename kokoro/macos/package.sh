@@ -64,7 +64,7 @@ mv AGI.app/Contents/MacOS/jre/legal AGI.app/Contents/Resources/jre
 zip -r agi-$VERSION-macos.zip AGI.app
 
 # Make a dmg file.
-pip install --upgrade --user dmgbuild pyobjc-framework-Quartz
+python3 -m pip install --upgrade --user dmgbuild pyobjc-framework-Quartz
 cp "$SRC"/background*.png .
 cp "$SRC/dmg-settings.py" .
 # Path to dmgbuild must match where pip installs it
