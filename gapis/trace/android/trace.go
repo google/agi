@@ -162,17 +162,17 @@ func (t *androidTracer) Validate(ctx context.Context, enableLocalFiles bool) (*s
 	osConfiguration := d.Instance().GetConfiguration()
 	if osConfiguration.GetOS().GetAPIVersion() < minimumSupportedApiLevel {
 		return &service.DeviceValidationResult{
-			ValidationErrorMsg: fmt.Sprintf("Unsupported OS version on device %d", d.Instance().ID.ID()),
+			ValidationFailureMsg: fmt.Sprintf("Device OS (%d) is below the minimum supported version (API level) (%d)", osConfiguration.GetOS().GetAPIVersion(), minimumSupportedApiLevel),
 		}, nil
 	}
 	if osConfiguration.GetPerfettoCapability() == nil {
 		return &service.DeviceValidationResult{
-			ValidationErrorMsg: fmt.Sprintf("No Perfetto Capability found on device %d", d.Instance().ID.ID()),
+			ValidationFailureMsg: fmt.Sprintf("No Perfetto Capability found on device %d", d.Instance().ID.ID()),
 		}, nil
 	}
 	if gpuProfiling := osConfiguration.GetPerfettoCapability().GetGpuProfiling(); gpuProfiling == nil || gpuProfiling.GetGpuCounterDescriptor() == nil {
 		return &service.DeviceValidationResult{
-			ValidationErrorMsg: fmt.Sprintf("No GPU profiling capabilities found on device %d", d.Instance().ID.ID()),
+			ValidationFailureMsg: fmt.Sprintf("Device (%d) does not support GPU profiling or profiling support was not detected", d.Instance().ID.ID()),
 		}, nil
 	}
 
@@ -243,7 +243,6 @@ func (t *androidTracer) Validate(ctx context.Context, enableLocalFiles bool) (*s
 
 	var processor *perfetto.Processor
 	var traceLoadingErr error
-	res := &service.DeviceValidationResult{}
 	status.Do(ctx, "Trace loading", func(ctx context.Context) {
 		processor, err = perfetto.NewProcessor(ctx, buf.Bytes())
 		if err != nil {
@@ -264,9 +263,10 @@ func (t *androidTracer) Validate(ctx context.Context, enableLocalFiles bool) (*s
 			return
 		}
 		log.I(ctx, "Writing trace size %v bytes to %v", numWritten, file.Name())
-		res.TracePath = temp.System()
 	})
-
+	res := &service.DeviceValidationResult{
+		TracePath: temp.System(),
+	}
 	ctx = status.Start(ctx, "Validation")
 	if traceLoadingErr != nil {
 		return nil, traceLoadingErr
@@ -276,7 +276,7 @@ func (t *androidTracer) Validate(ctx context.Context, enableLocalFiles bool) (*s
 
 	err = t.v.Validate(ctx, processor)
 	if err != nil {
-		res.ValidationErrorMsg = err.Error()
+		res.ValidationFailureMsg = err.Error()
 	}
 
 	return res, nil
