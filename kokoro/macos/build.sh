@@ -20,6 +20,8 @@ BUILD_ROOT=$PWD
 SRC=$PWD/github/agi/
 CURL="curl -fksLS --http1.1 --retry 3"
 
+export JAVA_HOME=`/usr/libexec/java_home -v 1.8`
+
 # Setup the Android SDK and NDK.
 $CURL -O https://dl.google.com/android/repository/tools_r25.2.3-macosx.zip
 echo "593544d4ca7ab162705d0032fb0c0c88e75bd0f42412d09a1e8daa3394681dc6  tools_r25.2.3-macosx.zip" | shasum --check
