@@ -80,6 +80,11 @@ function run_bazel {
       $@
 }
 
+function bazel_shutdown {
+  $BUILD_ROOT/bazel/bin/bazel shutdown\
+      $@
+}
+
 # Build each API package separately first, as the go-compiler needs ~8GB of
 # RAM for each of the big API packages.
 run_bazel build //gapis/api/vulkan:go_default_library
@@ -93,3 +98,8 @@ run_bazel run //cmd/smoketests:smoketests -- --traces test/traces
 # Build the release packages.
 mkdir $BUILD_ROOT/out
 $SRC/kokoro/macos/package.sh $BUILD_ROOT/out
+
+# # We do not use bazelisk but we need to shut it down together with bazel and exit explicitly b/196832502
+bazel_shutdown
+bazelisk shutdown
+exit 0
