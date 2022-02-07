@@ -75,7 +75,12 @@ class BotUtil:
         '''Log and run an ADB command, returning a subprocess.CompletedProcess with output captured'''
         cmd = [self.adb_path] + args
         print('ADB command: ' + ' '.join(cmd), flush=True)
-        return subprocess.run(cmd, timeout=timeout, check=True, capture_output=True, text=True)
+        p = subprocess.run(cmd, timeout=timeout, capture_output=True, text=True)
+        if p.returncode:
+            print('ADB command failed: {}, stdout:\n{}\nstderr:\n{}'.format(p.returncode, p.stdout, p.stderr))
+            p.check_returncode() # raises an error
+        return p
+
 
     def set_gapit_path(self, gapit_path):
         '''Set path to gapit, must be called once before gapit() can be used.'''
