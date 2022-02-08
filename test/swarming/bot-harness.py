@@ -77,9 +77,10 @@ def main():
 
     #### Check Android device access
     # This first adb command may take a while if the adb deamon has to launch
-    p = bu.adb(['reconnect'], timeout=10)
-    print('Connect output: {}{}'.format(p.stdout, p.stderr))
-    bu.adb(['shell', 'true'], timeout=10)
+    bu.adb(['kill-server'], timeout=10)
+    p = bu.adb(['devices'], timeout=10)
+    print('Devices output: {}{}'.format(p.stdout, p.stderr))
+    bu.adb(['shell', 'true'])
     # Print device fingerprint
     p = bu.adb(['shell', 'getprop', 'ro.build.fingerprint'])
     print('Device fingerprint: ' + p.stdout)
