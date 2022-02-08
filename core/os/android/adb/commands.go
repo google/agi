@@ -209,6 +209,7 @@ func (b *binding) StartActivity(ctx context.Context, a android.ActivityAction, e
 		"-a", a.Name,
 		"-n", a.Component(),
 	}, extrasFlags(extras)...)
+
 	return b.Shell("am", args...).Run(ctx)
 }
 

@@ -15,6 +15,7 @@
 package replay
 
 import (
+	//"time"
 	"context"
 
 	"github.com/google/gapid/core/app/analytics"
@@ -33,6 +34,7 @@ import (
 	"github.com/google/gapid/gapis/replay/builder"
 	"github.com/google/gapid/gapis/replay/scheduler"
 	"github.com/google/gapid/gapis/resolve/initialcmds"
+	"github.com/google/gapid/core/os/android/adb"
 	"github.com/google/gapid/gapis/service/path"
 )
 
@@ -72,6 +74,16 @@ func (m *manager) batch(ctx context.Context, r *status.Replay, e []scheduler.Exe
 	err := func() error {
 		if d == nil {
 			return log.Errf(ctx, nil, "Unknown device %v", batch.device)
+		}
+
+		// ALAN
+		if adbd, isAdb := d.(adb.Device); isAdb {
+			log.W(ctx, "ALAN SENDING GAPIR TO FRONT")
+			adbd.Shell("am start --activity-single-top com.google.android.gapid.arm64v8a/com.google.android.gapid.ReplayerActivity").Run(ctx)
+			adbd.SetSystemProperty(ctx, "debug.graphics.gpu.profiler.perfetto", "1")
+			log.W(ctx, "ALAN WAITING FOR GAPIR TO FRONT")
+			//time.Sleep(200000 *time.Microsecond) // Do we need this wait? Try to avoid it if we can.
+			log.W(ctx, "ALAN WAIT COMPLETE")
 		}
 
 		defer analytics.SendTiming("replay", "batch")(
