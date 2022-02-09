@@ -249,6 +249,7 @@ func (t *androidTracer) Validate(ctx context.Context, enableLocalFiles bool) (*s
 			traceLoadingErr = log.Err(ctx, err, "Failed to initialize the perfetto processor")
 			return
 		}
+		defer processor.Close()
 
 		file, err := os.OpenFile(temp.System(), os.O_APPEND|os.O_WRONLY, fs.ModeAppend)
 		if err != nil {
@@ -264,14 +265,13 @@ func (t *androidTracer) Validate(ctx context.Context, enableLocalFiles bool) (*s
 		}
 		log.I(ctx, "Writing trace size %v bytes to %v", numWritten, file.Name())
 	})
+	if traceLoadingErr != nil {
+		return nil, traceLoadingErr
+	}
 	res := &service.DeviceValidationResult{
 		TracePath: temp.System(),
 	}
 	ctx = status.Start(ctx, "Validation")
-	if traceLoadingErr != nil {
-		return nil, traceLoadingErr
-	}
-	defer processor.Close()
 	defer status.Finish(ctx)
 
 	err = t.v.Validate(ctx, processor)
