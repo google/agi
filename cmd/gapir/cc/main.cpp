@@ -560,6 +560,11 @@ void android_process(struct android_app* app, int32_t cmd) {
       GAPID_DEBUG("Received window: %p\n", gapir::android_window);
       break;
     }
+    case APP_CMD_PAUSE: {
+      GAPID_WARNING("EXITING BECAUSE OF APP_CMD_PAUSE. GAPIR DOES NOT WORK CORRECTLY FROM PAUSE.");
+      exit(0);
+      break;
+    }
   }
 }
 
