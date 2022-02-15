@@ -99,7 +99,9 @@ run_bazel run //cmd/smoketests:smoketests -- --traces test/traces
 mkdir $BUILD_ROOT/out
 $SRC/kokoro/macos/package.sh $BUILD_ROOT/out
 
-# # We do not use bazelisk but we need to shut it down together with bazel and exit explicitly b/196832502
+# # Workaround b/196832502
 bazel_shutdown
 bazelisk shutdown
+$ANDROID_HOME/platform_tools/adb kill-server
+killall adb || true
 exit 0
