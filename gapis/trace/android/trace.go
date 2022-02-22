@@ -47,12 +47,14 @@ import (
 	"github.com/google/gapid/gapidapk"
 	"github.com/google/gapid/gapidapk/pkginfo"
 	gapii "github.com/google/gapid/gapii/client"
+	"github.com/google/gapid/gapis/api"
 	"github.com/google/gapid/gapis/config"
 	"github.com/google/gapid/gapis/perfetto"
 	perfetto_android "github.com/google/gapid/gapis/perfetto/android"
 	"github.com/google/gapid/gapis/service"
 	"github.com/google/gapid/gapis/trace/android/adreno"
 	"github.com/google/gapid/gapis/trace/android/mali"
+	"github.com/google/gapid/gapis/trace/android/profile"
 	"github.com/google/gapid/gapis/trace/android/validate"
 	"github.com/google/gapid/gapis/trace/tracer"
 )
@@ -80,11 +82,12 @@ type androidTracer struct {
 }
 
 func newValidator(dev bind.Device) validate.Validator {
-	gpuName := dev.Instance().GetConfiguration().GetHardware().GetGPU().GetName()
+	gpu := dev.Instance().GetConfiguration().GetHardware().GetGPU()
+	gpuName := gpu.GetName()
 	if strings.Contains(gpuName, "Adreno") {
 		return &adreno.AdrenoValidator{}
 	} else if strings.Contains(gpuName, "Mali") {
-		return mali.NewMaliValidator(gpuName)
+		return mali.NewMaliValidator(gpuName, gpu.GetVersion())
 	}
 	return nil
 }
@@ -126,7 +129,10 @@ func (t *androidTracer) GetDevice() bind.Device {
 	return t.b
 }
 
-func (t *androidTracer) ProcessProfilingData(ctx context.Context, buffer *bytes.Buffer, capture *path.Capture, handleMappings map[uint64][]service.VulkanHandleMappingItem, syncData *sync.Data) (*service.ProfilingData, error) {
+func (t *androidTracer) ProcessProfilingData(ctx context.Context, buffer *bytes.Buffer,
+	capture *path.Capture, staticAnalysisResult chan *api.StaticAnalysisProfileData,
+	handleMappings map[uint64][]service.VulkanHandleMappingItem, syncData *sync.Data) (*service.ProfilingData, error) {
+
 	// Load Perfetto trace and create trace processor.
 	rawData := make([]byte, buffer.Len())
 	_, err := buffer.Read(rawData)
@@ -138,16 +144,35 @@ func (t *androidTracer) ProcessProfilingData(ctx context.Context, buffer *bytes.
 	if err != nil {
 		return nil, log.Errf(ctx, err, "Failed to create trace processor")
 	}
+
+	data := profile.NewProfilingData()
 	conf := t.b.Instance().GetConfiguration()
 	gpu := conf.GetHardware().GetGPU()
 	desc := conf.GetPerfettoCapability().GetGpuProfiling().GetGpuCounterDescriptor()
 	gpuName := gpu.GetName()
 	if strings.Contains(gpuName, "Adreno") {
-		return adreno.ProcessProfilingData(ctx, processor, capture, desc, handleMappings, syncData)
+		if err := adreno.ProcessProfilingData(ctx, processor, desc, handleMappings, syncData, data); err != nil {
+			return nil, err
+		}
 	} else if strings.Contains(gpuName, "Mali") {
-		return mali.ProcessProfilingData(ctx, processor, capture, desc, handleMappings, syncData)
+		if err := mali.ProcessProfilingData(ctx, processor, desc, handleMappings, syncData, data); err != nil {
+			return nil, err
+		}
+	} else {
+		return nil, log.Errf(ctx, nil, "Failed to process Perfetto trace for device %v", gpuName)
 	}
-	return nil, log.Errf(ctx, nil, "Failed to process Perfetto trace for device %v", gpuName)
+
+	staticAnalysis := <-staticAnalysisResult
+	if staticAnalysis != nil { // it's nil if it failed or the channel got closed.
+		data.MergeStaticAnalysis(ctx, staticAnalysis)
+	}
+
+	return &service.ProfilingData{
+		Groups:      data.Groups.Flatten(capture),
+		Slices:      data.Slices.ToService(ctx, processor),
+		Counters:    data.Counters,
+		GpuCounters: data.GpuCounters,
+	}, nil
 }
 
 func (t *androidTracer) Validate(ctx context.Context) error {

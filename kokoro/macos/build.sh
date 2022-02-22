@@ -20,6 +20,10 @@ BUILD_ROOT=$PWD
 SRC=$PWD/github/agi/
 CURL="curl -fksLS --http1.1 --retry 3"
 
+# Android SDK Manager requires an older version of Java
+# Therefore, temporarily downgrade java
+export JAVA_HOME=`/usr/libexec/java_home -v 1.8`
+
 # Setup the Android SDK and NDK.
 $CURL -O https://dl.google.com/android/repository/tools_r25.2.3-macosx.zip
 echo "593544d4ca7ab162705d0032fb0c0c88e75bd0f42412d09a1e8daa3394681dc6  tools_r25.2.3-macosx.zip" | shasum --check
@@ -55,7 +59,7 @@ mkdir bazel
 sh bazel-${BAZEL_VERSION}-installer-darwin-x86_64.sh --prefix=$PWD/bazel
 
 # Specify the version of XCode.
-export DEVELOPER_DIR=/Applications/Xcode_11.3.app/Contents/Developer
+export DEVELOPER_DIR=/Applications/Xcode_12.4.app/Contents/Developer
 
 cd $SRC
 BUILD_SHA=${DEV_PREFIX}${KOKORO_GITHUB_COMMIT:-$KOKORO_GITHUB_PULL_REQUEST_COMMIT}
@@ -68,7 +72,7 @@ function run_bazel {
   # paths to the .a files into the debug section of the executable.
   $BUILD_ROOT/bazel/bin/bazel \
       --output_base="${TMP}/bazel_out" \
-      $ACTION -c opt --config symbols \
+      $ACTION -c opt \
       --define AGI_BUILD_NUMBER="$KOKORO_BUILD_NUMBER" \
       --define AGI_BUILD_SHA="$BUILD_SHA" \
       --strategy CppLink=local \
@@ -81,7 +85,7 @@ function run_bazel {
 run_bazel build //gapis/api/vulkan:go_default_library
 
 # Build the package and symbol file.
-run_bazel build //:pkg //:symbols
+run_bazel build //:pkg
 
 # Build and run the smoketests.
 run_bazel run //cmd/smoketests:smoketests -- --traces test/traces
@@ -89,3 +93,8 @@ run_bazel run //cmd/smoketests:smoketests -- --traces test/traces
 # Build the release packages.
 mkdir $BUILD_ROOT/out
 $SRC/kokoro/macos/package.sh $BUILD_ROOT/out
+
+# Shutdown some background processes that appear to hang Kokoro: b/196832502.
+$BUILD_ROOT/bazel/bin/bazel --output_base="${TMP}/bazel_out" shutdown
+killall gapis || true
+killall adb || true

@@ -40,7 +40,6 @@ import com.google.gapid.views.FramebufferView;
 import com.google.gapid.views.GeometryView;
 import com.google.gapid.views.LogView;
 import com.google.gapid.views.MemoryView;
-import com.google.gapid.views.PerformanceView;
 import com.google.gapid.views.PipelineView;
 import com.google.gapid.views.ProfileView;
 import com.google.gapid.views.ReportView;
@@ -379,7 +378,7 @@ public class GraphicsTraceView extends Composite
           MultimapBuilder.enumKeys(DefaultPosition.class).arrayListValues().build();
       for (Type type : Type.values()) {
         if (!hidden.contains(type)) {
-          toAdd.put(type.position, new MainTab(
+          toAdd.put(type.position.key(), new MainTab(
               type, parent -> type.factory.create(parent, models, widgets)));
         }
       }
@@ -473,7 +472,6 @@ public class GraphicsTraceView extends Composite
       Textures(View.Textures, "Textures", DefaultPosition.Center, TextureList::new),
       Geometry(View.Geometry, "Geometry", DefaultPosition.Center, GeometryView::new),
       Shaders(View.Shaders, "Shaders", DefaultPosition.Center, ShaderList::new),
-      Performance(View.Performance, "Performance", DefaultPosition.Center, PerformanceView::new),
       Report(View.Report, "Report", DefaultPosition.Center, ReportView::new),
       Log(View.Log, "Log", DefaultPosition.Center, (p, m, w) -> new LogView(p, w)),
 
@@ -485,7 +483,7 @@ public class GraphicsTraceView extends Composite
       public final DefaultPosition position;
       public final TabFactory factory;
 
-      private Type(View view, String label,DefaultPosition position, TabFactory factory) {
+      private Type(View view, String label, DefaultPosition position, TabFactory factory) {
         this.view = view;
         this.label = label;
         this.position = position;
@@ -507,6 +505,13 @@ public class GraphicsTraceView extends Composite
 
     public static enum DefaultPosition {
       Top, Left, Center, Right;
+
+      // For now, keep the four values, but the new layout is just top, bottom.
+      // All of the code currently only checks for Top, except for the default layout generator,
+      // which now uses this function.
+      public DefaultPosition key() {
+        return (this == Top) ? this : Left;
+      }
     }
 
     /**
