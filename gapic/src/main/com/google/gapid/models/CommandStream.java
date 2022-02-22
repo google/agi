@@ -209,7 +209,11 @@ public class CommandStream
     }
 
     RootNode root = (RootNode)getData();
-    if (index.getNode() == null) {
+    if (root.getChildCount() == 0) {
+      // If the tree is empty, ignore any selection.
+      selection = null;
+      listeners.fire().onCommandsSelected(selection);
+    } else if (index.getNode() == null) {
       resolve(index.getCommand(), node -> selectCommands(index.withNode(node), force));
     } else if (!index.getNode().getTree().equals(root.tree)) {
       // TODO
@@ -426,6 +430,19 @@ public class CommandStream
 
     public Path.CommandTreeNode.Builder getPath(Path.CommandTreeNode.Builder path) {
       return parent.getPath(path).addIndices(index);
+    }
+
+    public TreePath getTreePath() {
+      List<Node> nodes = getTreePath(Lists.newArrayList());
+      return new TreePath(nodes.toArray(Node[]::new));
+    }
+
+    private List<Node> getTreePath(List<Node> nodes) {
+      if (parent != null) {
+        parent.getTreePath(nodes);
+      }
+      nodes.add(this);
+      return nodes;
     }
 
     public List<Long> getCommandStart() {

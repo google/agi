@@ -23,6 +23,7 @@ import (
 	"github.com/google/gapid/core/math/f64"
 	"github.com/google/gapid/core/math/u64"
 	"github.com/google/gapid/core/os/device"
+	"github.com/google/gapid/gapis/api"
 	"github.com/google/gapid/gapis/service"
 )
 
@@ -32,37 +33,53 @@ const (
 	counterMetricIdOffset int32 = 2
 )
 
-// For CPU commands, calculate their summarized GPU performance.
-func ComputeCounters(ctx context.Context, slices *service.ProfilingData_GpuSlices, counters []*service.ProfilingData_Counter) (*service.ProfilingData_GpuCounters, error) {
+type ProfilingData struct {
+	Groups      *GroupTree
+	Slices      SliceData
+	Counters    []*service.ProfilingData_Counter
+	GpuCounters *service.ProfilingData_GpuCounters
+}
+
+func NewProfilingData() *ProfilingData {
+	return &ProfilingData{
+		Groups: NewGroupTree(),
+	}
+}
+
+// ComputeCounters calculates the summarized GPU performance and fills in the GpuCounters field.
+func (pd *ProfilingData) ComputeCounters(ctx context.Context) {
 	metrics := []*service.ProfilingData_GpuCounters_Metric{}
 
 	// Filter out the slices that are at depth 0 and belong to a command,
 	// then sort them based on the start time.
 	groupToEntry := map[int32]*service.ProfilingData_GpuCounters_Entry{}
-	for _, group := range slices.Groups {
-		groupToEntry[group.Id] = &service.ProfilingData_GpuCounters_Entry{
-			Group:         group,
+	groupToParent := map[int32]int32{}
+	pd.Groups.Visit(func(parent int32, node *groupTreeNode) {
+		groupToEntry[node.id] = &service.ProfilingData_GpuCounters_Entry{
+			GroupId:       node.id,
 			MetricToValue: map[int32]*service.ProfilingData_GpuCounters_Perf{},
 		}
-	}
-	filteredSlices := []*service.ProfilingData_GpuSlices_Slice{}
-	for i := 0; i < len(slices.Slices); i++ {
-		if slices.Slices[i].Depth == 0 && groupToEntry[slices.Slices[i].GroupId] != nil {
-			filteredSlices = append(filteredSlices, slices.Slices[i])
+		groupToParent[node.id] = parent
+	})
+	filteredSlices := []*Slice{}
+	for i := 0; i < len(pd.Slices); i++ {
+		if pd.Slices[i].Depth == 0 && groupToEntry[pd.Slices[i].GroupID] != nil {
+			filteredSlices = append(filteredSlices, &pd.Slices[i])
 		}
 	}
 	sort.Slice(filteredSlices, func(i, j int) bool {
-		return filteredSlices[i].Ts < filteredSlices[j].Ts
+		return filteredSlices[i].Timestamp < filteredSlices[j].Timestamp
 	})
 
 	// Group slices based on their group id.
-	groupToSlices := map[int32][]*service.ProfilingData_GpuSlices_Slice{}
+	groupToSlices := map[int32][]*Slice{}
 	for i := 0; i < len(filteredSlices); i++ {
-		group := groupToEntry[filteredSlices[i].GroupId].Group
+		e, _ := groupToEntry[filteredSlices[i].GroupID]
 		// Attribute a slice to its direct group and all ancestor groups.
-		for group != nil {
-			groupToSlices[group.Id] = append(groupToSlices[group.Id], filteredSlices[i])
-			group = group.Parent
+		for e != nil {
+			groupToSlices[e.GroupId] = append(groupToSlices[e.GroupId], filteredSlices[i])
+			parent, _ := groupToParent[e.GroupId]
+			e, _ = groupToEntry[parent]
 		}
 	}
 
@@ -70,7 +87,7 @@ func ComputeCounters(ctx context.Context, slices *service.ProfilingData_GpuSlice
 	setTimeMetrics(ctx, groupToSlices, &metrics, groupToEntry)
 
 	// Calculate GPU Counter Performances for all leaf groups/commands.
-	setGpuCounterMetrics(ctx, groupToSlices, counters, filteredSlices, &metrics, groupToEntry)
+	setGpuCounterMetrics(ctx, groupToSlices, pd.Counters, filteredSlices, &metrics, groupToEntry)
 
 	// Collect the entries.
 	entries := []*service.ProfilingData_GpuCounters_Entry{}
@@ -78,15 +95,18 @@ func ComputeCounters(ctx context.Context, slices *service.ProfilingData_GpuSlice
 		entries = append(entries, entry)
 	}
 
-	return &service.ProfilingData_GpuCounters{
+	pd.GpuCounters = &service.ProfilingData_GpuCounters{
 		Metrics: metrics,
 		Entries: entries,
-	}, nil
+	}
 }
 
 // Create GPU time metric metadata, calculate time performance for each GPU
 // slice group, and append the result to corresponding entries.
-func setTimeMetrics(ctx context.Context, groupToSlices map[int32][]*service.ProfilingData_GpuSlices_Slice, metrics *[]*service.ProfilingData_GpuCounters_Metric, groupToEntry map[int32]*service.ProfilingData_GpuCounters_Entry) {
+func setTimeMetrics(ctx context.Context, groupToSlices map[int32][]*Slice,
+	metrics *[]*service.ProfilingData_GpuCounters_Metric,
+	groupToEntry map[int32]*service.ProfilingData_GpuCounters_Entry) {
+
 	gpuTimeMetric := &service.ProfilingData_GpuCounters_Metric{
 		Id:              gpuTimeMetricId,
 		Name:            "GPU Time",
@@ -109,22 +129,22 @@ func setTimeMetrics(ctx context.Context, groupToSlices map[int32][]*service.Prof
 	gpuTimeAvg, wallTimeAvg := float64(-1), float64(-1)
 	for groupId, slices := range groupToSlices {
 		gpuTime, wallTime := gpuTimeForGroup(slices)
-		gpuTimeSum += float64(gpuTime)
-		wallTimeSum += float64(wallTime)
+		gpuTimeSum += gpuTime
+		wallTimeSum += wallTime
 		entry := groupToEntry[groupId]
 		if entry == nil {
 			log.W(ctx, "Didn't find corresponding counter performance entry for GPU slice group %v.", groupId)
 			continue
 		}
 		entry.MetricToValue[gpuTimeMetricId] = &service.ProfilingData_GpuCounters_Perf{
-			Estimate: float64(gpuTime),
-			Min:      float64(gpuTime),
-			Max:      float64(gpuTime),
+			Estimate: gpuTime,
+			Min:      gpuTime,
+			Max:      gpuTime,
 		}
 		entry.MetricToValue[gpuWallTimeMetricId] = &service.ProfilingData_GpuCounters_Perf{
-			Estimate: float64(wallTime),
-			Min:      float64(wallTime),
-			Max:      float64(wallTime),
+			Estimate: wallTime,
+			Min:      wallTime,
+			Max:      wallTime,
 		}
 	}
 	if len(groupToSlices) > 0 {
@@ -136,27 +156,31 @@ func setTimeMetrics(ctx context.Context, groupToSlices map[int32][]*service.Prof
 }
 
 // Calculate GPU-time and wall-time for a specific GPU slice group.
-func gpuTimeForGroup(slices []*service.ProfilingData_GpuSlices_Slice) (uint64, uint64) {
+func gpuTimeForGroup(slices []*Slice) (float64, float64) {
 	gpuTime, wallTime := uint64(0), uint64(0)
 	lastEnd := uint64(0)
 	for _, slice := range slices {
-		duration := slice.Dur
+		duration := slice.Duration
 		gpuTime += duration
-		if slice.Ts < lastEnd {
-			if slice.Ts+slice.Dur <= lastEnd {
+		if slice.Timestamp < lastEnd {
+			if slice.Timestamp+slice.Duration <= lastEnd {
 				continue // completely contained within the other, can ignore it.
 			}
-			duration -= lastEnd - slice.Ts
+			duration -= lastEnd - slice.Timestamp
 		}
 		wallTime += duration
-		lastEnd = slice.Ts + slice.Dur
+		lastEnd = slice.Timestamp + slice.Duration
 	}
-	return gpuTime, wallTime
+	return float64(gpuTime), float64(wallTime)
 }
 
 // Create GPU counter metric metadata, calculate counter performance for each
 // GPU slice group, and append the result to corresponding entries.
-func setGpuCounterMetrics(ctx context.Context, groupToSlices map[int32][]*service.ProfilingData_GpuSlices_Slice, counters []*service.ProfilingData_Counter, globalSlices []*service.ProfilingData_GpuSlices_Slice, metrics *[]*service.ProfilingData_GpuCounters_Metric, groupToEntry map[int32]*service.ProfilingData_GpuCounters_Entry) {
+func setGpuCounterMetrics(ctx context.Context, groupToSlices map[int32][]*Slice,
+	counters []*service.ProfilingData_Counter, globalSlices []*Slice,
+	metrics *[]*service.ProfilingData_GpuCounters_Metric,
+	groupToEntry map[int32]*service.ProfilingData_GpuCounters_Entry) {
+
 	for i, counter := range counters {
 		metricId := counterMetricIdOffset + int32(i)
 		op := getCounterAggregationMethod(counter)
@@ -218,10 +242,10 @@ func setGpuCounterMetrics(ctx context.Context, groupToSlices map[int32][]*servic
 }
 
 // Scan global slices and count concurrent slices for each counter sample.
-func scanConcurrency(globalSlices []*service.ProfilingData_GpuSlices_Slice, counter *service.ProfilingData_Counter) []int {
+func scanConcurrency(globalSlices []*Slice, counter *service.ProfilingData_Counter) []int {
 	slicesCount := make([]int, len(counter.Timestamps))
 	for _, slice := range globalSlices {
-		sStart, sEnd := slice.Ts, slice.Ts+slice.Dur
+		sStart, sEnd := slice.Timestamp, slice.Timestamp+slice.Duration
 		for i := 1; i < len(counter.Timestamps); i++ {
 			cStart, cEnd := counter.Timestamps[i-1], counter.Timestamps[i]
 			if cEnd < sStart { // Sample earlier than GPU slice's span.
@@ -240,10 +264,10 @@ func scanConcurrency(globalSlices []*service.ProfilingData_GpuSlices_Slice, coun
 // be maintained based on attribution strategy: the minimum set,
 // the best guess set, and the maximum set.
 // The returned results map {sample index} to {sample weight}.
-func mapCounterSamples(slices []*service.ProfilingData_GpuSlices_Slice, counter *service.ProfilingData_Counter, concurrentSlicesCount []int) (map[int32]float64, map[int32]float64, map[int32]float64) {
+func mapCounterSamples(slices []*Slice, counter *service.ProfilingData_Counter, concurrentSlicesCount []int) (map[int32]float64, map[int32]float64, map[int32]float64) {
 	estimateSet, minSet, maxSet := map[int32]float64{}, map[int32]float64{}, map[int32]float64{}
 	for _, slice := range slices {
-		sStart, sEnd := slice.Ts, slice.Ts+slice.Dur
+		sStart, sEnd := slice.Timestamp, slice.Timestamp+slice.Duration
 		for i := int32(1); i < int32(len(counter.Timestamps)); i++ {
 			cStart, cEnd := counter.Timestamps[i-1], counter.Timestamps[i]
 			concurrencyWeight := 1.0
@@ -308,4 +332,62 @@ func aggregateCounterSamples(sampleWeight map[int32]float64, counter *service.Pr
 func getCounterAggregationMethod(counter *service.ProfilingData_Counter) service.ProfilingData_GpuCounters_Metric_AggregationOperator {
 	// TODO: Use time-weighted average to aggregate all counters for now. May need vendor's support. Bug tracked with b/158057709.
 	return service.ProfilingData_GpuCounters_Metric_TimeWeightedAvg
+}
+
+func (pd *ProfilingData) MergeStaticAnalysis(ctx context.Context, staticAnalysis *api.StaticAnalysisProfileData) {
+	// Find the highest used counter ID and add ours on top.
+	counterOffset := uint32(0)
+	for _, counter := range pd.Counters {
+		if counter.Id > counterOffset {
+			counterOffset = counter.Id
+		}
+	}
+	counterOffset += 1
+
+	// Add the counter definitions.
+	for _, counter := range staticAnalysis.CounterSpecs {
+		pd.Counters = append(pd.Counters, &service.ProfilingData_Counter{
+			Id:          counterOffset + counter.ID,
+			Name:        counter.Name,
+			Description: counter.Description,
+			Unit:        counter.Unit,
+		})
+
+		pd.GpuCounters.Metrics = append(pd.GpuCounters.Metrics, &service.ProfilingData_GpuCounters_Metric{
+			Id:             counterMetricIdOffset + int32(counterOffset+counter.ID),
+			CounterId:      counterOffset + counter.ID,
+			Name:           counter.Name,
+			Unit:           counter.Unit,
+			Op:             service.ProfilingData_GpuCounters_Metric_TimeWeightedAvg,
+			Description:    counter.Description,
+			StaticAnalysis: true,
+		})
+	}
+
+	// Add in our groups and samples.
+	for _, samples := range staticAnalysis.CounterData {
+		group := pd.Groups.GetOrCreateDrawCallGroup("draw call", samples.Index)
+		if group < 0 {
+			// Draw call for which we didn't see a render pass in the data. Ignore for now.
+			// TODO(pmuetschard): This shouldn't really happen, so at this point, trying to find the
+			// correct command mapping for the draw call's renderpass, command buffer, and submit is not
+			// worth it. I expect that with the scheduled command/sub command clean-up this may go away,
+			// as we should be able to inferr the correct index.
+			log.W(ctx, "Got a draw call with static analysis profiling data, but no GPU data: %v", samples.Index)
+			continue
+		}
+
+		values := map[int32]*service.ProfilingData_GpuCounters_Perf{}
+		for _, sample := range samples.Samples {
+			values[counterMetricIdOffset+int32(counterOffset+sample.Counter)] = &service.ProfilingData_GpuCounters_Perf{
+				Estimate: sample.Value,
+				Min:      sample.Value,
+				Max:      sample.Value,
+			}
+		}
+		pd.GpuCounters.Entries = append(pd.GpuCounters.Entries, &service.ProfilingData_GpuCounters_Entry{
+			GroupId:       group,
+			MetricToValue: values,
+		})
+	}
 }

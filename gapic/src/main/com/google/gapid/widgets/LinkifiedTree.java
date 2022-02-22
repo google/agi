@@ -22,7 +22,7 @@ import static com.google.gapid.widgets.Widgets.createTreeViewer;
 import static com.google.gapid.widgets.Widgets.packColumns;
 import static com.google.gapid.widgets.Widgets.withAsyncRefresh;
 
-import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.gapid.models.Follower;
 import com.google.gapid.proto.service.path.Path;
 import com.google.gapid.util.Events;
@@ -56,12 +56,13 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Menu;
+import org.eclipse.swt.widgets.ScrollBar;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeItem;
 import org.eclipse.swt.widgets.Widget;
 
 import java.util.Arrays;
-import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -72,7 +73,7 @@ import java.util.function.Predicate;
 public abstract class LinkifiedTree<T, F> extends Composite {
   private final TreeViewer viewer;
   protected final Widgets.Refresher refresher;
-  protected final List<T> itemsToExpand = Lists.newArrayList();
+  protected final Map<T, TreeItem> itemsToExpand = Maps.newHashMap();
   protected final ContentProvider<T> contentProvider;
   protected final LabelProvider labelProvider;
 
@@ -81,8 +82,14 @@ public abstract class LinkifiedTree<T, F> extends Composite {
     setLayout(new FillLayout());
     this.viewer = createTreeViewer(this, treeStyle);
     this.refresher = withAsyncRefresh(viewer, () -> {
-      for (T item : itemsToExpand) {
-        viewer.setExpandedState(item, true);
+      for (Map.Entry<T, TreeItem> item : itemsToExpand.entrySet()) {
+        if (!viewer.getExpandedState(item.getKey())) {
+          viewer.setExpandedState(item.getKey(), true);
+          TreeItem treeItem = item.getValue();
+          viewer.getTree().notifyListeners(SWT.Expand, new Event() {{
+            this.item = treeItem;
+          }});
+        }
       }
       itemsToExpand.clear();
     });
@@ -153,7 +160,10 @@ public abstract class LinkifiedTree<T, F> extends Composite {
     tree.addMouseTrackListener(mouseHandler);
     tree.addMouseMoveListener(mouseHandler);
     tree.addMouseWheelListener(mouseHandler);
-    tree.getVerticalBar().addSelectionListener(mouseHandler);
+    ScrollBar vBar = tree.getVerticalBar();
+    if (vBar != null) {
+      vBar.addSelectionListener(mouseHandler);
+    }
   }
 
   protected LabelProvider createLabelProvider(Theme theme) {
@@ -197,6 +207,10 @@ public abstract class LinkifiedTree<T, F> extends Composite {
 
   public Control getControl() {
     return viewer.getControl();
+  }
+
+  public Tree getTree() {
+    return viewer.getTree();
   }
 
   public TreeItem getSelectionItem() {
@@ -265,7 +279,6 @@ public abstract class LinkifiedTree<T, F> extends Composite {
   protected abstract ContentProvider<T> createContentProvider();
   protected abstract <S extends StylingString> S
       format(T node, S string, Follower.Prefetcher<F> follower);
-  protected abstract Color getBackgroundColor(T node);
   protected abstract Follower.Prefetcher<F> prepareFollower(T node, Runnable callback);
   protected abstract void follow(Path.Any path);
 
@@ -293,7 +306,7 @@ public abstract class LinkifiedTree<T, F> extends Composite {
 
     @Override
     public Object[] getChildren(Object parent) {
-      return !hasChildren(parent) ? null : getChildNodes(cast(parent));
+      return !hasChildren(parent) ? new Object[0] : getChildNodes(cast(parent));
     }
 
     @Override
@@ -333,27 +346,27 @@ public abstract class LinkifiedTree<T, F> extends Composite {
     @Override
     public void onShow(TreeItem item) {
       T element = getElement(item);
-      contentProvider.load(element, () -> {
-        if (!item.isDisposed()) {
-          update(item);
-          if (contentProvider.isDefaultExpanded(element)) {
-            itemsToExpand.add(element);
-          }
+      if (contentProvider.isLoaded(element)) {
+        update(item);
+        if (contentProvider.isDefaultExpanded(element)) {
+          itemsToExpand.put(element, item);
           refresher.refresh();
         }
-      });
+      } else {
+        contentProvider.load(element, () -> {
+          if (!item.isDisposed()) {
+            update(item);
+            if (contentProvider.isDefaultExpanded(element)) {
+              itemsToExpand.put(element, item);
+            }
+            refresher.refresh();
+          }
+        });
+      }
     }
 
     @Override
     protected void erase(Event event, Object element) {
-      Label label = getLabel(event);
-
-      if (!shouldIgnoreColors(event) && label.background != null) {
-        Color oldBackground = event.gc.getBackground();
-        event.gc.setBackground(label.background);
-        event.gc.fillRectangle(event.x, event.y, event.width, event.height);
-        event.gc.setBackground(oldBackground);
-      }
       // Clear the foreground bit, as we'll do our own foreground rendering.
       event.detail &= ~SWT.FOREGROUND;
     }
@@ -377,10 +390,6 @@ public abstract class LinkifiedTree<T, F> extends Composite {
 
       boolean ignoreColors = shouldIgnoreColors(event);
       Color oldForeground = event.gc.getForeground();
-      Color oldBackground = event.gc.getBackground();
-      if (!ignoreColors && label.background != null) {
-        event.gc.setBackground(label.background);
-      }
 
       drawText(event, label, ignoreColors);
       if (shouldDrawFocus(event)) {
@@ -389,7 +398,6 @@ public abstract class LinkifiedTree<T, F> extends Composite {
 
       if (!ignoreColors) {
         gc.setForeground(oldForeground);
-        gc.setBackground(oldBackground);
       }
     }
 
@@ -455,7 +463,6 @@ public abstract class LinkifiedTree<T, F> extends Composite {
 
       Label label = getLabelNoUpdate(item);
 
-      label.background = getBackgroundColor(element);
       updateText(item, label, element);
       label.bounds = null;
       label.loaded = contentProvider.isLoaded(element);
@@ -552,13 +559,11 @@ public abstract class LinkifiedTree<T, F> extends Composite {
   protected static class Label {
     public static String KEY = Label.class.getName();
 
-    public Color background;
     public StyledString string;
     public Rectangle bounds;
     public boolean loaded;
 
     public Label(Theme theme) {
-      this.background = null;
       this.string = new StyledString("Loading...", theme.structureStyler());
       this.bounds = null;
       this.loaded = false;

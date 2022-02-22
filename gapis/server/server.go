@@ -42,6 +42,7 @@ import (
 	"github.com/google/gapid/core/os/android/adb"
 	"github.com/google/gapid/core/os/device/bind"
 	"github.com/google/gapid/core/os/file"
+	"github.com/google/gapid/gapis/api"
 	"github.com/google/gapid/gapis/capture"
 	"github.com/google/gapid/gapis/config"
 	"github.com/google/gapid/gapis/messages"
@@ -879,11 +880,37 @@ func (s *server) GpuProfile(ctx context.Context, req *service.GpuProfileRequest)
 	ctx = status.Start(ctx, "RPC GpuProfile")
 	defer status.Finish(ctx)
 	ctx = log.Enter(ctx, "GpuProfile")
-	res, err := replay.GpuProfile(ctx, req.Capture, req.Device, req.Experiments, req.LoopCount)
-	if err != nil {
-		return nil, err
+
+	var replayErr, analysisErr error
+	var result *service.ProfilingData
+	var wg sync.WaitGroup
+
+	// TODO(pmuetschard): sending the data across via this channel is a bit hacky, but the best option
+	// at this point. When we clean-up the multi-API stuff, we can probably make this go away.
+	staticAnalysisResult := make(chan *api.StaticAnalysisProfileData, 1)
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		result, replayErr = replay.GpuProfile(ctx, staticAnalysisResult, req.Capture, req.Device, req.Experiments, req.LoopCount)
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		var analysisResult *api.StaticAnalysisProfileData
+		analysisResult, analysisErr = resolve.ProfileStaticAnalysis(ctx, req.Capture)
+		staticAnalysisResult <- analysisResult
+	}()
+
+	wg.Wait()
+	if replayErr != nil {
+		return nil, replayErr
+	} else if analysisErr != nil {
+		return nil, analysisErr
 	}
-	return res, nil
+
+	return result, nil
 }
 
 func (s *server) PerfettoQuery(ctx context.Context, c *path.Capture, query string) (*perfetto.QueryResult, error) {
