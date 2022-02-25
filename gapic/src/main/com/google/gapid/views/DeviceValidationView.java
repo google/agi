@@ -46,108 +46,106 @@ import java.util.concurrent.ExecutionException;
 import java.util.logging.Logger;
 
 public class DeviceValidationView extends Composite {
-    protected static final Logger LOG = Logger.getLogger(DeviceValidationView.class.getName());
+  protected static final Logger LOG = Logger.getLogger(DeviceValidationView.class.getName());
 
-    private final Widgets widgets;
-    private final Models models;
-    private final SingleInFlight rpcController = new SingleInFlight();
-      
-    private boolean validationPassed;
-    private LoadingIndicator.Widget statusLoader;
-    private Link statusText;
+  private final Widgets widgets;
+  private final Models models;
+  private final SingleInFlight rpcController = new SingleInFlight();
+    
+  private boolean validationPassed;
+  private LoadingIndicator.Widget statusLoader;
+  private Link statusText;
 
-    public DeviceValidationView(Composite parent, Models models, Widgets widgets) {
-        super(parent, SWT.NONE);
-        this.widgets = widgets;
-        this.models = models;
+  public DeviceValidationView(Composite parent, Models models, Widgets widgets) {
+    super(parent, SWT.NONE);
+    this.widgets = widgets;
+    this.models = models;
 
-        validationPassed = false;
+    validationPassed = false;
 
-        setLayout(new GridLayout(/* numColumns= */ 2, /* makeColumnsEqualWidth= */ false));
-        setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
+    setLayout(new GridLayout(/* numColumns= */ 2, /* makeColumnsEqualWidth= */ false));
+    setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
 
-        // Status icon (loader) & accompanying text
-        statusLoader = widgets.loading.createWidgetWithImage(this, 
-            widgets.theme.check(), widgets.theme.error());
-        statusLoader.setLayoutData(new GridData(SWT.LEFT, SWT.BOTTOM, false, false));
-        statusText = createLink(this, "", e -> {
-            Program.launch(URLs.DEVICE_COMPATIBILITY_URL);
-        });
-        statusText.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+    // Status icon (loader) & accompanying text
+    statusLoader = widgets.loading.createWidgetWithImage(this, 
+        widgets.theme.check(), widgets.theme.error());
+    statusLoader.setLayoutData(new GridData(SWT.LEFT, SWT.BOTTOM, false, false));
+    statusText = createLink(this, "", e -> {
+      Program.launch(URLs.DEVICE_COMPATIBILITY_URL);
+    });
+    statusText.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
 
-        statusLoader.setVisible(false);
-        statusText.setVisible(false);
+    statusLoader.setVisible(false);
+    statusText.setVisible(false);
+  }
+
+  public void ValidateDevice(DeviceCaptureInfo deviceInfo) {
+    if (deviceInfo == null) {
+      statusLoader.setVisible(false);
+      statusText.setVisible(false);
+      return;
     }
 
-    public void ValidateDevice(DeviceCaptureInfo deviceInfo) {
-      if (deviceInfo == null) {
-        statusLoader.setVisible(false);
-        statusText.setVisible(false);
+    ValidateDevice(deviceInfo.device);
+  }
+
+  public void ValidateDevice(Device.Instance dev) {
+    statusLoader.setVisible(true);
+    statusText.setVisible(true);
+
+    DeviceValidationResult cachedResult = models.devices.getCachedValidationStatus(dev);
+    if (cachedResult != null) {
+      if (cachedResult.passed || cachedResult.skipped) {
+        setValidationStatus(cachedResult);
         return;
       }
-
-      ValidateDevice(deviceInfo.device);
     }
 
-    public void ValidateDevice(Device.Instance dev) {
-      statusLoader.setVisible(true);
-      statusText.setVisible(true);
-
-      DeviceValidationResult cachedResult = models.devices.getCachedValidationStatus(dev);
-      if (cachedResult != null) {
-        if (cachedResult.passed || cachedResult.skipped) {
-          setValidationStatus(cachedResult);
-          return;
+    statusLoader.startLoading();
+    statusText.setText("Device support is being validated");
+    rpcController.start().listen(models.devices.validateDevice(dev),
+        new UiErrorCallback<DeviceValidationResult, DeviceValidationResult, DeviceValidationResult>(statusLoader, LOG) {
+      @Override
+      protected ResultOrError<DeviceValidationResult, DeviceValidationResult>
+        onRpcThread(Rpc.Result<DeviceValidationResult> response) throws RpcException, ExecutionException {
+        try {
+          return success(response.get());
+        } catch (RpcException | ExecutionException e) {
+          throttleLogRpcError(LOG, "LoadData error", e);
+          return error(null);
         }
       }
 
-      statusLoader.startLoading();
-      statusText.setText("Device support is being validated");
-      rpcController.start().listen(models.devices.validateDevice(dev),
-          new UiErrorCallback<DeviceValidationResult, DeviceValidationResult, DeviceValidationResult>(
-            statusLoader, LOG) {
-            @Override
-            protected ResultOrError<DeviceValidationResult, DeviceValidationResult> onRpcThread(
-                Rpc.Result<DeviceValidationResult> response)
-                throws RpcException, ExecutionException {
-              try {
-                return success(response.get());
-              } catch (RpcException | ExecutionException e) {
-                throttleLogRpcError(LOG, "LoadData error", e);
-                return error(null);
-              }
-            }
+      @Override
+      protected void onUiThreadSuccess(DeviceValidationResult result) {
+        setValidationStatus(result);
+      }
 
-            @Override
-            protected void onUiThreadSuccess(DeviceValidationResult result) {
-              setValidationStatus(result);
-            }
+      @Override
+      protected void onUiThreadError(DeviceValidationResult result) {
+        LOG.log(WARNING, "UI thread error while validating device support");
+        setValidationStatus(result);
+      }
+    });
+  }
 
-            @Override
-            protected void onUiThreadError(DeviceValidationResult result) {
-              LOG.log(WARNING, "UI thread error while validating device support");
-              setValidationStatus(result);
-            }
-          });
+  private void setValidationStatus(DeviceValidationResult result) {
+    if (result.skipped) {
+      statusLoader.updateStatus(true);
+      statusLoader.stopLoading();
+      statusText.setText("Device support validation skipped.");
+      validationPassed = true;
+    } else {
+      statusLoader.updateStatus(result.passed);
+      statusLoader.stopLoading();
+      statusText.setText("Device support validation " 
+          + (result.passed ? "passed." : "failed. " + Messages.VALIDATION_FAILED_LANDING_PAGE));
+      validationPassed = result.passed;
     }
+    notifyListeners(SWT.Modify, new Event());
+  }
 
-    private void setValidationStatus(DeviceValidationResult result) {
-        if (result.skipped) {
-            statusLoader.updateStatus(true);
-            statusLoader.stopLoading();
-            statusText.setText("Device support validation skipped.");
-            validationPassed = true;
-          } else {
-            statusLoader.updateStatus(result.passed);
-            statusLoader.stopLoading();
-            statusText.setText("Device support validation " 
-                + (result.passed ? "passed." : "failed. " + Messages.VALIDATION_FAILED_LANDING_PAGE));
-            validationPassed = result.passed;
-          }
-          notifyListeners(SWT.Modify, new Event());
-    }
-
-    public boolean PassesValidation() {
-      return validationPassed;
-    }
+  public boolean PassesValidation() {
+    return validationPassed;
+  }
 }
