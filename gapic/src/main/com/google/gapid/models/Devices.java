@@ -426,22 +426,30 @@ public class Devices {
   }
 
   public static class DeviceValidationResult {
-    public static final DeviceValidationResult PASSED = new DeviceValidationResult(null, true, false);
-    public static final DeviceValidationResult FAILED = new DeviceValidationResult(null, false, false);
-    public static final DeviceValidationResult SKIPPED = new DeviceValidationResult(null, true, true);
+    public static final DeviceValidationResult PASSED = new DeviceValidationResult(null, null, "", true, false);
+    public static final DeviceValidationResult FAILED = new DeviceValidationResult(null, null, "", false, false);
+    public static final DeviceValidationResult SKIPPED = new DeviceValidationResult(null, null, "", true, true);
 
-    public final Service.Error error;
+    public final Service.Error internalErr;
+    public final String validationFailureMsg;
+    public final String tracePath;
     public final boolean passed;
     public final boolean skipped;
 
-    public DeviceValidationResult(Service.Error error, boolean passed, boolean skipped) {
-      this.error = error;
+    public DeviceValidationResult(Service.Error internalErr, String validationFailureMsg, String tracePath, boolean passed, boolean skipped) {
+      this.internalErr = internalErr;
+      this.validationFailureMsg = validationFailureMsg;
+      this.tracePath = tracePath;
       this.passed = passed;
       this.skipped = skipped;
     }
 
     public DeviceValidationResult(Service.ValidateDeviceResponse r) {
-      this(r.getError(), !r.hasError() && r.getResult().getValidationFailureMsg().length() == 0, false);
+      this(r.hasError() ? r.getError() : null,
+           r.getResult() == null ? "" : r.getResult().getValidationFailureMsg(),
+           r.getResult() == null ? "" : r.getResult().getTracePath(),
+           !r.hasError() && r.getResult().getValidationFailureMsg().length() == 0,
+           false);
     }
 
     @Override
@@ -455,6 +463,13 @@ public class Devices {
       }
     }
 
+    public String errorMessage() {
+      if (internalErr != null) {
+        return "Internal Error: " + internalErr.getErrInternal().getMessage();
+      } else {
+        return "Validation Failure: " + validationFailureMsg;
+      }
+    }
   }
 
   private static class DeviceValidationCache {
