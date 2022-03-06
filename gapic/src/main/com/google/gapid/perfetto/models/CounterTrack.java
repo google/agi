@@ -57,8 +57,11 @@ public class CounterTrack extends Track.WithQueryEngine<CounterTrack.Data> {
       "select ts, ts + dur, value, id from %s " +
       "where ts + dur >= %d and ts <= %d order by ts";
   private static final String STATS_SQL =
-      "select min(value), max(value), avg(value) " +
-      "from counter where track_id = %d and ts >= %d and ts <= %d";
+      "select min(value), max(value), sum(value * dur) / sum(dur) avg from (" +
+      "select min(dur, ts + dur - ($2), ($3) + 1 - ts) dur, value from (" +
+      "  select ts, lead(ts, 1, (select end_ts from trace_bounds)) over (order by ts) - ts dur, value " +
+      "  from counter where track_id = ($1))" +
+      "where  ts + dur >= ($2) and ts <= ($3))";
 
   private final CounterInfo counter;
 
