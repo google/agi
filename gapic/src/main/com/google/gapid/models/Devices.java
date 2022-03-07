@@ -54,6 +54,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Logger;
+import java.util.function.Consumer;
 
 /**
  * Model containing information about capture and replay devices.
@@ -193,9 +194,37 @@ public class Devices {
     listeners.fire().onReplayDeviceChanged(dev);
   }
 
-  public ListenableFuture<DeviceValidationResult> validateDevice(Device.Instance device) {
-    return transformAsync(client.validateDevice(Paths.device(device.getID())), r ->
-      submitIfNotDisposed(shell, () -> validationCache.add(device, new DeviceValidationResult(r))));
+  public void validateDevice(Device.Instance device, Consumer<DeviceValidationResult> onValidationResultCb) {
+    rpcController.start().listen(client.validateDevice(Paths.device(device.getID())),
+        new UiErrorCallback<Service.DeviceValidationResult, Service.DeviceValidationResult, RpcException>(shell, LOG) {
+      @Override
+      protected ResultOrError<Service.DeviceValidationResult, RpcException>
+        onRpcThread(Rpc.Result<Service.DeviceValidationResult> response) throws RpcException, ExecutionException {
+        try {
+          return success(response.get());
+        } catch (RpcException e) {
+          // Expected to get RPC exceptions for internal errors.
+          return error(e);
+        } catch (ExecutionException e) {
+          throttleLogRpcError(LOG, "LoadData error", e);
+          return error(null);
+        }
+      }
+
+      @Override
+      protected void onUiThreadSuccess(Service.DeviceValidationResult r) {
+        DeviceValidationResult result = new DeviceValidationResult(r);
+        submitIfNotDisposed(shell, () -> validationCache.add(device, result));
+        onValidationResultCb.accept(result);
+      }
+
+      @Override
+      protected void onUiThreadError(RpcException error) {
+        DeviceValidationResult result = new DeviceValidationResult(error);
+        submitIfNotDisposed(shell, () -> validationCache.add(device, result));
+        onValidationResultCb.accept(result);
+      }
+    });
   }
 
   public DeviceValidationResult getCachedValidationStatus(Device.Instance device) {
@@ -430,13 +459,13 @@ public class Devices {
     public static final DeviceValidationResult FAILED = new DeviceValidationResult(null, null, "", false, false);
     public static final DeviceValidationResult SKIPPED = new DeviceValidationResult(null, null, "", true, true);
 
-    public final Service.Error internalErr;
+    public final RpcException internalErr;
     public final String validationFailureMsg;
     public final String tracePath;
     public final boolean passed;
     public final boolean skipped;
 
-    public DeviceValidationResult(Service.Error internalErr, String validationFailureMsg, String tracePath, boolean passed, boolean skipped) {
+    public DeviceValidationResult(RpcException internalErr, String validationFailureMsg, String tracePath, boolean passed, boolean skipped) {
       this.internalErr = internalErr;
       this.validationFailureMsg = validationFailureMsg;
       this.tracePath = tracePath;
@@ -444,30 +473,26 @@ public class Devices {
       this.skipped = skipped;
     }
 
-    public DeviceValidationResult(Service.ValidateDeviceResponse r) {
-      this(r.hasError() ? r.getError() : null,
-           r.getResult() == null ? "" : r.getResult().getValidationFailureMsg(),
-           r.getResult() == null ? "" : r.getResult().getTracePath(),
-           !r.hasError() && r.getResult().getValidationFailureMsg().length() == 0,
+    public DeviceValidationResult(Service.DeviceValidationResult r) {
+      this(null,
+           r.getValidationFailureMsg(),
+           r.getTracePath(),
+           r.getValidationFailureMsg().length() == 0,
            false);
+    }
+
+    public DeviceValidationResult(RpcException e) {
+      this(e, e.toString(), "", false, false);
     }
 
     @Override
     public String toString() {
       if (this.skipped) {
-        return "Skipped";
+        return "skipped";
       } else if (this.passed) {
-        return "Passed";
+        return "passed";
       } else {
-        return "Failed";
-      }
-    }
-
-    public String errorMessage() {
-      if (internalErr != null) {
-        return "Internal Error: " + internalErr.getErrInternal().getMessage();
-      } else {
-        return "Validation Failure: " + validationFailureMsg;
+        return "failed";
       }
     }
   }

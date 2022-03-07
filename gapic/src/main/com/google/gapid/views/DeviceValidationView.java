@@ -20,8 +20,10 @@ import static com.google.gapid.widgets.Widgets.createLink;
 import static com.google.gapid.widgets.Widgets.withLayoutData;
 import static com.google.gapid.widgets.Widgets.withSpans;
 import static com.google.gapid.widgets.Widgets.createButton;
-import static com.google.gapid.widgets.Widgets.createLabel;
+import static com.google.gapid.widgets.Widgets.createComposite;
 import static com.google.gapid.widgets.Widgets.createGroup;
+import static com.google.gapid.widgets.Widgets.createLabel;
+import static com.google.gapid.widgets.Widgets.createTextbox;
 import static java.util.logging.Level.WARNING;
 import static java.util.logging.Level.SEVERE;
 
@@ -40,16 +42,19 @@ import com.google.gapid.util.Messages;
 import com.google.gapid.util.OS;
 import com.google.gapid.util.URLs;
 
+import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
-import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.program.Program;
 import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Event;
+import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Link;
-import org.eclipse.swt.widgets.Group;
+import org.eclipse.swt.widgets.Listener;
+import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.SWT;
 
 import java.io.File;
@@ -69,7 +74,9 @@ public class DeviceValidationView extends Composite {
   private Label statusText;
   private Button retryButton;
 
-  private Group extraDetailsGroup;
+  // Separate error text from help textas a workaround to enable proper text wrapping.
+  private Group errorMessageGroup;
+  private Composite helpComposite;
 
   public DeviceValidationView(Composite parent, Models models, Widgets widgets) {
     super(parent, SWT.NONE);
@@ -89,7 +96,7 @@ public class DeviceValidationView extends Composite {
       new GridData(SWT.FILL, SWT.CENTER, true, false));
     retryButton = withLayoutData(createButton(this, "Retry", e -> {
       // Intentionally empty.
-    }), new GridData(SWT.FILL, SWT.CENTER, false, false));
+    }), new GridData(SWT.FILL, SWT.CENTER, false, true));
 
     statusLoader.setVisible(false);
     statusText.setVisible(false);
@@ -111,9 +118,11 @@ public class DeviceValidationView extends Composite {
     statusLoader.setVisible(true);
     statusText.setVisible(true);
     retryButton.setVisible(false);
-    if (extraDetailsGroup != null) {
-      extraDetailsGroup.dispose();
-      extraDetailsGroup = null;
+    if (errorMessageGroup != null) {
+      errorMessageGroup.dispose();
+      errorMessageGroup = null;
+      helpComposite.dispose();
+      helpComposite = null;
       requestLayout();
     }
 
@@ -136,30 +145,7 @@ public class DeviceValidationView extends Composite {
       ValidateDevice(dev);
     });
 
-    rpcController.start().listen(models.devices.validateDevice(dev),
-        new UiErrorCallback<DeviceValidationResult, DeviceValidationResult, DeviceValidationResult>(statusLoader, LOG) {
-      @Override
-      protected ResultOrError<DeviceValidationResult, DeviceValidationResult>
-        onRpcThread(Rpc.Result<DeviceValidationResult> response) throws RpcException, ExecutionException {
-        try {
-          return success(response.get());
-        } catch (RpcException | ExecutionException e) {
-          throttleLogRpcError(LOG, "LoadData error", e);
-          return error(null);
-        }
-      }
-
-      @Override
-      protected void onUiThreadSuccess(DeviceValidationResult result) {
-        setValidationStatus(result);
-      }
-
-      @Override
-      protected void onUiThreadError(DeviceValidationResult result) {
-        LOG.log(WARNING, "UI thread error while validating device support");
-        setValidationStatus(result);
-      }
-    });
+    models.devices.validateDevice(dev, this::setValidationStatus);
   }
 
   private void setValidationStatus(DeviceValidationResult result) {
@@ -177,21 +163,32 @@ public class DeviceValidationView extends Composite {
     // Extra details (i.e. error message & help text)
     retryButton.setVisible(true);
 
-    extraDetailsGroup = withLayoutData(createGroup(this, ""),
-      withSpans(new GridData(SWT.FILL, SWT.FILL, true, false), 3, 1));
-    Label errText = withLayoutData(createLabel(extraDetailsGroup, result.errorMessage()),
-      new GridData(SWT.FILL, SWT.FILL, true, false));
-    Link helpLink = withLayoutData(createLink(extraDetailsGroup, Messages.VALIDATION_FAILED_LANDING_PAGE, e -> {
+    errorMessageGroup = withLayoutData(createGroup(this, ""),
+      withSpans(new GridData(SWT.FILL, SWT.TOP, true, false), 3, 1));
+    Text errText = withLayoutData(
+      createTextbox(errorMessageGroup, SWT.READ_ONLY | SWT.WRAP , result.validationFailureMsg),
+      new GridData(SWT.LEFT, SWT.TOP, false, false));
+
+    helpComposite = createComposite(this, new GridLayout(1, false));
+    helpComposite.setLayoutData(withSpans(new GridData(), 3, 1));
+    Link helpLink = withLayoutData(createLink(helpComposite, Messages.VALIDATION_FAILED_LANDING_PAGE, e -> {
       Program.launch(URLs.DEVICE_COMPATIBILITY_URL);
-    }), new GridData(SWT.LEFT, SWT.FILL, true, false));
+    }), new GridData(SWT.LEFT, SWT.TOP, false, false));
     if (result.tracePath.length() > 0) {
-      Link traceLink = withLayoutData(createLink(extraDetailsGroup, "View <a>trace file</a>", e -> {
+      Link traceLink = withLayoutData(createLink(helpComposite, "View <a>trace file</a>", e -> {
         try {
           OS.openFileInSystemExplorer(new File(result.tracePath));
         } catch (IOException exception) {
           LOG.log(SEVERE, "Failed to open log directory in system explorer", exception);
         }
-      }), new GridData(SWT.RIGHT, SWT.FILL, false, false));
+      }), new GridData(SWT.LEFT, SWT.TOP, false, false));
+    }
+
+    // Resize the rest of the window if needed.
+    Point curr = getShell().getSize();
+    Point want = getShell().computeSize(SWT.DEFAULT, SWT.DEFAULT);
+    if (want.y > curr.y) {
+      getShell().setSize(new Point(curr.x, want.y));
     }
 
     requestLayout();
