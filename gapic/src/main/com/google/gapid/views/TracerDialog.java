@@ -325,11 +325,11 @@ public class TracerDialog {
       private final SingleInFlight rpcController = new SingleInFlight();
       private final Models models;
 
-      private final ComboViewer device;
+      private final ComboViewer deviceDropdown;
       private final Label deviceLabel;
-      private final StackLayout deviceLayout;
+      private final StackLayout deviceStackingLayout;
       private final Label deviceWarning;
-      private final LoadingIndicator.Widget deviceLoader;
+      private final Button deviceReloadButton;
       private final ComboViewer api;
       private final Label apiLabel;
       private final DeviceValidationView deviceValidationView;
@@ -391,32 +391,38 @@ public class TracerDialog {
         }
 
         Group mainGroup = withLayoutData(
-            createGroup(this, "Device and Type", new GridLayout(3, false)),
+            createGroup(this, "Device and Type", new GridLayout(2, false)),
             new GridData(GridData.FILL_HORIZONTAL));
 
         apiLabel = createLabel(mainGroup, "Type*:");
         api = createApiDropDown(mainGroup, type);
         api.getCombo().setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
-        // Placeholder label to fill the 3rd column
-        createLabel(mainGroup, "");
 
         deviceLabel = createLabel(mainGroup, "Device*:");
-        deviceLayout = new CenteringStackLayout();
-        Composite deviceContainer = withLayoutData(createComposite(mainGroup, deviceLayout),
+        deviceStackingLayout = new CenteringStackLayout();
+        Composite deviceDropdownAndButton = withLayoutData(createComposite(mainGroup, new GridLayout(2, false)),
             new GridData(SWT.FILL, SWT.FILL, true, false));
-        device = createDeviceDropDown(deviceContainer);
-        deviceLayout.topControl = device.getControl();
+
+        Composite deviceStackingContainer = withLayoutData(
+            createComposite(deviceDropdownAndButton, deviceStackingLayout),
+            new GridData(SWT.FILL, SWT.FILL, true, false));
+        deviceDropdown = createDeviceDropDown(deviceStackingContainer);
+        deviceDropdown.getCombo().setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
         deviceWarning = createLabel(
-            deviceContainer, "No device connected that supports this trace type.");
-        deviceLoader = widgets.loading.createWidgetWithRefresh(mainGroup);
-        device.getCombo().setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
-        deviceLoader.setLayoutData(
-            withIndents(new GridData(SWT.RIGHT, SWT.CENTER, false, false), 5, 0));
-        // TODO: Make this a true button to allow keyboard use.
-        deviceLoader.addListener(SWT.MouseDown, e -> {
-          deviceLoader.startLoading();
-          // By waiting a tiny bit, the icon will change to the loading indicator, giving the user
-          // feedback that something is happening, in case the refresh is really quick.
+          deviceStackingContainer, "No device connected that supports this trace type.");
+          
+        deviceStackingLayout.topControl = deviceDropdown.getControl();
+
+        // Created reload button without the helper function because the callback references itself
+        // and Java gives a warning because it might not be initailized.
+        deviceReloadButton = withLayoutData(new Button(deviceDropdownAndButton, SWT.PUSH),
+            new GridData(SWT.END, SWT.FILL, false, false));
+        deviceReloadButton.setText("Reload");
+        deviceReloadButton.addListener(SWT.Selection, e -> {
+          deviceReloadButton.setEnabled(false);
+
+          // By waiting a tiny bit, the button will be disabled, giving the user feedback
+          // that something is happening, in case the refresh is really quick.
           logFailure(LOG, Scheduler.EXECUTOR.schedule(refreshDevices, 300, TimeUnit.MILLISECONDS));
         });
 
@@ -561,7 +567,7 @@ public class TracerDialog {
             new GridData(SWT.FILL, SWT.FILL, true, false));
         emptyAppWarning.setForeground(getDisplay().getSystemColor(SWT.COLOR_DARK_YELLOW));
         emptyAppWarning.setVisible(false);
-        device.getCombo().addListener(SWT.Selection, e -> updateEmptyAppWithRenderStageWarning(models.settings));
+        deviceDropdown.getCombo().addListener(SWT.Selection, e -> updateEmptyAppWithRenderStageWarning(models.settings));
         api.getCombo().addListener(SWT.Selection, e -> updateEmptyAppWithRenderStageWarning(models.settings));
         traceTarget.addBoxListener(SWT.Modify, e -> updateEmptyAppWithRenderStageWarning(models.settings));
 
@@ -576,7 +582,7 @@ public class TracerDialog {
             e -> downloadAndInstallAngle(widgets.theme, models.settings));
         angleBar.setVisible(false);
 
-        device.getCombo().addListener(SWT.Selection, e -> {
+        deviceDropdown.getCombo().addListener(SWT.Selection, e -> {
           updateOnDeviceChange(models.settings, getSelectedDevice());
           deviceValidationView.ValidateDevice(getSelectedDevice());
         });
@@ -774,8 +780,8 @@ public class TracerDialog {
       }
 
       private void updateDevicesDropDown(SettingsProto.TraceOrBuilder trace) {
-        if (device != null && devices != null) {
-          deviceLoader.stopLoading();
+        if (deviceDropdown != null && devices != null) {
+          deviceReloadButton.setEnabled(true);
 
           TraceType type = getSelectedType();
           if (type == null) {
@@ -785,14 +791,14 @@ public class TracerDialog {
           List<DeviceCaptureInfo> matching = devices.stream()
               .filter(d -> type.getCapabilities(d) != null)
               .collect(toList());
-          device.setInput(matching);
+          deviceDropdown.setInput(matching);
 
           if (matching.isEmpty()) {
-            deviceLayout.topControl = deviceWarning;
+            deviceStackingLayout.topControl = deviceWarning;
             deviceWarning.requestLayout();
           } else {
-            deviceLayout.topControl = device.getControl();
-            device.getControl().requestLayout();
+            deviceStackingLayout.topControl = deviceDropdown.getControl();
+            deviceDropdown.getControl().requestLayout();
           }
 
           DeviceCaptureInfo deflt = getPreviouslySelectedDevice(trace).orElseGet(() -> {
@@ -817,11 +823,11 @@ public class TracerDialog {
             return null;
           });
           if (deflt != null) {
-            device.setSelection(new StructuredSelection(deflt));
+            deviceDropdown.setSelection(new StructuredSelection(deflt));
           }
-          device.getCombo().notifyListeners(SWT.Selection, new Event());
-        } else if (deviceLoader != null) {
-          deviceLoader.startLoading();
+          deviceDropdown.getCombo().notifyListeners(SWT.Selection, new Event());
+        } else if (deviceReloadButton != null) {
+          deviceReloadButton.setEnabled(false);
         }
       }
 
@@ -975,7 +981,7 @@ public class TracerDialog {
       }
 
       public void addModifyListener(Listener listener) {
-        device.getCombo().addListener(SWT.Selection, listener);
+        deviceDropdown.getCombo().addListener(SWT.Selection, listener);
         api.getCombo().addListener(SWT.Selection, listener);
         traceTarget.addBoxListener(SWT.Modify, listener);
         directory.addBoxListener(SWT.Modify, listener);
@@ -1104,7 +1110,7 @@ public class TracerDialog {
       }
 
       protected DeviceCaptureInfo getSelectedDevice() {
-        IStructuredSelection sel = device.getStructuredSelection();
+        IStructuredSelection sel = deviceDropdown.getStructuredSelection();
         return sel.isEmpty() ? null : (DeviceCaptureInfo)sel.getFirstElement();
       }
 
