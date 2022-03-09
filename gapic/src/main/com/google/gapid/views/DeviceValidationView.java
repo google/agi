@@ -186,7 +186,7 @@ public class DeviceValidationView extends Composite {
 
     // Resize the rest of the window if needed.
     Point curr = getShell().getSize();
-    Point want = getShell().computeSize(SWT.DEFAULT, SWT.DEFAULT);
+    Point want = getShell().computeSize(curr.x, SWT.DEFAULT);
     if (want.y > curr.y) {
       getShell().setSize(new Point(curr.x, want.y));
     }

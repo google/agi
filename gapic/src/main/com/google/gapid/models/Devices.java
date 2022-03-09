@@ -18,7 +18,6 @@ package com.google.gapid.models;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static com.google.gapid.util.Logging.throttleLogRpcError;
 import static com.google.gapid.util.MoreFutures.transformAsync;
-import static com.google.gapid.widgets.Widgets.submitIfNotDisposed;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.stream.Collectors.toList;
 
@@ -214,14 +213,14 @@ public class Devices {
       @Override
       protected void onUiThreadSuccess(Service.DeviceValidationResult r) {
         DeviceValidationResult result = new DeviceValidationResult(r);
-        submitIfNotDisposed(shell, () -> validationCache.add(device, result));
+        validationCache.add(device, result);
         onValidationResultCb.accept(result);
       }
 
       @Override
       protected void onUiThreadError(RpcException error) {
         DeviceValidationResult result = new DeviceValidationResult(error);
-        submitIfNotDisposed(shell, () -> validationCache.add(device, result));
+        validationCache.add(device, result);
         onValidationResultCb.accept(result);
       }
     });
