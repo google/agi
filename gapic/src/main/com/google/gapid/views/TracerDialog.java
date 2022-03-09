@@ -400,7 +400,8 @@ public class TracerDialog {
 
         deviceLabel = createLabel(mainGroup, "Device*:");
         deviceStackingLayout = new CenteringStackLayout();
-        Composite deviceDropdownAndButton = withLayoutData(createComposite(mainGroup, new GridLayout(2, false)),
+        Composite deviceDropdownAndButton = withLayoutData(createComposite(mainGroup,
+            withMarginOnly(new GridLayout(2, false), 0, 0)),
             new GridData(SWT.FILL, SWT.FILL, true, false));
 
         Composite deviceStackingContainer = withLayoutData(
