@@ -31,3 +31,4 @@ enum class PageProtections {
 }  // namespace gapii
 
 #endif  // GAPII_MEMORY_PROTECTIONS_H
+

@@ -372,3 +372,4 @@ DECL_GAPIL_CB(void, gapil_call_extern, context*, uint8_t* name, void* args,
 #endif  // __cplusplus
 
 #endif  // __GAPIL_RUNTIME_H__
+

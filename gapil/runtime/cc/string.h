@@ -108,3 +108,4 @@ struct hash<gapil::String> {
 }  // namespace std
 
 #endif  // __GAPIL_RUNTIME_STRING_H__
+

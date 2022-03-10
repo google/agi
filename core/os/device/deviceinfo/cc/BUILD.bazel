@@ -28,6 +28,7 @@ cc_library(
         "//tools/build:linux": glob(["linux/query.cpp"]),
         "//tools/build:windows": glob(["windows/query.cpp"]),
         "//tools/build:darwin": [],
+        "//tools/build:fuchsia-arm64": [],
         # Android
         "//conditions:default": glob([
             "android/*.cpp",
@@ -39,6 +40,7 @@ cc_library(
     linkopts = select({
         "//tools/build:linux": [],
         "//tools/build:darwin": [],
+        "//tools/build:fuchsia-arm64": [],
         "//tools/build:windows": [],
         # Android
         "//conditions:default": [

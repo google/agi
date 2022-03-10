@@ -32,6 +32,7 @@ def cc_copts():
         "@gapid//tools/build:android-armeabi-v7a": _ANDROID_COPTS,
         "@gapid//tools/build:android-arm64-v8a": _ANDROID_COPTS,
         "@gapid//tools/build:android-x86": _ANDROID_COPTS,
+        "@gapid//tools/build:fuchsia-arm64": ["-DGAPID_TARGET_OS_FUCHSIA"],
     })
 
 # Strip rule implementation, which invokes the cc_toolchain.strip_executable
@@ -88,12 +89,17 @@ strip = rule(
         ),
     },
     executable = True,
+    toolchains = ["@bazel_tools//tools/cpp:toolchain_type"],
 )
 
 # Symbol rule implementation, which invokes the _dump_syms binary to generate
 # a symbol dump file that can be uploaded to the crash server to symbolize
 # stack traces of uploaded crash dumps.
 def _symbols_impl(ctx):
+    # TODO: figure out symbol dumping for Fuchsia.
+    if ctx.vars.FUCHSIA_BUILD == 1:
+        return
+
     out = ctx.actions.declare_file(ctx.label.name)
     bin = ctx.file.src
     cc_toolchain = find_cpp_toolchain(ctx)
