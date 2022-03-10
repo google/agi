@@ -29,6 +29,8 @@ cc_library(
         ]),
         "//tools/build:fuchsia-arm64": glob([
             "fuchsia/*.cpp",
+            "fuchsia/*.h",
+            "posix/*.cpp",
         ]),
         "//tools/build:darwin": glob([
             "osx/*.cpp",
@@ -58,8 +60,9 @@ cc_library(
     deps = [
         "@cityhash",
     ] + select({
+        # Turn off breakpad dependency on Fuchsia.
         "//tools/build:fuchsia-arm64": [],
-        "//conditions:default": [ "@breakpad" ],
+        "//conditions:default": ["@breakpad"],
     }),
 )
 

@@ -64,8 +64,7 @@ bool query::queryCpu(CpuInfo* info, std::string* error) {
         hardware = line.substr(colon + 2);
       } else if (line.rfind("Processor") == 0) {
         processor = line.substr(colon + 2);
-      
-}
+      }
     }
     proc.close();
 
@@ -112,13 +111,13 @@ bool query::queryCpu(CpuInfo* info, std::string* error) {
 
   // Name, Architecture
   fuchsia::hwinfo::BoardSyncPtr board_ptr;
-  if(context->svc()->Connect(board_ptr.NewRequest()) != ZX_OK) {
+  if (context->svc()->Connect(board_ptr.NewRequest()) != ZX_OK) {
     error->append("Failed board context Connect() call.");
     return false;
   }
 
   fuchsia::hwinfo::BoardInfo board_info;
-  if(board_ptr->GetInfo(&board_info) != ZX_OK) {
+  if (board_ptr->GetInfo(&board_info) != ZX_OK) {
     error->append("Failed fuchsia board GetInfo() call.");
     return false;
   }
@@ -127,7 +126,7 @@ bool query::queryCpu(CpuInfo* info, std::string* error) {
     error->append("Unspecified board cpu architecture.");
     return false;
   }
-  switch(board_info.cpu_architecture()) {
+  switch (board_info.cpu_architecture()) {
     case fuchsia::hwinfo::Architecture::ARM64:
 #ifdef __arm__
       info->architecture = device::ARMv7a;
@@ -148,12 +147,12 @@ bool query::queryCpu(CpuInfo* info, std::string* error) {
 
   // Vendor
   fuchsia::hwinfo::ProductSyncPtr product_ptr;
-  if(context->svc()->Connect(product_ptr.NewRequest()) != ZX_OK) {
+  if (context->svc()->Connect(product_ptr.NewRequest()) != ZX_OK) {
     error->append("Failed product context Connect() call.");
     return false;
   }
   fuchsia::hwinfo::ProductInfo product_info;
-  if(product_ptr->GetInfo(&product_info) != ZX_OK) {
+  if (product_ptr->GetInfo(&product_info) != ZX_OK) {
     error->append("Failed fuchsia product GetInfo() call.");
     return false;
   }
@@ -166,7 +165,7 @@ bool query::queryCpu(CpuInfo* info, std::string* error) {
 #else
   info->vendor = "ARM";  // TODO: get the implementer?
 #endif
-      
+
   return true;
 }
 

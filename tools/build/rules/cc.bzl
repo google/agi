@@ -51,7 +51,7 @@ def _strip_impl(ctx):
 
     flags = []
     cc_toolchain = find_cpp_toolchain(ctx)
-    if cc_toolchain.cpu == "k8" or cc_toolchain.cpu == "x64_windows":
+    if cc_toolchain.cpu == "k8" or cc_toolchain.cpu == "x64_windows" or cc_toolchain.cpu == "aarch64":
         flags = ["--strip-unneeded", "-p"]
     elif cc_toolchain.cpu == "darwin_x86_64":
         flags = ["-x"]
@@ -63,9 +63,10 @@ def _strip_impl(ctx):
     ctx.actions.run(
         executable = cc_toolchain.strip_executable,
         arguments = flags + ["-o", out.path, src.path],
-        inputs = [src],
+	inputs = depset(direct = [src], transitive = [ cc_toolchain.all_files ]),
         outputs = [out],
     )
+
     return struct(
         files = depset([out]),
         runfiles = ctx.runfiles(collect_data = True),

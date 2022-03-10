@@ -87,11 +87,11 @@ config_setting(
 
 config_setting(
     name = "fuchsia-arm64",
-    values = {
-        "cpu": "aarch64",
-    },
     define_values = {
         "FUCHSIA_BUILD": "1",
+    },
+    values = {
+        "cpu": "aarch64",
     },
 )
 
