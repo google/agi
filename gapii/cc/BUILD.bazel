@@ -88,7 +88,11 @@ cc_library(
         "//gapis/memory/memory_pb:memory_pb_cc_proto",
         "@com_google_protobuf//:protobuf",
         "@spirv_reflect//:libspirv_reflect",
-    ],
+    ] + select({
+      "//tools/build:fuchsia-arm64": [
+        "@fuchsia_sdk_core//:sdk_core",
+      ],
+    }),
     alwayslink = True,
 )
 
