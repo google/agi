@@ -55,6 +55,7 @@ cc_library(
         "//core/os/device:device_cc_proto",
     ] + select({
         "//tools/build:darwin": [":darwin_query"],
+        "//tools/build:fuchsia-arm64": ["@fuchsia_sdk_dynamic//fidl/fuchsia.hwinfo:fuchsia.hwinfo_cc"],
         "//conditions:default": [],
     }),
 )
