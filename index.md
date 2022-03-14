@@ -13,7 +13,7 @@ title: Home
     <p>A single tool that will help you profile graphics on Android across several GPUs: Qualcomm® Adreno™, Arm® Mali™, and Imagination® PowerVR™. Vulkan and OpenGL ES APIs are both supported.</p>
     <br/>
     <div style="text-align: center;">
-      <a class="home-signup" href="https://github.com/google/agi/releases/latest">Download AGI Open Beta</a>
+      <a class="home-signup" href="https://github.com/google/agi/releases/latest">Download AGI</a>
     </div>
   </div>
 </div>
@@ -48,7 +48,7 @@ title: Home
     </a>
     <p class="larger">
       <b>Dive deep into a single frame</b><br/>
-      Coming soon: Take a capture of a single frame to step through and profile each individual draw call. 
+      Take a capture of a single frame to step through and profile each individual draw call.
     </p>
   </div>
 </div>
