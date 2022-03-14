@@ -2,25 +2,10 @@ toc:
   - title: About AGI
     url: docs/
     subnav:
-      - title: Download
-        url: docs/download
       - title: Getting Started
         url: docs/getting-started
-      - title: Tutorials
-        url: docs/tutorials
-      - title: Supported Extensions
-        url: docs/extensions
       - title: Troubleshooting
         url: docs/troubleshooting
-  - title: GPU Counters
-    url: docs/gpu-counters/
-    subnav:
-      - title: Arm® Mali™ Counters
-        url: docs/gpu-counters/arm
-      - title: Qualcomm® Adreno™ Counters
-        url: docs/gpu-counters/qualcomm
-      - title: Imagination® PowerVR™ Counters
-        url: docs/gpu-counters/img
   - title: System Requirements
     url: docs/requirements
     subnav:
@@ -28,50 +13,7 @@ toc:
         url: docs/devices
       - title: Device Validation
         url: validation
-  - title: CLI documentation
-    url: docs/cli
   - title: Releases
     class: external-link
     target: external
     url: https://github.com/google/agi/releases
-
-old:
-  - title: Tutorials
-    subnav:
-      - title: Capture a trace
-        url: tutorials/capturetrace
-      - title: See bound shaders
-        url: tutorials/seeboundshaders
-      - title: Iterate on shaders
-        url: tutorials/iterateonshaders
-      - title: Find the largest textures
-        url: tutorials/findlargesttextures
-      - title: Optimize an application
-        url: tutorials/optimize
-      - title: Export resources
-        url: tutorials/export
-      - title: Create a video of a trace
-        url: tutorials/createvideo
-      - title: Check Vulkan render state
-        url: tutorials/renderstate
-  - title: Capture a trace
-    url: trace/
-  - title: Inspect a trace
-    url: inspecting/
-    subnav:
-      - title: Commands pane
-        url: inspect/commands
-      - title: Framebuffer pane
-        url: inspect/framebuffer
-      - title: Geometry pane
-        url: inspect/geometry
-      - title: Report pane
-        url: inspect/report
-      - title: Shaders pane
-        url: inspect/shaders
-      - title: Memory pane
-        url: inspect/memory
-      - title: State pane
-        url: inspect/state
-      - title: Textures pane
-        url: inspect/textures
