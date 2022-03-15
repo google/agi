@@ -2441,6 +2441,31 @@ func (sb *stateBuilder) createRenderPass2(rp RenderPassObjectʳ) {
 	subpassDescriptions := []VkSubpassDescription2{}
 	for _, k := range rp.SubpassDescriptions().Keys() {
 		sd := rp.SubpassDescriptions().Get(k)
+		sdPnext := NewVoidᶜᵖ(memory.Nullptr)
+
+		if !sd.DepthStencilResolve().IsNil() {
+			depthStencilResolve := sd.DepthStencilResolve().Get()
+
+			dsrAttachmentRef := NewVkAttachmentReference2ᶜᵖ(sb.MustAllocReadData(
+				NewVkAttachmentReference2(
+					VkStructureType_VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2,
+					NewVoidᶜᵖ(memory.Nullptr),
+					depthStencilResolve.DepthStencilResolveAttachment().Attachment(),
+					depthStencilResolve.DepthStencilResolveAttachment().Layout(),
+					depthStencilResolve.DepthStencilResolveAttachment().AspectMask(),
+				),
+			).Ptr())
+
+			sdPnext = NewVoidᶜᵖ(sb.MustAllocReadData(
+				NewVkSubpassDescriptionDepthStencilResolve(
+					VkStructureType_VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_DEPTH_STENCIL_RESOLVE,
+					NewVoidᶜᵖ(memory.Nullptr),
+					depthStencilResolve.DepthResolveMode(),
+					depthStencilResolve.StencilResolveMode(),
+					dsrAttachmentRef,
+				),
+			).Ptr())
+		}
 
 		depthStencil := NewVkAttachmentReference2ᶜᵖ(memory.Nullptr)
 		if !sd.DepthStencilAttachment().IsNil() {
@@ -2529,7 +2554,7 @@ func (sb *stateBuilder) createRenderPass2(rp RenderPassObjectʳ) {
 
 		subpassDescriptions = append(subpassDescriptions, NewVkSubpassDescription2(
 			VkStructureType_VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2,
-			NewVoidᶜᵖ(memory.Nullptr),
+			sdPnext,
 			sd.Flags(),                             // flags
 			sd.PipelineBindPoint(),                 // pipelineBindPoint
 			sd.ViewMask(),                          // viewMask
