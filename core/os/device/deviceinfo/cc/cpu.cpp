@@ -156,15 +156,11 @@ bool query::queryCpu(CpuInfo* info, std::string* error) {
     error->append("Failed fuchsia product GetInfo() call.");
     return false;
   }
-#if 1
   if (!product_info.has_manufacturer()) {
     error->append("Unspecified product manufacturer.");
     return false;
   }
   info->vendor = product_info.manufacturer();
-#else
-  info->vendor = "ARM";  // TODO: get the implementer?
-#endif
 
   return true;
 }

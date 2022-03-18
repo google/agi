@@ -27,6 +27,7 @@
 #define OSX_ONLY(x)
 #define WINDOWS_ONLY(x)
 #define ANDROID_ONLY(x)
+#define FUCHSIA_ONLY(x)
 
 #if defined(GAPID_TARGET_OS_LINUX)
 #define TARGET_OS GAPID_OS_LINUX
