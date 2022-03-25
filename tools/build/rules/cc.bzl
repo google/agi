@@ -98,7 +98,7 @@ strip = rule(
 # stack traces of uploaded crash dumps.
 def _symbols_impl(ctx):
     # TODO: figure out symbol dumping for Fuchsia.
-    if ctx.vars.FUCHSIA_BUILD == 1:
+    if ctx.var.FUCHSIA_BUILD == 1:
         return
 
     out = ctx.actions.declare_file(ctx.label.name)
