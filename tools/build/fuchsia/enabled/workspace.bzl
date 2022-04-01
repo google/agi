@@ -21,7 +21,7 @@ def fuchsia_base_dependencies(locals = {}):
     name = "rules_fuchsia",
     locals = locals,
     remote = "https://fuchsia.googlesource.com/sdk-integration",
-    commit = "d7b28c615ed94a4623c04d9e21be9d3e4fd0687f",
-    shallow_since = "1646262996 +0000",
+    commit = "ff00596b298d201602e0be7531b4802c10eb8551",
+    shallow_since = "1648178502 +0000",
     patch_cmds = ["rm -R tools", "mv bazel_rules_fuchsia/* ."],
   )
