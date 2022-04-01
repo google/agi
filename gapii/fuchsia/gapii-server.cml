@@ -1,0 +1,25 @@
+{
+    program: {
+        binary: "bin/gapii_server",
+        runner: "elf",
+        forward_stderr_to: "log",
+        forward_stdout_to: "log",
+    },
+    use: [
+        { protocol: "fuchsia.logger.LogSink" },
+    ],
+    capabilities: [
+        {
+            directory: "gapii-pkg",
+            rights: [ "rx*" ],
+            path: "/pkg",
+        },
+    ],
+    expose: [
+        {
+            directory: "gapii-pkg",
+            from: "self",
+            rights: [ "rx*" ],
+        },
+    ],
+}
