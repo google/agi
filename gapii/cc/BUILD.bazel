@@ -13,7 +13,7 @@
 # limitations under the License.
 
 load("//tools/build:rules.bzl", "android_dynamic_library", "apic_compile", "apic_template", "cc_copts", "cc_dynamic_library")
-load("@rules_fuchsia//fuchsia:defs.bzl", "fuchsia_component", "fuchsia_component_manifest", "fuchsia_package")
+load("@rules_fuchsia//fuchsia:defs.bzl", "fuchsia_component", "fuchsia_component_manifest", "fuchsia_package", "fuchsia_package_archive")
 
 apic_template(
     name = "vulkan_templated",
@@ -120,6 +120,12 @@ fuchsia_component(
 )
 
 fuchsia_package(
-    name = "gapii_pkg",
+    name = "gapii",
     deps = [":gapii_component"],
+)
+
+fuchsia_package_archive(
+    name = "gapii_far",
+    package = ":gapii",
+    archive_name = "gapii.far"
 )
