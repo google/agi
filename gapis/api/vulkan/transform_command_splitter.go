@@ -69,7 +69,7 @@ func NewCommandSplitter(ctx context.Context, cmdsOffset uint64) *commandSplitter
 // The requested command ids will be sorted and handled in one pass.
 func (splitter *commandSplitter) Split(ctx context.Context, id api.SubCmdIdx) error {
 	if splitter.mutationStarted {
-		return log.Err(ctx, nil, "Commands cannot be requested to disable after mutation started")
+		return log.Err(ctx, nil, "Commands cannot be requested to split after mutation started")
 	}
 
 	if len(id) == 0 {
@@ -361,7 +361,7 @@ func (splitter *commandSplitter) rewriteCommandBuffer(
 			return err
 		}
 
-		// jump to the end of the renderpass
+		// Jump to the end of the renderpass
 		i = endRenderPassIndex
 	}
 
@@ -488,7 +488,7 @@ func (splitter *commandSplitter) rewriteRenderPass(
 			}
 		case VkCmdExecuteCommandsArgsʳ:
 			currentSubCmdID := append(idx, uint64(i))
-			// if there is any framebuffer is requested in a command buffer executed by a VkCmdExecuteCommands
+			// If there is any framebuffer is requested in a command buffer executed by a VkCmdExecuteCommands
 			// flatten the all command buffers.
 			if splitter.isSubCmdRequestedNext(currentSubCmdID) {
 				replaceCommand = true
@@ -670,19 +670,19 @@ func (splitter *commandSplitter) createRenderPassSplitters(ctx context.Context, 
 	//
 	// For example for a renderpass that has 3 subpass with 3 draw in each:
 	// {
-	//	SP1[draw, draw, draw], SP2[draw, draw, draw], SP3[draw, draw, draw]
+	//     SP1[draw, draw, draw], SP2[draw, draw, draw], SP3[draw, draw, draw]
 	// }
 	//
 	// Let's assume we request drawcalls with *
 	// {
-	// SP1[draw*, draw, draw], SP2[draw, draw*, draw], SP3[draw, draw*, draw*]
+	//     SP1[draw*, draw, draw], SP2[draw, draw*, draw], SP3[draw, draw*, draw*]
 	// }
 	//
 	// The new renderpasses at the end of this transform will be
 	// {
-	// Enter1[draw*], [InsertionCmd], Intermediate1[draw, draw], Exit1[],
-	// Enter2[draw, draw*], [InsertionCmd], Intermedite2[draw], Exit2[],
-	// Enter3[draw, draw*], [InsertionCmd], Intermediate2[draw*], [InsertionCmd], Intermediate2[], Exit2[]
+	//     Enter1[draw*], [InsertionCmd], Intermediate1[draw, draw], Exit1[],
+	//     Enter2[draw, draw*], [InsertionCmd], Intermedite2[draw], Exit2[],
+	//     Enter3[draw, draw*], [InsertionCmd], Intermediate2[draw*], [InsertionCmd], Intermediate2[], Exit2[]
 	// }
 
 	for i := uint32(0); i < uint32(renderPassObject.SubpassDescriptions().Len()); i++ {

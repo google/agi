@@ -35,8 +35,8 @@ func newCommandBuilderUtil(allocations *allocationTracker) *commandBuilderUtil {
 	}
 }
 
-func (util *commandBuilderUtil) allocReadData(ctx context.Context, g *api.GlobalState, v ...interface{}) api.AllocResult {
-	allocateResult := util.allocations.AllocDataOrPanic(ctx, v...)
+func (util *commandBuilderUtil) allocReadData(ctx context.Context, g *api.GlobalState, value ...interface{}) api.AllocResult {
+	allocateResult := util.allocations.AllocDataOrPanic(ctx, value...)
 	util.readMemories = append(util.readMemories, &allocateResult)
 	rng, id := allocateResult.Data()
 	g.Memory.ApplicationPool().Write(rng.Base, memory.Resource(id, rng.Size))
@@ -56,6 +56,9 @@ func (util *commandBuilderUtil) observeNewCommand(cmd api.Cmd) {
 	for i := range util.writeMemories {
 		cmd.Extras().GetOrAppendObservations().AddWrite(util.writeMemories[i].Data())
 	}
+
+	util.readMemories = []*api.AllocResult{}
+	util.writeMemories = []*api.AllocResult{}
 }
 
 func createNewCommandPool(
