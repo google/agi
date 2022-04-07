@@ -281,6 +281,10 @@ public class ShaderView extends Composite
     }
 
     public void setShader(Service.Resource resource, API.Shader shader) {
+      if (resource == null || shader == null) {
+        return;
+      }
+
       rpcController.start().listen(models.resources.loadResourceExtras(resource),
           new UiCallback<API.ResourceExtras, API.ShaderExtras>(this, LOG) {
         @Override
