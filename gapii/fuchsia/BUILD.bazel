@@ -12,12 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@rules_fuchsia//fuchsia:defs.bzl", "fuchsia_component", "fuchsia_component_manifest", "fuchsia_package", "fuchsia_package_archive")
+load("@rules_fuchsia//fuchsia:defs.bzl", "fuchsia_component", "fuchsia_component_manifest", "fuchsia_package", "fuchsia_package_archive", "fuchsia_package_resource")
 
 fuchsia_component_manifest(
     name = "gapii_component_manifest",
     src = "gapii.cml",
-    includes = [ "application.shard.cml" ],
+    includes = ["application.shard.cml"],
+)
+
+fuchsia_package_resource(
+    name = "layer_override",
+    src = "VkLayer_override.json",
+    dest = "data/vulkan/implicit_layer.d/VkLayer_override.json",
 )
 
 fuchsia_component(
@@ -28,11 +34,14 @@ fuchsia_component(
 
 fuchsia_package(
     name = "gapii",
-    deps = [":gapii_component"],
+    deps = [
+        ":gapii_component",
+        ":layer_override",
+    ],
 )
 
 fuchsia_package_archive(
     name = "gapii_far",
+    archive_name = "gapii.far",
     package = ":gapii",
-    archive_name = "gapii.far"
 )

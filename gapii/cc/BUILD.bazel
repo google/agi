@@ -110,7 +110,7 @@ android_dynamic_library(
 fuchsia_component_manifest(
     name = "gapii_component_manifest",
     src = "fuchsia/gapii.cml",
-    includes = [ "fuchsia/application.shard.cml" ],
+    includes = ["fuchsia/application.shard.cml"],
 )
 
 fuchsia_component(
@@ -126,6 +126,6 @@ fuchsia_package(
 
 fuchsia_package_archive(
     name = "gapii_far",
+    archive_name = "gapii.far",
     package = ":gapii",
-    archive_name = "gapii.far"
 )
