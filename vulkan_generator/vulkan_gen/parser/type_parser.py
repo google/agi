@@ -31,6 +31,10 @@ class AllVulkanTypes:
     """
     # This class holds every Vulkan Type as [typename -> type]
     handles = Dict[str, types.VulkanHandle]
+    # Melih TODO: We probably need the map in two ways while generating code
+    # both type -> alias and alias -> type
+    # For now, lets store as the other types but when we do code generation,
+    # We may have an extra step to convert the map to other direction.
     handle_aliases = Dict[str, types.VulkanHandleAlias]
 
     def __init__(self):

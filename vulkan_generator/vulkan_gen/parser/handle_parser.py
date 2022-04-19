@@ -32,7 +32,7 @@ def parse_handle_by_attribute(root: ET.Element) -> types.VulkanHandleAlias:
     name = root.attrib["name"]
     alias = root.attrib["alias"]
     vulkan_handle = types.VulkanHandleAlias(
-        typename=name, alias_typename=alias)
+        typename=name, aliased_typename=alias)
     return vulkan_handle
 
 

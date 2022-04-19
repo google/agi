@@ -50,8 +50,9 @@ class VulkanHandle(VulkanType):
 @dataclass
 class VulkanHandleAlias(VulkanType):
     """The meta data defines a Vulkan Handle alias"""
-    alias_handle: VulkanHandle
+    aliased_typename: str
 
-    def __init__(self, typename: str, alias_typename: str):
-        VulkanType.__init__(self, VulkanTypeCategories.VULKAN_HANDLE_ALIAS, typename)
-        self.alias_handle = VulkanHandle(alias_typename)
+    def __init__(self, typename: str, aliased_typename: str):
+        VulkanType.__init__(
+            self, VulkanTypeCategories.VULKAN_HANDLE_ALIAS, typename)
+        self.aliased_typename = aliased_typename
