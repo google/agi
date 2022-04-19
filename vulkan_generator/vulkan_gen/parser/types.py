@@ -22,24 +22,14 @@ class VulkanType:
     """Base class for a Vulkan Type. All the other Types should inherit from this class"""
     typename: str
 
-    def __init__(self, typename: str):
-        self.typename = typename
-
 
 @dataclass
 class VulkanHandle(VulkanType):
     """The meta data defines a Vulkan Handle"""
     # Melih TODO: Vulkan Handles have object type in the XML that might be required in the future
 
-    def __init__(self, typename: str):
-        VulkanType.__init__(self, typename)
-
 
 @dataclass
 class VulkanHandleAlias(VulkanType):
     """The meta data defines a Vulkan Handle alias"""
     aliased_typename: str
-
-    def __init__(self, typename: str, aliased_typename: str):
-        VulkanType.__init__(self, typename)
-        self.aliased_typename = aliased_typename
