@@ -46,9 +46,9 @@ def process_handle(vulkan_types: AllVulkanTypes, handle_element: ET.Element) -> 
     """ Parse the Vulkan type "Handle". This can be an handle or an alias to another handle """
     handle = handle_parser.parse(handle_element)
 
-    if handle.category == types.VulkanTypeCategories.VULKAN_HANDLE:
+    if isinstance(handle, types.VulkanHandle):
         vulkan_types.handles[handle.typename] = handle
-    elif handle.category == types.VulkanTypeCategories.VULKAN_HANDLE_ALIAS:
+    elif isinstance(handle, types.VulkanHandleAlias):
         vulkan_types.handle_aliases[handle.typename] = handle
 
 

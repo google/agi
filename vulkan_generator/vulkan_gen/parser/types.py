@@ -18,23 +18,12 @@ from dataclasses import dataclass
 from enum import Enum
 
 
-# Melih TODO: Complete
-class VulkanTypeCategories(Enum):
-    """Enum to define different kinds of Vulkan types"""
-    VULKAN_HANDLE = 1
-    VULKAN_HANDLE_ALIAS = 2
-    VULKAN_ENUM = 3
-    VULKAN_STRUCT = 4
-
-
 @dataclass
 class VulkanType:
     """Base class for a Vulkan Type. All the other Types should inherit from this class"""
-    category: VulkanTypeCategories
     typename: str
 
-    def __init__(self, category: VulkanTypeCategories, typename: str):
-        self.category = category
+    def __init__(self, typename: str):
         self.typename = typename
 
 
@@ -44,7 +33,7 @@ class VulkanHandle(VulkanType):
     # Melih TODO: Vulkan Handles have object type in the XML that might be required in the future
 
     def __init__(self, typename: str):
-        VulkanType.__init__(self, VulkanTypeCategories.VULKAN_HANDLE, typename)
+        VulkanType.__init__(self, typename)
 
 
 @dataclass
@@ -53,6 +42,5 @@ class VulkanHandleAlias(VulkanType):
     aliased_typename: str
 
     def __init__(self, typename: str, aliased_typename: str):
-        VulkanType.__init__(
-            self, VulkanTypeCategories.VULKAN_HANDLE_ALIAS, typename)
+        VulkanType.__init__(self, typename)
         self.aliased_typename = aliased_typename

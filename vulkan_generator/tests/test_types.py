@@ -51,4 +51,4 @@ def test_vulkan_handle_by_attribute() -> None:
 
     assert isinstance(handle, VulkanHandleAlias)
     assert handle.typename == "VkDescriptorUpdateTemplateKHR"
-    assert handle.alias_handle.typename == "VkDescriptorUpdateTemplate"
+    assert handle.aliased_typename == "VkDescriptorUpdateTemplate"
