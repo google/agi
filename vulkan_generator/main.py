@@ -14,6 +14,7 @@
 
 """This is the entry point for Vulkan Code Generator"""
 
+from pathlib import Path
 import sys
 
 from vulkan_gen import generator
@@ -21,9 +22,7 @@ from vulkan_gen import generator
 
 def main() -> int:
     """ Entry point """
-    result = generator.generate(sys.argv[1])
-    assert result
-    return 0
+    generator.generate(Path(sys.argv[1]))
 
 
 if __name__ == "__main__":

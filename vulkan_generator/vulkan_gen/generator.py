@@ -14,6 +14,7 @@
 
 """This is the top level point for Vulkan Code Generator"""
 
+from pathlib import Path
 from pprint import pprint
 from vulkan_gen.parser import parser as vulkan_parser
 
@@ -29,7 +30,7 @@ def print_vulkan_metaadata(vulkan_metadata) -> None:
     pprint(vulkan_metadata.handle_aliases)
 
 
-def generate(vulkan_xml_path: str) -> bool:
+def generate(vulkan_xml_path: Path) -> bool:
     """ Generator function """
     all_vulkan_types = vulkan_parser.parse(vulkan_xml_path)
     print_vulkan_metaadata(all_vulkan_types)

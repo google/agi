@@ -23,4 +23,6 @@ def get_text_from_tag(root: ET.Element, tag: str) -> str:
         if tag == child.tag:
             return child.text
 
-    return None
+    # This should not happen
+    raise SyntaxError("No name tag found in {element}".format(
+        element=ET.tostring(root, "utf-8")))
