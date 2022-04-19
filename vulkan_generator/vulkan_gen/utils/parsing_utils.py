@@ -24,5 +24,4 @@ def get_text_from_tag(root: ET.Element, tag: str) -> str:
             return child.text
 
     # This should not happen
-    raise SyntaxError("No name tag found in {element}".format(
-        element=ET.tostring(root, "utf-8")))
+    raise SyntaxError(f"No name tag found in {ET.tostring(root, 'utf-8')}")

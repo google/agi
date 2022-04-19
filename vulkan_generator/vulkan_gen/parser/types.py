@@ -15,7 +15,6 @@
 """This module contains the Vulkan meta data definitions to define Vulkan types and functions"""
 
 from dataclasses import dataclass
-from enum import Enum
 
 
 @dataclass
