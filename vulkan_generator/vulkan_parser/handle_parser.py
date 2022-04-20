@@ -16,8 +16,8 @@
 
 import xml.etree.ElementTree as ET
 
-from vulkan_gen.utils import parsing_utils
-from vulkan_gen.parser import types
+from vulkan_utils import parsing_utils
+from vulkan_parser import types
 
 
 def parse_handle_by_attribute(root: ET.Element) -> types.VulkanHandleAlias:

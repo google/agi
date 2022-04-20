@@ -22,8 +22,8 @@ if they reflect the new XML
 
 import xml.etree.ElementTree as ET
 
-from vulkan_gen.parser import handle_parser
-from vulkan_gen.parser.types import VulkanHandle, VulkanHandleAlias
+from vulkan_parser import handle_parser
+from vulkan_parser.types import VulkanHandle, VulkanHandleAlias
 
 
 def test_vulkan_handle_by_tag() -> None:

@@ -16,7 +16,7 @@
 
 import xml.etree.ElementTree as ET
 
-from vulkan_gen.parser import type_parser
+from vulkan_parser import type_parser
 
 
 def parse(filename: str) -> type_parser.AllVulkanTypes:

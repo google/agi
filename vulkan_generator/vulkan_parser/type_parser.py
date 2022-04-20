@@ -20,8 +20,8 @@ import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from typing import Dict
 
-from vulkan_gen.parser import types
-from vulkan_gen.parser import handle_parser
+from vulkan_parser import types
+from vulkan_parser import handle_parser
 
 
 @dataclass

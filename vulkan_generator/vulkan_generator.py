@@ -16,7 +16,7 @@
 
 from pathlib import Path
 from pprint import pprint
-from vulkan_gen.parser import parser as vulkan_parser
+from vulkan_parser import parser as vulkan_parser
 
 
 def print_vulkan_metaadata(vulkan_metadata) -> None:

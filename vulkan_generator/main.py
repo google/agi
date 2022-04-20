@@ -17,12 +17,12 @@
 from pathlib import Path
 import sys
 
-from vulkan_gen import generator
+import vulkan_generator
 
 
 def main() -> int:
     """ Entry point """
-    generator.generate(Path(sys.argv[1]))
+    vulkan_generator.generate(Path(sys.argv[1]))
 
 
 if __name__ == "__main__":
