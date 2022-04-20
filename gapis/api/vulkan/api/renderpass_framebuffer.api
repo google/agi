@@ -197,8 +197,39 @@ Thefore there is no need to repeat the KHR structs
   @unused RenderPassVersion                  Version
 }
 
+
+/*
+Note to Pascal:
+
+We ideally would want to keep only one of them.
+
+"convertAttachment" already exists but we cannot use it for the
+depthStencil atttachment as it's optional.
+
+We convert pDepthStencilAttachment to a ref!AttachmentReference so that
+in state rebuilder we can check if it's null or not and rebuild if it's not null
+
+Another option is having the function returning a reference(I have already created
+a sample function convertAttachmentAsReference) and dereference it to assign when
+AttachmentReference directly needed.
+
+For example, color attachments are array in Vulkan. Therefore we keep the as map!(u32, AttachmentReference)
+We can choose to keep them as reference as well but in that case we need to check if it's null everytime,
+even though we know they are not(as we know the array length)
+*/
+
 sub AttachmentReference convertAttachment(VkAttachmentReference attachment) {
   return AttachmentReference(
+    Attachment: attachment.attachment,
+    Layout: attachment.layout,
+    AspectMask: 0, // This will be updated by VkRenderPassInputAttachmentAspectCreateInfo
+    StencilLayout: null,
+  )
+}
+
+// Example function that can return ref
+sub ref!AttachmentReference convertAttachmentAsReference(VkAttachmentReference attachment) {
+  return new!AttachmentReference(
     Attachment: attachment.attachment,
     Layout: attachment.layout,
     AspectMask: 0, // This will be updated by VkRenderPassInputAttachmentAspectCreateInfo
@@ -252,19 +283,52 @@ sub ref!RenderPassObject createRenderPassObjectFromInfo(
     if subpass.pResolveAttachments != null {
       resolveAttachments := subpass.pResolveAttachments[0:subpass.colorAttachmentCount]
       for j in (0 .. subpass.colorAttachmentCount) {
+      /*
+        To Pascal: This is how we currently do. convertAttachment works for our use case
+        here but not for the depth stencil attachment.
+      */
         description.ResolveAttachments[j] = convertAttachment(resolveAttachments[j])
+
+      /*
+        To Pascal: An alternative would be using convertAttachmentAsReference to return a reference
+        and dereference the return type to assign. And the depthStencilAttachment would directly use
+        the reference.
+
+      */
+
+      // Example
+      newRefToAttachRef := convertAttachmentAsReference(resolveAttachments[j])
+      // Some sort of conversion here to dereference the object
+      newObjToAttachRef := newRefToAttachRef
+      description.ResolveAttachments[j] = newObjToAttachRef
       }
     }
 
     if (subpass.pDepthStencilAttachment != null) {
-      attachment := subpass.pDepthStencilAttachment[0]
-      // Cannot call convert
-      description.DepthStencilAttachment = new!AttachmentReference(
-        Attachment: attachment.attachment,
-        Layout: attachment.layout,
-        AspectMask: 0, // This will be updated by VkRenderPassInputAttachmentAspectCreateInfo
-        StencilLayout: null,
-      )
+      /*
+        To Pascal: This is how we currently do. Because we cannot use convertAttachment
+        we have to repeat the code here.
+      */
+
+      // attachment := subpass.pDepthStencilAttachment[0]
+      // // Cannot call convert
+      // description.DepthStencilAttachment = new!AttachmentReference(
+      //   Attachment: attachment.attachment,
+      //   Layout: attachment.layout,
+      //   AspectMask: 0, // This will be updated by VkRenderPassInputAttachmentAspectCreateInfo
+      //   StencilLayout: null,
+      // )
+
+      // An option would be:
+      newObjToAttachRef := convertAttachment(subpass.pDepthStencilAttachment[0])
+      // Some sort of conversion here to reference the object
+      newRefToAttachRef := newObjToAttachRef
+      description.DepthStencilAttachment = newRefToAttachRef
+
+      // Otherwise we have to use a second helper function to repeat convertAttachment
+      // which is prone to error due to maintenance cost
+      description.DepthStencilAttachment = convertAttachmentAsReference(subpass.pDepthStencilAttachment[0])
+
     }
 
     preserveAttachments := subpass.pPreserveAttachments[0:subpass.preserveAttachmentCount]
