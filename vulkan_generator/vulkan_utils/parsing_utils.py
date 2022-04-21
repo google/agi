@@ -17,11 +17,11 @@
 import xml.etree.ElementTree as ET
 
 
-def get_text_from_tag(root: ET.Element, tag: str) -> str:
+def get_text_from_tag(elem: ET.Element, tag: str) -> str:
     """Gets the text of the element with the given tag"""
-    for child in root:
+    for child in elem.iter():
         if tag == child.tag:
             return child.text
 
     # This should not happen
-    raise SyntaxError(f"No name tag found in {ET.tostring(root, 'utf-8')}")
+    raise SyntaxError(f"No name tag found in {ET.tostring(elem, 'utf-8')}")

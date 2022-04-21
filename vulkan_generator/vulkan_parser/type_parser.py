@@ -52,14 +52,14 @@ def process_handle(vulkan_types: AllVulkanTypes, handle_element: ET.Element) -> 
         vulkan_types.handle_aliases[handle.typename] = handle
 
 
-def parse(root: ET.Element) -> AllVulkanTypes:
+def parse(types_root: ET.Element) -> AllVulkanTypes:
     """ Parses all the Vulkan types and returns them in an object with dictionaries to each type """
     vulkan_types = AllVulkanTypes()
 
-    for child in root:
-        if "category" in child.attrib:
-            type_category = child.attrib["category"]
+    for type_element in types_root.iter():
+        if "category" in type_element.attrib:
+            type_category = type_element.attrib["category"]
             if type_category == "handle":
-                process_handle(vulkan_types, child)
+                process_handle(vulkan_types, type_element)
 
     return vulkan_types

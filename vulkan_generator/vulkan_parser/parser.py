@@ -22,11 +22,9 @@ from vulkan_parser import type_parser
 def parse(filename: str) -> type_parser.AllVulkanTypes:
     """ Parse the Vulkan XML to extract every information that is needed for code generation"""
     tree = ET.parse(filename)
-    root = tree.getroot()
-
     all_types = type_parser.AllVulkanTypes()
 
-    for child in root:
+    for child in tree.iter():
         if child.tag == "types":
             all_types = type_parser.parse(child)
 
