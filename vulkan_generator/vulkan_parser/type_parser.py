@@ -20,8 +20,7 @@ import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from typing import Dict
 
-from vulkan_parser import types
-from vulkan_parser import handle_parser
+from vulkan_parser import handle_parser, struct_parser, types
 
 
 @dataclass
@@ -41,6 +40,12 @@ class AllVulkanTypes:
     handle_aliases: Dict[str, types.VulkanHandleAlias] = dataclasses.field(
         default_factory=dict)
 
+    structs: Dict[str, types.VulkanStruct] = dataclasses.field(
+        default_factory=dict)
+
+    struct_aliases: Dict[str, types.VulkanStructAlias] = dataclasses.field(
+        default_factory=dict)
+
 
 def process_handle(vulkan_types: AllVulkanTypes, handle_element: ET.Element) -> None:
     """ Parse the Vulkan type "Handle". This can be an handle or an alias to another handle """
@@ -52,6 +57,16 @@ def process_handle(vulkan_types: AllVulkanTypes, handle_element: ET.Element) -> 
         vulkan_types.handle_aliases[handle.typename] = handle
 
 
+def process_struct(vulkan_types: AllVulkanTypes, struct_element: ET.Element) -> None:
+    """ Parse the Vulkan type "Struct". This can be a struct or an alias to another struct """
+    vulkan_struct = struct_parser.parse(struct_element)
+
+    if isinstance(vulkan_struct, types.VulkanStruct):
+        vulkan_types.structs[vulkan_struct.typename] = vulkan_struct
+    elif isinstance(vulkan_struct, types.VulkanStructAlias):
+        vulkan_types.struct_aliases[vulkan_struct.typename] = vulkan_struct
+
+
 def parse(types_root: ET.Element) -> AllVulkanTypes:
     """ Parses all the Vulkan types and returns them in an object with dictionaries to each type """
     vulkan_types = AllVulkanTypes()
@@ -61,5 +76,7 @@ def parse(types_root: ET.Element) -> AllVulkanTypes:
             type_category = type_element.attrib["category"]
             if type_category == "handle":
                 process_handle(vulkan_types, type_element)
+            elif type_category == "struct":
+                process_struct(vulkan_types, type_element)
 
     return vulkan_types

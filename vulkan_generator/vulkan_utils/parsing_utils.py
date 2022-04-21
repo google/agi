@@ -19,9 +19,37 @@ import xml.etree.ElementTree as ET
 
 def get_text_from_tag(elem: ET.Element, tag: str) -> str:
     """Gets the text of the element with the given tag"""
+    value = try_get_text_from_tag(elem, tag)
+
+    if value is None:
+        # This should not happen
+        raise SyntaxError(f"No {tag} tag found in {ET.tostring(elem, 'utf-8')}")
+
+    return value
+
+def try_get_text_from_tag(elem: ET.Element, tag: str) -> str:
+    """Tries to Gets the text of the element with the given tag
+    and returns None if the tag does not exits"""
     for child in elem.iter():
         if tag == child.tag:
             return child.text
 
-    # This should not happen
-    raise SyntaxError(f"No name tag found in {ET.tostring(elem, 'utf-8')}")
+    return None
+
+def try_get_tail_from_tag(elem: ET.Element, tag: str) -> str:
+    """Tries to Gets the text of the element with the given tag
+    and returns None if the tag does not exits"""
+    for child in elem.iter():
+        if tag == child.tag:
+            return child.tail
+
+    return None
+
+def try_get_attribute(elem: ET.Element, attrib: str) -> str:
+    if attrib not in elem.attrib:
+        return None
+
+    return elem.attrib[attrib]
+
+def clean_type_string(string: str) -> str:
+    return string.replace("\n", "").replace(" ", "").replace(",", "").replace(");", "")
