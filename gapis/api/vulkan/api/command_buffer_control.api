@@ -345,9 +345,11 @@ enum SemaphoreUpdate {
   @unused
   ref!RenderPassObject                        CurrentRecordingRenderpass
   ref!FramebufferObject                       CurrentRecordingFramebuffer
+  map!(u32, ref!ImageViewObject)              CurrentRecordingFramebufferAttachments
   u32                                         CurrentRecordingSubpass
   ref!RenderPassObject                        PreviouslyStartedRenderpass
   ref!FramebufferObject                       PreviousFramebuffer
+  map!(u32, ref!ImageViewObject)              PreviousFramebufferAttachments
 }
 
 sub void RecordLayoutTransition(ref!CommandBufferObject obj, ref!ImageObject img, VkImageSubresourceRange rng, VkImageLayout new_layout) {
