@@ -15,7 +15,7 @@
 """This module contains the Vulkan meta data definitions to define Vulkan types and functions"""
 
 from dataclasses import dataclass
-import dataclasses
+from dataclasses import field
 from typing import Dict
 
 
@@ -70,7 +70,7 @@ class VulkanStructMember(VulkanType):
 @dataclass
 class VulkanStruct(VulkanType):
     """The meta data defines a Vulkan Handle"""
-    members: Dict[str,VulkanStructMember] = dataclasses.field(
+    members: Dict[str,VulkanStructMember] = field(
         default_factory=list)
 
 @dataclass

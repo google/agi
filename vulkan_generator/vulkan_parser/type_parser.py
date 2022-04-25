@@ -14,13 +14,16 @@
 
 """This module is responsible for parsing Vulkan Types"""
 
-import dataclasses
+
 import xml.etree.ElementTree as ET
 
 from dataclasses import dataclass
+from dataclasses import field
 from typing import Dict
 
-from vulkan_parser import handle_parser, struct_parser, types
+from vulkan_parser import handle_parser
+from vulkan_parser import struct_parser
+from vulkan_parser import types
 
 
 @dataclass
@@ -30,20 +33,20 @@ class AllVulkanTypes:
     This class should have all the information needed to generate code
     """
     # This class holds every Vulkan Type as [typename -> type]
-    handles: Dict[str, types.VulkanHandle] = dataclasses.field(
+    handles: Dict[str, types.VulkanHandle] = field(
         default_factory=dict)
 
     # Melih TODO: We probably need the map in two ways while generating code
     # both type -> alias and alias -> type
     # For now, lets store as the other types but when we do code generation,
     # We may have an extra step to convert the map to other direction.
-    handle_aliases: Dict[str, types.VulkanHandleAlias] = dataclasses.field(
+    handle_aliases: Dict[str, types.VulkanHandleAlias] = field(
         default_factory=dict)
 
-    structs: Dict[str, types.VulkanStruct] = dataclasses.field(
+    structs: Dict[str, types.VulkanStruct] = field(
         default_factory=dict)
 
-    struct_aliases: Dict[str, types.VulkanStructAlias] = dataclasses.field(
+    struct_aliases: Dict[str, types.VulkanStructAlias] = field(
         default_factory=dict)
 
 
