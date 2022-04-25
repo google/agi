@@ -22,19 +22,19 @@ from vulkan_parser import type_parser
 def print_vulkan_metaadata(vulkan_metadata: type_parser.AllVulkanTypes) -> None:
     """Prints all the vulkan information that is extracted"""
 
-    pp = PrettyPrinter(depth=4)
+    pretty_printer = PrettyPrinter(depth=4)
 
     print("=== Vulkan Handles ===")
-    pp.pprint(vulkan_metadata.handles)
+    pretty_printer.pprint(vulkan_metadata.handles)
 
     print("=== Vulkan Handle Aliases ===")
-    pp.pprint(vulkan_metadata.handle_aliases)
+    pretty_printer.pprint(vulkan_metadata.handle_aliases)
 
     print("=== Vulkan Structs ===")
-    pp.pprint(vulkan_metadata.structs)
+    pretty_printer.pprint(vulkan_metadata.structs)
 
     print("=== Vulkan Struct Aliases ===")
-    pp.pprint(vulkan_metadata.struct_aliases)
+    pretty_printer.pprint(vulkan_metadata.struct_aliases)
 
 
 def generate(vulkan_xml_path: Path) -> bool:
