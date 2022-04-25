@@ -18,6 +18,7 @@ BAZEL=${BAZEL:-bazel}
 BUILDIFIER=${BUILDIFIER:-buildifier}
 BUILDOZER=${BUILDOZER:-buildozer}
 CLANG_FORMAT=${CLANG_FORMAT:-clang-format}
+PYLINT=${PYLINT:-"python3 -m pylint"}
 
 if test -t 1; then
   ncolors=$(tput colors)
@@ -102,11 +103,18 @@ function run_gofmt() {
   find . -name "*.go" | xargs $GOFMT -w
 }
 
+function run_pylint() {
+  $PYLINT --rcfile=vulkan_generator/pylintrc vulkan_generator/**/**.py
+}
+
 # Ensure we are clean to start out with.
 check "git workspace must be clean" true
 
 # Check copyright headers
 check copyright-headers run_copyright_headers
+
+# Check python style.
+check pylint run_pylint
 
 # Check clang-format.
 check clang-format run_clang_format

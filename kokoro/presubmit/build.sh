@@ -45,12 +45,16 @@ sudo apt-get install -y clang-format-6.0
 # Get recent Android build tools.
 echo y | $ANDROID_HOME/tools/bin/sdkmanager --install 'build-tools;30.0.3'
 
+# Get pylint
+python3 -m pip install pylint --user
+
 # Setup environment.
 export ANDROID_NDK_HOME=/opt/android-ndk-r16b
 export BAZEL=$BUILD_ROOT/bazel/bin/bazel
 export BUILDIFIER=$BUILD_ROOT/tools/bin/buildifier
 export BUILDOZER=$BUILD_ROOT/tools/bin/buildozer
 export CLANG_FORMAT=clang-format-6.0
+export PYLINT="python3 -m pylint"
 
 cd $SRC
 
