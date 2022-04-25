@@ -14,6 +14,7 @@
 
 """This module contains the utility functions that needed elsewhere while parsing Vulkan XML"""
 
+import os
 import xml.etree.ElementTree as ET
 
 
@@ -46,10 +47,12 @@ def try_get_tail_from_tag(elem: ET.Element, tag: str) -> str:
     return None
 
 def try_get_attribute(elem: ET.Element, attrib: str) -> str:
+    """Tries to get an attribute from XML and returns None if the attribute does not exists"""
     if attrib not in elem.attrib:
         return None
 
     return elem.attrib[attrib]
 
 def clean_type_string(string: str) -> str:
-    return string.replace("\n", "").replace(" ", "").replace(",", "").replace(");", "")
+    """Cleans the string from whitespace and ',' and ');'"""
+    return string.replace(os.linesep, "").replace(" ", "").replace(",", "").replace(");", "")
