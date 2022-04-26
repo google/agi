@@ -16,7 +16,7 @@
 
 from dataclasses import dataclass
 from dataclasses import field
-from typing import Dict
+from typing import Dict, Optional
 
 
 @dataclass
@@ -39,39 +39,42 @@ class VulkanHandleAlias(VulkanType):
     """The meta data defines a Vulkan Handle alias"""
     aliased_typename: str
 
+
 @dataclass
 class VulkanStructMember(VulkanType):
     """The meta data defines a Vulkan Handle"""
     variable_name: str
 
     # Some member variables are static arrays with a default size
-    varible_size: str
+    variable_size: Optional[str]
 
     # Some members have this property which states if that particular
     # member has to be valid if they are not null
-    no_auto_validity: bool
+    no_auto_validity: Optional[bool]
 
     # Melih TODO: In the future we probably need to change
     # this from str to VulkanEnum.
     # Does member has an expected value e.g. sType
-    expected_value: str
+    expected_value: Optional[str]
 
     # If the member is an array, it's size is defined by another
     # member in the struct. This is the name of the referring member
-    array_reference: str
+    array_reference: Optional[str]
 
     # Is this field has to be set and/or not-null
-    optional: bool
+    optional: Optional[bool]
 
     # Melih TODO: Currently put the pointer and const info directly
     # into the type name. If we need to extract it later, we extract from the
     # typename with helper functions
 
+
 @dataclass
 class VulkanStruct(VulkanType):
     """The meta data defines a Vulkan Handle"""
-    members: Dict[str,VulkanStructMember] = field(
-        default_factory=list)
+    members: Dict[str, VulkanStructMember] = field(
+        default_factory=dict)
+
 
 @dataclass
 class VulkanStructAlias(VulkanType):

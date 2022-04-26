@@ -24,10 +24,8 @@ import xml.etree.ElementTree as ET
 
 from vulkan_parser import handle_parser
 from vulkan_parser import struct_parser
-from vulkan_parser.types import VulkanHandle
-from vulkan_parser.types import VulkanHandleAlias
-from vulkan_parser.types import VulkanStruct
-from vulkan_parser.types import VulkanStructAlias
+
+from vulkan_parser import types
 
 
 def test_vulkan_handle_by_tag() -> None:
@@ -39,7 +37,7 @@ def test_vulkan_handle_by_tag() -> None:
 
     handle = handle_parser.parse_handle_by_tag(ET.fromstring(xml))
 
-    assert isinstance(handle, VulkanHandle)
+    assert isinstance(handle, types.VulkanHandle)
     assert handle.typename == "VkQueue"
 
 
@@ -53,9 +51,10 @@ def test_vulkan_handle_by_attribute() -> None:
 
     handle = handle_parser.parse_handle_by_attribute(ET.fromstring(xml))
 
-    assert isinstance(handle, VulkanHandleAlias)
+    assert isinstance(handle, types.VulkanHandleAlias)
     assert handle.typename == "VkDescriptorUpdateTemplateKHR"
     assert handle.aliased_typename == "VkDescriptorUpdateTemplate"
+
 
 def test_vulkan_struct_with_const_pointer() -> None:
     """"tests a Vulkan struct with a const pointer member"""
@@ -73,7 +72,7 @@ def test_vulkan_struct_with_const_pointer() -> None:
 
     typ = struct_parser.parse(ET.fromstring(xml))
 
-    assert isinstance(typ, VulkanStruct)
+    assert isinstance(typ, types.VulkanStruct)
     assert typ.typename == "VkDevicePrivateDataCreateInfo"
 
     assert len(typ.members) == 3
@@ -96,45 +95,63 @@ def test_vulkan_struct_with_double_const_pointer() -> None:
     """"tests a Vulkan struct with a double const pointer member"""
     xml = """<?xml version="1.0" encoding="UTF-8"?>
         <type category="struct" name="VkInstanceCreateInfo">
-            <member values="VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO"><type>VkStructureType</type> <name>sType</name></member>
+            <member values="VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO"><type>VkStructureType</type>
+            <name>sType</name></member>
             <member optional="true">const <type>void</type>*     <name>pNext</name></member>
             <member optional="true"><type>VkInstanceCreateFlags</type>  <name>flags</name></member>
-            <member optional="true">const <type>VkApplicationInfo</type>* <name>pApplicationInfo</name></member>
-            <member optional="true"><type>uint32_t</type>               <name>enabledLayerCount</name></member>
-            <member len="enabledLayerCount,null-terminated">const <type>char</type>* const*      <name>ppEnabledLayerNames</name><comment>Ordered list of layer names to be enabled</comment></member>
-            <member optional="true"><type>uint32_t</type>               <name>enabledExtensionCount</name></member>
-            <member len="enabledExtensionCount,null-terminated">const <type>char</type>* const*      <name>ppEnabledExtensionNames</name><comment>Extension names to be enabled</comment></member>
+            <member optional="true">const <type>VkApplicationInfo</type>*
+            <name>pApplicationInfo</name></member>
+            <member optional="true"><type>uint32_t</type>
+                           <name>enabledLayerCount</name></member>
+            <member len="enabledLayerCount,null-terminated">const <type>char</type>
+            * const*      <name>ppEnabledLayerNames</name>
+            <comment>Ordered list of layer names to be enabled</comment></member>
+            <member optional="true"><type>uint32_t</type>
+                           <name>enabledExtensionCount</name></member>
+            <member len="enabledExtensionCount,null-terminated">
+            const <type>char</type>* const*      <name>ppEnabledExtensionNames</name
+            ><comment>Extension names to be enabled</comment></member>
         </type>
     """
     typ = struct_parser.parse(ET.fromstring(xml))
 
-    assert isinstance(typ, VulkanStruct)
+    assert isinstance(typ, types.VulkanStruct)
     assert typ.typename == "VkInstanceCreateInfo"
 
     assert "ppEnabledLayerNames" in typ.members
     assert typ.members["ppEnabledLayerNames"].typename == "const char* const*"
 
+
 def test_vulkan_struct_with_static_array() -> None:
     """"Tests a Vulkan struct with a static array as a member"""
     xml = """<?xml version="1.0" encoding="UTF-8"?>
     <type category="struct" name="VkPhysicalDeviceProperties" returnedonly="true">
-            <member limittype="noauto"><type>uint32_t</type>       <name>apiVersion</name></member>
-            <member limittype="noauto"><type>uint32_t</type>       <name>driverVersion</name></member>
-            <member limittype="noauto"><type>uint32_t</type>       <name>vendorID</name></member>
-            <member limittype="noauto"><type>uint32_t</type>       <name>deviceID</name></member>
-            <member limittype="noauto"><type>VkPhysicalDeviceType</type> <name>deviceType</name></member>
-            <member limittype="noauto"><type>char</type>           <name>deviceName</name>[<enum>VK_MAX_PHYSICAL_DEVICE_NAME_SIZE</enum>]</member>
-            <member limittype="noauto"><type>uint8_t</type>        <name>pipelineCacheUUID</name>[<enum>VK_UUID_SIZE</enum>]</member>
-            <member limittype="struct"><type>VkPhysicalDeviceLimits</type> <name>limits</name></member>
-            <member limittype="struct"><type>VkPhysicalDeviceSparseProperties</type> <name>sparseProperties</name></member>
+            <member limittype="noauto"><type>uint32_t</type>
+                   <name>apiVersion</name></member>
+            <member limittype="noauto"><type>uint32_t</type>
+                   <name>driverVersion</name></member>
+            <member limittype="noauto"><type>uint32_t</type>
+                   <name>vendorID</name></member>
+            <member limittype="noauto"><type>uint32_t</type>
+                   <name>deviceID</name></member>
+            <member limittype="noauto"><type>VkPhysicalDeviceType</type>
+             <name>deviceType</name></member>
+            <member limittype="noauto"><type>char</type>           <name>deviceName</name>
+            [<enum>VK_MAX_PHYSICAL_DEVICE_NAME_SIZE</enum>]</member>
+            <member limittype="noauto"><type>uint8_t</type>
+                    <name>pipelineCacheUUID</name>[<enum>VK_UUID_SIZE</enum>]</member>
+            <member limittype="struct"><type>VkPhysicalDeviceLimits</type>
+             <name>limits</name></member>
+            <member limittype="struct"><type>VkPhysicalDeviceSparseProperties</type>
+             <name>sparseProperties</name></member>
         </type>
     """
 
     typ = struct_parser.parse(ET.fromstring(xml))
-    assert isinstance(typ, VulkanStruct)
+    assert isinstance(typ, types.VulkanStruct)
 
     assert "deviceName" in typ.members
-    assert typ.members["deviceName"].varible_size == "VK_MAX_PHYSICAL_DEVICE_NAME_SIZE"
+    assert typ.members["deviceName"].variable_size == "VK_MAX_PHYSICAL_DEVICE_NAME_SIZE"
 
 
 def test_vulkan_struct_alias() -> None:
@@ -146,6 +163,6 @@ def test_vulkan_struct_alias() -> None:
 
     typ = struct_parser.parse(ET.fromstring(xml))
 
-    assert isinstance(typ, VulkanStructAlias)
+    assert isinstance(typ, types.VulkanStructAlias)
     assert typ.typename == "VkDevicePrivateDataCreateInfoEXT"
     assert typ.aliased_typename == "VkDevicePrivateDataCreateInfo"

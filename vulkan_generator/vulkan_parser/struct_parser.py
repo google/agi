@@ -43,14 +43,16 @@ def parse_struct_members(struct_element: ET.Element) -> Dict[str, types.VulkanSt
     # This is not the code we wanted but it's the code that we needed and it's contained in a
     # small place so that XML irregularities does not leak into the rest of the code.
 
-    members = {}
+    members: Dict[str, types.VulkanStructMember] = {}
+
     for member_element in struct_element:
         if member_element.tag == "comment":
             # Melih TODO: We may want to support comments in the future
             continue
 
         if member_element.tag != "member":
-            raise SyntaxError(f"No member tag found in : {ET.tostring(member_element, 'utf-8')}")
+            raise SyntaxError(
+                f"No member tag found in : {ET.tostring(member_element, 'utf-8')}")
 
         typename = parsing_utils.get_text_from_tag(member_element, "type")
         variable_name = parsing_utils.get_text_from_tag(member_element, "name")
@@ -69,43 +71,54 @@ def parse_struct_members(struct_element: ET.Element) -> Dict[str, types.VulkanSt
         # <member len="enabledLayerCount,null-terminated">const <type>char</type>
         # * const*      <name>ppEnabledLayerNames</name>
         #
-        type_attributes = parsing_utils.try_get_text_from_tag(member_element, "member")
+
+        type_attributes = parsing_utils.try_get_text_from_tag(
+            member_element, "member")
+
         # some times it's just empty space or endline character
-        if type_attributes is not None:
+        if type_attributes:
             type_attributes = parsing_utils.clean_type_string(type_attributes)
 
-        if type_attributes and len(type_attributes) > 0:
-            typename = f"{type_attributes} {typename}"
+            # It might be empty string after cleaning
+            if type_attributes:
+                typename = f"{type_attributes} {typename}"
 
         pointers = parsing_utils.try_get_tail_from_tag(member_element, "type")
-        if pointers is not None:
+        if pointers:
             pointers = parsing_utils.clean_type_string(pointers)
-            # Add space between "*" and "const"
-            pointers = pointers.replace("const", " const")
-            typename = f"{typename}{pointers}"
 
-        if typename is None:
-            raise SyntaxError(f"No typename found in : {ET.tostring(member_element, 'utf-8')}")
+            # It might be empty string after cleaning
+            if pointers:
+                # Add space between "*" and "const"
+                pointers = pointers.replace("const", " const")
+                typename = f"{typename}{pointers}"
+                print(typename)
 
-        if variable_name is None:
-            raise SyntaxError(f"No variable name found in : {ET.tostring(member_element, 'utf-8')}")
+        if not typename:
+            raise SyntaxError(
+                f"No typename found in : {ET.tostring(member_element, 'utf-8')}")
+
+        if not variable_name:
+            raise SyntaxError(
+                f"No variable name found in : {ET.tostring(member_element, 'utf-8')}")
 
         # Variable size is optional
         variable_size = parsing_utils.try_get_text_from_tag(member_element, "enum")
 
         # Currently if this attribute exists, it's always true
-        no_auto_validity = parsing_utils.try_get_attribute(member_element, "noautovalidity")
+        no_auto_validity = parsing_utils.try_get_attribute(
+            member_element, "noautovalidity") == "true"
 
         # This is useful for the sType where the correct value is already known
         expected_value = parsing_utils.try_get_attribute(member_element, "values")
 
         # Is this field optional or has to be set
-        optional = parsing_utils.try_get_attribute(member_element, "optional")
+        optional = parsing_utils.try_get_attribute(member_element, "optional") == "true"
 
         # This is useful when the member is an pointer to an array
         # with a length given by another member
         array_reference = parsing_utils.try_get_attribute(member_element, "len")
-        if array_reference is not None:
+        if array_reference:
             # pointer to char array has this property, which is redundant
             array_reference = array_reference.replace("null-terminated", "")
             array_reference = parsing_utils.clean_type_string(array_reference)
@@ -113,7 +126,7 @@ def parse_struct_members(struct_element: ET.Element) -> Dict[str, types.VulkanSt
         members[variable_name] = types.VulkanStructMember(
             typename=typename,
             variable_name=variable_name,
-            varible_size= variable_size,
+            variable_size=variable_size,
             no_auto_validity=no_auto_validity,
             expected_value=expected_value,
             array_reference=array_reference,
@@ -146,8 +159,7 @@ def parse(struct_elem: ET.Element) -> types.VulkanType:
 
     if "alias" in struct_elem.attrib:
         return types.VulkanStructAlias(typename=struct_name,
-            aliased_typename=struct_elem.attrib["alias"])
-
+                                       aliased_typename=struct_elem.attrib["alias"])
 
     members = parse_struct_members(struct_elem)
     return types.VulkanStruct(struct_name, members)
