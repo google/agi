@@ -22,42 +22,12 @@ if they reflect the new XML
 
 import xml.etree.ElementTree as ET
 
-from vulkan_parser import handle_parser
 from vulkan_parser import struct_parser
-
 from vulkan_parser import types
 
 
-def test_vulkan_handle_by_tag() -> None:
-    """""Test the case if the handle name is in an XML tag"""
-
-    xml = """<?xml version="1.0" encoding="UTF-8"?>
-    <type category="handle" parent="VkDevice" objtypeenum="VK_OBJECT_TYPE_QUEUE">
-    <type>VK_DEFINE_HANDLE</type>(<name>VkQueue</name>)</type>"""
-
-    handle = handle_parser.parse_handle_by_tag(ET.fromstring(xml))
-
-    assert isinstance(handle, types.VulkanHandle)
-    assert handle.typename == "VkQueue"
-
-
-def test_vulkan_handle_by_attribute() -> None:
-    """""Test the case if the handle name is in an XML attribute"""
-
-    xml = """<?xml version="1.0" encoding="UTF-8"?>
-        <type category="handle" name="VkDescriptorUpdateTemplateKHR"
-        alias="VkDescriptorUpdateTemplate"/>
-    """
-
-    handle = handle_parser.parse_handle_by_attribute(ET.fromstring(xml))
-
-    assert isinstance(handle, types.VulkanHandleAlias)
-    assert handle.typename == "VkDescriptorUpdateTemplateKHR"
-    assert handle.aliased_typename == "VkDescriptorUpdateTemplate"
-
-
-def test_vulkan_struct_with_const_pointer() -> None:
-    """"tests a Vulkan struct with a const pointer member"""
+def test_vulkan_struct_with_members() -> None:
+    """"tests a Vulkan struct with members"""
     xml = """<?xml version="1.0" encoding="UTF-8"?>
         <type category="struct" name="VkDevicePrivateDataCreateInfo"
         allowduplicate="true" structextends="VkDeviceCreateInfo">
@@ -76,22 +46,17 @@ def test_vulkan_struct_with_const_pointer() -> None:
     assert typ.typename == "VkDevicePrivateDataCreateInfo"
 
     assert len(typ.members) == 3
-
     assert "sType" in typ.members
     assert typ.members["sType"].typename == "VkStructureType"
 
-    expected_value = "VK_STRUCTURE_TYPE_DEVICE_PRIVATE_DATA_CREATE_INFO"
-    assert typ.members["sType"].expected_value == expected_value
-
     assert "pNext" in typ.members
     assert typ.members["pNext"].typename == "const void*"
-    assert typ.members["pNext"].optional
 
     assert "privateDataSlotRequestCount" in typ.members
     assert typ.members["privateDataSlotRequestCount"].typename == "uint32_t"
 
 
-def test_vulkan_struct_with_double_const_pointer() -> None:
+def test_vulkan_struct_with_const_and_pointer() -> None:
     """"tests a Vulkan struct with a double const pointer member"""
     xml = """<?xml version="1.0" encoding="UTF-8"?>
         <type category="struct" name="VkInstanceCreateInfo">
@@ -120,6 +85,82 @@ def test_vulkan_struct_with_double_const_pointer() -> None:
 
     assert "ppEnabledLayerNames" in typ.members
     assert typ.members["ppEnabledLayerNames"].typename == "const char* const*"
+
+
+def test_vulkan_struct_with_expected_value() -> None:
+    """"tests a Vulkan struct with a member that has an expected value"""
+    xml = """<?xml version="1.0" encoding="UTF-8"?>
+        <type category="struct" name="VkDevicePrivateDataCreateInfo"
+        allowduplicate="true" structextends="VkDeviceCreateInfo">
+
+        <member values="VK_STRUCTURE_TYPE_DEVICE_PRIVATE_DATA_CREATE_INFO">
+            <type>VkStructureType</type> <name>sType</name>
+        </member>
+        <member optional="true">const <type>void</type>*<name>pNext</name></member>
+        <member><type>uint32_t</type> <name>privateDataSlotRequestCount</name></member>
+    </type>
+    """
+
+    typ = struct_parser.parse(ET.fromstring(xml))
+    assert isinstance(typ, types.VulkanStruct)
+    expected_value = "VK_STRUCTURE_TYPE_DEVICE_PRIVATE_DATA_CREATE_INFO"
+    assert typ.members["sType"].expected_value == expected_value
+
+
+def test_vulkan_struct_with_optional() -> None:
+    """"tests a Vulkan struct with an optional member"""
+    xml = """<?xml version="1.0" encoding="UTF-8"?>
+        <type category="struct" name="VkDevicePrivateDataCreateInfo"
+        allowduplicate="true" structextends="VkDeviceCreateInfo">
+
+        <member values="VK_STRUCTURE_TYPE_DEVICE_PRIVATE_DATA_CREATE_INFO">
+            <type>VkStructureType</type> <name>sType</name>
+        </member>
+        <member optional="true">const <type>void</type>*<name>pNext</name></member>
+        <member><type>uint32_t</type> <name>privateDataSlotRequestCount</name></member>
+    </type>
+    """
+    typ = struct_parser.parse(ET.fromstring(xml))
+
+    assert isinstance(typ, types.VulkanStruct)
+    assert typ.members["pNext"].optional
+
+
+def test_vulkan_struct_with_no_auto_validity() -> None:
+    """"tests a Vulkan struct with a member has no auto validity"""
+    xml = """<?xml version="1.0" encoding="UTF-8"?>
+        <type category="struct" name="VkSpecializationMapEntry">
+            <member><type>uint32_t</type>
+                                 <name>constantID</name>
+            <comment>The SpecConstant ID specified in the BIL</comment></member>
+            <member><type>uint32_t</type>
+                                 <name>offset</name>
+            <comment>Offset of the value in the data block</comment></member>
+            <member noautovalidity="true"><type>size_t</type> <name>size</name>
+            <comment>Size in bytes of the SpecConstant</comment></member>
+        </type>
+    """
+    typ = struct_parser.parse(ET.fromstring(xml))
+
+    assert isinstance(typ, types.VulkanStruct)
+    assert typ.members["size"].no_auto_validity
+
+
+def test_vulkan_struct_with_dynamic_array() -> None:
+    """"tests a Vulkan struct with a dynamic array as a member"""
+    xml = """<?xml version="1.0" encoding="UTF-8"?>
+        <type category="struct" name="VkSparseBufferMemoryBindInfo">
+            <member><type>VkBuffer</type> <name>buffer</name></member>
+            <member><type>uint32_t</type>               <name>bindCount</name></member>
+            <member len="bindCount">const <type>VkSparseMemoryBind</type>
+            * <name>pBinds</name></member>
+        </type>
+    """
+    typ = struct_parser.parse(ET.fromstring(xml))
+    assert isinstance(typ, types.VulkanStruct)
+
+    reference = typ.members["pBinds"].array_reference
+    assert reference in typ.members
 
 
 def test_vulkan_struct_with_static_array() -> None:
