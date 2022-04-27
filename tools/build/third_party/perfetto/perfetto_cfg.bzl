@@ -53,6 +53,8 @@ PERFETTO_CONFIG = struct(
     sqlite_ext_percentile = ["@sqlite_src//:percentile_ext"],
     version_header = [],
     zlib = ["@net_zlib//:zlib"],
+    llvm_demangle = [],
+    demangle_wrapper = [],
   ),
   public_visibility = [
       "//visibility:public",
