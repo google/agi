@@ -55,7 +55,7 @@ class AllVulkanTypes:
 
 
 def process_handle(vulkan_types: AllVulkanTypes, handle_element: ET.Element) -> None:
-    """ Parse the Vulkan type "Handle". This can be an handle or an alias to another handle """
+    """ Parse the Vulkan type "Handle". This can be an handle or an alias to another handle"""
     handle = handle_parser.parse(handle_element)
 
     if isinstance(handle, types.VulkanHandle):
@@ -65,7 +65,7 @@ def process_handle(vulkan_types: AllVulkanTypes, handle_element: ET.Element) -> 
 
 
 def process_struct(vulkan_types: AllVulkanTypes, struct_element: ET.Element) -> None:
-    """ Parse the Vulkan type "Struct". This can be a struct or an alias to another struct """
+    """ Parse the Vulkan type "Struct". This can be a struct or an alias to another struct"""
     vulkan_struct = struct_parser.parse(struct_element)
 
     if isinstance(vulkan_struct, types.VulkanStruct):
@@ -75,7 +75,7 @@ def process_struct(vulkan_types: AllVulkanTypes, struct_element: ET.Element) -> 
 
 
 def process_funcpointer(vulkan_types: AllVulkanTypes, func_ptr_element: ET.Element) -> None:
-    """ Parse the Vulkan type "Funcpointer". This can be a struct or an alias to another struct """
+    """ Parse the Vulkan type "Funcpointer"""
     vulkan_func_ptr = funcptr_parser.parse(func_ptr_element)
 
     if isinstance(vulkan_func_ptr, types.VulkanFunctionPtr):
