@@ -119,6 +119,15 @@ def parse_struct_members(struct_element: ET.Element) -> MemberInformation:
         expected_value = parsing_utils.try_get_attribute(member_element, "values")
 
         # Is this field optional or has to be set
+        # When this field is "false, true"  it's always for the length of the array
+        # Therefore it does not give any extra information.
+        #
+        # Except for one case:
+        # VkDescriptorBindingFlags in VkDescriptorSetLayoutBindingFlagsCreateInfo
+        #
+        # Instead of the count member, the actual array member is "false, true"
+        # I think it's actually a bug in XML.
+        # Melih TODO: Check if VkDescriptorBindingFlags is buggy in the XML
         optional = parsing_utils.try_get_attribute(member_element, "optional") == "true"
 
         # This is useful when the member is an pointer to an array
@@ -167,7 +176,7 @@ def parse(struct_elem: ET.Element) -> types.VulkanType:
 
     struct_name = struct_elem.attrib["name"]
 
-    alias_name = parsing_utils.try_get_attribute(struct_elem,"alias")
+    alias_name = parsing_utils.try_get_attribute(struct_elem, "alias")
     if alias_name:
         return types.VulkanStructAlias(typename=struct_name, aliased_typename=alias_name)
 
