@@ -32,7 +32,7 @@ def cc_copts():
         "@gapid//tools/build:android-armeabi-v7a": _ANDROID_COPTS,
         "@gapid//tools/build:android-arm64-v8a": _ANDROID_COPTS,
         "@gapid//tools/build:android-x86": _ANDROID_COPTS,
-        "@gapid//tools/build:fuchsia-arm64": ["-DGAPID_TARGET_OS_FUCHSIA"],
+        "@gapid//tools/build:fuchsia-arm64": ["-DGAPID_TARGET_OS_FUCHSIA", "-Wno-deprecated-non-prototype"],
     })
 
 # Strip rule implementation, which invokes the cc_toolchain.strip_executable

@@ -56,8 +56,8 @@ cc_library(
     ] + select({
         "//tools/build:darwin": [":darwin_query"],
         "//tools/build:fuchsia-arm64": [
-            "@fuchsia_sdk_dynamic//fidl/fuchsia.hwinfo:fuchsia.hwinfo_cc",
-            "@fuchsia_sdk_dynamic//pkg/sys_cpp",
+            "@fuchsia_sdk//fidl/fuchsia.hwinfo:fuchsia.hwinfo_cc",
+            "@fuchsia_sdk//pkg/sys_cpp",
         ],
         "//conditions:default": [],
     }),

@@ -12,25 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@rules_fuchsia//fuchsia:defs.bzl", "fuchsia_cc_binary", "fuchsia_component", "fuchsia_component_manifest", "fuchsia_package", "fuchsia_package_archive", "fuchsia_package_resource")
-
-cc_binary(
-    name = "cc",
-    srcs = ["gapii_server.cc"],
-    deps = [
-        "@fuchsia_sdk_dynamic//fidl/fuchsia.io:fuchsia.io_cc",
-        "@fuchsia_sdk_dynamic//fidl/fuchsia.ldsvc:fuchsia.ldsvc_cc",
-        "@fuchsia_sdk_dynamic//pkg/async-loop-cpp",
-        "@fuchsia_sdk_dynamic//pkg/async-loop-default",
-        "@fuchsia_sdk_dynamic//pkg/fdio",
-        "@fuchsia_sdk_dynamic//pkg/vfs_cpp",
-    ],
-)
+load("@rules_fuchsia//fuchsia:defs.bzl", "fuchsia_cc_binary", "fuchsia_component", "fuchsia_component_manifest", "fuchsia_package", "fuchsia_package_resource")
 
 fuchsia_cc_binary(
     name = "gapii_server",
-    cc_binary = ":cc",
-    sdk_root_label = "@fuchsia_sdk_dynamic",
+    srcs = ["gapii_server.cc"],
+    deps = [
+        "@fuchsia_sdk//fidl/fuchsia.io:fuchsia.io_cc",
+        "@fuchsia_sdk//fidl/fuchsia.ldsvc:fuchsia.ldsvc_cc",
+        "@fuchsia_sdk//pkg/async-loop-cpp",
+        "@fuchsia_sdk//pkg/async-loop-default",
+        "@fuchsia_sdk//pkg/fdio",
+        "@fuchsia_sdk//pkg/vfs_cpp",
+    ],
+    sdk_root_label = "@fuchsia_sdk",
 )
 
 fuchsia_component_manifest(
@@ -61,8 +56,11 @@ fuchsia_package(
     ],
 )
 
-fuchsia_package_archive(
-    name = "gapii.far",
-    archive_name = "gapii.far",
-    package = ":gapii",
-)
+#
+# Deprecated
+#
+# fuchsia_package_archive(
+#     name = "gapii.far",
+#     archive_name = "gapii.far",
+#     package = ":gapii",
+# )

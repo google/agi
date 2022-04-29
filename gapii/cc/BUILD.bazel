@@ -65,11 +65,10 @@ cc_library(
         ],
         "//tools/build:windows": [],
         "//tools/build:fuchsia-arm64": [
-            "@fuchsia_sdk_dynamic//pkg/agis",
-            "@fuchsia_sdk_dynamic//pkg/gpu/agis",
-            "@fuchsia_sdk_dynamic//pkg/async-loop-cpp",
-            "@fuchsia_sdk_dynamic//pkg/async-loop-default",
-            "@fuchsia_sdk_dynamic//pkg/fdio",
+            "@fuchsia_sdk//fidl/fuchsia.gpu.agis:fuchsia.gpu.agis_cc",
+            "@fuchsia_sdk//pkg/async-loop-cpp",
+            "@fuchsia_sdk//pkg/async-loop-default",
+            "@fuchsia_sdk//pkg/fdio",
 	],
         # Android
         "//conditions:default": [
