@@ -27,10 +27,41 @@ from vulkan_parser import types
 
 
 def test_vulkan_func_pointer() -> None:
-    """""Test the parsing of a function pointer with a pointer argument and pointer return type"""
-
+    """""Test the parsing of a function pointer"""
     xml = """<?xml version="1.0" encoding="UTF-8"?>
-    <type category="funcpointer">typedef void* (VKAPI_PTR *<name>PFN_vkReallocationFunction</name>)(
+    <type category="funcpointer">typedef void (VKAPI_PTR *
+    <name>PFN_vkInternalAllocationNotification</name>)(
+    <type>void</type>*                                       pUserData,
+    <type>size_t</type>                                      size,
+    <type>VkInternalAllocationType</type>                    allocationType,
+    <type>VkSystemAllocationScope</type>                     allocationScope);</type>
+    """
+    funcptr = funcptr_parser.parse(ET.fromstring(xml))
+
+    assert isinstance(funcptr, types.VulkanFunctionPtr)
+
+    assert funcptr.typename == "PFN_vkInternalAllocationNotification"
+    assert funcptr.return_type == "void"
+    assert len(funcptr.arguments) == 4
+
+    assert funcptr.arguments[0].typename == "void*"
+    assert funcptr.arguments[0].argument_name == "pUserData"
+
+    assert funcptr.arguments[1].typename == "size_t"
+    assert funcptr.arguments[1].argument_name == "size"
+
+    assert funcptr.arguments[2].typename == "VkInternalAllocationType"
+    assert funcptr.arguments[2].argument_name == "allocationType"
+
+    assert funcptr.arguments[3].typename == "VkSystemAllocationScope"
+    assert funcptr.arguments[3].argument_name == "allocationScope"
+
+
+def test_vulkan_func_pointer_with_pointer_return_value() -> None:
+    """""Test the parsing of a function pointer with a pointer return type"""
+    xml = """<?xml version="1.0" encoding="UTF-8"?>
+    <type category="funcpointer">typedef void* (VKAPI_PTR *
+    <name>PFN_vkReallocationFunction</name>)(
     <type>void</type>*                                       pUserData,
     <type>void</type>*                                       pOriginal,
     <type>size_t</type>                                      size,
@@ -41,22 +72,26 @@ def test_vulkan_func_pointer() -> None:
     funcptr = funcptr_parser.parse(ET.fromstring(xml))
 
     assert isinstance(funcptr, types.VulkanFunctionPtr)
-    assert funcptr.typename == "PFN_vkReallocationFunction"
     assert funcptr.return_type == "void*"
 
-    assert len(funcptr.arguments) == 5
 
-    assert funcptr.arguments[0].typename == "void*"
-    assert funcptr.arguments[0].argument_name == "pUserData"
+def test_vulkan_func_pointer_with_const_member() -> None:
+    """""Test the parsing of a function pointer with a const pointer argument"""
 
-    assert funcptr.arguments[1].typename == "void*"
-    assert funcptr.arguments[1].argument_name == "pOriginal"
+    xml = """<?xml version="1.0" encoding="UTF-8"?>
+    <type category="funcpointer">typedef VkBool32 (VKAPI_PTR *
+    <name>PFN_vkDebugReportCallbackEXT</name>)(
+    <type>VkDebugReportFlagsEXT</type>                       flags,
+    <type>VkDebugReportObjectTypeEXT</type>                  objectType,
+    <type>uint64_t</type>                                    object,
+    <type>size_t</type>                                      location,
+    <type>int32_t</type>                                     messageCode,
+    const <type>char</type>*                                 pLayerPrefix,
+    const <type>char</type>*                                 pMessage,
+    <type>void</type>*                                       pUserData);</type>
+    """
 
-    assert funcptr.arguments[2].typename == "size_t"
-    assert funcptr.arguments[2].argument_name == "size"
+    funcptr = funcptr_parser.parse(ET.fromstring(xml))
 
-    assert funcptr.arguments[3].typename == "size_t"
-    assert funcptr.arguments[3].argument_name == "alignment"
-
-    assert funcptr.arguments[4].typename == "VkSystemAllocationScope"
-    assert funcptr.arguments[4].argument_name == "allocationScope"
+    assert funcptr.arguments[4].argument_name == "messageCode"
+    assert funcptr.arguments[5].typename == "const char*"
