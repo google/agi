@@ -24,6 +24,12 @@
 #include <memory>
 #include <unordered_map>
 
+#if TARGET_OS == GAPID_OS_FUCHSIA
+#include <fuchsia/gpu/agis/cpp/fidl.h>
+#include <lib/async-loop/cpp/loop.h>
+#include <lib/async-loop/default.h>
+#endif  // TARGET_OS == GAPID_OS_FUCHSIA
+
 namespace gapii {
 struct spy_creator;
 class ConnectionStream;
@@ -86,6 +92,19 @@ class Spy : public VulkanSpy {
   uint64_t mFrameNumber;
 
   std::unique_ptr<core::AsyncJob> mMessageReceiverJob;
+
+#if TARGET_OS == GAPID_OS_FUCHSIA
+  // Register with agis service.  Returns the socket.
+  int AgisRegister();
+
+  // Process all outstanding async fidl requests.
+  void LoopWait();
+
+  int mAgisNumConnections;
+  std::unique_ptr<async::Loop> mAgisLoop;
+  fuchsia::gpu::agis::SessionPtr mAgisSession;
+  int mSocketFd;
+#endif
 
   friend struct spy_creator;
 };

@@ -57,7 +57,7 @@ typedef enum VkLayerFunction_ {
 
 /*
  * When creating the device chain the loader needs to pass
- * down information about it's device structure needed at
+ * down information about its device structure needed at
  * the end of the chain. Passing the data via the
  * VkLayerInstanceInfo avoids issues with finding the
  * exact instance being used.
@@ -74,7 +74,7 @@ typedef struct VkLayerInstanceLink_ {
 
 /*
  * When creating the device chain the loader needs to pass
- * down information about it's device structure needed at
+ * down information about its device structure needed at
  * the end of the chain. Passing the data via the
  * VkLayerDeviceInfo avoids issues with finding the
  * exact instance being used.

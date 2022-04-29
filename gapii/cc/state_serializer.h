@@ -41,7 +41,7 @@ class StateSerializer {
   // Creates and returns a new slice backed by a new virtual pool of the given
   // size. A memory observation is attached to the underlying CallObserver. If
   // init_observation is non-null, it is called to construct the observation,
-  // otherwhise an empty observation is used.
+  // otherwise an empty observation is used.
   template <typename T>
   inline void encodeBuffer(
       uint64_t pool_size, gapil::Slice<T>* dest,
@@ -49,7 +49,7 @@ class StateSerializer {
 
   // Encodes the given data using the given observation. If sendObservation is
   // true, the observation itself is also encoded on the underlying
-  // CallObserver, otherwhise the observation is simply updated  with the data
+  // CallObserver, otherwise the observation is simply updated  with the data
   // resource pointers.
   inline void sendData(memory::Observation* observation, bool sendObservation,
                        const void* data, size_t size);

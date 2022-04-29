@@ -50,6 +50,11 @@
 #include <sys/system_properties.h>
 #endif  // TARGET_OS == GAPID_OS_ANDROID
 
+#if TARGET_OS == GAPID_OS_FUCHSIA
+#include <atomic>
+#include <lib/sys/cpp/component_context.h>
+#endif
+
 namespace {
 
 const uint32_t kMaxFramebufferObservationWidth = 3840;
@@ -69,6 +74,10 @@ const char* kCaptureProcessNameEnvVar = "GAPID_CAPTURE_PROCESS_NAME";
 
 thread_local gapii::CallObserver* gContext = nullptr;
 
+#if TARGET_OS == GAPID_OS_FUCHSIA
+std::atomic<int> outstanding = 0;
+#endif
+
 }  // anonymous namespace
 
 namespace gapii {
@@ -85,6 +94,24 @@ struct spy_creator {
   std::unique_ptr<gapii::Spy> m_spy;
 };
 
+#if TARGET_OS == GAPID_OS_FUCHSIA
+zx_koid_t FuchsiaProcessID() {
+  zx::unowned<zx::process> process = zx::process::self();
+  zx_info_handle_basic_t info;
+  zx_status_t status = zx_object_get_info(process->get(), ZX_INFO_HANDLE_BASIC, &info, sizeof(info),
+                                          nullptr /* actual */, nullptr /* avail */);
+  EXPECT_EQ(status, ZX_OK);
+  return info.koid;
+}
+
+std::string FuchsiaProcessName() {
+  zx::unowned<zx::process> process = zx::process::self();
+  char process_name[ZX_MAX_NAME_LEN];
+  process->get_property(ZX_PROP_NAME, process_name, sizeof(process_name));
+  return process_name;
+}
+#endif
+
 Spy* Spy::get() {
   static spy_creator creator;
   return creator.m_spy.get();
@@ -99,8 +126,8 @@ Spy::Spy()
   // Start by checking whether to capture the current process: compare the
   // current process name with the "capture_proc_name" that we get from the
   // environment. An empty "capture_proc_name" means capture any process. This
-  // is useful for games where the process initially started by AGI creates an
-  // other process where the actual game rendering happens.
+  // is useful for games where the process initially started by AGI creates
+  // another process where the actual game rendering happens.
   bool this_executable = true;
   auto this_proc_name = core::get_process_name();
   GAPID_INFO("this process name: %s", this_proc_name.c_str());
@@ -136,7 +163,14 @@ Spy::Spy()
     }
     mConnection = ConnectionStream::listenPipe(pipe.c_str(), true);
 #else                                           // TARGET_OS
+#if TARGET_OS == GAPID_OS_FUCHSIA
+    mSocketFd = AgisRegister();
+    assert(mSocketFd != -1) && "Bad socket file descriptor";
+    auto socketString = std::to_string(mSocketFd);
+    mConnection = ConnectionStream::listenSocket("127.0.0.1", socketString.c_str());
+#else
     mConnection = ConnectionStream::listenSocket("127.0.0.1", "9286");
+#endif
 #endif                                          // TARGET_OS
     if (mConnection->write("gapii", 5) != 5) {  // handshake magic
       GAPID_FATAL("Couldn't send handshake magic");
@@ -256,6 +290,70 @@ Spy::~Spy() {
   endTraceIfRequested();
 }
 
+#if TARGET_OS == GAPID_OS_FUCHSIA
+void Spy::AgisRegister() {
+    mSocketFd = -1;
+    mAgisNumConnections = 0;
+
+    // Make AgisRegister() re-entrant by flushing outstanding loop requests.
+    if (mAgisLoop) {
+      LoopWait();
+      mAgisLoop->Quit();
+    }
+
+    // Establish message loop, component context and agis session.
+    mAgisLoop = std::make_unique<async::Loop>(&kAsyncLoopConfigAttachToCurrentThread);
+
+    std::unique_ptr<sys::ComponentContext> context = sys::ComponentContext::Create();
+    context->svc()->Connect(mAgisSession.NewRequest(mAgisLoop->dispatcher()));
+
+    mAgisSession.set_error_handler([this](zx_status_t status) {
+      GAPID_FATAL("Unable to set agis error handler");
+      mAgisLoop->Quit();
+    });
+
+    // Get process info.
+    zx_koid_t processId = FuchsiaProcessID();
+    std::string processName = FuchsiaProcessName();
+
+    // Issue register request.
+    outstanding++;
+    mAgisSession->Register(
+        processId, std::move(processName),
+        [&](fuchsia::gpu::agis::Session_Register_Result result) {
+          fuchsia::gpu::agis::Session_Register_Response response(
+              std::move(result.response()));
+          const auto registerStatus = result.err();
+          if (status != fuchsia::gpu::agis::Status::OK) {
+            GAPID_FATAL("Couldn't register component with fuchsia::gpu::agis: (%d)",
+                registerStatus);
+          }
+          zx::handle socket = response.ResultValue_();
+          if (socket.get() == 0ul) {
+            GAPID_FATAL("Null socket handle response.");
+          }
+          zx_status_t fdioStatus = fdio_fd_create(socket.release(), &mSocketFd);
+          if (fdioStatus != ZX_OK) {
+            GAPID_FATAL("Socket to fd conversion failed.");
+          }
+          outstanding--;
+        });
+
+    LoopWait();
+    return mSocketFd;
+}
+
+void Spy::LoopWait() {
+  while (outstanding) {
+    auto status = mAgisLoop->RunUntilIdle();
+    if (status != ZX_OK) {
+      GAPID_FATAL("Loop until idle failed.");
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+  }
+}
+#endif  // TARGET_OS == GAPID_OS_FUCHSIA
+
 CallObserver* Spy::enter(const char* name, uint32_t api) {
   lock();
   auto ctx = new CallObserver(this, gContext, api);
@@ -282,6 +380,9 @@ void Spy::endTraceIfRequested() {
     mConnection->write(msg.data(), msg.size());
     // allow some time for the message to arrive
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
+#if TARGET_OS == GAPID_OS_FUCHSIA
+    close(mSocketFd);
+#endif
     mConnection->close();
     set_suspended(true);
   }
