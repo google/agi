@@ -14,6 +14,7 @@
 
 load("@rules_python//python:defs.bzl", "py_binary", "py_library")
 load("//tools/build/python:python.bzl", "py_lint")
+load("//tools/build/rules:vulkan_generator.bzl", "basic_vulkan_generator")
 
 py_library(
     name = "vulkan_generator",
@@ -45,4 +46,23 @@ py_binary(
 py_lint(
     name = "lint",
     srcs = glob(["*.py"]),
+)
+
+basic_vulkan_generator(
+    name = "handle_remapper_src",
+    target = "handle_remapper"
+)
+
+cc_library(
+   name = "handle_remapper",
+   srcs = glob([":handle_remapper_src"], exclude = ["*_test.cpp",],),
+   visibility = ["//visibility:public"],
+)
+
+cc_test(
+    name = "handle_remapper_test",
+    srcs = [":handle_remapper_src"],
+    deps = [
+        "@com_google_googletest//:gtest_main",
+    ],
 )

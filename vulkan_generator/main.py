@@ -22,7 +22,7 @@ from vulkan_generator import generator
 
 def main() -> None:
     """ Entry point """
-    generator.generate(Path(sys.argv[1]))
+    generator.generate(target = sys.argv[1], output_dir = Path(sys.argv[2]), vulkan_xml_path = Path(sys.argv[3]))
 
 
 if __name__ == "__main__":
