@@ -13,15 +13,14 @@
 # limitations under the License.
 
 load("@gapid//tools/build/rules:repository.bzl", "maybe_repository")
-load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
+load("@rules_fuchsia//fuchsia:deps.bzl", "fuchsia_clang_repository")
 
-def fuchsia_base_dependencies(locals = {}):
+def fuchsia_clang_dependencies(locals = {}):
   maybe_repository(
-    git_repository,
-    name = "rules_fuchsia",
+    fuchsia_clang_repository,
+    name = "fuchsia_clang",
     locals = locals,
-    remote = "https://fuchsia.googlesource.com/sdk-integration",
-    commit = "55ae0411ebfeee39af3ecde061c5a9df09e00775",
-    shallow_since = "1665598959 +0000",
-    patch_cmds = ["rm -R scripts", "mv bazel_rules_fuchsia/* ."],
+    sdk_root_label = "@fuchsia_sdk",
   )
+  native.register_toolchains("@fuchsia_clang//:cc-x86_64")
+  native.register_toolchains("@fuchsia_clang//:cc-aarch64")

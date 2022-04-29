@@ -19,6 +19,10 @@
 #include "core/cc/log.h"
 #include "core/cc/socket_connection.h"
 
+#if TARGET_OS == GAPID_OS_FUCHSIA
+#include "core/cc/fuchsia/zircon_socket_connection.h"
+#endif
+
 namespace gapii {
 
 std::shared_ptr<ConnectionStream> ConnectionStream::listenSocket(
@@ -35,6 +39,15 @@ std::shared_ptr<ConnectionStream> ConnectionStream::listenPipe(
              (abstract ? " (abstract)" : ""));
   return std::shared_ptr<ConnectionStream>(new ConnectionStream(c->accept()));
 }
+
+#if TARGET_OS == GAPID_OS_FUCHSIA
+std::shared_ptr<ConnectionStream> ConnectionStream::listenZirconSocket(
+    zx::socket&& socket) {
+  GAPID_INFO("GAPII awaiting connection on zircon socket");
+  return std::shared_ptr<ConnectionStream>(new ConnectionStream(
+      std::make_unique<core::ZirconSocketConnection>(std::move(socket))));
+}
+#endif
 
 ConnectionStream::ConnectionStream(std::unique_ptr<core::Connection> connection)
     : mConnection(std::move(connection)) {}

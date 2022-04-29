@@ -1,6 +1,4 @@
-# Copyright (C) 2022 Google Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
+# Copyright (C) 2022 Google Inc.  # # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
@@ -12,58 +10,46 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@rules_fuchsia//fuchsia:defs.bzl", "fuchsia_cc_binary", "fuchsia_component", "fuchsia_component_manifest", "fuchsia_package", "fuchsia_package_archive", "fuchsia_package_resource")
-
-cc_binary(
-    name = "gapii_server_bin",
-    srcs = ["gapii_server.cc"],
-    deps = [
-        "@fuchsia_sdk_dynamic//fidl/fuchsia.io:fuchsia.io_cc",
-        "@fuchsia_sdk_dynamic//fidl/fuchsia.ldsvc:fuchsia.ldsvc_cc",
-        "@fuchsia_sdk_dynamic//pkg/async-loop-cpp",
-        "@fuchsia_sdk_dynamic//pkg/async-loop-default",
-        "@fuchsia_sdk_dynamic//pkg/fdio",
-        "@fuchsia_sdk_dynamic//pkg/vfs_cpp",
-    ],
-)
+load("@rules_fuchsia//fuchsia:defs.bzl", "fuchsia_cc_binary", "fuchsia_component", "fuchsia_component_manifest", "fuchsia_package", "fuchsia_package_resource")
 
 fuchsia_cc_binary(
     name = "gapii_server",
-    cc_binary = ":gapii_server_bin",
-    sdk_root_label = "@fuchsia_sdk_dynamic",
+    srcs = ["gapii_server.cc"],
+    sdk_root_label = "@fuchsia_sdk",
+    deps = [
+        "@fuchsia_sdk//fidl/fuchsia.gpu.agis:fuchsia.gpu.agis_llcpp_cc",
+        "@fuchsia_sdk//fidl/fuchsia.io:fuchsia.io_cc",
+        "@fuchsia_sdk//fidl/fuchsia.ldsvc:fuchsia.ldsvc_cc",
+        "@fuchsia_sdk//pkg/async-loop-cpp",
+        "@fuchsia_sdk//pkg/async-loop-default",
+        "@fuchsia_sdk//pkg/vfs_cpp",
+    ],
 )
 
 fuchsia_component_manifest(
-    name = "gapii_component_manifest",
-    src = "gapii.cml",
-    includes = ["application.shard.cml"],
-)
-
-fuchsia_package_resource(
-    name = "layer_override",
-    src = "VkLayer_override.json",
-    dest = "data/vulkan/implicit_layer.d/VkLayer_override.json",
+    name = "manifest",
+    src = "gapii-server.cml",
 )
 
 fuchsia_component(
-    name = "gapii_component",
-    manifest = ":gapii_component_manifest",
+    name = "gapii-server",
+    manifest = ":manifest",
     deps = [
         ":gapii_server",
         "//gapii/cc:libgapii",
     ],
 )
 
+fuchsia_package_resource(
+    name = "graphics_spy_json",
+    src = "//gapii/vulkan/vk_graphics_spy/cc:json",
+    dest = "data/vulkan/explicit_layer.d/GraphicsSpyLayer.json",
+)
+
 fuchsia_package(
     name = "gapii",
     deps = [
-        ":gapii_component",
-        ":layer_override",
+        ":gapii-server",
+        ":graphics_spy_json",
     ],
-)
-
-fuchsia_package_archive(
-    name = "gapii_far",
-    archive_name = "gapii.far",
-    package = ":gapii",
 )

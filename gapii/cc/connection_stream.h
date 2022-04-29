@@ -22,6 +22,10 @@
 #include "core/cc/stream_reader.h"
 #include "core/cc/stream_writer.h"
 
+#if defined(GAPID_TARGET_OS_FUCHSIA)
+#include <lib/zx/socket.h>
+#endif
+
 namespace core {
 
 class Connection;
@@ -34,17 +38,25 @@ namespace gapii {
 // interfaces that reads and writes to an incoming TCP connection.
 class ConnectionStream : public core::StreamWriter, public core::StreamReader {
  public:
-  // listenSocket blocks and waits for a TCP connection to be made on the
-  // specified host and port, returning a ConnectionStream once a connection is
+  // listenSocket() blocks and waits for a TCP connection to be made on the
+  // specified host and port. Returns a ConnectionStream once a connection is
   // established.
   static std::shared_ptr<ConnectionStream> listenSocket(const char* hostname,
                                                         const char* port);
 
-  // listenPipe blocks and waits for a UNIX connection to be made on the
-  // specified pipe name, optionally abstract, returning a ConnectionStream once
+  // listenPipe() blocks and waits for a UNIX connection to be made on the
+  // specified pipe name, optionally abstract. Returns a ConnectionStream once
   // a connection is established.
   static std::shared_ptr<ConnectionStream> listenPipe(const char* pipename,
                                                       bool abstract);
+
+#if defined(GAPID_TARGET_OS_FUCHSIA)
+  // listenZirconSocket() blocks and waits for a TCP connection to be made on
+  // the specified Zircon socket. Returns a ConnectionStream once a connection
+  // is established.
+  static std::shared_ptr<ConnectionStream> listenZirconSocket(
+      zx::socket&& socket);
+#endif
 
   // core::StreamReader compliance
   virtual uint64_t read(void* data, uint64_t max_size) override;
@@ -57,7 +69,6 @@ class ConnectionStream : public core::StreamWriter, public core::StreamReader {
 
  private:
   ConnectionStream(std::unique_ptr<core::Connection>);
-
   std::unique_ptr<core::Connection> mConnection;
 };
 

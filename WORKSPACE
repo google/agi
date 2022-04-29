@@ -35,6 +35,8 @@ load("@local_config_fuchsia//:workspace.bzl", "fuchsia_base_dependencies")
 fuchsia_base_dependencies(locals = LOCALS)
 load("@local_config_fuchsia//:fuchsia_sdk.bzl", "fuchsia_sdk_dependencies")
 fuchsia_sdk_dependencies(locals = LOCALS)
+load("@local_config_fuchsia//:fuchsia_clang.bzl", "fuchsia_clang_dependencies")
+fuchsia_clang_dependencies(locals = LOCALS)
 
 load("@io_bazel_rules_go//go:deps.bzl", "go_rules_dependencies", "go_register_toolchains")
 load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
