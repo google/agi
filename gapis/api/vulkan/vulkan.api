@@ -341,7 +341,6 @@ sub ref!ExtensionSet supportedDeviceExtensions() {
 // This contains the information about a draw
 @internal class DrawInfo {
   ref!FramebufferObject Framebuffer
-  map!(u32, ref!ImageViewObject) FramebufferAttachments
   // A mapping from the descriptor set bound numbers to descriptor set objects
   map!(u32, ref!DescriptorSetObject) DescriptorSets
   // The Last subpass number used in the draw
@@ -367,6 +366,10 @@ sub ref!ExtensionSet supportedDeviceExtensions() {
   // Transform Feedback buffers used for the draw. This is a map of binding number to
   // buffer bound do that binding.
   map!(u32, BoundBuffer) BoundTransformFeedbackBuffers
+
+  // A map of the current framebuffer attachements, either from
+  // VkFramebufferCreateInfo or VkRenderPassAttachmentBeginInfo
+  map!(u32, ref!ImageViewObject) FramebufferAttachments
 }
 
 @internal class DynamicPipelineState {

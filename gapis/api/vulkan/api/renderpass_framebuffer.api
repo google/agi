@@ -43,13 +43,13 @@
 @internal class FramebufferObject {
   @unused VkDevice                  Device
   @unused VkFramebuffer             VulkanHandle
-  VkFramebufferCreateFlags          Flags
   @unused ref!RenderPassObject      RenderPass
   map!(u32, ref!ImageViewObject)    ImageAttachments
   @unused u32                       Width
   @unused u32                       Height
   @unused u32                       Layers
   @unused ref!VulkanDebugMarkerInfo DebugInfo
+  VkFramebufferCreateFlags          Flags
   map!(u32, ref!FramebufferAttachmentImageInfo) ImagelessFramebufferAttachmentInfo
 }
 
