@@ -1513,7 +1513,8 @@ message DeviceValidationResult {
     // Passed validation.
     OK = 1;
 
-    // Not supported in some kind of way (e.g. unsupported device, custom build).
+    // Not supported in some kind of way (e.g. unsupported device, custom
+    // build).
     FAILED_PRECONDITION = 2;
 
     // Validating the Perfetto trace file failed (i.e. mismatched GPU counters).
