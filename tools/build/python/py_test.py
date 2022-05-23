@@ -12,17 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""This is the entry point for Vulkan Code Generator"""
-
-from pathlib import Path
 import sys
-
-from vulkan_generator import generator
-
-def main() -> None:
-    """ Entry point """
-    generator.generate(Path(sys.argv[1]))
-
+import pytest
 
 if __name__ == "__main__":
-    main()
+    sys.exit(pytest.main(sys.argv[1:]))
