@@ -29,7 +29,7 @@ from vulkan_generator.vulkan_parser import types
 
 
 def test_vulkan_bitmask_with_require() -> None:
-    """""Test the bitmask has "required" field"""
+    """""Test the bitmask has "requires" field"""
 
     xml = """<?xml version="1.0" encoding="UTF-8"?>
     <type requires="VkFramebufferCreateFlagBits" category="bitmask">typedef
@@ -44,7 +44,7 @@ def test_vulkan_bitmask_with_require() -> None:
 
 
 def test_vulkan_bitmask_without_require() -> None:
-    """""Test the bitmask does not have a "required" field"""
+    """""Test the bitmask does not have a "requires" field"""
 
     xml = """<?xml version="1.0" encoding="UTF-8"?>
     <type category="bitmask">typedef <type>VkFlags</type>
