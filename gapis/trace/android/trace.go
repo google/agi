@@ -310,7 +310,7 @@ func (t *androidTracer) Validate(ctx context.Context, enableLocalFiles bool) (*s
 	} else {
 		res.ErrorCode = service.DeviceValidationResult_OK
 	}
-	
+
 	return res, nil
 }
 
