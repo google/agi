@@ -19,7 +19,6 @@ import static com.google.gapid.perfetto.views.FuchsiaTraceConfigDialog.showFuchs
 import static com.google.gapid.perfetto.views.TraceConfigDialog.getConfig;
 import static com.google.gapid.perfetto.views.TraceConfigDialog.getConfigSummary;
 import static com.google.gapid.perfetto.views.TraceConfigDialog.showPerfettoConfigDialog;
-import static com.google.gapid.util.Logging.throttleLogRpcError;
 import static com.google.gapid.util.MoreFutures.logFailure;
 import static com.google.gapid.widgets.Widgets.createBoldLabel;
 import static com.google.gapid.widgets.Widgets.createCheckbox;
@@ -34,12 +33,10 @@ import static com.google.gapid.widgets.Widgets.createTextbox;
 import static com.google.gapid.widgets.Widgets.withIndents;
 import static com.google.gapid.widgets.Widgets.withLayoutData;
 import static com.google.gapid.widgets.Widgets.withMargin;
-import static com.google.gapid.widgets.Widgets.withMarginOnly;
 import static com.google.gapid.widgets.Widgets.withSpans;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static java.util.logging.Level.WARNING;
 import static java.util.stream.Collectors.toList;
 
 import com.google.common.collect.Lists;
@@ -47,7 +44,6 @@ import com.google.gapid.models.Analytics;
 import com.google.gapid.models.Analytics.View;
 import com.google.gapid.models.Devices;
 import com.google.gapid.models.Devices.DeviceCaptureInfo;
-import com.google.gapid.models.Devices.DeviceValidationResult;
 import com.google.gapid.models.Models;
 import com.google.gapid.models.Settings;
 import com.google.gapid.models.TraceTargets;
@@ -59,10 +55,6 @@ import com.google.gapid.proto.service.Service.ClientAction;
 import com.google.gapid.proto.service.Service.DeviceTraceConfiguration;
 import com.google.gapid.proto.service.Service.StatusResponse;
 import com.google.gapid.proto.service.Service.TraceTypeCapabilities;
-import com.google.gapid.rpc.Rpc;
-import com.google.gapid.rpc.RpcException;
-import com.google.gapid.rpc.SingleInFlight;
-import com.google.gapid.rpc.UiErrorCallback;
 import com.google.gapid.server.Client;
 import com.google.gapid.server.Tracer;
 import com.google.gapid.server.Tracer.TraceRequest;
@@ -120,7 +112,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -322,7 +313,6 @@ public class TracerDialog {
       private final String date = TRACE_DATE_FORMAT.format(new Date());
 
       private List<DeviceCaptureInfo> devices;
-      private final SingleInFlight rpcController = new SingleInFlight();
       private final Models models;
 
       private final ComboViewer deviceDropdown;
@@ -375,7 +365,8 @@ public class TracerDialog {
 
         setLayout(new GridLayout(1, false));
 
-        Service.TraceType lastType = Service.TraceType.Graphics;
+        Service.TraceType lastType = trace.getLastFrameTraceWasVulkan() ?
+            Service.TraceType.Graphics : Service.TraceType.ANGLE;
         try {
           lastType = Service.TraceType.valueOf(trace.getType());
         } catch (IllegalArgumentException e) {
@@ -385,7 +376,7 @@ public class TracerDialog {
         if (type == null) {
           // Use the last used type if no specific type was requested.
           type = TraceType.from(lastType);
-        } else if (type == TraceType.Vulkan && lastType == Service.TraceType.ANGLE) {
+        } else if (type == TraceType.Vulkan && !trace.getLastFrameTraceWasVulkan()) {
           // If frame profiler was requested, use ANGLE if the previous trace was an ANGLE trace.
           type = TraceType.ANGLE;
         }
@@ -427,7 +418,9 @@ public class TracerDialog {
           logFailure(LOG, Scheduler.EXECUTOR.schedule(refreshDevices, 300, TimeUnit.MILLISECONDS));
         });
 
-        createLabel(mainGroup, "Validation:");
+        // Align label with first line of text.
+        withLayoutData(createLabel(mainGroup, "Validation:"),
+          withIndents(new GridData(GridData.HORIZONTAL_ALIGN_FILL | GridData.VERTICAL_ALIGN_BEGINNING), 0, 12));
         deviceValidationView = new DeviceValidationView(mainGroup, this.models, widgets);
 
         Group appGroup  = withLayoutData(
@@ -1007,6 +1000,11 @@ public class TracerDialog {
         trace.setDeviceSerial(dev.device.getSerial());
         trace.setDeviceName(dev.device.getName());
         trace.setType(config.getType().name());
+        if (type == TraceType.Vulkan) {
+          trace.setLastFrameTraceWasVulkan(true);
+        } else if (type == TraceType.ANGLE) {
+          trace.setLastFrameTraceWasVulkan(false);
+        }
         trace.setUri(traceTarget.getText());
         trace.setArguments(arguments.getText());
         SettingsProto.Trace.Duration.Builder dur = (type == TraceType.System) ?

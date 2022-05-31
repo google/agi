@@ -44,6 +44,20 @@ def gapid_dependencies(android = True, mingw = True, locals = {}):
 
     maybe_repository(
         github_repository,
+        name = "rules_python",
+        locals = locals,
+        organization = "bazelbuild",
+        project = "rules_python",
+        commit = "ae7a2677b3003b13d45bc9bfc25f1425bed5b407",  # 0.8.1
+        sha256 = "f1c3069679395ac1c1104f28a166f06167d30d41bdb1797d154d80b511780d2e",
+        patches = [
+            # Fix the problem with trying to use /usr/bin/python rather than a versioned python.
+            "@gapid//tools/build/third_party:rules_python.patch",
+        ],
+    )
+
+    maybe_repository(
+        github_repository,
         name = "bazel_gazelle",
         locals = locals,
         organization = "bazelbuild",
@@ -313,9 +327,9 @@ def gapid_dependencies(android = True, mingw = True, locals = {}):
         locals = locals,
         organization = "KhronosGroup",
         project = "Vulkan-Headers",
-        commit = "7264358702061d3ed819d62d3d6fd66ab1da33c3",  # 1.2.132
+        commit = "8ba8294c86d0e99fcb457bedbd573dd678ccc9b3",  # 1.3.212
         build_file = "@gapid//tools/build/third_party:vulkan-headers.BUILD",
-        sha256 = "d44112f625cb2152fd7c8906a15e4e98abc5946d1ef85c2e17b3cb5c247586d3",
+        sha256 = "eaca5dde10b3b6d3cecf07c7f9b84f17f72ab8bce3bd79818a8909978c6fd601",
     )
 
     if android:

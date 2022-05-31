@@ -834,12 +834,12 @@ func (sb *stateBuilder) createDevice(d DeviceObjectʳ) {
 			),
 		).Ptr())
 	}
-	if !d.PhysicalDeviceUniformBufferStandardLayoutFeaturesKHR().IsNil() {
+	if !d.PhysicalDeviceUniformBufferStandardLayoutFeatures().IsNil() {
 		pNext = NewVoidᵖ(sb.MustAllocReadData(
-			NewVkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR(
-				VkStructureType_VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_UNIFORM_BUFFER_STANDARD_LAYOUT_FEATURES_KHR, // sType
+			NewVkPhysicalDeviceUniformBufferStandardLayoutFeatures(
+				VkStructureType_VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_UNIFORM_BUFFER_STANDARD_LAYOUT_FEATURES, // sType
 				pNext, // pNext
-				d.PhysicalDeviceUniformBufferStandardLayoutFeaturesKHR().UniformBufferStandardLayout(), // uniformBufferStandardLayout
+				d.PhysicalDeviceUniformBufferStandardLayoutFeatures().UniformBufferStandardLayout(), // uniformBufferStandardLayout
 			),
 		).Ptr())
 	}
@@ -981,6 +981,15 @@ func (sb *stateBuilder) createDevice(d DeviceObjectʳ) {
 				d.PhysicalDeviceBufferDeviceAddressFeatures().BufferDeviceAddress(),
 				d.PhysicalDeviceBufferDeviceAddressFeatures().BufferDeviceAddressCaptureReplay(),
 				d.PhysicalDeviceBufferDeviceAddressFeatures().BufferDeviceAddressMultiDevice(),
+			),
+		).Ptr())
+	}
+	if !d.PhysicalDeviceSeparateDepthStencilLayoutsFeatures().IsNil() {
+		pNext = NewVoidᵖ(sb.MustAllocReadData(
+			NewVkPhysicalDeviceSeparateDepthStencilLayoutsFeatures(
+				VkStructureType_VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SEPARATE_DEPTH_STENCIL_LAYOUTS_FEATURES,
+				pNext,
+				d.PhysicalDeviceSeparateDepthStencilLayoutsFeatures().SeparateDepthStencilLayouts(),
 			),
 		).Ptr())
 	}
@@ -2398,9 +2407,20 @@ func (sb *stateBuilder) createRenderPass2(rp RenderPassObjectʳ) {
 		attachmentDescriptions := []VkAttachmentDescription2{}
 		for _, k := range rp.AttachmentDescriptions().Keys() {
 			ad := rp.AttachmentDescriptions().Get(k)
+			pNext := NewVoidᶜᵖ(memory.Nullptr)
+			if !ad.StencilLayout().IsNil() {
+				pNext = NewVoidᶜᵖ(sb.MustAllocReadData(
+					NewVkAttachmentDescriptionStencilLayout(
+						VkStructureType_VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_STENCIL_LAYOUT,
+						NewVoidᵖ(pNext),
+						ad.StencilLayout().StencilInitialLayout(),
+						ad.StencilLayout().StencilFinalLayout(),
+					),
+				).Ptr())
+			}
 			attachmentDescriptions = append(attachmentDescriptions, NewVkAttachmentDescription2(
 				VkStructureType_VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2,
-				NewVoidᶜᵖ(memory.Nullptr),
+				pNext,
 				ad.Flags(),
 				ad.Fmt(),
 				ad.Samples(),
@@ -2425,10 +2445,20 @@ func (sb *stateBuilder) createRenderPass2(rp RenderPassObjectʳ) {
 		depthStencil := NewVkAttachmentReference2ᶜᵖ(memory.Nullptr)
 		if !sd.DepthStencilAttachment().IsNil() {
 			attachment := sd.DepthStencilAttachment().Get()
+			pNext := NewVoidᶜᵖ(memory.Nullptr)
+			if !attachment.StencilLayout().IsNil() {
+				pNext = NewVoidᶜᵖ(sb.MustAllocReadData(
+					NewVkAttachmentReferenceStencilLayout(
+						VkStructureType_VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_STENCIL_LAYOUT,
+						NewVoidᵖ(pNext),
+						attachment.StencilLayout().StencilLayout(),
+					),
+				).Ptr())
+			}
 			depthStencil = NewVkAttachmentReference2ᶜᵖ(sb.MustAllocReadData(
 				NewVkAttachmentReference2(
 					VkStructureType_VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2,
-					NewVoidᶜᵖ(memory.Nullptr),
+					pNext,
 					attachment.Attachment(),
 					attachment.Layout(),
 					attachment.AspectMask(),
@@ -3464,6 +3494,36 @@ func (sb *stateBuilder) createFramebuffer(fb FramebufferObjectʳ) {
 		temporaryRenderPass = GetState(sb.newState).RenderPasses().Get(fb.RenderPass().VulkanHandle())
 	}
 
+	pNext := NewVoidᶜᵖ(memory.Nullptr)
+	if fb.ImagelessFramebufferAttachmentInfo().Len() > 0 {
+		attachmentImageInfos := []VkFramebufferAttachmentImageInfo{}
+		for _, i := range fb.ImagelessFramebufferAttachmentInfo().Keys() {
+			info := fb.ImagelessFramebufferAttachmentInfo().Get(i)
+			attachmentImageInfos = append(attachmentImageInfos,
+				NewVkFramebufferAttachmentImageInfo(
+					VkStructureType_VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO, // sType
+					0,                                // pNext
+					info.Flags(),                     // flags
+					info.Usage(),                     // usage
+					info.Width(),                     // width
+					info.Height(),                    // height
+					info.LayerCount(),                // layerCount
+					uint32(info.ViewFormats().Len()), // viewFormatCount
+					NewVkFormatᶜᵖ(sb.MustUnpackReadMap(info.ViewFormats().All()).Ptr()), // pViewFormats
+				),
+			)
+		}
+
+		pNext = NewVoidᶜᵖ(sb.MustAllocReadData(
+			NewVkFramebufferAttachmentsCreateInfo(
+				VkStructureType_VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENTS_CREATE_INFO, // sType
+				pNext, // pNext
+				uint32(fb.ImagelessFramebufferAttachmentInfo().Len()),                                   // attachmentImageInfoCount
+				NewVkFramebufferAttachmentImageInfoᶜᵖ(sb.MustAllocReadData(attachmentImageInfos).Ptr()), // pAttachmentImageInfos
+			),
+		).Ptr())
+	}
+
 	imageViews := []VkImageView{}
 	for _, v := range fb.ImageAttachments().Keys() {
 		imageViews = append(imageViews, fb.ImageAttachments().Get(v).VulkanHandle())
@@ -3473,8 +3533,8 @@ func (sb *stateBuilder) createFramebuffer(fb FramebufferObjectʳ) {
 		fb.Device(),
 		sb.MustAllocReadData(NewVkFramebufferCreateInfo(
 			VkStructureType_VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // sType
-			0,                              // pNext
-			0,                              // flags
+			pNext,                          // pNext
+			fb.Flags(),                     // flags
 			fb.RenderPass().VulkanHandle(), // renderPass
 			uint32(len(imageViews)),        // attachmentCount
 			NewVkImageViewᶜᵖ(sb.MustAllocReadData(imageViews).Ptr()), // pAttachments
