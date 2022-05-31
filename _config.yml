@@ -19,6 +19,7 @@ url: "https://gpuinspector.dev" # the base hostname & protocol for your site, e.
 project-url: "https://github.com/google/agi"
 releases-url: "https://github.com/google/agi/releases"
 docurl: "https://developer.android.com/agi"
+validation-url: "https://developer.android.com/agi/start#device-validation"
 feedback-url: "https://github.com/google/agi/issues"
 markdown: kramdown
 sass:
