@@ -5,4 +5,4 @@ title: Device Support Validation
 permalink: /validation
 ---
 
-The device support validation documentation has moved to [{{site.docurl}}]({{site.validation-url}}).
+The device support validation documentation has moved to [{{site.validation-url}}]({{site.validation-url}}).
