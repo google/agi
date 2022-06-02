@@ -26,8 +26,6 @@
 #include "connection_stream.h"
 #include "protocol.h"
 
-#include "gapil/runtime/cc/runtime.h"
-
 #include "gapii/cc/spy.h"
 
 #include "core/cc/debugger.h"
@@ -240,10 +238,7 @@ Spy::Spy()
     core::Debugger::waitForAttach();
   }
 
-  auto context = enter("init", 0);
   VulkanSpy::init();
-  SpyBase::init(context);
-  exit();
 
   if (this_executable) {
     mMessageReceiverJob =
