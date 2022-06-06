@@ -33,6 +33,7 @@ import static com.google.gapid.widgets.Widgets.createTextbox;
 import static com.google.gapid.widgets.Widgets.withIndents;
 import static com.google.gapid.widgets.Widgets.withLayoutData;
 import static com.google.gapid.widgets.Widgets.withMargin;
+import static com.google.gapid.widgets.Widgets.withMarginOnly;
 import static com.google.gapid.widgets.Widgets.withSpans;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
