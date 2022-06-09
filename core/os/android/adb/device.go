@@ -288,6 +288,14 @@ func newDevice(ctx context.Context, serial string, status bind.Status) (*binding
 		i.GenID()
 	}
 
+	// Activate GPU counters if we detect an Adreno GPU.
+	gpuName := d.Instance().GetConfiguration().GetHardware().GetGPU().GetName()
+	if strings.Contains(gpuName, "Adreno") {
+		if err := d.enableAdrenoGpuCounters(ctx); err != nil {
+			return d, err
+		}
+	}
+
 	return d, nil
 }
 
@@ -410,6 +418,33 @@ func (b *binding) NativeBridgeABI(ctx context.Context, emulated *device.ABI) *de
 
 func (b *binding) IsLocal(ctx context.Context) (bool, error) {
 	return true, nil
+}
+
+// Enable GPU counters on Adreno GPUs
+func (b *binding) enableAdrenoGpuCounters(ctx context.Context) error {
+	counterFilePath := "/sys/class/kgsl/kgsl-3d0/perfcounter"
+	lsResult, err := b.Shell(fmt.Sprintf("ls %s", counterFilePath)).Call(ctx)
+	if err != nil {
+		return err
+	}
+
+	// If the file does not exist
+	if lsResult != counterFilePath {
+		return nil
+	}
+
+	fileContent, err := b.Shell(fmt.Sprintf("cat %s", counterFilePath)).Call(ctx)
+	if err != nil {
+		return err
+	}
+
+	// Early exit if the file has already been edited.
+	if fileContent != "0" {
+		return nil
+	}
+
+	_, err = b.Shell(fmt.Sprintf("echo 1 > %s", counterFilePath)).Call(ctx)
+	return err
 }
 
 var abiToISAs = []struct {
