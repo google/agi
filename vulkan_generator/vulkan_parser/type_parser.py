@@ -17,10 +17,46 @@
 
 import xml.etree.ElementTree as ET
 
+from vulkan_generator.vulkan_parser import bitmask_parser
+from vulkan_generator.vulkan_parser import enum_aliases_parser
 from vulkan_generator.vulkan_parser import handle_parser
 from vulkan_generator.vulkan_parser import struct_parser
 from vulkan_generator.vulkan_parser import funcptr_parser
 from vulkan_generator.vulkan_parser import types
+from vulkan_generator.vulkan_parser import defines_parser
+
+
+def process_defines(vulkan_types: types.AllVulkanTypes, define_element: ET.Element) -> None:
+    vulkan_define = defines_parser.parse(define_element)
+
+    if isinstance(vulkan_define, types.VulkanDefine):
+        vulkan_types.defines[vulkan_define.variable_name] = vulkan_define
+        return
+
+    raise SyntaxError(f"Unknown Define: {vulkan_define}")
+
+
+def process_bitmask_alises(vulkan_types: types.AllVulkanTypes, bitmask_element: ET.Element) -> None:
+    """ Parse the Vulkan bitmaks and their aliases"""
+    vulkan_bitmask = bitmask_parser.parse(bitmask_element)
+
+    if isinstance(vulkan_bitmask, types.VulkanBitmask):
+        vulkan_types.bitmasks[vulkan_bitmask.typename] = vulkan_bitmask
+        return
+
+    if isinstance(vulkan_bitmask, types.VulkanBitmaskAlias):
+        vulkan_types.bitmask_aliases[vulkan_bitmask.typename] = vulkan_bitmask
+        return
+
+    raise SyntaxError(f"Unknown Bitmask: {vulkan_bitmask}")
+
+
+def process_enum_alises(vulkan_types: types.AllVulkanTypes, enum_element: ET.Element) -> None:
+    """ Parse the Vulkan enum aliases"""
+    vulkan_enum_value_alias = enum_aliases_parser.parse(enum_element)
+
+    if vulkan_enum_value_alias:
+        vulkan_types.enum_aliases[vulkan_enum_value_alias.typename] = vulkan_enum_value_alias
 
 
 def process_handle(vulkan_types: types.AllVulkanTypes, handle_element: ET.Element) -> None:
@@ -35,7 +71,7 @@ def process_handle(vulkan_types: types.AllVulkanTypes, handle_element: ET.Elemen
         vulkan_types.handle_aliases[handle.typename] = handle
         return
 
-    raise SyntaxError(f"Unknown VulkanType {handle}")
+    raise SyntaxError(f"Unknown VulkanType: {handle}")
 
 
 def process_struct(vulkan_types: types.AllVulkanTypes, struct_element: ET.Element) -> None:
@@ -66,7 +102,13 @@ def parse(types_root: ET.Element) -> types.AllVulkanTypes:
     for type_element in types_root.iter():
         if "category" in type_element.attrib:
             type_category = type_element.attrib["category"]
-            if type_category == "handle":
+            if type_category == "define":
+                process_defines(vulkan_types, type_element)
+            elif type_category == "bitmask":
+                process_bitmask_alises(vulkan_types, type_element)
+            elif type_category == "enum":
+                process_enum_alises(vulkan_types, type_element)
+            elif type_category == "handle":
                 process_handle(vulkan_types, type_element)
             elif type_category == "struct":
                 process_struct(vulkan_types, type_element)

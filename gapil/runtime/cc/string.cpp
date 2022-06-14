@@ -80,11 +80,6 @@ String& String::operator=(const String& other) {
   return *this;
 }
 
-String& String::operator+=(const String& other) {
-  auto res = gapil_string_concat(ptr, other.ptr);
-  return *this = String(res);
-}
-
 bool String::operator==(const String& other) const {
   return gapil_string_compare(ptr, other.ptr) == 0;
 }
@@ -108,6 +103,8 @@ bool String::operator>(const String& other) const {
 bool String::operator>=(const String& other) const {
   return gapil_string_compare(ptr, other.ptr) >= 0;
 }
+
+String::operator bool() const { return ptr->length; }
 
 size_t String::length() const { return ptr->length; }
 
