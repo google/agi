@@ -93,11 +93,11 @@ def parse_arguments(command_elem: ET.Element) -> ParameterInformation:
 
         # This is useful when the parameter is a pointer to an array
         # with a length given by another parameter
-        array_reference = parsing_utils.try_get_attribute(param_elem, "len")
-        if array_reference:
+        array_size_reference = parsing_utils.try_get_attribute(param_elem, "len")
+        if array_size_reference:
             # pointer to char array has this property, which is redundant
-            array_reference = array_reference.replace("null-terminated", "")
-            array_reference = parsing_utils.clean_type_string(array_reference)
+            array_size_reference = array_size_reference.replace("null-terminated", "")
+            array_size_reference = parsing_utils.clean_type_string(array_size_reference)
 
         parameter_order.append(parameter_name)
         parameters[parameter_name] = types.VulkanCommandParam(
@@ -105,7 +105,7 @@ def parse_arguments(command_elem: ET.Element) -> ParameterInformation:
             parameter_type=parameter_type,
             optional=optional,
             externally_synced=externally_synced,
-            array_reference=array_reference,
+            array_size_reference=array_size_reference,
         )
 
     return ParameterInformation(parameter_order=parameter_order, parameters=parameters)

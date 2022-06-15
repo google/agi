@@ -20,7 +20,7 @@ import xml.etree.ElementTree as ET
 from vulkan_generator.vulkan_parser import types
 from vulkan_generator.vulkan_parser import type_parser
 from vulkan_generator.vulkan_parser import enums_parser
-from vulkan_parser import commands_parser
+from vulkan_generator.vulkan_parser import commands_parser
 
 
 def process_enums(vulkan_types: types.AllVulkanTypes, enum_element: ET.Element) -> None:

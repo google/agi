@@ -63,7 +63,7 @@ class VulkanStructMember:
 
     # If the member is an array, it's size is defined by another
     # member in the struct. This is the name of the referring member
-    array_reference: Optional[str]
+    array_size_reference: Optional[str]
 
     # Is this field has to be set and/or not-null
     optional: Optional[bool]
@@ -183,7 +183,7 @@ class VulkanCommandParam:
 
     # If the parameter is an array, it's size is defined by another
     # parameter of the command. This is the name of the referring parameter.
-    array_reference: Optional[str]
+    array_size_reference: Optional[str]
 
 
 @dataclass

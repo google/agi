@@ -132,11 +132,11 @@ def parse_struct_members(struct_element: ET.Element) -> MemberInformation:
 
         # This is useful when the member is an pointer to an array
         # with a length given by another member
-        array_reference = parsing_utils.try_get_attribute(member_element, "len")
-        if array_reference:
+        array_size_reference = parsing_utils.try_get_attribute(member_element, "len")
+        if array_size_reference:
             # pointer to char array has this property, which is redundant
-            array_reference = array_reference.replace("null-terminated", "")
-            array_reference = parsing_utils.clean_type_string(array_reference)
+            array_size_reference = array_size_reference.replace("null-terminated", "")
+            array_size_reference = parsing_utils.clean_type_string(array_size_reference)
 
         member_order.append(variable_name)
         members[variable_name] = types.VulkanStructMember(
@@ -145,7 +145,7 @@ def parse_struct_members(struct_element: ET.Element) -> MemberInformation:
             variable_size=variable_size,
             no_auto_validity=no_auto_validity,
             expected_value=expected_value,
-            array_reference=array_reference,
+            array_size_reference=array_size_reference,
             optional=optional
         )
 

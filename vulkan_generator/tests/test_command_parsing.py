@@ -196,7 +196,7 @@ def test_vulkan_command_with_an_array() -> None:
     typ = commands_parser.parse(ET.fromstring(xml))
     command = typ.commands["vkGetPhysicalDeviceDisplayPropertiesKHR"]
 
-    assert command.parameters["pProperties"].array_reference == "pPropertyCount"
+    assert command.parameters["pProperties"].array_size_reference == "pPropertyCount"
     assert "pPropertyCount" in command.parameters
 
 
