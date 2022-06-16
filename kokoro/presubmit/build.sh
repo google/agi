@@ -33,6 +33,12 @@ export GO111MODULE=off
 # Get bazel build tools.
 mkdir tools
 export GOPATH=$PWD/tools
+
+echo `go version`
+
+ls $PWD
+ls $GOPATH
+
 go get github.com/bazelbuild/buildtools/buildifier
 go get github.com/bazelbuild/buildtools/buildozer
 
