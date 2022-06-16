@@ -27,6 +27,9 @@ echo "396d7031134889647351b9caf947811ecee5c2c1c5772e01b0916439067667fd  bazel-${
 mkdir bazel
 bash bazel-${BAZEL_VERSION}-installer-linux-x86_64.sh --prefix=$PWD/bazel
 
+# Disable go modules explicity
+export GO111MODULE=off
+
 # Get bazel build tools.
 mkdir tools
 export GOPATH=$PWD/tools
