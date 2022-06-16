@@ -33,7 +33,8 @@ export GO111MODULE=off
 # Get bazel build tools.
 mkdir tools
 export GOPATH=$PWD/tools
-go get github.com/bazelbuild/buildtools/buildifier github.com/bazelbuild/buildtools/buildozer
+go get github.com/bazelbuild/buildtools/buildifier
+go get github.com/bazelbuild/buildtools/buildozer
 
 # Get clang-format.
 sudo rm /etc/apt/sources.list.d/cuda.list*
