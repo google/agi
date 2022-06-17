@@ -27,22 +27,16 @@ echo "396d7031134889647351b9caf947811ecee5c2c1c5772e01b0916439067667fd  bazel-${
 mkdir bazel
 bash bazel-${BAZEL_VERSION}-installer-linux-x86_64.sh --prefix=$PWD/bazel
 
+# install go 1.12.1
+# go install golang.org/dl/go1.12.1@latest
+# alias go=go.1.12.1
+
 # Disable go modules explicity
 export GO111MODULE=off
-
-echo "Default Go version"
-/usr/local/go/bin/go version
-
-which go
 
 # Get bazel build tools.
 mkdir tools
 export GOPATH=$PWD/tools
-
-which go
-
-ls $PWD
-ls $GOPATH
 
 go get github.com/bazelbuild/buildtools/buildifier
 go get github.com/bazelbuild/buildtools/buildozer
