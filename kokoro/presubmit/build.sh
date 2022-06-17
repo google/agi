@@ -30,11 +30,19 @@ bash bazel-${BAZEL_VERSION}-installer-linux-x86_64.sh --prefix=$PWD/bazel
 # Disable go modules explicity
 export GO111MODULE=off
 
+echo "Default Go version"
+/usr/local/go/bin/go version
+
+which go
+
 # Get bazel build tools.
 mkdir tools
 export GOPATH=$PWD/tools
 
-echo `go version`
+which go
+
+go version
+$GOPATH/bin/go version
 
 ls $PWD
 ls $GOPATH
