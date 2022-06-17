@@ -31,6 +31,8 @@ bash bazel-${BAZEL_VERSION}-installer-linux-x86_64.sh --prefix=$PWD/bazel
 go get golang.org/dl/go1.12.1
 alias go=go.1.12.1
 
+go version
+
 # Disable go modules explicity
 export GO111MODULE=off
 
