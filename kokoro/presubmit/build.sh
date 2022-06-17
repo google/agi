@@ -28,7 +28,7 @@ mkdir bazel
 bash bazel-${BAZEL_VERSION}-installer-linux-x86_64.sh --prefix=$PWD/bazel
 
 # install go 1.12.1
-go install golang.org/dl/go1.12.1@latest
+go get golang.org/dl/go1.12.1
 alias go=go.1.12.1
 
 # Disable go modules explicity
