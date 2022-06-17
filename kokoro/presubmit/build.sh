@@ -41,9 +41,6 @@ export GOPATH=$PWD/tools
 
 which go
 
-go version
-$GOPATH/bin/go version
-
 ls $PWD
 ls $GOPATH
 
