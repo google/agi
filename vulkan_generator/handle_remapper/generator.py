@@ -93,7 +93,7 @@ class NonDispatchableHandleAccessorCodeGenerator(HandleAccessorCodeGenerator):
             }}
 
             {map_name}[captureHandle] = replayHandle;
-            {map_count_name}[captureHandle] = {map_count_name}[captureHandle] +1;"""
+            {map_count_name}[captureHandle]++;"""
         )
 
     def handle_remove_code(self, handle : str) -> str:
@@ -110,7 +110,7 @@ class NonDispatchableHandleAccessorCodeGenerator(HandleAccessorCodeGenerator):
                 if(map_count_iter->second <= 0) throw InternalConsistencyException();
             }}
 
-            if(({map_count_name}[captureHandle] = {map_count_name}[captureHandle] -1) <= 0){{
+            if((--{map_count_name}[captureHandle]) <= 0){{
                 {map_name}.erase(map_iter);
                 {map_count_name}.erase(map_count_iter);
             }}"""

@@ -22,7 +22,7 @@ import pprint
 from vulkan_generator.vulkan_parser import parser as vulkan_parser
 from vulkan_generator.vulkan_parser import types
 
-from handle_remapper import generator as handle_remapper
+from vulkan_generator.handle_remapper import generator as handle_remapper_generator
 
 
 def print_vulkan_metadata(vulkan_metadata: types.VulkanMetadata) -> None:
@@ -106,9 +106,9 @@ def generate(target: str, output_dir: Path, vulkan_xml_path: Path) -> bool:
     # Switch table for generate target. Add new targets here and throw exception for unknown targets
     if target == "handle_remapper":
         basic_generate(target, output_dir, vulkan_info,
-            handle_remapper.generate_handle_remapper_h,
-            handle_remapper.generate_handle_remapper_cpp,
-            handle_remapper.generate_handle_remapper_tests)
+            handle_remapper_generator.generate_handle_remapper_h,
+            handle_remapper_generator.generate_handle_remapper_cpp,
+            handle_remapper_generator.generate_handle_remapper_tests)
     else:
         raise Exception("unknown generate target: " +target)
 
