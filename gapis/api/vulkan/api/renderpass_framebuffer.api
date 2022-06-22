@@ -338,17 +338,13 @@ sub SubpassDescription createSubpassDescriptionObjectFrom2(VkSubpassDescription2
             DepthResolveMode: ext.depthResolveMode,
             StencilResolveMode: ext.stencilResolveMode,
           )
-          attachment := ext.pDepthStencilResolveAttachment[0]
-          internalSubpassDescription.DepthStencilResolve.DepthStencilResolveAttachment = AttachmentReference(
-            Attachment: attachment.attachment,
-            Layout: attachment.layout,
-            AspectMask: attachment.aspectMask,
-            StencilLayout: null,
-          )
+          attachmentReference2 := ext.pDepthStencilResolveAttachment[0]
+          internalSubpassDescription.DepthStencilResolve.DepthStencilResolveAttachment =
+              createAttachmentReferenceObjectFrom2(attachmentReference2)
         }
       }
     }
-  }  
+  }
 
   inputAttachments := subpassDescription2.pInputAttachments[0:subpassDescription2.inputAttachmentCount]
   for j in (0 .. subpassDescription2.inputAttachmentCount) {

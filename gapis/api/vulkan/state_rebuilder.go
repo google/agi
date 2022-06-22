@@ -2445,11 +2445,22 @@ func (sb *stateBuilder) createRenderPass2(rp RenderPassObjectʳ) {
 
 		if !sd.DepthStencilResolve().IsNil() {
 			depthStencilResolve := sd.DepthStencilResolve().Get()
+			arPnext := NewVoidᶜᵖ(memory.Nullptr)
+			if !depthStencilResolve.DepthStencilResolveAttachment().StencilLayout().IsNil() {
+				slPnext := NewVoidᶜᵖ(memory.Nullptr)
+				arPnext = NewVoidᶜᵖ(sb.MustAllocReadData(
+					NewVkAttachmentReferenceStencilLayout(
+						VkStructureType_VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_STENCIL_LAYOUT,
+						NewVoidᵖ(slPnext),
+						depthStencilResolve.DepthStencilResolveAttachment().StencilLayout().StencilLayout(),
+					),
+				).Ptr())
+			}
 
 			dsrAttachmentRef := NewVkAttachmentReference2ᶜᵖ(sb.MustAllocReadData(
 				NewVkAttachmentReference2(
 					VkStructureType_VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2,
-					NewVoidᶜᵖ(memory.Nullptr),
+					arPnext,
 					depthStencilResolve.DepthStencilResolveAttachment().Attachment(),
 					depthStencilResolve.DepthStencilResolveAttachment().Layout(),
 					depthStencilResolve.DepthStencilResolveAttachment().AspectMask(),
