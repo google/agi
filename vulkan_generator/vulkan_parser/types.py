@@ -263,6 +263,54 @@ class AllVulkanCommands:
 
 
 @dataclass
+class VulkanFeatureExtension:
+    """The base structure to extend a Vulkan feature"""
+
+
+@dataclass
+class VulkanFeatureExtensionEnum(VulkanFeatureExtension):
+    """
+    The structure to hold extension to an existing enum
+
+    When a vulkan enum is a required feature, unlike other types, the extending fields are defined
+    on the feature rather than the original enum
+    """
+    # Which type this enum is extending
+    basetype: str
+
+    # Extending enum field is an alias to another enum fields
+    alias: Optional[str]
+
+    # Extension number is used when calculating enum field value
+    extnumber: Optional[str]
+
+    # Offset is used when calculating enum field value
+    offset: Optional[str]
+
+    # Bitpos is used when calcualting bitfield value
+    bitpos: Optional[str]
+
+    # Some features explicitly gives the new value
+    value: Optional[str]
+
+
+@dataclass
+class VulkanFeature:
+    """The structure to hold a required feature for a Vulkan Core Version"""
+    name: str
+    feature_type: str
+    feature_extension: Optional[VulkanFeatureExtension]
+
+
+@dataclass
+class VulkanCoreVersion:
+    """The structure to hold all the features required or added by a Vulkan core version"""
+    name: str
+    number: str
+    features: Dict[str, VulkanFeature] = field(default_factory=dict)
+
+
+@dataclass
 class ImageFormatComponent:
     """
     The metadata that defines a component of a Vulkan image format
@@ -375,5 +423,6 @@ class VulkanMetadata:
     """
     types: AllVulkanTypes
     commands: AllVulkanCommands
+    core_versions: Dict[str, VulkanCoreVersion]
     image_format_metadata: ImageFormatMetadata
     spirv_metadata: SpirvMetadata
