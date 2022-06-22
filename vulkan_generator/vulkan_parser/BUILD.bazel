@@ -22,8 +22,6 @@ py_library(
     visibility = ["//visibility:public"],
     deps = [
         "//vulkan_generator/vulkan_utils",
-        "//vulkan_generator/codegen_utils",
-        "//vulkan_generator/handle_remapper",
     ],
 )
 
