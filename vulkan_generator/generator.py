@@ -98,14 +98,14 @@ def basic_generate(target: str,
 def generate(target: str, output_dir: Path, vulkan_xml_path: Path) -> bool:
 
     """ Generator function """
-    vulkan_info = vulkan_parser.parse(vulkan_xml_path)
-    print_vulkan_metaadata(vulkan_info)
+    vulkan_metadata = vulkan_parser.parse(vulkan_xml_path)
+    print_vulkan_metadata(vulkan_metadata)
 
     os.makedirs(output_dir, exist_ok=True)
 
     # Switch table for generate target. Add new targets here and throw exception for unknown targets
     if target == "handle_remapper":
-        basic_generate(target, output_dir, vulkan_info,
+        basic_generate(target, output_dir, vulkan_metadata,
             handle_remapper_generator.generate_handle_remapper_h,
             handle_remapper_generator.generate_handle_remapper_cpp,
             handle_remapper_generator.generate_handle_remapper_tests)

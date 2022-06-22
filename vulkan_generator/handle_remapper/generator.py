@@ -133,7 +133,7 @@ class NonDispatchableHandleAccessorCodeGenerator(HandleAccessorCodeGenerator):
             return map_iter->second;"""
         )
 
-def generate_handle_remapper_h(file_path : Path, all_vulkan_types : types.AllVulkanTypes) :
+def generate_handle_remapper_h(file_path : Path, vulkan_metadata : types.VulkanMetadata) :
     ''' Generates handle_remapper.h '''
     with open(file_path, "w", encoding="ascii") as remapper_h:
 
@@ -171,11 +171,11 @@ def generate_handle_remapper_h(file_path : Path, all_vulkan_types : types.AllVul
         public_members.append(codegen.create_exception_declaration("RemoveNonExistantHandleException"))
         public_members.append(codegen.create_exception_declaration("RemapNonExistantHandleException"))
 
-        for handle in all_vulkan_types.handles:
+        for handle in vulkan_metadata.types.handles:
 
             private_members.append(f"""std::map<Handle, Handle> {handle_map_name(handle)};""")
 
-            if not all_vulkan_types.handles[handle].dispatchable:
+            if not vulkan_metadata.types.handles[handle].dispatchable:
                 private_members.append(f"""std::map<Handle, int> {handle_count_map_name(handle)};""")
 
             private_members.append("")
@@ -203,7 +203,7 @@ def generate_handle_remapper_h(file_path : Path, all_vulkan_types : types.AllVul
 
         """))
 
-def generate_handle_remapper_cpp(file_path : Path, all_vulkan_types : types.AllVulkanTypes) :
+def generate_handle_remapper_cpp(file_path : Path, vulkan_metadata : types.VulkanMetadata) :
     ''' Generates handle_remapper.cc '''
     with open(file_path, "w", encoding="ascii") as remapper_cpp:
 
@@ -220,9 +220,9 @@ def generate_handle_remapper_cpp(file_path : Path, all_vulkan_types : types.AllV
         dispatchable_implgen = DispatchableHandleAccessorCodeGenerator()
         nondispatchable_implgen = NonDispatchableHandleAccessorCodeGenerator()
 
-        for handle in all_vulkan_types.handles:
+        for handle in vulkan_metadata.types.handles:
 
-            dispatchable = all_vulkan_types.handles[handle].dispatchable
+            dispatchable = vulkan_metadata.types.handles[handle].dispatchable
             implgenerator = dispatchable_implgen if dispatchable else nondispatchable_implgen
 
             add_definition = codegen.create_function_definition(
@@ -256,7 +256,7 @@ def generate_handle_remapper_cpp(file_path : Path, all_vulkan_types : types.AllV
         """))
 
 
-def generate_handle_remapper_tests(file_path : Path, all_vulkan_types : types.AllVulkanTypes) :
+def generate_handle_remapper_tests(file_path : Path, vulkan_metadata : types.VulkanMetadata) :
     ''' Generates handle_remapper_tests.cc '''
     with open(file_path, "w", encoding="ascii") as tests_cpp:
 
@@ -269,7 +269,7 @@ def generate_handle_remapper_tests(file_path : Path, all_vulkan_types : types.Al
             using namespace agi::replay2;
             """))
 
-        for handle in all_vulkan_types.handles:
+        for handle in vulkan_metadata.types.handles:
             tests_cpp.write(dedent(f"""
             TEST(VulkanHandleRemapper, {handle}BasicRemap) {{
                 VulkanHandleRemapper mapper;
@@ -287,7 +287,7 @@ def generate_handle_remapper_tests(file_path : Path, all_vulkan_types : types.Al
                 EXPECT_THROW(mapper.{handle_remap_name(handle)}(5678), VulkanHandleRemapper::RemapNonExistantHandleException);
             }}"""))
 
-            if all_vulkan_types.handles[handle].dispatchable:
+            if vulkan_metadata.types.handles[handle].dispatchable:
                 tests_cpp.write(dedent(f"""
                 TEST(VulkanHandleRemapper, Dispatchable{handle}Redefinition) {{
                     VulkanHandleRemapper mapper;
