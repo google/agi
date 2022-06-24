@@ -32,9 +32,17 @@ class VulkanType:
 
 
 @dataclass
+class VulkanBaseType(VulkanType):
+    """Base class for a Vulkan basetype"""
+    # If there is no base type, then it is a forward declaration
+    basetype: Optional[str]
+
+
+@dataclass
 class VulkanHandle(VulkanType):
     """The meta data defines a Vulkan Handle"""
     # Melih TODO: Vulkan Handles have object type in the XML that might be required in the future
+    dispatchable: bool
 
 
 @dataclass
@@ -63,7 +71,7 @@ class VulkanStructMember:
 
     # If the member is an array, it's size is defined by another
     # member in the struct. This is the name of the referring member
-    array_reference: Optional[str]
+    array_size_reference: Optional[str]
 
     # Is this field has to be set and/or not-null
     optional: Optional[bool]
@@ -170,10 +178,58 @@ class VulkanDefine:
 
 
 @dataclass
+class VulkanCommandParam:
+    """The metadata defines a Vulkan Command's parameter"""
+    parameter_type: str
+    parameter_name: str
+
+    # Is this field has to be set and/or not-null
+    optional: Optional[bool]
+
+    # Is this parameter must be externally synced
+    externally_synced: Optional[bool]
+
+    # If the parameter is an array, it's size is defined by another
+    # parameter of the command. This is the name of the referring parameter.
+    array_size_reference: Optional[str]
+
+
+@dataclass
+class VulkanCommand:
+    """The metadata defines a Vulkan Command"""
+    name: str
+    return_type: str
+
+    # Can this command be called inside or outside
+    # of a renderpass, or both
+    renderpass_allowance: Optional[str]
+
+    success_codes: Optional[List[str]]
+    error_codes: Optional[List[str]]
+
+    # Which queues this command can be used
+    queues: Optional[List[str]]
+
+    # Which command
+    command_buffer_levels: Optional[List[str]]
+
+    # These give us both what are the parameters are and their order
+    parameter_order: List[str] = field(default_factory=list)
+    parameters: Dict[str, VulkanCommandParam] = field(default_factory=dict)
+
+
+@dataclass
+class VulkanCommandAlias:
+    """The metadata defines a Vulkan Command alias"""
+    command_name: str
+    aliased_command_name: str
+
+
+@dataclass
 class AllVulkanTypes:
     """
-    This class holds the information parsed from Vulkan XML
-    This class should have all the information needed to generate code
+    This class holds the information of parsed types from Vulkan XML
+    This class should have all the information needed to generate code for types
     """
     # This class holds every Vulkan Type as [typename -> type]
 
@@ -181,6 +237,10 @@ class AllVulkanTypes:
     # both type -> alias and alias -> type
     # For now, lets store as the other types but when we do code generation,
     # We may have an extra step to convert the map to other direction.
+
+    defines: OrderedDict[str, VulkanDefine] = field(default_factory=OrderedDict)
+
+    basetypes: OrderedDict[str, VulkanBaseType] = field(default_factory=OrderedDict)
 
     handles: Dict[str, VulkanHandle] = field(default_factory=dict)
     handle_aliases: Dict[str, VulkanHandleAlias] = field(default_factory=dict)
@@ -196,4 +256,129 @@ class AllVulkanTypes:
     enums: Dict[str, VulkanEnum] = field(default_factory=dict)
     enum_aliases: Dict[str, VulkanEnumAlias] = field(default_factory=dict)
 
-    defines: OrderedDict[str, VulkanDefine] = field(default_factory=OrderedDict)
+
+@dataclass
+class AllVulkanCommands:
+    """
+    This class holds the information of parsed commands from Vulkan XML
+    This class should have all the information needed to generate code for commands
+    """
+    commands: Dict[str, VulkanCommand] = field(default_factory=dict)
+    command_aliases: Dict[str, VulkanCommandAlias] = field(default_factory=dict)
+
+
+@dataclass
+class ImageFormatComponent:
+    """
+    The metadata that defines a component of a Vulkan image format
+    """
+    name: str
+    numeric_format: str
+
+    # bitsize for non-compressed images
+    bits: Optional[int]
+
+    # Is this image format is compressed
+    compressed: bool
+
+
+@dataclass
+class ImageFormatPlane:
+    """
+    The metadata that defines a plane of a multi-planar Vulkan image format
+    """
+    index: int
+    width_divisor: int
+    height_divisor: int
+    compatible: str
+
+
+@dataclass
+class ImageFormat:
+    """
+    The metadata that defines a Vulkan image format
+    """
+    name: str
+    format_class: str
+    block_size: int
+    texels_per_block: int
+
+    # Pack size for the packed formats
+    packed: Optional[int]
+
+    # if this format has a corresponding Spir-V format
+    spirv_format: Optional[str]
+
+    components: OrderedDict[str, ImageFormatComponent] = field(default_factory=OrderedDict)
+
+    # Plane information for multi-planar images
+    planes: List[ImageFormatPlane] = field(default_factory=list)
+
+
+@dataclass
+class ImageFormatMetadata:
+    """
+    This class holds the information of all image formats from Vulkan XML
+    This class should have all the information needed to generate code related to Image formats
+    """
+    formats: Dict[str, ImageFormat] = field(default_factory=dict)
+
+
+@dataclass
+class SpirvExtension:
+    """
+    The metadata that defines a Spirv Extension
+    """
+    name: str
+
+    # Set if this extension part of a Vulkan version
+    version: Optional[str]
+
+    # Vulkan extension enabled by this Spirv extension
+    extension: str
+
+
+@dataclass
+class SpirvCapability:
+    """
+    The metadata that defines a Spirv Capability
+
+    Attribures:
+        feature     This capability enables 'Vk*Features::feature'
+        property    This capability enables 'vk*Properties::property_group::property'
+    """
+    name: str
+
+    # Set if this extension part of a Vulkan version
+    version: Optional[str]
+
+    # Which Vulkan feature this capabiliy enables
+    feature: Optional[str]
+
+    # Which Vulkan property this capabiliy enables
+    property: Optional[str]
+
+    # Vulkan extension enabled by this Spirv extension
+    extension: str
+
+
+@dataclass
+class SpirvMetadata:
+    """
+    This class holds the information of Spirv features from Vulkan XML
+    This class should have all the information needed to generate code related to Spirv
+    """
+    extensions: Dict[str, SpirvExtension] = field(default_factory=dict)
+    capabilities: Dict[str, SpirvCapability] = field(default_factory=dict)
+
+
+@dataclass
+class VulkanMetadata:
+    """
+    This class holds the information parsed from Vulkan XML
+    This class should have all the information needed to generate code
+    """
+    types: AllVulkanTypes
+    commands: AllVulkanCommands
+    image_format_metadata: ImageFormatMetadata
+    spirv_metadata: SpirvMetadata
