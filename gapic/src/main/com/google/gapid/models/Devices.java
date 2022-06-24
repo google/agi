@@ -461,6 +461,7 @@ public class Devices {
     public static final DeviceValidationResult SKIPPED = new DeviceValidationResult(
       Service.DeviceValidationResult.ErrorCode.OK, "", "", true);
 
+    // Corresponds to the error code from service.proto, but also includes Internal
     public static enum ErrorCode {
       Invalid,
       Ok,
@@ -530,7 +531,7 @@ public class Devices {
   }
 
   private static class DeviceValidationCache {
-    private static final long MAX_VALIDATION_AGE = DAYS.toMillis(0);
+    private static final long MAX_VALIDATION_AGE = DAYS.toMillis(30);
 
     private final Map<Key, SettingsProto.DeviceValidation.ValidationEntry.Builder> cache =
         Maps.newHashMap(); // We only remember passed validations.

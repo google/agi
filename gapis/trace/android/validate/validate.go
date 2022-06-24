@@ -190,7 +190,7 @@ func ValidateGpuCounters(ctx context.Context, processor *perfetto.Processor, cou
 			return log.Errf(ctx, nil, "Number of samples is incorrect for counter: %v %v", counter, queryResult.GetNumRecords())
 		}
 
-		if counter.Check(queryResult.GetColumns()[0], queryResult.GetColumnDescriptors()[0].GetType()) {
+		if !counter.Check(queryResult.GetColumns()[0], queryResult.GetColumnDescriptors()[0].GetType()) {
 			return log.Errf(ctx, nil, "Check failed for counter: %v", counter)
 		}
 	}
