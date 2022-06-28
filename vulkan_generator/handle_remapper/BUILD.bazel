@@ -26,4 +26,3 @@ py_lint(
     name = "lint",
     srcs = glob(["*.py"]),
 )
-

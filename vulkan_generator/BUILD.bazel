@@ -14,7 +14,6 @@
 
 load("@rules_python//python:defs.bzl", "py_binary", "py_library")
 load("//tools/build/python:python.bzl", "py_lint")
-load("//tools/build/rules:vulkan_generator.bzl", "basic_vulkan_generator")
 
 py_library(
     name = "vulkan_generator",
@@ -49,4 +48,3 @@ py_lint(
     name = "lint",
     srcs = glob(["*.py"]),
 )
-

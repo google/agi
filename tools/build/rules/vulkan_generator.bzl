@@ -2,7 +2,7 @@ def _basic_vulkan_generator_impl(ctx):
     outs = [
         ctx.actions.declare_file("".join([ctx.attr.target, ".h"])),
         ctx.actions.declare_file("".join([ctx.attr.target, ".cc"])),
-        ctx.actions.declare_file("".join([ctx.attr.target, "_tests.cpp"])),
+        ctx.actions.declare_file("".join([ctx.attr.target, "_tests.cc"])),
     ]
 
     ctx.actions.run(
