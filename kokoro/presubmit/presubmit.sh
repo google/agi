@@ -139,13 +139,13 @@ function run_autopep8() {
 # Ensure we are clean to start out with.
 check "git workspace must be clean" true
 
-# # Check copyright headers
+# Check copyright headers
 check copyright-headers run_copyright_headers
 
-# # Check buildifier.
+# Check buildifier.
 check buildifier run_buildifier
 
-# # Check bazel style.
+# Check bazel style.
 check "buildozer fix" run_buildozer
 
 # Check that the //:tests target contains all tests.
