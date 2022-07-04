@@ -17,4 +17,17 @@ cc_library(
     srcs = glob(["*.cc"]),
     hdrs = glob(["*.h"]),
     visibility = ["//visibility:public"],
+    deps = [
+        "//replay2/core_utils",
+    ],
+)
+
+cc_test(
+    name = "memory_remapper_test",
+    srcs = glob(["tests/*.cc"]),
+    deps = [
+        "//replay2/core_utils",
+        "memory_remapper",
+        "@com_google_googletest//:gtest_main",
+    ],
 )
