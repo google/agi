@@ -15,10 +15,10 @@
 #ifndef REPLAY2_MEMORY_REMAPPER_MEMORY_REMAPPER_H
 #define REPLAY2_MEMORY_REMAPPER_MEMORY_REMAPPER_H
 
-#include "capture_address.h"
-#include "replay_address.h"
 #include "address_range.h"
+#include "capture_address.h"
 #include "memory_observation.h"
+#include "replay_address.h"
 
 #include <assert.h>
 #include <map>
@@ -28,22 +28,23 @@
 namespace agi {
 namespace replay2 {
 
-	class MemoryRemapper : public NonCopyable {
-	public:
-		ReplayAddress AddMapping(const MemoryObservation& observation);
-		void RemoveMapping(const CaptureAddress& captureAddress);
+class MemoryRemapper : public NonCopyable {
+   public:
+    ReplayAddress AddMapping(const MemoryObservation& observation);
+    void RemoveMapping(const CaptureAddress& captureAddress);
 
-		ReplayAddress RemapCaptureAddress(const CaptureAddress& captureAddress) const;
+    ReplayAddress RemapCaptureAddress(const CaptureAddress& captureAddress) const;
 
-		class AddressNotMappedException : public std::exception {};
-		class AddressAlreadyMappedException : public std::exception {};
-		class RemoveMappingOffsetAddressException : public std::exception {};
+    class AddressNotMappedException : public std::exception {};
+    class AddressAlreadyMappedException : public std::exception {};
+    class RemoveMappingOffsetAddressException : public std::exception {};
 
-	private:
-		std::map<CaptureAddressRange, ReplayAddressRange>::const_iterator CaptureAddressRangeIter(const CaptureAddress& captureAddress) const;
+   private:
+    std::map<CaptureAddressRange, ReplayAddressRange>::const_iterator CaptureAddressRangeIter(
+        const CaptureAddress& captureAddress) const;
 
-		std::map<CaptureAddressRange, ReplayAddressRange> captureAddressRanges_;
-	};
+    std::map<CaptureAddressRange, ReplayAddressRange> captureAddressRanges_;
+};
 
 }  // namespace replay2
 }  // namespace agi

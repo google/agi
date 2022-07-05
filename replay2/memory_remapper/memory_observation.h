@@ -21,18 +21,18 @@
 namespace agi {
 namespace replay2 {
 
-	class MemoryObservation {
-	public:
-		MemoryObservation(const CaptureAddress& captureAddress, ResourceGeneratorPtr resourceGenerator) : 
-			captureAddress_(captureAddress), resourceGenerator_(resourceGenerator) {}
+class MemoryObservation {
+   public:
+    MemoryObservation(const CaptureAddress& captureAddress, ResourceGeneratorPtr resourceGenerator)
+        : captureAddress_(captureAddress), resourceGenerator_(resourceGenerator) {}
 
-		const CaptureAddress& captureAddress() const { return captureAddress_; }
-		ResourceGeneratorPtr resourceGenerator() const { return resourceGenerator_; }
+    const CaptureAddress& captureAddress() const { return captureAddress_; }
+    ResourceGeneratorPtr resourceGenerator() const { return resourceGenerator_; }
 
-	private:
-		CaptureAddress captureAddress_;
-		ResourceGeneratorPtr resourceGenerator_;
-	};
+   private:
+    CaptureAddress captureAddress_;
+    ResourceGeneratorPtr resourceGenerator_;
+};
 
 }  // namespace replay2
 }  // namespace agi

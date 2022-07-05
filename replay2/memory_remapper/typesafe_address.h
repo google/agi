@@ -18,18 +18,17 @@
 namespace agi {
 namespace replay2 {
 
-	class TypesafeAddress
-	{
-	public:
-		explicit TypesafeAddress(char *address) : address_(address) {}
-		char* charPtr() const { return address_; }
+class TypesafeAddress {
+   public:
+    explicit TypesafeAddress(char* address) : address_(address) {}
+    char* charPtr() const { return address_; }
 
-		bool operator==(const TypesafeAddress& rhs) { return address_ == rhs.address_; }
-		bool operator!=(const TypesafeAddress& rhs) { return !(*this == rhs); }
+    bool operator==(const TypesafeAddress& rhs) { return address_ == rhs.address_; }
+    bool operator!=(const TypesafeAddress& rhs) { return !(*this == rhs); }
 
-	protected:
-		char *address_;
-	};
+   protected:
+    char* address_;
+};
 
 }  // namespace replay2
 }  // namespace agi

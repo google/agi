@@ -15,35 +15,37 @@
 #ifndef REPLAY2_MEMORY_REMAPPER_ADDRESS_RANGE_H
 #define REPLAY2_MEMORY_REMAPPER_ADDRESS_RANGE_H
 
-#include "typesafe_address.h"
 #include "capture_address.h"
 #include "replay_address.h"
+#include "typesafe_address.h"
 
 #include <type_traits>
 
 namespace agi {
 namespace replay2 {
 
-	template<class Address>
-	class AddressRange
-	{
-		static_assert(std::is_base_of<TypesafeAddress, Address>::value, 
-			"Cannot instanciate AddressRange<T> for T that does not inherit off AddressRange.");
-	public:
-		AddressRange(Address address, size_t length) : baseAddress_(address), length_(length) {}
+template <class Address>
+class AddressRange {
+    static_assert(std::is_base_of<TypesafeAddress, Address>::value,
+                  "Cannot instanciate AddressRange<T> for T that does not inherit off AddressRange.");
 
-		const Address& baseAddress() const { return baseAddress_; }
-		size_t length() const { return length_; }
+   public:
+    AddressRange(Address address, size_t length) : baseAddress_(address), length_(length) {}
 
-		inline bool operator<(const AddressRange& rhs) const { return baseAddress_.charPtr() < rhs.baseAddress().charPtr(); }
+    const Address& baseAddress() const { return baseAddress_; }
+    size_t length() const { return length_; }
 
-	private:
-		Address baseAddress_;
-		size_t length_;
-	};
+    inline bool operator<(const AddressRange& rhs) const {
+        return baseAddress_.charPtr() < rhs.baseAddress().charPtr();
+    }
 
-	typedef AddressRange<CaptureAddress> CaptureAddressRange;
-	typedef AddressRange<ReplayAddress> ReplayAddressRange;
+   private:
+    Address baseAddress_;
+    size_t length_;
+};
+
+typedef AddressRange<CaptureAddress> CaptureAddressRange;
+typedef AddressRange<ReplayAddress> ReplayAddressRange;
 
 }  // namespace replay2
 }  // namespace agi

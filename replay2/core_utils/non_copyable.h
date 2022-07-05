@@ -16,10 +16,10 @@ namespace agi {
 namespace replay2 {
 
 class NonCopyable {
- public:
-  NonCopyable(void){};
-  NonCopyable(const NonCopyable& rhs) = delete;
-  NonCopyable& operator=(const NonCopyable& rhs) = delete;
+   public:
+    NonCopyable(void){};
+    NonCopyable(const NonCopyable& rhs) = delete;
+    NonCopyable& operator=(const NonCopyable& rhs) = delete;
 };
 
 }  // namespace replay2

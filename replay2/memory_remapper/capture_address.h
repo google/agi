@@ -22,11 +22,11 @@
 namespace agi {
 namespace replay2 {
 
-	class CaptureAddress : public TypesafeAddress {
-	public:
-		explicit CaptureAddress(char *address) : TypesafeAddress(address) {}
-		CaptureAddress offsetByBytes(ptrdiff_t offset) const { return CaptureAddress(address_ + offset); }
-	};
+class CaptureAddress : public TypesafeAddress {
+   public:
+    explicit CaptureAddress(char* address) : TypesafeAddress(address) {}
+    CaptureAddress offsetByBytes(ptrdiff_t offset) const { return CaptureAddress(address_ + offset); }
+};
 
 }  // namespace replay2
 }  // namespace agi

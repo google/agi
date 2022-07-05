@@ -20,10 +20,10 @@
 namespace agi {
 namespace replay2 {
 
-	class ReplayAddress : public TypesafeAddress {
-	public:
-		explicit ReplayAddress(char *address) : TypesafeAddress(address) {}
-	};
+class ReplayAddress : public TypesafeAddress {
+   public:
+    explicit ReplayAddress(char* address) : TypesafeAddress(address) {}
+};
 
 }  // namespace replay2
 }  // namespace agi

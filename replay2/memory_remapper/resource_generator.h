@@ -23,27 +23,27 @@
 namespace agi {
 namespace replay2 {
 
-	class ResourceGenerator {
-	public:
-		virtual ~ResourceGenerator() {}
+class ResourceGenerator {
+   public:
+    virtual ~ResourceGenerator() {}
 
-		virtual size_t length() const = 0;
-		virtual void generate(ReplayAddress replayAddress) = 0;
-	};
-	typedef std::shared_ptr<ResourceGenerator> ResourceGeneratorPtr;
+    virtual size_t length() const = 0;
+    virtual void generate(ReplayAddress replayAddress) = 0;
+};
+typedef std::shared_ptr<ResourceGenerator> ResourceGeneratorPtr;
 
-	class NullResourceGenerator : public ResourceGenerator {
-	public:
-		NullResourceGenerator(size_t length) : length_(length) {}
-		virtual ~NullResourceGenerator() {}
+class NullResourceGenerator : public ResourceGenerator {
+   public:
+    NullResourceGenerator(size_t length) : length_(length) {}
+    virtual ~NullResourceGenerator() {}
 
-		size_t length() const override { return length_; }
+    size_t length() const override { return length_; }
 
-		void generate(ReplayAddress replayAddress) override {}
+    void generate(ReplayAddress replayAddress) override {}
 
-	private:
-		size_t length_;
-	};
+   private:
+    size_t length_;
+};
 
 }  // namespace replay2
 }  // namespace agi
