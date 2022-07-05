@@ -287,6 +287,9 @@ class VulkanFeatureExtensionEnum(VulkanFeatureExtension):
     # Offset is used when calculating enum field value
     offset: Optional[str]
 
+    # Some enum fields are negative
+    sign: Optional[str]
+
     # Bitpos is used when calcualting bitfield value
     bitpos: Optional[str]
 
@@ -301,6 +304,19 @@ class VulkanFeature:
     feature_type: str
     feature_extension: Optional[VulkanFeatureExtension]
 
+    # Sometimes(especially in extensions) new defines added with the extension as enum
+    value: Optional[str]
+
+
+@dataclass
+class VulkanExtensionRequirement:
+    """The structure to holds a subgroup features required or added by a Vulkan extension"""
+    # Sometimes a group of features depends on a core version
+    required_version: Optional[str]
+    # Sometimes a group of features depends on another extension
+    required_extension: Optional[str]
+    features: Dict[str, VulkanFeature] = field(default_factory=dict)
+
 
 @dataclass
 class VulkanCoreVersion:
@@ -308,6 +324,31 @@ class VulkanCoreVersion:
     name: str
     number: str
     features: Dict[str, VulkanFeature] = field(default_factory=dict)
+
+
+@dataclass
+class VulkanExtension:
+    """The structure to hold all the features required or added by a Vulkan extension"""
+    name: str
+    number: int
+
+    # This extension is core in the promoted version
+    promoted_version: Optional[str]
+
+    # If there is another extension deprecated this extension
+    # it will be noted here
+    deprecating_extension: Optional[str]
+
+    # Whether this extension a device or instance extension
+    extension_type: str
+
+    # Sometimes an extension requires another extension
+    required_extensions: Optional[List[str]]
+
+    # Is this extension limited to a particular platform
+    platform: Optional[str]
+
+    requirements: List[VulkanExtensionRequirement] = field(default_factory=list)
 
 
 @dataclass
@@ -424,5 +465,6 @@ class VulkanMetadata:
     types: AllVulkanTypes
     commands: AllVulkanCommands
     core_versions: Dict[str, VulkanCoreVersion]
+    extensions: Dict[str, VulkanExtension]
     image_format_metadata: ImageFormatMetadata
     spirv_metadata: SpirvMetadata

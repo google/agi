@@ -15,32 +15,10 @@
 """ This module is responsible for parsing features for each Vulkan version"""
 
 from typing import Dict
-from typing import Optional
 import xml.etree.ElementTree as ET
 
-from vulkan_generator.vulkan_utils import parsing_utils
 from vulkan_generator.vulkan_parser import types
-
-
-def parse_enum_extension(enum_element: ET.Element) -> Optional[types.VulkanFeatureExtensionEnum]:
-    """Parses the enum field extension added by the core version"""
-    basetype = parsing_utils.try_get_attribute(enum_element, "extends")
-    if not basetype:
-        return None
-
-    alias = parsing_utils.try_get_attribute(enum_element, "alias")
-    extnumber = parsing_utils.try_get_attribute(enum_element, "extnumber")
-    offset = parsing_utils.try_get_attribute(enum_element, "offset")
-    bitpos = parsing_utils.try_get_attribute(enum_element, "bitpos")
-    value = parsing_utils.try_get_attribute(enum_element, "value")
-
-    return types.VulkanFeatureExtensionEnum(
-        basetype=basetype,
-        alias=alias,
-        extnumber=extnumber,
-        offset=offset,
-        bitpos=bitpos,
-        value=value)
+from vulkan_generator.vulkan_parser import parser_utils
 
 
 def parse(feature_element: ET.Element) -> types.VulkanCoreVersion:
@@ -52,29 +30,13 @@ def parse(feature_element: ET.Element) -> types.VulkanCoreVersion:
     version_number = feature_element.attrib["number"]
 
     features: Dict[str, types.VulkanFeature] = {}
+
     for require_element in feature_element:
         if require_element.tag != "require":
             raise SyntaxError(f"Unknown Tag in Vulkan features {ET.tostring(require_element, 'utf-8')!r}")
 
-        for required_feature_element in require_element:
-            if required_feature_element.tag == "comment":
-                continue
-
-            feature_name = required_feature_element.attrib["name"]
-            feature_type = required_feature_element.tag
-
-            feature_extension: Optional[types.VulkanFeatureExtension] = None
-            if required_feature_element.tag == "enum":
-                # Enums are expanded in core versions
-                feature_extension = parse_enum_extension(required_feature_element)
-                if not feature_extension:
-                    # If there is no enum override, then enum is actually a Vulkan API constant(C++ define)
-                    feature_type = "type"
-
-            features[feature_name] = types.VulkanFeature(
-                name=feature_name,
-                feature_type=feature_type,
-                feature_extension=feature_extension)
+        requirement = parser_utils.parse_requirement(require_element=require_element)
+        features.update(requirement.features)
 
     return types.VulkanCoreVersion(
         name=version_name,
