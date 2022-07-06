@@ -17,6 +17,13 @@
 namespace agi {
 namespace replay2 {
 
+	void MarkDeadAddressRange(const ReplayAddressRange& replayAddressRange) {
+		const std::byte dead[2] = { std::byte(0xDE), std::byte(0xAD) };
+		for(int i = 0; i < replayAddressRange.length(); ++i) {
+			replayAddressRange.baseAddress().bytePtr()[i] = dead[i %2];
+		}
+	}
+
 	ReplayAddress MemoryRemapper::AddMapping(const MemoryObservation& observation) {
 
 		const CaptureAddress& captureAddress = observation.captureAddress();
@@ -69,10 +76,7 @@ namespace replay2 {
 
 #ifndef NDEBUG
 		// In debug we'll splat all released memory with 0xDEAD before releasing it to help with debugging.
-		const std::byte dead[2] = { std::byte(0xDE), std::byte(0xAD) };
-		for(int i = 0; i < replayAddressRange.length(); ++i) {
-			replayAddressRange.baseAddress().bytePtr()[i] = dead[i %2];
-		}
+		MarkDeadAddressRange(replayAddressRange);
 #endif
 		delete [] replayAddressRange.baseAddress().bytePtr();
 		captureAddressRanges_.erase(iter);
@@ -80,14 +84,21 @@ namespace replay2 {
 
 	ReplayAddress MemoryRemapper::RemapCaptureAddress(const CaptureAddress& captureAddress) const {
 
+		// Get an iterator to the last address range starting before captureAddress, if one exists.
 		auto iter = CaptureAddressRangeIter(captureAddress);
 		if(iter == captureAddressRanges_.end()) {
+			// If there are no address ranges beginning before captureAddress then captureAddress has to
+			// point to unmapped memory, so throw an exception.
 			throw AddressNotMappedException();
 		}
 
 		const CaptureAddressRange captureAddressRange = iter->first;
 		const ReplayAddressRange replayAddressRange = iter->second;
 
+		// Compute the offset from the start of the last address range before captureAddress to captureAddress
+		// itself. If this offset is less than the size of the address range, then captureAddress points to
+		// memory mapped inside that address range. If the offset is larger than the previous address range's
+		// length, then captureAddress points to unmapped memory between two consecutive address ranges.
 		const intptr_t offset = captureAddress.bytePtr() -captureAddressRange.baseAddress().bytePtr();
 		if(offset >= captureAddressRange.length()) {
 			throw AddressNotMappedException();
@@ -97,13 +108,22 @@ namespace replay2 {
 		return replayAddress;
 	}
 
+	// CaptureAddressRangeIter returns an interator to the last address range starting before captureAddress
+	// or it returns .end() in the case that no such address range exists.
 	std::map<CaptureAddressRange, ReplayAddressRange>::const_iterator
 	MemoryRemapper::CaptureAddressRangeIter(const CaptureAddress& captureAddress) const {
 
+		// Get an iterator to the first address range starting after captureAddress using upper_bound().
 		auto nextIter = captureAddressRanges_.upper_bound(CaptureAddressRange(captureAddress, 0));
 		if(nextIter != captureAddressRanges_.begin()) {
+			// If we have a valid interator to the next address range, then return the iterator one before it.
+			// This is either the address range that captureAddress is part of, or the last address range
+			// before captureAddress (captureAddress is between two address ranges in unmapped memory).
 			return --nextIter;
 		}
+
+		// If there is no address range starting before captureAddress, then captureAddress
+		// cannot be part of any active address range, and we will return an invalid pointer.
 		return captureAddressRanges_.end();
 	}
 

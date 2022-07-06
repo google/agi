@@ -26,8 +26,8 @@ cc_test(
     name = "memory_remapper_test",
     srcs = glob(["tests/*.cc"]),
     deps = [
-        "//replay2/core_utils",
         "memory_remapper",
+        "//replay2/core_utils",
         "@com_google_googletest//:gtest_main",
     ],
 )
