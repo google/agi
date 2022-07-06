@@ -15,7 +15,8 @@
 #ifndef __GAPIL_RUNTIME_STRING_H__
 #define __GAPIL_RUNTIME_STRING_H__
 
-#include "runtime.h"
+#include <stddef.h>
+#include <stdint.h>
 
 #include <functional>
 
@@ -48,9 +49,6 @@ class String {
   // Makes this string refer to the RHS string.
   String& operator=(const String&);
 
-  // Appends data to this string.
-  String& operator+=(const String&);
-
   // Comparison operators. Strings are compared using their underlying data.
   bool operator==(const String& other) const;
   bool operator!=(const String& other) const;
@@ -58,6 +56,9 @@ class String {
   bool operator<=(const String& other) const;
   bool operator>(const String& other) const;
   bool operator>=(const String& other) const;
+
+  // Returns true if the string is not empty.
+  operator bool() const;
 
   // Returns the length of the string in bytes.
   size_t length() const;
@@ -72,19 +73,28 @@ class String {
   inline core::Arena* arena() const;
 
  private:
-  static string_t EMPTY;
+  // The shared data of this string.
+  struct Allocation {
+    uint32_t ref_count;  // number of owners of this string.
+    core::Arena* arena;  // arena that owns this string allocation.
+    uint64_t length;     // size of this string (including null-terminator).
+    uint8_t data[1];     // the null-terminated string bytes.
+  };
 
-  String(string_t*);
+  static Allocation EMPTY;
+  static Allocation* make_allocation(core::Arena* arena, uint64_t length,
+                                     const void* data);
+  static int32_t compare(Allocation* a, Allocation* b);
+
+  String(Allocation*);
 
   void reference();
   void release();
 
-  string_t* ptr;
+  Allocation* ptr;
 };
 
-inline core::Arena* String::arena() const {
-  return reinterpret_cast<core::Arena*>(ptr->arena);
-}
+inline core::Arena* String::arena() const { return ptr->arena; }
 
 }  // namespace gapil
 

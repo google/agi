@@ -24,6 +24,7 @@ py_library(
     srcs_version = "PY3",
     visibility = ["//visibility:public"],
     deps = [
+        "//vulkan_generator/handle_remapper",
         "//vulkan_generator/vulkan_parser",
     ],
 )
@@ -37,6 +38,7 @@ py_binary(
     data = [
         "@vulkan-headers//:vk.xml",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         ":vulkan_generator",
     ],
@@ -45,4 +47,7 @@ py_binary(
 py_lint(
     name = "lint",
     srcs = glob(["*.py"]),
+    deps = [
+        "//vulkan_generator",
+    ],
 )

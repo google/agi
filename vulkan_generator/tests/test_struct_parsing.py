@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-This package is responsible for testing Vulkan Parser
+This module is responsible for testing Vulkan structs and aliases
 
 Examples in this files stems from vk.xml that relesed by Khronos.
 Anytime the particular xml updated, test should be checked
@@ -46,13 +46,16 @@ def test_vulkan_struct_with_members() -> None:
     assert typ.typename == "VkDevicePrivateDataCreateInfo"
 
     assert len(typ.members) == 3
-    assert typ.member_order[0] == "sType"
+
+    member_names = list(typ.members.keys())
+
+    assert member_names[0] == "sType"
     assert typ.members["sType"].variable_type == "VkStructureType"
 
-    assert typ.member_order[1] == "pNext"
+    assert member_names[1] == "pNext"
     assert typ.members["pNext"].variable_type == "const void*"
 
-    assert typ.member_order[2] == "privateDataSlotRequestCount"
+    assert member_names[2] == "privateDataSlotRequestCount"
     assert typ.members["privateDataSlotRequestCount"].variable_type == "uint32_t"
 
 
@@ -159,10 +162,11 @@ def test_vulkan_struct_with_dynamic_array() -> None:
     typ = struct_parser.parse(ET.fromstring(xml))
     assert isinstance(typ, types.VulkanStruct)
 
-    reference = typ.members["pBinds"].array_reference
-
+    reference = typ.members["pBinds"].array_size_reference
     assert reference in typ.members
-    assert reference == typ.member_order[1]
+
+    member_names = list(typ.members.keys())
+    assert reference == member_names[1]
 
 
 def test_vulkan_struct_with_static_array() -> None:

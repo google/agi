@@ -22,7 +22,6 @@ load("@bazel_gazelle//:def.bzl", "gazelle")
 load("//tools/build:rules.bzl", "copy_to", "copy_tree")
 
 # gazelle:prefix github.com/google/gapid
-# gazelle:resolve go    go    llvm/bindings/go/llvm                        @llvm//:go
 # gazelle:resolve go    go    protos/perfetto/common                       //tools/build/third_party/perfetto:common_go_proto
 # gazelle:resolve go    go    protos/perfetto/config                       //tools/build/third_party/perfetto:config_go_proto
 # gazelle:resolve go    go    protos/perfetto/ipc                          //tools/build/third_party/perfetto:ipc_go_proto
@@ -232,7 +231,6 @@ test_suite(
         "//core/app/flags:go_default_test",
         "//core/assert:go_default_test",
         "//core/cc:tests",
-        "//core/codegen:go_default_test",
         "//core/context/keys:go_default_test",
         "//core/data:go_default_test",
         "//core/data/binary:go_default_test",
@@ -285,9 +283,7 @@ test_suite(
     tests = [
         "//gapil/analysis:go_default_test",
         "//gapil/bapi:go_default_test",
-        "//gapil/compiler/mangling/c:go_default_test",
-        "//gapil/compiler/mangling/ia64:go_default_test",
-        "//gapil/compiler/plugins/encoder/test:go_default_test",
+        "//gapil/encoder/test:encoder_test",
         "//gapil/fuzz:go_default_test",
         "//gapil/parser:go_default_test",
         "//gapil/resolver:go_default_test",
@@ -351,6 +347,29 @@ test_suite(
 )
 
 test_suite(
+    name = "lint",
+    tests = [
+        # __BEGIN_LINT
+        "//vulkan_generator:lint",
+        "//vulkan_generator/codegen_utils:lint",
+        "//vulkan_generator/handle_remapper:lint",
+        "//vulkan_generator/tests:lint",
+        "//vulkan_generator/vulkan_parser:lint",
+        "//vulkan_generator/vulkan_utils:lint",
+        # __END_LINT
+    ],
+)
+
+test_suite(
+    name = "tests-vulkan-generator",
+    tests = [
+        # Run the linting as part of Vulkan generator tests
+        "//:lint",  # DO NOT REMOVE!
+        "//vulkan_generator/tests:test_vulkan_parsing",
+    ],
+)
+
+test_suite(
     name = "tests",
     tests = [
         # __BEGIN_TESTS
@@ -361,7 +380,6 @@ test_suite(
         "//core/app/flags:go_default_test",
         "//core/assert:go_default_test",
         "//core/cc:tests",
-        "//core/codegen:go_default_test",
         "//core/context/keys:go_default_test",
         "//core/data:go_default_test",
         "//core/data/binary:go_default_test",
@@ -408,9 +426,7 @@ test_suite(
         "//core/text/parse:go_default_test",
         "//gapil/analysis:go_default_test",
         "//gapil/bapi:go_default_test",
-        "//gapil/compiler/mangling/c:go_default_test",
-        "//gapil/compiler/mangling/ia64:go_default_test",
-        "//gapil/compiler/plugins/encoder/test:go_default_test",
+        "//gapil/encoder/test:encoder_test",
         "//gapil/fuzz:go_default_test",
         "//gapil/parser:go_default_test",
         "//gapil/resolver:go_default_test",
@@ -438,15 +454,10 @@ test_suite(
         "//gapis/stringtable/minidown/scanner:go_default_test",
         "//gapis/stringtable/parser:go_default_test",
         "//gapis/vertex:go_default_test",
+        "//replay2/handle_remapper:handle_remapper_test",
         "//test/integration/replay:go_default_test",
         "//test/integration/service:go_default_test",
-        "//vulkan_generator:lint",
-        "//vulkan_generator/tests:lint",
-        "//vulkan_generator/tests:test_funcptr_parsing",
-        "//vulkan_generator/tests:test_handle_parsing",
-        "//vulkan_generator/tests:test_struct_parsing",
-        "//vulkan_generator/vulkan_parser:lint",
-        "//vulkan_generator/vulkan_utils:lint",
+        "//vulkan_generator/tests:test_vulkan_parsing",
         # __END_TESTS
     ],
 )
