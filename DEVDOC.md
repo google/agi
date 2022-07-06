@@ -1,10 +1,10 @@
 # Android GPU Inspector Developer Documentation
 
+See [vulkan_generator/DEVDOC.md] folder for vulkan_generator specific build instructions.
+
 ## Build instructions
 
 See [BUILDING.md](BUILDING.md).
-
-See vulkan_generator folder for vulkan_generator specific build instructions.
 
 ## Setup to run presubmit tests locally
 
