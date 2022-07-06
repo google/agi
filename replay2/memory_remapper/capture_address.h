@@ -24,7 +24,7 @@ namespace replay2 {
 
 class CaptureAddress : public TypesafeAddress {
    public:
-    explicit CaptureAddress(char* address) : TypesafeAddress(address) {}
+    explicit CaptureAddress(std::byte* address) : TypesafeAddress(address) {}
     CaptureAddress offsetByBytes(ptrdiff_t offset) const { return CaptureAddress(address_ + offset); }
 };
 

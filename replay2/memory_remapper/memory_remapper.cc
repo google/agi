@@ -17,16 +17,16 @@
 namespace agi {
 namespace replay2 {
 
-	ReplayAddress MemoryRemapper::AddMapping(const MemoryObservation& observation)
-	{
-		const CaptureAddress captureAddress = observation.captureAddress();
+	ReplayAddress MemoryRemapper::AddMapping(const MemoryObservation& observation) {
+
+		const CaptureAddress& captureAddress = observation.captureAddress();
 
 		auto iter = CaptureAddressRangeIter(captureAddress);
 		if(iter != captureAddressRanges_.end()) {
 
 			const CaptureAddressRange captureAddressRange = iter->first;
 
-			const intptr_t offset = captureAddress.charPtr() -captureAddressRange.baseAddress().charPtr();
+			const intptr_t offset = captureAddress.bytePtr() - captureAddressRange.baseAddress().bytePtr();
 			if(offset < captureAddressRange.length()) {
 				throw AddressAlreadyMappedException();
 			}
@@ -34,29 +34,29 @@ namespace replay2 {
 
 		const size_t mappingLength = observation.resourceGenerator()->length();
 
-		char* replayAllocation = new char [mappingLength];
+		std::byte* replayAllocation = new std::byte [mappingLength];
 		const ReplayAddress replayAddress(replayAllocation);
 
 		observation.resourceGenerator()->generate(replayAddress);
 
-		const CaptureAddressRange captureAddressRange = CaptureAddressRange(captureAddress, mappingLength);
-		const ReplayAddressRange replayAddressRange = ReplayAddressRange(replayAddress, mappingLength);
+		const CaptureAddressRange captureAddressRange(captureAddress, mappingLength);
+		const ReplayAddressRange replayAddressRange(replayAddress, mappingLength);
 
 		const auto newMapping = std::make_pair(captureAddressRange, replayAddressRange);
-		captureAddressRanges_.insert(newMapping);
+		captureAddressRanges_.emplace(newMapping);
 
 		return replayAddress;
 	}
 
-	void MemoryRemapper::RemoveMapping(const CaptureAddress& captureAddress)
-	{
+	void MemoryRemapper::RemoveMapping(const CaptureAddress& captureAddress) {
+
 		auto iter = CaptureAddressRangeIter(captureAddress);
 		if(iter == captureAddressRanges_.end()) throw AddressNotMappedException();
 
 		const CaptureAddressRange captureAddressRange = iter->first;
 		if(captureAddressRange.baseAddress() != captureAddress) {
 
-			const intptr_t offset = captureAddress.charPtr() -captureAddressRange.baseAddress().charPtr();
+			const intptr_t offset = captureAddress.bytePtr() -captureAddressRange.baseAddress().bytePtr();
 			if(offset >= captureAddressRange.length()) {
 				throw AddressNotMappedException();
 			}
@@ -69,17 +69,17 @@ namespace replay2 {
 
 #ifndef NDEBUG
 		// In debug we'll splat all released memory with 0xDEAD before releasing it to help with debugging.
-		const unsigned char dead[2] = { 0xDE, 0xAD };
+		const std::byte dead[2] = { std::byte(0xDE), std::byte(0xAD) };
 		for(int i = 0; i < replayAddressRange.length(); ++i) {
-			replayAddressRange.baseAddress().charPtr()[i] = dead[i %2];
+			replayAddressRange.baseAddress().bytePtr()[i] = dead[i %2];
 		}
 #endif
-		delete [] replayAddressRange.baseAddress().charPtr();
+		delete [] replayAddressRange.baseAddress().bytePtr();
 		captureAddressRanges_.erase(iter);
 	}
 
-	ReplayAddress MemoryRemapper::RemapCaptureAddress(const CaptureAddress& captureAddress) const
-	{
+	ReplayAddress MemoryRemapper::RemapCaptureAddress(const CaptureAddress& captureAddress) const {
+
 		auto iter = CaptureAddressRangeIter(captureAddress);
 		if(iter == captureAddressRanges_.end()) {
 			throw AddressNotMappedException();
@@ -88,18 +88,18 @@ namespace replay2 {
 		const CaptureAddressRange captureAddressRange = iter->first;
 		const ReplayAddressRange replayAddressRange = iter->second;
 
-		const intptr_t offset = captureAddress.charPtr() -captureAddressRange.baseAddress().charPtr();
+		const intptr_t offset = captureAddress.bytePtr() -captureAddressRange.baseAddress().bytePtr();
 		if(offset >= captureAddressRange.length()) {
 			throw AddressNotMappedException();
 		}
 
-		const ReplayAddress replayAddress(replayAddressRange.baseAddress().charPtr() +offset);
+		const ReplayAddress replayAddress(replayAddressRange.baseAddress().bytePtr() +offset);
 		return replayAddress;
 	}
 
 	std::map<CaptureAddressRange, ReplayAddressRange>::const_iterator
-	MemoryRemapper::CaptureAddressRangeIter(const CaptureAddress& captureAddress) const
-	{
+	MemoryRemapper::CaptureAddressRangeIter(const CaptureAddress& captureAddress) const {
+
 		auto nextIter = captureAddressRanges_.upper_bound(CaptureAddressRange(captureAddress, 0));
 		if(nextIter != captureAddressRanges_.begin()) {
 			return --nextIter;

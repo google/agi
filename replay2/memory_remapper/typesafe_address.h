@@ -15,19 +15,21 @@
 #ifndef REPLAY2_MEMORY_REMAPPER_TYPESAFE_ADDRESS_H
 #define REPLAY2_MEMORY_REMAPPER_TYPESAFE_ADDRESS_H
 
+#include <cstddef>
+
 namespace agi {
 namespace replay2 {
 
 class TypesafeAddress {
    public:
-    explicit TypesafeAddress(char* address) : address_(address) {}
-    char* charPtr() const { return address_; }
+    explicit TypesafeAddress(std::byte* address) : address_(address) {}
+    std::byte* bytePtr() const { return address_; }
 
-    bool operator==(const TypesafeAddress& rhs) { return address_ == rhs.address_; }
-    bool operator!=(const TypesafeAddress& rhs) { return !(*this == rhs); }
+    bool operator==(const TypesafeAddress& rhs) const { return address_ == rhs.address_; }
+    bool operator!=(const TypesafeAddress& rhs) const { return !(*this == rhs); }
 
    protected:
-    char* address_;
+    std::byte* address_;
 };
 
 }  // namespace replay2

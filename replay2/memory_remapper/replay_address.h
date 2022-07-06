@@ -22,7 +22,7 @@ namespace replay2 {
 
 class ReplayAddress : public TypesafeAddress {
    public:
-    explicit ReplayAddress(char* address) : TypesafeAddress(address) {}
+    explicit ReplayAddress(std::byte* address) : TypesafeAddress(address) {}
 };
 
 }  // namespace replay2

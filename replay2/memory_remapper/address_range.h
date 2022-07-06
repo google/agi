@@ -36,7 +36,7 @@ class AddressRange {
     size_t length() const { return length_; }
 
     inline bool operator<(const AddressRange& rhs) const {
-        return baseAddress_.charPtr() < rhs.baseAddress().charPtr();
+        return baseAddress_.bytePtr() < rhs.baseAddress().bytePtr();
     }
 
    private:

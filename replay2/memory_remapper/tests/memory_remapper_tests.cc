@@ -28,7 +28,7 @@ public:
 
 	void generate(ReplayAddress replayAddress) override {
 		for(size_t i = 0; i < length_; ++i) {
-			replayAddress.charPtr()[i] = i % 256;
+			replayAddress.bytePtr()[i] = std::byte(i % 256);
 		}
 	}
 private:
@@ -37,32 +37,32 @@ private:
 
 class ConstResourceGenerator : public ResourceGenerator {
 public:
-	ConstResourceGenerator(char value, size_t length) : value_(value), length_(length) {}
+	ConstResourceGenerator(std::byte value, size_t length) : value_(value), length_(length) {}
 	virtual ~ConstResourceGenerator() {}
 
 	size_t length() const override { return length_; }
 
 	void generate(ReplayAddress replayAddress) override {
 		for(size_t i = 0; i < length_; ++i) {
-			replayAddress.charPtr()[i] = value_;
+			replayAddress.bytePtr()[i] = value_;
 		}
 	}
 private:
-	char value_;
+	std::byte value_;
 	size_t length_;
 };
 
 void ASSERT_MOD_REPLAY_ADDRESS(const MemoryRemapper& remapper, const CaptureAddress& captureAddress, const ReplayAddress& replayAddress, size_t length) {
 	for(size_t i = 0; i < length; ++i) {
 		ReplayAddress replayAddress = remapper.RemapCaptureAddress(captureAddress.offsetByBytes(i));
-		ASSERT_EQ(replayAddress.charPtr()[0], i % 256);
+		ASSERT_EQ(replayAddress.bytePtr()[0], std::byte(i % 256));
 	}
 }
 
-void ASSERT_CONST_REPLAY_ADDRESS(const MemoryRemapper& remapper, const CaptureAddress& captureAddress, const ReplayAddress& replayAddress, char value, size_t length) {
+void ASSERT_CONST_REPLAY_ADDRESS(const MemoryRemapper& remapper, const CaptureAddress& captureAddress, const ReplayAddress& replayAddress, std::byte value, size_t length) {
 	for(size_t i = 0; i < length; ++i) {
 		ReplayAddress replayAddress = remapper.RemapCaptureAddress(captureAddress.offsetByBytes(i));
-		ASSERT_EQ(replayAddress.charPtr()[0], value);
+		ASSERT_EQ(replayAddress.bytePtr()[0], value);
 	}
 }
 
@@ -70,14 +70,14 @@ TEST(MemoryRemapperTests, SimpleMapping) {
 
 	const size_t size = 128;
 
-	char* rawCapturePtr = new char[size];
+	std::byte* rawCapturePtr = new std::byte[size];
 	CaptureAddress captureAddress(rawCapturePtr);
 
 	MemoryRemapper remapper;
 	const MemoryObservation captureObservation(captureAddress, std::make_shared<ModResourceGenerator>(size));
 
 	const ReplayAddress replayAddress = remapper.AddMapping(captureObservation);
-	EXPECT_NE(replayAddress.charPtr(), nullptr);
+	EXPECT_NE(replayAddress.bytePtr(), nullptr);
 	ASSERT_MOD_REPLAY_ADDRESS(remapper, captureAddress, replayAddress, size);
 
 	EXPECT_NO_THROW(remapper.RemoveMapping(captureAddress));
@@ -88,7 +88,7 @@ TEST(MemoryRemapperTests, UnknownMapping) {
 
 	const size_t size = 128;
 
-	char* rawCapturePtr = new char[size];
+	std::byte* rawCapturePtr = new std::byte[size];
 	CaptureAddress captureAddress(rawCapturePtr);
 
 	MemoryRemapper remapper;
@@ -110,11 +110,11 @@ TEST(MemoryRemapperTests, MultipleMappings) {
 
 		const size_t size = i * 2;
 
-		char* rawCapturePtr = new char[size];
+		std::byte* rawCapturePtr = new std::byte[size];
 		CaptureAddress captureAddress(rawCapturePtr);
 		captureAddresses.push_back(captureAddress);
 
-		const MemoryObservation captureObservation(captureAddress, std::make_shared<ConstResourceGenerator>(i, size));
+		const MemoryObservation captureObservation(captureAddress, std::make_shared<ConstResourceGenerator>(std::byte(i), size));
 
 		const ReplayAddress replayAddress = remapper.AddMapping(captureObservation);
 		replayAddresses.push_back(replayAddress);
@@ -122,8 +122,8 @@ TEST(MemoryRemapperTests, MultipleMappings) {
 
 	for(int i = 0; i < 64; ++i) {
 		const size_t size = i * 2;
-		EXPECT_NE(replayAddresses[i].charPtr(), nullptr);
-		ASSERT_CONST_REPLAY_ADDRESS(remapper, captureAddresses[i], replayAddresses[i], i, size);
+		EXPECT_NE(replayAddresses[i].bytePtr(), nullptr);
+		ASSERT_CONST_REPLAY_ADDRESS(remapper, captureAddresses[i], replayAddresses[i], std::byte(i), size);
 		EXPECT_NO_THROW(remapper.RemoveMapping(captureAddresses[i]));
 		EXPECT_THROW(remapper.RemapCaptureAddress(captureAddresses[i]), MemoryRemapper::AddressNotMappedException);
 	}
@@ -134,22 +134,22 @@ TEST(MemoryRemapperTests, MappingCollision) {
 	const size_t offset = 31;
 
 	const size_t sizeA = 128;
-	char* rawCapturePtrA = new char[sizeA];
+	std::byte* rawCapturePtrA = new std::byte[sizeA];
 	CaptureAddress captureAddressA(rawCapturePtrA);
 
 	const size_t sizeB = sizeA -offset;
-	char* rawCapturePtrB = rawCapturePtrA +31;
+	std::byte* rawCapturePtrB = rawCapturePtrA +offset;
 	CaptureAddress captureAddressB(rawCapturePtrB);
 
 	MemoryRemapper remapper;
-	const MemoryObservation captureObservationA(captureAddressA, std::make_shared<ConstResourceGenerator>(0, sizeA));
-	const MemoryObservation captureObservationB(captureAddressB, std::make_shared<ConstResourceGenerator>(1, sizeB));
+	const MemoryObservation captureObservationA(captureAddressA, std::make_shared<ConstResourceGenerator>(std::byte(0), sizeA));
+	const MemoryObservation captureObservationB(captureAddressB, std::make_shared<ConstResourceGenerator>(std::byte(1), sizeB));
 
 	ReplayAddress replayAddressA = remapper.AddMapping(captureObservationA);
 	EXPECT_THROW(remapper.AddMapping(captureObservationB), MemoryRemapper::AddressAlreadyMappedException);
 
-	EXPECT_NE(replayAddressA.charPtr(), nullptr);
-	ASSERT_CONST_REPLAY_ADDRESS(remapper, captureAddressA, replayAddressA, 0, sizeA);
+	EXPECT_NE(replayAddressA.bytePtr(), nullptr);
+	ASSERT_CONST_REPLAY_ADDRESS(remapper, captureAddressA, replayAddressA, std::byte(0), sizeA);
 	EXPECT_NO_THROW(remapper.RemoveMapping(captureAddressA));
 
 	EXPECT_THROW(remapper.RemapCaptureAddress(captureAddressA), MemoryRemapper::AddressNotMappedException);
@@ -160,17 +160,17 @@ TEST(MemoryRemapperTests, RemoveMappingOffsetAddressException) {
 
 	const size_t size = 128;
 
-	char* rawCapturePtr = new char[size];
+	std::byte* rawCapturePtr = new std::byte[size];
 	CaptureAddress captureAddress(rawCapturePtr);
 
 	MemoryRemapper remapper;
 	const MemoryObservation captureObservation(captureAddress, std::make_shared<ModResourceGenerator>(size));
 
 	const ReplayAddress replayAddress = remapper.AddMapping(captureObservation);
-	EXPECT_NE(replayAddress.charPtr(), nullptr);
+	EXPECT_NE(replayAddress.bytePtr(), nullptr);
 	ASSERT_MOD_REPLAY_ADDRESS(remapper, captureAddress, replayAddress, size);
 
-	CaptureAddress offsetCaptureAddress(captureAddress.charPtr() +13);
+	CaptureAddress offsetCaptureAddress(captureAddress.bytePtr() +13);
 	EXPECT_THROW(remapper.RemoveMapping(offsetCaptureAddress), MemoryRemapper::RemoveMappingOffsetAddressException);
 	EXPECT_NO_THROW(remapper.RemapCaptureAddress(captureAddress));
 
