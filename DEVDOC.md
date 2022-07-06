@@ -1,6 +1,6 @@
 # Android GPU Inspector Developer Documentation
 
-See [vulkan_generator/DEVDOC.md] folder for vulkan_generator specific build instructions.
+See [vulkan_generator/DEVDOC.md](vulkan_generator/DEVDOC.md) vulkan_generator specific build instructions.
 
 ## Build instructions
 
