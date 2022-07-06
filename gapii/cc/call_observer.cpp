@@ -51,9 +51,6 @@ CallObserver::CallObserver(SpyBase* spy, CallObserver* parent, uint8_t api)
       mApi(api),
       mShouldTrace(false),
       mCurrentThread(core::Thread::current().id()) {
-  // context_t initialization.
-  this->context_t::next_pool_id = &spy->next_pool_id();
-  this->context_t::arena = reinterpret_cast<arena_t*>(spy->arena());
   mShouldTrace = mSpy->should_trace(mApi);
 
   if (parent) {
@@ -68,7 +65,27 @@ CallObserver::CallObserver(SpyBase* spy, CallObserver* parent, uint8_t api)
 // Releases the observation data memory at the end.
 CallObserver::~CallObserver() {}
 
-core::Arena* CallObserver::arena() const { return mSpy->arena(); }
+int64_t CallObserver::encodeType(const char* name, uint32_t desc_size,
+                                 const void* desc) {
+  auto res = encoder()->type(name, desc_size, desc);
+  int64_t id = static_cast<int64_t>(res.first);
+  return res.second ? id : -id;
+}
+
+void* CallObserver::encodeObject(uint8_t is_group, uint32_t type,
+                                 uint32_t data_size, void* data) {
+  if (is_group) {
+    return encoder()->group(type, data_size, data);
+  }
+  encoder()->object(type, data_size, data);
+  return nullptr;
+}
+
+int64_t CallObserver::encodeBackref(const void* object) {
+  auto res = reference_id(object);
+  int64_t id = static_cast<int64_t>(res.first);
+  return res.second ? id : -id;
+}
 
 void CallObserver::read(const void* base, uint64_t size) {
   if (!mShouldTrace) return;

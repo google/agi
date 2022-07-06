@@ -14,9 +14,7 @@
 
 """ This module is responsible for parsing Vulkan structs and aliases of them"""
 
-from typing import Dict
-from typing import List
-from typing import NamedTuple
+from typing import OrderedDict
 
 import xml.etree.ElementTree as ET
 
@@ -24,13 +22,7 @@ from vulkan_generator.vulkan_utils import parsing_utils
 from vulkan_generator.vulkan_parser import types
 
 
-class MemberInformation(NamedTuple):
-    """Temporary class to return member information"""
-    member_order: List[str]
-    members: Dict[str, types.VulkanStructMember]
-
-
-def parse_struct_members(struct_element: ET.Element) -> MemberInformation:
+def parse_struct_members(struct_element: ET.Element) -> OrderedDict[str, types.VulkanStructMember]:
     """Parses a Vulkan Struct member
 
     This is a bit of an irregular code because the XML itself has quite irregularities that
@@ -52,8 +44,7 @@ def parse_struct_members(struct_element: ET.Element) -> MemberInformation:
     # This is not the code we wanted but it's the code that we needed and it's contained in a
     # small place so that XML irregularities does not leak into the rest of the code.
 
-    member_order: List[str] = []
-    members: Dict[str, types.VulkanStructMember] = {}
+    members: OrderedDict[str, types.VulkanStructMember] = OrderedDict()
 
     for member_element in struct_element:
         if member_element.tag == "comment":
@@ -119,31 +110,36 @@ def parse_struct_members(struct_element: ET.Element) -> MemberInformation:
         expected_value = parsing_utils.try_get_attribute(member_element, "values")
 
         # Is this field optional or has to be set
+        # When this field is "false, true"  it's always for the length of the array
+        # Therefore it does not give any extra information.
+        #
+        # Except for one case:
+        # VkDescriptorBindingFlags in VkDescriptorSetLayoutBindingFlagsCreateInfo
+        #
+        # Instead of the count member, the actual array member is "false, true"
+        # I think it's actually a bug in XML.
+        # Melih TODO: Check if VkDescriptorBindingFlags is buggy in the XML
         optional = parsing_utils.try_get_attribute(member_element, "optional") == "true"
 
         # This is useful when the member is an pointer to an array
         # with a length given by another member
-        array_reference = parsing_utils.try_get_attribute(member_element, "len")
-        if array_reference:
+        array_size_reference = parsing_utils.try_get_attribute(member_element, "len")
+        if array_size_reference:
             # pointer to char array has this property, which is redundant
-            array_reference = array_reference.replace("null-terminated", "")
-            array_reference = parsing_utils.clean_type_string(array_reference)
+            array_size_reference = array_size_reference.replace("null-terminated", "")
+            array_size_reference = parsing_utils.clean_type_string(array_size_reference)
 
-        member_order.append(variable_name)
         members[variable_name] = types.VulkanStructMember(
             variable_type=variable_type,
             variable_name=variable_name,
             variable_size=variable_size,
             no_auto_validity=no_auto_validity,
             expected_value=expected_value,
-            array_reference=array_reference,
+            array_size_reference=array_size_reference,
             optional=optional
         )
 
-    return MemberInformation(
-        member_order=member_order,
-        members=members
-    )
+    return members
 
 
 def parse(struct_elem: ET.Element) -> types.VulkanType:
@@ -167,12 +163,11 @@ def parse(struct_elem: ET.Element) -> types.VulkanType:
 
     struct_name = struct_elem.attrib["name"]
 
-    alias_name = parsing_utils.try_get_attribute(struct_elem,"alias")
+    alias_name = parsing_utils.try_get_attribute(struct_elem, "alias")
     if alias_name:
         return types.VulkanStructAlias(typename=struct_name, aliased_typename=alias_name)
 
-    member_info = parse_struct_members(struct_elem)
+    members = parse_struct_members(struct_elem)
     return types.VulkanStruct(
         typename=struct_name,
-        member_order=member_info.member_order,
-        members=member_info.members)
+        members=members)
