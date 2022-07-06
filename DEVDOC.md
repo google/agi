@@ -4,6 +4,8 @@
 
 See [BUILDING.md](BUILDING.md).
 
+See vulkan_generator folder for vulkan_generator specific build instructions.
+
 ## Setup to run presubmit tests locally
 
 Before creating a pull-request, check that your code can compile and that the
