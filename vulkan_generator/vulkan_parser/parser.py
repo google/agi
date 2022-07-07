@@ -19,7 +19,7 @@ from typing import Dict
 from typing import Optional
 import xml.etree.ElementTree as ET
 
-from vulkan_generator.vulkan_utils import parsing_utils
+from vulkan_generator.vulkan_parser import parser_utils
 from vulkan_generator.vulkan_parser import types
 from vulkan_generator.vulkan_parser import version_features_parser
 from vulkan_generator.vulkan_parser import extensions_parser
@@ -64,16 +64,16 @@ def process_core_versions(core_versions: Dict[str, types.VulkanCoreVersion], fea
 
 def get_enum_field_for_extension(
         extension: types.VulkanFeatureExtensionEnum,
-        bit64: bool) -> Optional[parsing_utils.EnumFieldRepresentation]:
+        bit64: bool) -> Optional[parser_utils.EnumFieldRepresentation]:
     """Gets the enum value based on how its defined on XML"""
     if extension.value:
-        return parsing_utils.get_enum_field_from_value(extension.value)
+        return parser_utils.get_enum_field_from_value(extension.value)
 
     if extension.bitpos:
-        return parsing_utils.get_enum_field_from_bitpos(extension.bitpos, bit64)
+        return parser_utils.get_enum_field_from_bitpos(extension.bitpos, bit64)
 
     if extension.offset:
-        return parsing_utils.get_enum_field_from_offset(
+        return parser_utils.get_enum_field_from_offset(
             extnumber_str=extension.extnumber, offset_str=extension.offset, sign_str=extension.sign)
 
     return None
