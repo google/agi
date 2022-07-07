@@ -108,7 +108,7 @@ TEST(MemoryRemapperTests, MultipleMappings) {
 
 	for(int i = 0; i < 64; ++i) {
 
-		const size_t size = i * 2;
+		const size_t size = (i +1) * 2;
 
 		std::byte* rawCapturePtr = new std::byte[size];
 		CaptureAddress captureAddress(rawCapturePtr);

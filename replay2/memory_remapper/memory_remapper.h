@@ -40,7 +40,7 @@ class MemoryRemapper : public NonCopyable {
     class RemoveMappingOffsetAddressException : public std::exception {};
 
    private:
-    std::map<CaptureAddressRange, ReplayAddressRange>::const_iterator CaptureAddressRangeIter(
+    const std::pair<const ReplayAddressRange*, intptr_t> findReplayAddressRangeAndOffset(
         const CaptureAddress& captureAddress) const;
 
     std::map<CaptureAddressRange, ReplayAddressRange> captureAddressRanges_;
