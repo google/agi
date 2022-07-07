@@ -80,6 +80,9 @@ TEST(MemoryRemapperTests, SimpleMapping) {
 	EXPECT_NE(replayAddress.bytePtr(), nullptr);
 	ASSERT_MOD_REPLAY_ADDRESS(remapper, captureAddress, replayAddress, size);
 
+	const ReplayAddress replayAddress2 = remapper.RemapCaptureAddress(captureAddress);
+	EXPECT_EQ(replayAddress, replayAddress2);
+
 	EXPECT_NO_THROW(remapper.RemoveMapping(captureAddress));
 	EXPECT_THROW(remapper.RemapCaptureAddress(captureAddress), MemoryRemapper::AddressNotMappedException);
 }
@@ -97,6 +100,21 @@ TEST(MemoryRemapperTests, UnknownMapping) {
 
 	EXPECT_THROW(remapper.RemoveMapping(captureAddress), MemoryRemapper::AddressNotMappedException);
 	EXPECT_THROW(remapper.RemapCaptureAddress(captureAddress), MemoryRemapper::AddressNotMappedException);
+}
+
+TEST(MemoryRemapperTests, ZeroLengthMapping) {
+
+	const size_t size = 0;
+
+	std::byte* rawCapturePtr = new std::byte[size];
+	CaptureAddress captureAddress(rawCapturePtr);
+
+	MemoryRemapper remapper;
+	const MemoryObservation captureObservation(captureAddress, std::make_shared<ModResourceGenerator>(size));
+
+	EXPECT_THROW(remapper.AddMapping(captureObservation), MemoryRemapper::CannotMapZeroLengthAddressRange);
+	EXPECT_THROW(remapper.RemapCaptureAddress(captureAddress), MemoryRemapper::AddressNotMappedException);
+	EXPECT_THROW(remapper.RemoveMapping(captureAddress), MemoryRemapper::AddressNotMappedException);
 }
 
 TEST(MemoryRemapperTests, MultipleMappings) {
@@ -118,6 +136,9 @@ TEST(MemoryRemapperTests, MultipleMappings) {
 
 		const ReplayAddress replayAddress = remapper.AddMapping(captureObservation);
 		replayAddresses.push_back(replayAddress);
+
+		const ReplayAddress replayAddress2 = remapper.RemapCaptureAddress(captureAddress);
+		EXPECT_EQ(replayAddress, replayAddress2);
 	}
 
 	for(int i = 0; i < 64; ++i) {

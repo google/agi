@@ -33,15 +33,18 @@ namespace replay2 {
 			throw AddressAlreadyMappedException();
 		}
 
-		const size_t mappingLength = observation.resourceGenerator()->length();
+		const size_t resourceLength = observation.resourceGenerator()->length();
+		if(resourceLength == 0) {
+			throw CannotMapZeroLengthAddressRange();
+		}
 
-		std::byte* replayAllocation = new std::byte [mappingLength];
+		std::byte* replayAllocation = new std::byte [resourceLength];
 		const ReplayAddress replayAddress(replayAllocation);
 
 		observation.resourceGenerator()->generate(replayAddress);
 
-		const CaptureAddressRange captureAddressRange(captureAddress, mappingLength);
-		const ReplayAddressRange replayAddressRange(replayAddress, mappingLength);
+		const CaptureAddressRange captureAddressRange(captureAddress, resourceLength);
+		const ReplayAddressRange replayAddressRange(replayAddress, resourceLength);
 
 		const auto newMapping = std::make_pair(captureAddressRange, replayAddressRange);
 		captureAddressRanges_.emplace(newMapping);

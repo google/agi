@@ -24,15 +24,15 @@
 namespace agi {
 namespace replay2 {
 
-template <class Address>
+template <class AddressType>
 class AddressRange {
-    static_assert(std::is_base_of<TypesafeAddress, Address>::value,
+    static_assert(std::is_base_of<TypesafeAddress, AddressType>::value,
                   "Cannot instanciate AddressRange<T> for T that does not inherit off AddressRange.");
 
    public:
-    AddressRange(Address address, size_t length) : baseAddress_(address), length_(length) {}
+    AddressRange(AddressType address, size_t length) : baseAddress_(address), length_(length) {}
 
-    const Address& baseAddress() const { return baseAddress_; }
+    const AddressType& baseAddress() const { return baseAddress_; }
     size_t length() const { return length_; }
 
     inline bool operator<(const AddressRange& rhs) const {
@@ -40,7 +40,7 @@ class AddressRange {
     }
 
    private:
-    Address baseAddress_;
+    AddressType baseAddress_;
     size_t length_;
 };
 

@@ -38,6 +38,7 @@ class MemoryRemapper : public NonCopyable {
     class AddressNotMappedException : public std::exception {};
     class AddressAlreadyMappedException : public std::exception {};
     class RemoveMappingOffsetAddressException : public std::exception {};
+    class CannotMapZeroLengthAddressRange : public std::exception {};
 
    private:
     const std::pair<const ReplayAddressRange*, intptr_t> findReplayAddressRangeAndOffset(
