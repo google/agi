@@ -21,6 +21,7 @@ from pathlib import Path
 from vulkan_generator.vulkan_parser import parser as vk_parser
 from vulkan_generator.vulkan_parser.api import types
 from vulkan_generator.handle_remapper import generator as handle_remapper_generator
+from vulkan_generator.struct_factories import generator as struct_factories_generator
 
 
 def basic_generate(target: str,
@@ -52,6 +53,11 @@ def generate(vulkan_xml_path: Path, target: str, output_dir: Path) -> bool:
                            handle_remapper_generator.generate_handle_remapper_h,
                            handle_remapper_generator.generate_handle_remapper_cpp,
                            handle_remapper_generator.generate_handle_remapper_tests)
+        elif target == "struct_factories":
+            basic_generate(target, output_dir, vulkan_metadata,
+                           struct_factories_generator.generate_struct_factories_h,
+                           struct_factories_generator.generate_struct_factories_cpp,
+                           struct_factories_generator.generate_struct_factories_tests)
         else:
             raise Exception("unknown generate target: " + target)
 
