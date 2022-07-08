@@ -12,35 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("//tools/build/rules:vulkan_generator.bzl", "basic_vulkan_generator")
-
-basic_vulkan_generator(
-    name = "handle_remapper_src",
-    target = "handle_remapper",
-)
-
 cc_library(
-    name = "handle_remapper",
-    srcs = glob(
-        [":handle_remapper_src"],
-        exclude = ["*_test.cc", "*.h"],
-    ),
-    hdrs = glob(
-        [":handle_remapper_src"],
-        exclude = ["*.cc"],
-    ),
+    name = "replay_context",
+    srcs = glob(["*.cc"]),
+    hdrs = glob(["*.h"]),
     visibility = ["//visibility:public"],
     deps = [
-        "//replay2/core_utils",
-    ],
-)
-
-cc_test(
-    name = "handle_remapper_test",
-    srcs = [":handle_remapper_src"],
-    deps = [
-        "//replay2/core_utils",
-        "//replay2/vulkan_base",
-        "@com_google_googletest//:gtest_main",
+        "//replay2/handle_remapper",
+        "//replay2/memory_remapper",
     ],
 )

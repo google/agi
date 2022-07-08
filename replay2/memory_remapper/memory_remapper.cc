@@ -46,8 +46,7 @@ namespace replay2 {
 		const CaptureAddressRange captureAddressRange(captureAddress, resourceLength);
 		const ReplayAddressRange replayAddressRange(replayAddress, resourceLength);
 
-		const auto newMapping = std::make_pair(captureAddressRange, replayAddressRange);
-		captureAddressRanges_.emplace(newMapping);
+		captureAddressRanges_.emplace(captureAddressRange, replayAddressRange);
 
 		return replayAddress;
 	}
