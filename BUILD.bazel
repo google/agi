@@ -353,6 +353,7 @@ test_suite(
         "//vulkan_generator:lint",
         "//vulkan_generator/codegen_utils:lint",
         "//vulkan_generator/handle_remapper:lint",
+        "//vulkan_generator/struct_factories:lint",
         "//vulkan_generator/tests:lint",
         "//vulkan_generator/vulkan_parser:lint",
         # __END_LINT
@@ -455,6 +456,7 @@ test_suite(
         "//gapis/vertex:go_default_test",
         "//replay2/handle_remapper:handle_remapper_test",
         "//replay2/memory_remapper:memory_remapper_test",
+        "//replay2/struct_factories:struct_factories_test",
         "//test/integration/replay:go_default_test",
         "//test/integration/service:go_default_test",
         "//vulkan_generator/tests:test_vulkan_parsing",
