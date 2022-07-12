@@ -23,7 +23,10 @@ cc_library(
     name = "handle_remapper",
     srcs = glob(
         [":handle_remapper_src"],
-        exclude = ["*_test.cc", "*.h"],
+        exclude = [
+            "*_test.cc",
+            "*.h",
+        ],
     ),
     hdrs = glob(
         [":handle_remapper_src"],

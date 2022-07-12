@@ -96,17 +96,24 @@ namespace replay2 {
 		return replayAddress;
 	}
 
-	const std::pair<const ReplayAddressRange*, intptr_t> MemoryRemapper::findReplayAddressRangeAndOffset(const CaptureAddress& captureAddress) const {
+	const std::pair<const ReplayAddressRange*, intptr_t>
+	MemoryRemapper::findReplayAddressRangeAndOffset(const CaptureAddress& captureAddress) const {
 
+		// Get an iterator to the first mapped address range after the address we're interested in.
 		auto iter = captureAddressRanges_.upper_bound(CaptureAddressRange(captureAddress, 0));
 		if(iter == captureAddressRanges_.begin()) {
+			// If we got an iterator to the start, then the address is in unmapped memory.
 			return std::pair<const ReplayAddressRange*, intptr_t>(nullptr, 0);
 		}
 
+		// Walk the iterator back 1 place, so we have the last address range starting before
+		// the address we're interested in.
 		--iter;
 		const CaptureAddressRange& captureAddressRange = iter->first;
 		const ReplayAddressRange& replayAddressRange = iter->second;
 
+		// Compute the offset from the start of the address range to the address we're remapping
+		// and use this to do a bounds check to see if we're inside the mapped range.
 		const intptr_t offset = captureAddress.bytePtr() -captureAddressRange.baseAddress().bytePtr();
 		if(offset >= captureAddressRange.length()) {
 			return std::pair<const ReplayAddressRange*, intptr_t>(nullptr, 0);

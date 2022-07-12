@@ -35,9 +35,7 @@ class AddressRange {
     const AddressType& baseAddress() const { return baseAddress_; }
     size_t length() const { return length_; }
 
-    bool operator<(const AddressRange& rhs) const {
-        return baseAddress_.bytePtr() < rhs.baseAddress().bytePtr();
-    }
+    bool operator<(const AddressRange& rhs) const { return baseAddress_.bytePtr() < rhs.baseAddress().bytePtr(); }
 
    private:
     AddressType baseAddress_;

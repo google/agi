@@ -20,19 +20,19 @@ namespace agi {
 namespace replay2 {
 
 class ReplayContext : public NonCopyable {
-public:
-	ReplayContext(const std::string& replayIdentifier) : replayIdentifier_(replayIdentifier_) {}
+   public:
+    ReplayContext(const std::string& replayIdentifier) : replayIdentifier_(replayIdentifier_) {}
 
-	const std::string& getReplayIdentifier() const { return replayIdentifier_; }
+    const std::string& getReplayIdentifier() const { return replayIdentifier_; }
 
-	HandleRemapper& HandleRemapper() const { return handleRemapper_; }
-	MemoryRemapper& MemoryRemapper() const { return memoryRemapper_; }
+    HandleRemapper& HandleRemapper() const { return handleRemapper_; }
+    MemoryRemapper& MemoryRemapper() const { return memoryRemapper_; }
 
-private:
-	std::string replayIdentifier_;
+   private:
+    std::string replayIdentifier_;
 
-	HandleRemapper handleRemapper_;
-	MemoryRemapper memoryRemapper_;
+    HandleRemapper handleRemapper_;
+    MemoryRemapper memoryRemapper_;
 };
 
 }  // namespace replay2
