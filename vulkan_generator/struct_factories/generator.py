@@ -18,6 +18,7 @@ import abc
 
 from pathlib import Path
 from typing import List
+from typing import Dict
 
 from textwrap import dedent
 from vulkan_generator.vulkan_parser import types
@@ -34,7 +35,6 @@ def set_member_name(member: str) -> str:
 
 def get_member_name(member: str) -> str:
     return "get" + member[0:1].upper() + member[1:]
-
 
 def tokenize_typename(member_type: str) -> List[str]:
 
@@ -59,6 +59,33 @@ def tokenize_typename(member_type: str) -> List[str]:
 
     return tokens
 
+def sort_struts_impl(struct :str,
+                     processed_structs : Dict[str, bool],
+                     sorted_structs : List[str],
+                     vulkan_metadata: types.VulkanMetadata) :
+
+    if struct in processed_structs:
+        return
+
+    for member in vulkan_metadata.types.structs[struct].members:
+        tokens = tokenize_typename(vulkan_metadata.types.structs[struct].members[member].variable_type)
+        for token in tokens:
+            if token in vulkan_metadata.types.structs and token != struct:
+                sort_struts_impl(token, processed_structs, sorted_structs, vulkan_metadata)
+
+    processed_structs[struct] = True
+    sorted_structs += [struct]
+
+
+def sort_struts(vulkan_metadata: types.VulkanMetadata) -> List[str] :
+    processed_structs : Dict[str, bool] = {}
+    sorted_structs : List[str] = []
+
+    for struct in vulkan_metadata.types.structs:
+        sort_struts_impl(struct, processed_structs, sorted_structs, vulkan_metadata)
+
+    return sorted_structs
+
 
 def remap_member_type(member_type: str, member_name: str, vulkan_metadata: types.VulkanMetadata) -> str:
 
@@ -71,7 +98,7 @@ def remap_member_type(member_type: str, member_name: str, vulkan_metadata: types
 
     for token in tokens:
         if token in vulkan_metadata.types.structs:
-            stripped_tokens += ["std::shared_ptr<" + struct_factory_name(token) + ">"]
+            stripped_tokens += [struct_factory_name(token)]
         elif token != "const" and token != "struct" and token != "conststruct":  # TODO: conststruct is to work around a bug.remove when fixed!
             stripped_tokens += [token]
 
@@ -193,33 +220,38 @@ def generate_struct_factories_h(file_path: Path, vulkan_metadata: types.VulkanMe
 
         for type_name in vulkan_metadata.types.basetypes:
             remapper_h.write("typedef uint64_t " + type_name + ";\n")
+        remapper_h.write("\n")
 
         for type_name in vulkan_metadata.types.handles:
             remapper_h.write("typedef uint64_t " + type_name + ";\n")
+        remapper_h.write("\n")
 
         for type_name in vulkan_metadata.types.handle_aliases:
             remapper_h.write("typedef uint64_t " + type_name + ";\n")
+        remapper_h.write("\n")
 
         for type_name in vulkan_metadata.types.funcpointers:
             remapper_h.write("typedef uint64_t " + type_name + ";\n")
+        remapper_h.write("\n")
 
         for type_name in vulkan_metadata.types.bitmasks:
             remapper_h.write("typedef uint64_t " + type_name + ";\n")
+        remapper_h.write("\n")
 
         for type_name in vulkan_metadata.types.bitmask_aliases:
             remapper_h.write("typedef uint64_t " + type_name + ";\n")
+        remapper_h.write("\n")
 
         for type_name in vulkan_metadata.types.enums:
             remapper_h.write("typedef uint64_t " + type_name + ";\n")
+        remapper_h.write("\n")
 
         for type_name in vulkan_metadata.types.enum_aliases:
             remapper_h.write("typedef uint64_t " + type_name + ";\n")
+        remapper_h.write("\n")
 
         all_vulkan_structs = vulkan_metadata.types.structs
-        for struct in all_vulkan_structs:
-            remapper_h.write("class " + struct_factory_name(struct) + ";\n")
-
-        for struct in all_vulkan_structs:
+        for struct in sort_struts(vulkan_metadata):
 
             public_members: List[str] = []
             private_members: List[str] = []
@@ -234,6 +266,7 @@ def generate_struct_factories_h(file_path: Path, vulkan_metadata: types.VulkanMe
                                                         private_members=private_members)
 
             remapper_h.write(class_def)
+            remapper_h.write("\n")
 
         remapper_h.write(dedent("""
             }
