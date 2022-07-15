@@ -383,6 +383,14 @@ def generate_factory_generate_def(struct : str) -> str :
                   {struct} {struct_factory_name(struct)}::Generate() {{
                       {struct} ret;
                       //TODO: Populate the fields of ret here.
+                      //    This involves recursing though the factory's pNext_ (if it exists as a member)
+                      //    and calling generate on that nested factory and its pNext_->pNext_->... as well,
+                      //    generating all vulkan structs in the pNext chain. 
+                      //    VkStructFactory::PNextChainMemorySize() will tell you how much memory
+                      //    will be needed to store all of these generated structures. This memory will
+                      //    need to be allocated (or taken from a pool in the replay context).
+                      //    The actual vulkan pNext fields will need to point into this allocation
+                      //    after the appropriate data has been generated into that allocation.
                       return ret;
                   }}
                   """)
