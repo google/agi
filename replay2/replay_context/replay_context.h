@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include "replay2/core_utils/non_copyable.h"
-#include "replay2/handle_remapper/handle_remapper.h"
+//#include "replay2/handle_remapper/handle_remapper.h"v // TODO: Fix bazel so we can include this.
 #include "replay2/memory_remapper/memory_remapper.h"
 
 #include <string>
@@ -33,7 +33,7 @@ class ReplayContext : public NonCopyable {
    private:
     std::string replayIdentifier_;
 
-    HandleRemapper handleRemapper_;
+    // HandleRemapper handleRemapper_; // TODO: Need to fix header include problem
     MemoryRemapper memoryRemapper_;
 };
 
