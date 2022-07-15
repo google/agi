@@ -233,6 +233,7 @@ def generate_struct_factories_h(file_path: Path, vulkan_metadata: types.VulkanMe
             public:
                 virtual ~VkStructFactory() {}
                 virtual size_t VkStructMemorySize() = 0;
+                virtual size_t PNextChainMemorySize() = 0;
             };
 
         """))
@@ -290,6 +291,7 @@ def generate_struct_factories_h(file_path: Path, vulkan_metadata: types.VulkanMe
 
             public_members += ["",
                                "size_t VkStructMemorySize() override;",
+                               "size_t PNextChainMemorySize() override;",
                                "",
                                f"""{struct} Generate();"""]
 
@@ -354,6 +356,28 @@ def generate_factory_size_def(struct : str) -> str :
                   """)
 
 
+def generate_factory_chain_size_def(struct : str, vulkan_metadata: types.VulkanMetadata) -> str :
+    if "pNext" in vulkan_metadata.types.structs[struct].members:
+        return dedent(f"""
+                      size_t {struct_factory_name(struct)}::PNextChainMemorySize() {{
+                          if(pNext_ != nullptr) {{
+                              size_t directNextSize = pNext_->VkStructMemorySize();
+                              if(directNextSize % sizeof(void*) != 0) {{
+                                  directNextSize += sizeof(void*) -(directNextSize % sizeof(void*));
+                              }}
+                              return directNextSize +pNext_->PNextChainMemorySize();
+                          }}
+                          return 0;
+                      }}
+                      """)
+    else:
+        return dedent(f"""
+                      size_t {struct_factory_name(struct)}::PNextChainMemorySize() {{
+                          return 0;
+                      }}
+                      """)
+
+
 def generate_factory_generate_def(struct : str) -> str :
     return dedent(f"""
                   {struct} {struct_factory_name(struct)}::Generate() {{
@@ -390,6 +414,7 @@ def generate_struct_factories_cpp(file_path: Path, vulkan_metadata: types.Vulkan
                 remapper_cpp.write(generate_factory_getter_def(struct, member, member_data, vulkan_metadata))
 
             remapper_cpp.write(generate_factory_size_def(struct))
+            remapper_cpp.write(generate_factory_chain_size_def(struct, vulkan_metadata))
             remapper_cpp.write(generate_factory_generate_def(struct))
             remapper_cpp.write("\n")
 
