@@ -73,7 +73,11 @@ def comment_code(code: str, comment: str) -> str:
     return "/* " + comment + " */\n" + code
 
 
-def create_function_signature(name: str, return_type: str, arguments: Optional[Dict[str, str]]) -> str:
+def create_function_signature(name: str,
+                              return_type: str,
+                              arguments: Optional[Dict[str, str]],
+                              const_func: bool = False) -> str:
+
     ''' Create the signature for a function, ie: int fibonacci(int n) '''
     ret = return_type + " " + name + "("
 
@@ -86,22 +90,27 @@ def create_function_signature(name: str, return_type: str, arguments: Optional[D
 
     ret = ret + ")"
 
+    if const_func:
+        ret += " const"
+
     return ret
 
 
 def create_function_declaration(name: str,
                                 return_type: str = "void",
-                                arguments: Optional[Dict[str, str]] = None) -> str:
+                                arguments: Optional[Dict[str, str]] = None,
+                                const_func: bool = False) -> str:
     ''' Create a declaration for a function, ie: int fibonacci(int n); '''
-    return create_function_signature(name, return_type, arguments,) + ";"
+    return create_function_signature(name, return_type, arguments, const_func) + ";"
 
 
 def create_function_definition(name: str,
                                return_type: str = "void",
                                arguments: Optional[Dict[str, str]] = None,
+                               const_func: bool = False,
                                code: str = "") -> str:
     ''' Create the signature for a function, ie: int fibonacci(int n) { /* code here */ }'''
-    return create_function_signature(name, return_type, arguments) + " {\n" + indent_code(code) + "\n}"
+    return create_function_signature(name, return_type, arguments, const_func) + " {\n" + indent_code(code) + "\n}"
 
 
 def create_exception_declaration(name: str, base_class: str = "std::exception") -> str:
