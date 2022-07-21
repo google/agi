@@ -357,6 +357,7 @@ test_suite(
         "//vulkan_generator/vulkan_parser:lint",
         "//vulkan_generator/vulkan_parser/api:lint",
         "//vulkan_generator/vulkan_parser/internal:lint",
+        "//vulkan_generator/vulkan_parser/postprocess:lint",
         # __END_LINT
     ],
 )

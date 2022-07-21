@@ -21,7 +21,9 @@ py_library(
     srcs_version = "PY3",
     visibility = ["//visibility:public"],
     deps = [
+        "//vulkan_generator/vulkan_parser/api",
         "//vulkan_generator/vulkan_parser/internal",
+        "//vulkan_generator/vulkan_parser/postprocess",
     ],
 )
 

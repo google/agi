@@ -12,15 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""This module is the entry point for the Vulkan parser that extracts information from Vulkan XML"""
+"""
+This module responsible for postprocessing the Vulkan defines
 
+All the stringly typed references will be linked during this stage.
+"""
 
-from pathlib import Path
+from typing import Dict
 
 from vulkan_generator.vulkan_parser.api import types
-from vulkan_generator.vulkan_parser.internal import parser as vulkan_parser
-from vulkan_generator.vulkan_parser.postprocess import postprocess
+from vulkan_generator.vulkan_parser.internal import internal_types
 
 
-def parse(filename: Path) -> types.VulkanInfo:
-    return postprocess.process(vulkan_parser.parse(filename))
+def process(includes: Dict[str, internal_types.ExternalInclude]) -> Dict[str, types.ExternalInclude]:
+    """Post process Includes"""
+    new_includes: Dict[str, types.ExternalInclude] = {}
+
+    for include in includes.values():
+        new_includes[include.header] = types.ExternalInclude(
+            header=include.header,
+            directive=include.directive,
+        )
+
+    return new_includes
