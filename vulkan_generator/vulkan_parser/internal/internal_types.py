@@ -23,6 +23,35 @@ from typing import Optional
 
 
 @dataclass
+class ExternalPlatform:
+    name: str
+
+    # This is the preprocesser guard for the platform
+    protect: str
+
+
+@dataclass
+class ExternalInclude:
+    """The metadata defines a file included by Vulkan"""
+    header: str
+
+    # C directive to include the header if given
+    directive: Optional[str]
+
+
+@dataclass
+class ExternalType:
+    """The metadata defines a C type"""
+    typename: str
+
+    # If any header is required to use this type
+    source_header: Optional[str]
+
+    # Is this type a standard C type
+    ctype: bool
+
+
+@dataclass
 class VulkanType:
     """Base class for a Vulkan Type. All the other Types should inherit from this class"""
     typename: str
@@ -93,6 +122,32 @@ class VulkanStruct(VulkanType):
 class VulkanStructAlias(VulkanType):
     """The meta data defines a Vulkan Struct alias"""
     aliased_typename: str
+
+
+@ dataclass
+class VulkanUnionMember:
+    """The meta data defines a Vulkan Union Member"""
+    member_type: str
+    member_name: str
+
+    # Some members have this property which states if that particular
+    # member has to be valid if they are not null
+    no_auto_validity: Optional[bool]
+
+    # If this member is a decided by an enum field, then its stated here
+    selection: Optional[str]
+
+    # If this member is a static array, what is the length
+    array_length: Optional[int]
+
+
+@ dataclass
+class VulkanUnion(VulkanType):
+    """The meta data defines a Vulkan Union"""
+    returned_only: Optional[bool]
+
+    # What types this union can be
+    members: Dict[str, VulkanUnionMember] = field(default_factory=dict)
 
 
 @dataclass
@@ -233,8 +288,12 @@ class AllVulkanTypes:
     # For now, lets store as the other types but when we do code generation,
     # We may have an extra step to convert the map to other direction.
 
-    defines: OrderedDict[str, VulkanDefine] = field(default_factory=OrderedDict)
+    # Includes and defines are actually not Vulkan types but they are under
+    # type tag
+    includes: Dict[str, ExternalInclude] = field(default_factory=dict)
+    defines: Dict[str, VulkanDefine] = field(default_factory=dict)
 
+    external_types: Dict[str, ExternalType] = field(default_factory=dict)
     basetypes: Dict[str, VulkanBaseType] = field(default_factory=dict)
 
     handles: Dict[str, VulkanHandle] = field(default_factory=dict)
@@ -242,6 +301,8 @@ class AllVulkanTypes:
 
     structs: Dict[str, VulkanStruct] = field(default_factory=dict)
     struct_aliases: Dict[str, VulkanStructAlias] = field(default_factory=dict)
+
+    unions: Dict[str, VulkanUnion] = field(default_factory=dict)
 
     funcpointers: Dict[str, VulkanFunctionPtr] = field(default_factory=dict)
 
@@ -462,6 +523,7 @@ class VulkanMetadata:
     This class holds the information parsed from Vulkan XML
     This class should have all the information needed to generate code
     """
+    platforms: Dict[str, ExternalPlatform]
     types: AllVulkanTypes
     commands: AllVulkanCommands
     core_versions: Dict[str, VulkanCoreVersion]

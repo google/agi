@@ -28,6 +28,7 @@ from vulkan_generator.vulkan_parser.internal import type_parser
 from vulkan_generator.vulkan_parser.internal import enums_parser
 from vulkan_generator.vulkan_parser.internal import commands_parser
 from vulkan_generator.vulkan_parser.internal import spirv_parser
+from vulkan_generator.vulkan_parser.internal import platforms_parser
 
 
 def process_enums(vulkan_types: internal_types.AllVulkanTypes, enum_element: ET.Element) -> None:
@@ -141,6 +142,7 @@ def append_extended_enum_and_bitfield_fields(
 def parse(filename: Path) -> internal_types.VulkanMetadata:
     """ Parse the Vulkan XML to extract every information that is needed for code generation"""
     tree = ET.parse(filename)
+    platforms: Dict[str, internal_types.ExternalPlatform] = {}
     all_types = internal_types.AllVulkanTypes()
     all_commands = internal_types.AllVulkanCommands()
     format_metadata = internal_types.ImageFormatMetadata()
@@ -149,6 +151,8 @@ def parse(filename: Path) -> internal_types.VulkanMetadata:
     extensions: Dict[str, internal_types.VulkanExtension] = {}
 
     for child in tree.getroot():
+        if child.tag == "platforms":
+            platforms = platforms_parser.parse(child)
         if child.tag == "types":
             all_types = type_parser.parse(child)
         elif child.tag == "enums":
@@ -168,6 +172,7 @@ def parse(filename: Path) -> internal_types.VulkanMetadata:
     append_extended_enum_and_bitfield_fields(core_versions, extensions, all_types)
 
     return internal_types.VulkanMetadata(
+        platforms=platforms,
         types=all_types,
         commands=all_commands,
         core_versions=core_versions,

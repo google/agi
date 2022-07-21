@@ -32,8 +32,17 @@ def print_vulkan_metadata(vulkan_metadata: internal_types.VulkanMetadata) -> Non
 
     vulkan_types = vulkan_metadata.types
 
+    print("=== Vulkan Platforms ===")
+    pretty_printer.pprint(vulkan_metadata.platforms)
+
+    print("=== Vulkan Includes ===")
+    pretty_printer.pprint(vulkan_types.includes)
+
     print("=== Vulkan Defines ===")
     pretty_printer.pprint(vulkan_types.defines)
+
+    print("=== Vulkan External Types ===")
+    pretty_printer.pprint(vulkan_types.external_types)
 
     print("=== Vulkan Bitmasks ===")
     pretty_printer.pprint(vulkan_types.bitmasks)
