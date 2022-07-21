@@ -44,7 +44,7 @@ def process_defines(vulkan_types: internal_types.AllVulkanTypes, define_element:
     vulkan_define = defines_parser.parse(define_element)
 
     if isinstance(vulkan_define, internal_types.VulkanDefine):
-        vulkan_types.defines[vulkan_define.variable_name] = vulkan_define
+        vulkan_types.defines[vulkan_define.key] = vulkan_define
         return
 
     raise SyntaxError(f"Unknown Define: {vulkan_define}")
@@ -104,6 +104,16 @@ def process_handle(vulkan_types: internal_types.AllVulkanTypes, handle_element: 
     raise SyntaxError(f"Unknown VulkanType: {handle}")
 
 
+def process_union(vulkan_types: internal_types.AllVulkanTypes, union_element: ET.Element) -> None:
+    vulkan_union = union_parser.parse(union_element)
+
+    if isinstance(vulkan_union, internal_types.VulkanUnion):
+        vulkan_types.unions[vulkan_union.typename] = vulkan_union
+        return
+
+    raise SyntaxError(f"Unknown VulkanType: {vulkan_union}")
+
+
 def process_struct(vulkan_types: internal_types.AllVulkanTypes, struct_element: ET.Element) -> None:
     """ Parse the Vulkan type "Struct". This can be a struct or an alias to another struct"""
     vulkan_struct = struct_parser.parse(struct_element)
@@ -119,16 +129,6 @@ def process_struct(vulkan_types: internal_types.AllVulkanTypes, struct_element: 
     raise SyntaxError(f"Unknown VulkanType {vulkan_struct}")
 
 
-def process_union(vulkan_types: internal_types.AllVulkanTypes, union_element: ET.Element) -> None:
-    vulkan_union = union_parser.parse(union_element)
-
-    if isinstance(vulkan_union, internal_types.VulkanUnion):
-        vulkan_types.unions[vulkan_union.typename] = vulkan_union
-        return
-
-    raise SyntaxError(f"Unknown VulkanType: {vulkan_union}")
-
-
 def process_funcpointer(vulkan_types: internal_types.AllVulkanTypes, func_ptr_element: ET.Element) -> None:
     """ Parse the Vulkan type "Funcpointer"""
     vulkan_func_ptr = funcptr_parser.parse(func_ptr_element)
@@ -142,10 +142,10 @@ def parse(types_root: ET.Element) -> internal_types.AllVulkanTypes:
     for type_element in types_root:
         if "category" in type_element.attrib:
             type_category = type_element.attrib["category"]
-            if type_category == "include":
-                process_include(vulkan_types, type_element)
             if type_category == "define":
                 process_defines(vulkan_types, type_element)
+            if type_category == "include":
+                process_include(vulkan_types, type_element)
             elif type_category == "basetype":
                 process_basetype(vulkan_types, type_element)
             elif type_category == "bitmask":

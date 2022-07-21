@@ -96,10 +96,8 @@ def print_vulkan_metadata(vulkan_metadata: internal_types.VulkanMetadata) -> Non
     print("=== Vulkan Extensions ===")
     pretty_printer.pprint(extension)
 
-    image_format_metadata = vulkan_metadata.image_format_metadata
-
     print("=== Vulkan Image Formats ===")
-    pretty_printer.pprint(image_format_metadata.formats)
+    pretty_printer.pprint(vulkan_metadata.image_formats)
 
     spirv_metadata = vulkan_metadata.spirv_metadata
 

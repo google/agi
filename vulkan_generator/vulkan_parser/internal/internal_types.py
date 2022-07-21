@@ -17,7 +17,6 @@
 from dataclasses import dataclass
 from dataclasses import field
 from typing import Dict
-from typing import OrderedDict
 from typing import List
 from typing import Optional
 
@@ -52,6 +51,17 @@ class ExternalType:
 
 
 @dataclass
+class VulkanDefine:
+    # This is used by Vulkan XML when it's referred from somewhere else
+    key: str
+    variable_name: str
+    value: str
+
+    # Is this define added after Vulkan 1.0 via extension or a later core version
+    extension: bool
+
+
+@dataclass
 class VulkanType:
     """Base class for a Vulkan Type. All the other Types should inherit from this class"""
     typename: str
@@ -83,11 +93,10 @@ class VulkanHandleAlias(VulkanType):
 @dataclass
 class VulkanStructMember:
     """The meta data defines a Vulkan Handle"""
-    variable_type: str
-    variable_name: str
+    member_type: str
+    member_name: str
 
-    # Some member variables are static arrays with a default size
-    variable_size: Optional[str]
+    parent: str
 
     # Some members have this property which states if that particular
     # member has to be valid if they are not null
@@ -99,8 +108,8 @@ class VulkanStructMember:
     expected_value: Optional[str]
 
     # If the member is an array, it's size is defined by another
-    # member in the struct. This is the name of the referring member
-    array_size_reference: Optional[str]
+    # member in the struct or a define if it's a static array
+    size: Optional[str]
 
     # Is this field has to be set and/or not-null
     optional: Optional[bool]
@@ -113,9 +122,11 @@ class VulkanStructMember:
 @dataclass
 class VulkanStruct(VulkanType):
     """The meta data defines a Vulkan Struct"""
+    # if this struct is an extension via pNext, it will be noted here
+    base_structs: Optional[List[str]]
 
     # These give us both what are the members are and their order
-    members: OrderedDict[str, VulkanStructMember] = field(default_factory=OrderedDict)
+    members: Dict[str, VulkanStructMember] = field(default_factory=dict)
 
 
 @dataclass
@@ -124,7 +135,7 @@ class VulkanStructAlias(VulkanType):
     aliased_typename: str
 
 
-@ dataclass
+@dataclass
 class VulkanUnionMember:
     """The meta data defines a Vulkan Union Member"""
     member_type: str
@@ -141,7 +152,7 @@ class VulkanUnionMember:
     array_length: Optional[int]
 
 
-@ dataclass
+@dataclass
 class VulkanUnion(VulkanType):
     """The meta data defines a Vulkan Union"""
     returned_only: Optional[bool]
@@ -163,7 +174,7 @@ class VulkanFunctionPtr(VulkanType):
     return_type: str
 
     # These give us both what are the arguments are and their order
-    arguments: OrderedDict[str, VulkanFunctionArgument] = field(default_factory=OrderedDict)
+    arguments: Dict[str, VulkanFunctionArgument] = field(default_factory=dict)
 
 
 @dataclass
@@ -178,6 +189,24 @@ class VulkanEnumField:
     # It can be pretty irregular in the spec. Therefore, we can explicitly
     # state the representation when necessary.
     representation: str
+
+    # Which enum this field belongs to
+    parent: str
+
+    # Is this define added after Vulkan 1.0 via extension or a later core version
+    extension: bool
+
+
+@dataclass
+class VulkanEnumFieldAlias:
+    typename: str
+    aliased_typename: str
+
+    # Which enum this field belongs to
+    parent: str
+
+    # Is this define added after Vulkan 1.0 via extension or a later core version
+    extension: bool
 
 
 @dataclass
@@ -195,8 +224,8 @@ class VulkanEnum(VulkanType):
     # they have been defined.
     # Therefore we keep them separate so that the field order does not
     # get mixed.
-    aliases: Dict[str, str] = field(default_factory=dict)
-    fields: OrderedDict[str, VulkanEnumField] = field(default_factory=OrderedDict)
+    aliases: Dict[str, VulkanEnumFieldAlias] = field(default_factory=dict)
+    fields: Dict[str, VulkanEnumField] = field(default_factory=dict)
 
 
 @dataclass
@@ -223,12 +252,6 @@ class VulkanBitmaskAlias(VulkanType):
 
 
 @dataclass
-class VulkanDefine:
-    variable_name: str
-    value: str
-
-
-@dataclass
 class VulkanCommandParam:
     """The metadata defines a Vulkan Command's parameter"""
     parameter_type: str
@@ -239,6 +262,10 @@ class VulkanCommandParam:
 
     # Is this parameter must be externally synced
     externally_synced: Optional[bool]
+
+    # if this is None then the entire field is externally synced
+    # Otherwise the specific field represented here is externally synced
+    externally_synced_field: Optional[str]
 
     # If the parameter is an array, it's size is defined by another
     # parameter of the command. This is the name of the referring parameter.
@@ -265,7 +292,7 @@ class VulkanCommand:
     command_buffer_levels: Optional[List[str]]
 
     # These give us both what are the parameters are and their order
-    parameters: OrderedDict[str, VulkanCommandParam] = field(default_factory=OrderedDict)
+    parameters: Dict[str, VulkanCommandParam] = field(default_factory=dict)
 
 
 @dataclass
@@ -324,23 +351,27 @@ class AllVulkanCommands:
 
 
 @dataclass
-class VulkanFeatureExtension:
+class VulkanFeature:
+    """The structure to hold a required feature for a Vulkan Core Version"""
+    name: str
+    feature_type: str
+
+
+@dataclass
+class VulkanFeatureExtension(VulkanFeature):
     """The base structure to extend a Vulkan feature"""
 
 
 @dataclass
 class VulkanFeatureExtensionEnum(VulkanFeatureExtension):
     """
-    The structure to hold extension to an existing enum
+    The structure to hold field extension to an existing enum
 
     When a vulkan enum is a required feature, unlike other types, the extending fields are defined
     on the feature rather than the original enum
     """
     # Which type this enum is extending
     basetype: str
-
-    # Extending enum field is an alias to another enum fields
-    alias: Optional[str]
 
     # Extension number is used when calculating enum field value
     extnumber: Optional[str]
@@ -359,14 +390,29 @@ class VulkanFeatureExtensionEnum(VulkanFeatureExtension):
 
 
 @dataclass
-class VulkanFeature:
-    """The structure to hold a required feature for a Vulkan Core Version"""
-    name: str
-    feature_type: str
-    feature_extension: Optional[VulkanFeatureExtension]
+class VulkanFeatureExtensionEnumAlias(VulkanFeatureExtension):
+    """
+    The structure to hold aliased field extension to an existing enum
 
-    # Sometimes(especially in extensions) new defines added with the extension as enum
-    value: Optional[str]
+    When a vulkan enum is a required feature, unlike other types, the extending fields are defined
+    on the feature rather than the original enum
+    """
+    # Which type this enum is extending
+    basetype: str
+
+    # Extending enum field is an alias to another enum fields
+    alias: str
+
+
+@dataclass
+class VulkanFeatureExtensionDefine(VulkanFeatureExtension):
+    """
+    The structure to hold a new define added by an extension
+
+    When a vulkan defined is a required feature, unlike other types, the extending fields are defined
+    on the feature rather than the original enum
+    """
+    value: str
 
 
 @dataclass
@@ -393,15 +439,18 @@ class VulkanExtension:
     name: str
     number: int
 
-    # This extension is core in the promoted version
-    promoted_version: Optional[str]
+    # This extension is core in the promoted version or promoted to another extension
+    # Usually from vendor to KHR
+    promotedto: Optional[str]
 
-    # If there is another extension deprecated this extension
-    # it will be noted here
-    deprecating_extension: Optional[str]
+    # Some extensions are disabled but still referenced from other Vulkan types
+    disabled: bool
+
+    # This extension is deprecated by another extension or core version
+    deprecatedby: Optional[str]
 
     # Whether this extension a device or instance extension
-    extension_type: str
+    extension_type: Optional[str]
 
     # Sometimes an extension requires another extension
     required_extensions: Optional[List[str]]
@@ -454,19 +503,10 @@ class ImageFormat:
     # if this format has a corresponding Spir-V format
     spirv_format: Optional[str]
 
-    components: OrderedDict[str, ImageFormatComponent] = field(default_factory=OrderedDict)
+    components: Dict[str, ImageFormatComponent] = field(default_factory=dict)
 
     # Plane information for multi-planar images
     planes: List[ImageFormatPlane] = field(default_factory=list)
-
-
-@dataclass
-class ImageFormatMetadata:
-    """
-    This class holds the information of all image formats from Vulkan XML
-    This class should have all the information needed to generate code related to Image formats
-    """
-    formats: Dict[str, ImageFormat] = field(default_factory=dict)
 
 
 @dataclass
@@ -480,7 +520,20 @@ class SpirvExtension:
     version: Optional[str]
 
     # Vulkan extension enabled by this Spirv extension
-    extension: str
+    vulkan_extension: str
+
+
+@dataclass
+class SpirvCapabilityFeature:
+    struct: str
+    feature: str
+
+
+@dataclass
+class SpirvCapabilityProperty:
+    struct: str
+    group: str
+    value: str
 
 
 @dataclass
@@ -498,13 +551,13 @@ class SpirvCapability:
     version: Optional[str]
 
     # Which Vulkan feature this capabiliy enables
-    feature: Optional[str]
+    feature: Optional[SpirvCapabilityFeature]
 
     # Which Vulkan property this capabiliy enables
-    property: Optional[str]
+    property: Optional[SpirvCapabilityProperty]
 
     # Vulkan extension enabled by this Spirv extension
-    extension: Optional[str]
+    vulkan_extension: Optional[str]
 
 
 @dataclass
@@ -528,5 +581,5 @@ class VulkanMetadata:
     commands: AllVulkanCommands
     core_versions: Dict[str, VulkanCoreVersion]
     extensions: Dict[str, VulkanExtension]
-    image_format_metadata: ImageFormatMetadata
+    image_formats: Dict[str, ImageFormat]
     spirv_metadata: SpirvMetadata
