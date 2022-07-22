@@ -20,10 +20,10 @@ py_library(
     srcs = glob(["*.py"]),
     srcs_version = "PY3",
     visibility = ["//visibility:public"],
-    deps= [
+    deps = [
         "//vulkan_generator/vulkan_parser/api",
         "//vulkan_generator/vulkan_parser/internal",
-    ]
+    ],
 )
 
 py_lint(
