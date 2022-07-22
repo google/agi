@@ -57,6 +57,7 @@ extern void vkErrInvalidImageSubresource(VkImage img, string subresourceType, u3
 extern void vkErrImageMemoryNotBound(VkImage img)
 extern void vkErrSemaphoreNotSubmitted(VkSemaphore semaphore)
 extern void vkErrInvalidDescriptorCopy(VkDescriptorSet srcSet, u32 srcBinding, VkDescriptorSet dstSet, u32 dstBinding)
+extern void vkErrInvalidStructMember(string structName, string structMember)
 
 sub void vkErrorInvalidInstance(VkInstance inst) {
   vkErrorInvalidHandle("VkInstance", as!u64(inst))

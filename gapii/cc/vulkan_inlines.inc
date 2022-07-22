@@ -93,3 +93,7 @@ inline void VulkanSpy::vkErrInvalidDescriptorCopy(CallObserver*, VkDescriptorSet
 inline void VulkanSpy::vkErrInvalidDescriptorBindingType(CallObserver*, VkDescriptorSet set, uint32_t binding, uint32_t layout_type, uint32_t update_type) {
     GAPID_DEBUG("Error: Updating descriptor binding at: %" PRIu64 ": %" PRIu32 " with type: %" PRIu32 ", but the type defined in descriptor set layout is: %" PRIu32 "", set, binding, layout_type, update_type);
 }
+
+inline void VulkanSpy::vkErrInvalidStructMember(CallObserver*, std::string struct_name, std::string struct_member) {
+    GAPID_WARNING("Invalid struct member: %s::%s", struct_name.c_str(), struct_member.c_str());
+}

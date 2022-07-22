@@ -277,8 +277,13 @@ cmd VkResult vkAllocateDescriptorSets(
       switch (sType) {
         case VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_ALLOCATE_INFO: {
           ext := as!VkDescriptorSetVariableDescriptorCountAllocateInfo*(next.Ptr)[0]
-          variableDescriptorCounts.Val = ext.pDescriptorCounts[0:ext.descriptorSetCount]
-          read(ext.pDescriptorCounts[0:ext.descriptorSetCount])
+          if ext.descriptorSetCount > 0 {
+            if ext.descriptorSetCount != info.descriptorSetCount {
+              vkErrInvalidStructMember("VkDescriptorSetVariableDescriptorCountAllocateInfo", "descriptorSetCount")
+            }
+            variableDescriptorCounts.Val = ext.pDescriptorCounts[0:ext.descriptorSetCount]
+            read(ext.pDescriptorCounts[0:ext.descriptorSetCount])
+          }
         }
       }
       next.Ptr = as!VulkanStructHeader*(next.Ptr)[0].PNext
