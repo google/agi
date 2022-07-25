@@ -1,6 +1,0 @@
-VirtualSwapchainGetDeviceProcAddr
-VirtualSwapchainGetInstanceProcAddr
-vkEnumerateInstanceLayerProperties
-vkEnumerateInstanceExtensionProperties
-vkEnumerateDeviceLayerProperties
-vkEnumerateDeviceExtensionProperties

@@ -1,7 +1,0 @@
-CPUTimingGetDeviceProcAddr
-CPUTimingGetInstanceProcAddr
-vkEnumerateInstanceLayerProperties
-vkEnumerateInstanceExtensionProperties
-vkEnumerateDeviceLayerProperties
-vkEnumerateDeviceExtensionProperties
-_layer_keep_alive_func__
