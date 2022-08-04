@@ -251,13 +251,20 @@ public class CounterInfo {
 
   public static enum Interpolation {
     Delta, // the value represents the counter "amount" since the last sample.
-    Event; // the value represents the current value until the next sample.
+    Event, // the value represents the current value until the next sample.
+    Monotonic;
 
     public static Interpolation of(QueryEngine.Row row) {
       // Only GPU counters, and not the gpufreq counter, are Delta counters.
+      // Only Power Rail Tracks are Monotonic counters.
       // TODO: this should be part of the counter definition in the backend.
-      return (!"gpu_counter_track".equals(row.getString(1)) ||
-          "gpufreq".equals(row.getString(3))) ? Event : Delta;
+      if("gpu_counter_track".equals(row.getString(1)) && (!"gpufreq".equals(row.getString(3)))) {
+        return Delta;
+      } else if (row.getString(3).startsWith("power.rails")) {
+        return Monotonic;
+      } else {
+        return Event;
+      }
     }
   }
 }
