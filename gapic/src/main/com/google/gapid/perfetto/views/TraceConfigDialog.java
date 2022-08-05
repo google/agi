@@ -610,6 +610,7 @@ public class TraceConfigDialog extends DialogBase {
     private final Label[] batLabels;
     private final Spinner batRate;
     private Button batPowerRail;
+    private Button batEnergyBreakDown;
 
     private final Button vulkan;
     private final Button vulkanCPUTiming;
@@ -776,6 +777,8 @@ public class TraceConfigDialog extends DialogBase {
       batLabels[1] = createLabel(batGroup, "ms");
       if (caps.getHasPowerRail()) {
         batPowerRail = createCheckbox(batGroup, "Collect Power Rails", sBatt.getCollectPowerRail());
+        //TODO: Replace getCollectPowerRail to something that collects Energy Breakdown
+        batEnergyBreakDown = createCheckbox(batGroup, "Collect Energy Breakdown", sBatt.getCollectPowerRail());
       }
 
       Device.VulkanProfilingLayers vkLayers = caps.getVulkanProfileLayers();
@@ -909,6 +912,10 @@ public class TraceConfigDialog extends DialogBase {
         sBatt.setCollectPowerRail(batPowerRail.getSelection());
       }
 
+      if(batEnergyBreakDown != null) {
+        sBatt.setCollectPowerRial(batEnergyBreakDown.getSelection());
+      }
+
       if (vulkan != null) {
         sVk.setEnabled(vulkan.getSelection());
       }
@@ -1018,6 +1025,9 @@ public class TraceConfigDialog extends DialogBase {
       }
       if (batPowerRail != null) {
         batPowerRail.setEnabled(enabled);
+      }
+      if(batEnergyBreakDown != null) {
+        batEnergyBreakDown.setEnabled(enabled);
       }
     }
   }
