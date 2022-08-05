@@ -419,14 +419,6 @@ func (e externs) vkErrUnsupported(str string) {
 	e.onVkError(issue)
 }
 
-func (e externs) vkErrInvalidStructMember(structName string, structMember string) {
-	var issue replay.Issue
-	issue.Command = e.cmdID
-	issue.Severity = service.Severity_ErrorLevel
-	issue.Error = fmt.Errorf("Invalid struct member: %v::%v", structName, structMember)
-	e.onVkError(issue)
-}
-
 type fenceSignal uint64
 
 func (e externs) recordFenceSignal(fence VkFence) {
