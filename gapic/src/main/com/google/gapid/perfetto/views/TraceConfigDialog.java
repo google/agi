@@ -332,7 +332,8 @@ public class TraceConfigDialog extends DialogBase {
               .getAndroidPowerConfigBuilder()
                   .setBatteryPollMs(p.getBatteryOrBuilder().getRate())
                   .addAllBatteryCounters(Arrays.asList(BAT_COUNTERS))
-                  .setCollectPowerRails(p.getBatteryOrBuilder().getCollectPowerRail());
+                  .setCollectPowerRails(p.getBatteryOrBuilder().getCollectPowerRail())
+                  .setCollectEnergyEstimationBreakdown(p.getBatteryOrBuilder().getCollectEnergyBreakdown());
     }
 
     if (p.getVulkanOrBuilder().getEnabled()) {
@@ -777,8 +778,10 @@ public class TraceConfigDialog extends DialogBase {
       batLabels[1] = createLabel(batGroup, "ms");
       if (caps.getHasPowerRail()) {
         batPowerRail = createCheckbox(batGroup, "Collect Power Rails", sBatt.getCollectPowerRail());
-        //TODO: Replace getCollectPowerRail to something that collects Energy Breakdown
-        batEnergyBreakDown = createCheckbox(batGroup, "Collect Energy Breakdown", sBatt.getCollectPowerRail());
+      }
+      //TODO: Add getHasEnergyBreakdown.
+      if (caps.getHasPowerRail()) {
+        batEnergyBreakDown = createCheckbox(batGroup, "Energy Breakdown Per Process", sBatt.getCollectEnergyBreakdown());
       }
 
       Device.VulkanProfilingLayers vkLayers = caps.getVulkanProfileLayers();
@@ -912,8 +915,8 @@ public class TraceConfigDialog extends DialogBase {
         sBatt.setCollectPowerRail(batPowerRail.getSelection());
       }
 
-      if(batEnergyBreakDown != null) {
-        sBatt.setCollectPowerRial(batEnergyBreakDown.getSelection());
+      if (batEnergyBreakDown != null) {
+        sBatt.setCollectEnergyBreakdown(batEnergyBreakDown.getSelection());
       }
 
       if (vulkan != null) {
