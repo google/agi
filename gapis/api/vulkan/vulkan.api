@@ -67,7 +67,6 @@ import "api/synchronization.api"
 import "api/queued_command_tracking.api"
 import "api/util.api"
 
-import "extensions/android_frame_boundary.api"
 import "extensions/ext_debug_marker.api"
 import "extensions/ext_debug_report.api"
 import "extensions/ext_debug_utils.api"
@@ -297,7 +296,6 @@ sub ref!ExtensionSet supportedDeviceExtensions() {
   supported.ExtensionNames["VK_KHR_shader_float16_int8"] = true
   supported.ExtensionNames["VK_KHR_shader_atomic_int64"] = true
   supported.ExtensionNames["VK_KHR_driver_properties"] = true
-  supported.ExtensionNames["VK_ANDROID_frame_boundary"] = true
   supported.ExtensionNames["VK_KHR_external_semaphore"] = true
   supported.ExtensionNames["VK_KHR_external_semaphore_fd"] = true
   supported.ExtensionNames["VK_KHR_external_memory"] = true
