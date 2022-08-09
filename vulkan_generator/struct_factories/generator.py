@@ -24,7 +24,6 @@ from textwrap import dedent
 from vulkan_generator.vulkan_parser import types
 from vulkan_generator.codegen_utils import codegen
 
-
 def struct_factory_name(struct: str) -> str:
     return struct + "Factory"
 
@@ -75,6 +74,25 @@ def tokenize_typename(member_type: str) -> List[str]:
         tokens += [current_token]
 
     return tokens
+
+
+def generate_ignore_structs(vulkan_metadata : types.VulkanMetadata) -> List[str]:
+    ignore_structs : List[str] = []
+
+    for extension_name in vulkan_metadata.extensions:
+        extension = vulkan_metadata.extensions[extension_name]
+
+        if extension.platform and extension.platform != "":
+
+            for requirement in extension.requirements:
+
+                for feature_name in requirement.features:
+                    feature = requirement.features[feature_name]
+
+                    if feature.feature_type == "type":
+                        ignore_structs += [feature.name]
+
+    return ignore_structs
 
 
 def sort_structs_dep_order_impl(struct :str,
@@ -161,6 +179,7 @@ def generate_struct_member(member: types.VulkanStructMember, vulkan_metadata: ty
 
 
 def generate_struct_factories_h(file_path: Path, vulkan_metadata: types.VulkanMetadata):
+
     ''' Generates struct_factories.h '''
     with open(file_path, "w", encoding="ascii") as remapper_h:
 
@@ -172,59 +191,8 @@ def generate_struct_factories_h(file_path: Path, vulkan_metadata: types.VulkanMe
             #include <string>
             #include <vector>
 
-            // Temporary typedefs for window system stuff to let us compile.
-            typedef uint64_t wl_display;
-            typedef uint64_t wl_surface;
-            typedef uint64_t HINSTANCE;
-            typedef uint64_t HWND;
-            typedef uint64_t Display;
-            typedef uint64_t Window;
-            typedef uint64_t xcb_connection_t;
-            typedef uint64_t xcb_window_t;
-            typedef uint64_t IDirectFB;
-            typedef uint64_t IDirectFBSurface;
-            typedef uint64_t zx_handle_t;
-            typedef uint64_t GgpStreamDescriptor;
-            typedef uint64_t _screen_context;
-            typedef uint64_t _screen_window;
-            typedef uint64_t HANDLE;
-            typedef uint64_t SECURITY_ATTRIBUTES;
-            typedef uint64_t DWORD;
-            typedef uint64_t LPCWSTR;
-            typedef uint64_t GgpFrameToken;
-            typedef uint64_t HMONITOR;
+            #include "replay2/struct_factories/vulkan/vulkan.h"
 
-            // Temporary typedefs for vulkan union stuff to let us compile.
-            typedef uint64_t VkClearValue;
-            typedef uint64_t VkPerformanceValueDataINTEL;
-            typedef uint64_t VkPipelineExecutableStatisticValueKHR;
-            typedef uint64_t VkClearColorValue;
-            typedef uint64_t VkDeviceOrHostAddressConstKHR;
-            typedef uint64_t VkAccelerationStructureGeometryDataKHR;
-            typedef uint64_t VkDeviceOrHostAddressKHR;
-            typedef uint64_t StdVideoH264ProfileIdc;
-            typedef uint64_t StdVideoH264Level;
-            typedef uint64_t StdVideoH264SequenceParameterSet;
-            typedef uint64_t StdVideoH264PictureParameterSet;
-            typedef uint64_t StdVideoDecodeH264PictureInfo;
-            typedef uint64_t StdVideoDecodeH264ReferenceInfo;
-            typedef uint64_t StdVideoDecodeH264Mvc;
-            typedef uint64_t StdVideoH265ProfileIdc;
-            typedef uint64_t StdVideoH265Level;
-            typedef uint64_t StdVideoH265VideoParameterSet;
-            typedef uint64_t StdVideoH265SequenceParameterSet;
-            typedef uint64_t StdVideoDecodeH265PictureInfo;
-            typedef uint64_t StdVideoDecodeH265ReferenceInfo;
-            typedef uint64_t StdVideoEncodeH264RefMemMgmtCtrlOperations;
-            typedef uint64_t StdVideoEncodeH264SliceHeader;
-            typedef uint64_t StdVideoH265PictureParameterSet;
-            typedef uint64_t StdVideoEncodeH265PictureInfo;
-            typedef uint64_t StdVideoEncodeH265SliceSegmentHeader;
-            typedef uint64_t StdVideoEncodeH264ReferenceInfo;
-            typedef uint64_t StdVideoEncodeH264PictureInfo;
-            typedef uint64_t StdVideoEncodeH265ReferenceModifications;
-            typedef uint64_t VkAccelerationStructureMotionInstanceDataNV;
-            typedef uint64_t StdVideoEncodeH265ReferenceInfo;
 
             namespace agi {
             namespace replay2 {
@@ -238,70 +206,37 @@ def generate_struct_factories_h(file_path: Path, vulkan_metadata: types.VulkanMe
 
         """))
 
-        for type_name in vulkan_metadata.types.basetypes:
-            remapper_h.write("typedef uint64_t " + type_name + ";\n")
-        remapper_h.write("\n")
-
-        for type_name in vulkan_metadata.types.handles:
-            remapper_h.write("typedef uint64_t " + type_name + ";\n")
-        remapper_h.write("\n")
-
-        for type_name in vulkan_metadata.types.handle_aliases:
-            remapper_h.write("typedef uint64_t " + type_name + ";\n")
-        remapper_h.write("\n")
-
-        for type_name in vulkan_metadata.types.funcpointers:
-            remapper_h.write("typedef uint64_t " + type_name + ";\n")
-        remapper_h.write("\n")
-
-        for type_name in vulkan_metadata.types.bitmasks:
-            remapper_h.write("typedef uint64_t " + type_name + ";\n")
-        remapper_h.write("\n")
-
-        for type_name in vulkan_metadata.types.bitmask_aliases:
-            remapper_h.write("typedef uint64_t " + type_name + ";\n")
-        remapper_h.write("\n")
-
-        for type_name in vulkan_metadata.types.enums:
-            remapper_h.write("typedef uint64_t " + type_name + ";\n")
-        remapper_h.write("\n")
-
-        for type_name in vulkan_metadata.types.enum_aliases:
-            remapper_h.write("typedef uint64_t " + type_name + ";\n")
-        remapper_h.write("\n")
-
-        for struct in vulkan_metadata.types.structs:
-            remapper_h.write("class " + struct + " {};\n")
-        remapper_h.write("\n")
-
         all_vulkan_structs = vulkan_metadata.types.structs
+        ignore_structs = generate_ignore_structs(vulkan_metadata)
+
         for struct in sort_structs_dep_order(vulkan_metadata):
+            if not struct in ignore_structs:
 
-            public_members: List[str] = [f"""{struct_factory_name(struct)}();""",
-                                         f"""virtual ~{struct_factory_name(struct)}();"""
-                                         "\n"]
+                public_members: List[str] = [f"""{struct_factory_name(struct)}();""",
+                                             f"""virtual ~{struct_factory_name(struct)}();"""
+                                             "\n"]
 
-            private_members: List[str] = []
+                private_members: List[str] = []
 
-            for member in all_vulkan_structs[struct].members:
-                member_data = all_vulkan_structs[struct].members[member]
-                public_members += [generate_struct_member_setter(member_data, vulkan_metadata),
-                                   generate_struct_member_getter(member_data, vulkan_metadata)]
-                private_members += [generate_struct_member(member_data, vulkan_metadata)]
+                for member in all_vulkan_structs[struct].members:
+                    member_data = all_vulkan_structs[struct].members[member]
+                    public_members += [generate_struct_member_setter(member_data, vulkan_metadata),
+                                       generate_struct_member_getter(member_data, vulkan_metadata)]
+                    private_members += [generate_struct_member(member_data, vulkan_metadata)]
 
-            public_members += ["",
-                               "size_t VkStructMemorySize() override;",
-                               "size_t PNextChainMemorySize() override;",
-                               "",
-                               f"""{struct} Generate();"""]
+                public_members += ["",
+                                   "size_t VkStructMemorySize() override;",
+                                   "size_t PNextChainMemorySize() override;",
+                                   "",
+                                   f"""{struct} Generate();"""]
 
-            class_def = codegen.create_class_definition(struct_factory_name(struct),
-                                                        public_inheritance=["VkStructFactory"],
-                                                        public_members=public_members,
-                                                        private_members=private_members)
+                class_def = codegen.create_class_definition(struct_factory_name(struct),
+                                                            public_inheritance=["VkStructFactory"],
+                                                            public_members=public_members,
+                                                            private_members=private_members)
 
-            remapper_h.write(class_def)
-            remapper_h.write("\n")
+                remapper_h.write(class_def)
+                remapper_h.write("\n")
 
         remapper_h.write(dedent("""
             }
@@ -411,20 +346,23 @@ def generate_struct_factories_cpp(file_path: Path, vulkan_metadata: types.Vulkan
         """))
 
         all_vulkan_structs = vulkan_metadata.types.structs
+        ignore_structs = generate_ignore_structs(vulkan_metadata)
+
         for struct in sort_structs_dep_order(vulkan_metadata):
+            if not struct in ignore_structs:
 
-            remapper_cpp.write(generate_factory_ctor_def(struct))
-            remapper_cpp.write(generate_factory_dtor_def(struct))
+                remapper_cpp.write(generate_factory_ctor_def(struct))
+                remapper_cpp.write(generate_factory_dtor_def(struct))
 
-            for member in all_vulkan_structs[struct].members:
-                member_data = all_vulkan_structs[struct].members[member]
-                remapper_cpp.write(generate_factory_setter_def(struct, member, member_data, vulkan_metadata))
-                remapper_cpp.write(generate_factory_getter_def(struct, member, member_data, vulkan_metadata))
+                for member in all_vulkan_structs[struct].members:
+                    member_data = all_vulkan_structs[struct].members[member]
+                    remapper_cpp.write(generate_factory_setter_def(struct, member, member_data, vulkan_metadata))
+                    remapper_cpp.write(generate_factory_getter_def(struct, member, member_data, vulkan_metadata))
 
-            remapper_cpp.write(generate_factory_size_def(struct))
-            remapper_cpp.write(generate_factory_chain_size_def(struct, vulkan_metadata))
-            remapper_cpp.write(generate_factory_generate_def(struct))
-            remapper_cpp.write("\n")
+                remapper_cpp.write(generate_factory_size_def(struct))
+                remapper_cpp.write(generate_factory_chain_size_def(struct, vulkan_metadata))
+                remapper_cpp.write(generate_factory_generate_def(struct))
+                remapper_cpp.write("\n")
 
         remapper_cpp.write(dedent("""
             }

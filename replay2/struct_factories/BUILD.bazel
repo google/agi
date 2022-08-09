@@ -25,6 +25,7 @@ cc_library(
         [":struct_factories_src"],
         exclude = ["*_test.cpp"],
     ),
+    hdrs = glob(["*.h"]),
     visibility = ["//visibility:public"],
     deps = [
         "//replay2/core_utils",
@@ -33,7 +34,7 @@ cc_library(
 
 cc_test(
     name = "struct_factories_test",
-    srcs = [":struct_factories_src"],
+    srcs = glob(["**/*.h"]) +[":struct_factories_src"],
     deps = [
         "//replay2/core_utils",
         "//replay2/vulkan_base",
