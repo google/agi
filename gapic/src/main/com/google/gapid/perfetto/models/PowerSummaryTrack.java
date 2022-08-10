@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2022 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.google.gapid.perfetto.models;
 
 import static com.google.gapid.perfetto.models.QueryEngine.createSpan;
@@ -28,8 +44,8 @@ public class PowerSummaryTrack extends Track.WithQueryEngine<PowerSummaryTrack.D
   private static String viewSql;
   private static int numPowerRailTracks;
   public static Unit unit;
-  public static Double minValue;
-  public static Double maxValue;
+  public double minValue;
+  public double maxValue;
 
   private static final String VIEW_SQL_MONOTONIC =
       "select ts + 1 ts, lead(ts) over win - ts dur, lead(value) over win - value value, lead(id)"
@@ -62,6 +78,8 @@ public class PowerSummaryTrack extends Track.WithQueryEngine<PowerSummaryTrack.D
 
     // Power Rails tracks.
     for (CounterInfo powerRail : powerRails) {
+      powerSummaryTrack.minValue = Math.min(powerSummaryTrack.minValue, powerRail.min);
+      powerSummaryTrack.maxValue = Math.max(powerSummaryTrack.maxValue, powerRail.max);
       unit = powerRail.unit;
       CounterTrack powerRailTrack = new CounterTrack(data.qe, powerRail);
       data.tracks.addTrack(
@@ -74,37 +92,30 @@ public class PowerSummaryTrack extends Track.WithQueryEngine<PowerSummaryTrack.D
               true));
     }
 
-    Group.UiFactory ui =
-        group(
-            state ->
-                new PowerSummaryPanel(state, powerSummaryTrack, POWER_RAIL_COUNTER_TRACK_HEIGHT),
-            false);
+    powerSummaryTrack.minValue = Math.min(0, powerSummaryTrack.minValue);
+    Group.UiFactory ui = group(state -> new PowerSummaryPanel(state, powerSummaryTrack), false);
     data.tracks.addLabelGroup(null, powerSummaryTrack.getId(), "Power Usage", ui);
     return data;
   }
 
   private static String buildViewSql(List<CounterInfo> powerRails) {
-    minValue = powerRails.get(0).min;
-    maxValue = powerRails.get(0).max;
     StringBuilder sb =
         new StringBuilder()
-            .append("select aggregateTable.ts ts, sum(aggregateTable.value) totalValue from")
-            .append(" (")
-            .append(VIEW_SQL_MONOTONIC)
-            .append(powerRails.get(0).id)
-            .append(" window win as (order by ts) ")
-            .append(") as aggregateTable");
+            .append(
+                String.format(
+                    "select aggregateTable.ts ts, sum(aggregateTable.value) totalValue,"
+                        + " aggregateTable.dur dur from (%s%d window win as (order by ts) ) as"
+                        + " aggregateTable",
+                    VIEW_SQL_MONOTONIC, powerRails.get(0).id));
+
     for (int i = 1; i < numPowerRailTracks; i++) {
-      sb.append("left join (")
-          .append(VIEW_SQL_MONOTONIC)
-          .append(powerRails.get(i).id)
-          .append(" window win as (order by ts) ")
-          .append(") ");
-      minValue = Math.min(minValue, powerRails.get(i).min);
-      maxValue = Math.max(maxValue, powerRails.get(i).max);
+      sb.append(
+          String.format(
+              "left join (%s%d window win as (order by ts) )",
+              VIEW_SQL_MONOTONIC, powerRails.get(i).id));
     }
+
     sb.append(" group by ts");
-    minValue = Math.min(0, minValue);
     return sb.toString();
   }
 

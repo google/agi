@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Google Inc.
+ * Copyright (C) 2022 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,24 +35,41 @@ public class PowerSummaryPanel extends TrackPanel<PowerSummaryPanel> {
   private static Unit unit;
 
   protected final PowerSummaryTrack track;
-  protected final double trackHeight;
+  protected static final double trackHeight = 80;
   protected HoverCard hovered = null;
 
-  public PowerSummaryPanel(State state, PowerSummaryTrack track, double trackHeight) {
+  public PowerSummaryPanel(State state, PowerSummaryTrack track) {
     super(state);
     this.track = track;
-    this.trackHeight = trackHeight;
     this.unit = track.unit;
+  }
+
+  private double calculateYCoordinate(double value) {
+    double range =
+        (track.minValue == track.maxValue && track.minValue == 0)
+            ? 1
+            : (track.maxValue - track.minValue);
+    return (trackHeight - 1) * (1 - (value - track.minValue) / range);
   }
 
   @Override
   public PowerSummaryPanel copy() {
-    return new PowerSummaryPanel(state, track, trackHeight);
+    return new PowerSummaryPanel(state, track);
   }
 
   @Override
   public String getTitle() {
     return "Power Usage";
+  }
+
+  @Override
+  public String getSubTitle() {
+    return track.getNumPowerRailTracks() + " power rail tracks";
+  }
+
+  @Override
+  public String getTooltip() {
+    return "Total Power Usage";
   }
 
   @Override
@@ -79,13 +96,8 @@ public class PowerSummaryPanel extends TrackPanel<PowerSummaryPanel> {
                 double lastX = state.timeToPx(data.ts[0]), lastY = h;
                 path.moveTo(lastX, lastY);
                 for (int i = 0; i < data.ts.length; i++) {
-                  double range =
-                      (track.minValue == track.maxValue && track.minValue == 0)
-                          ? 1
-                          : (track.maxValue - track.minValue);
                   double nextX = state.timeToPx(data.ts[i]);
-                  double nextY =
-                      (trackHeight - 1) * (1 - (data.values[i] - track.minValue) / range);
+                  double nextY = calculateYCoordinate(data.values[i]);
                   path.lineTo(nextX, lastY);
                   path.lineTo(nextX, nextY);
                   lastX = nextX;
@@ -98,11 +110,7 @@ public class PowerSummaryPanel extends TrackPanel<PowerSummaryPanel> {
               });
 
           if (hovered != null) {
-            double y =
-                (trackHeight - 1)
-                    * (1
-                        - (hovered.value - hovered.minValue)
-                            / (hovered.maxValue - hovered.minValue));
+            double y = calculateYCoordinate(hovered.value);
             ctx.setBackgroundColor(mainGradient().highlight);
             ctx.fillRect(hovered.startX, y - 1, hovered.endX - hovered.startX, trackHeight - y + 1);
             ctx.setForegroundColor(colors().textMain);
@@ -151,7 +159,7 @@ public class PowerSummaryPanel extends TrackPanel<PowerSummaryPanel> {
     }
 
     long time = state.pxToTime(x);
-    if (time < data.ts[0] || time > data.ts[data.ts.length - 1]) {
+    if (time < data.ts[0]) {
       return Hover.NONE;
     }
 
@@ -167,7 +175,10 @@ public class PowerSummaryPanel extends TrackPanel<PowerSummaryPanel> {
     }
 
     double startX = state.timeToPx(data.ts[idx]);
-    double endX = (idx >= data.ts.length - 1) ? startX : state.timeToPx(data.ts[idx + 1]);
+    double endX =
+        (idx >= data.ts.length - 1)
+            ? startX
+            : state.timeToPx(data.ts[idx + 1]); // Moving endX to startX when
     hovered = new HoverCard(m, track.minValue, track.maxValue, data.values[idx], startX, endX, x);
 
     return new Hover() {
@@ -199,12 +210,12 @@ public class PowerSummaryPanel extends TrackPanel<PowerSummaryPanel> {
 
         if (defaultX >= state.getWidth() - defaultW) {
 
-          // re-calculate the left boundary of the redrawn area by comparing the start end of the
+          // Re-calculate the left boundary of the redrawn area by comparing the start of the
           // sample with the left boundary of the default redrawn area when the hover card is drawn
           // on the left side of the hover point.
           redrawLx = Math.min(startX, hovered.mouseX + CURSOR_SIZE / 2 - defaultW);
 
-          // re-calculate the right boundary of the redrawn area by comparing the end of the sample
+          // Re-calculate the right boundary of the redrawn area by comparing the end of the sample
           // with the right boundary of the default redrawn area when the hover card is drawn on
           // the left side of the hover point.
           redrawRx = Math.max(hovered.mouseX + CURSOR_SIZE / 2, endX);
@@ -226,8 +237,6 @@ public class PowerSummaryPanel extends TrackPanel<PowerSummaryPanel> {
 
   private static class HoverCard {
     public final double value;
-    public final double minValue;
-    public final double maxValue;
     public final double startX, endX;
     public final double mouseX;
     public final String valueLabel;
@@ -248,11 +257,7 @@ public class PowerSummaryPanel extends TrackPanel<PowerSummaryPanel> {
       this.startX = startX;
       this.endX = endX;
       this.mouseX = mouseX;
-      this.minValue = Math.min(minValue, 0);
-      this.maxValue = maxValue;
       this.valueLabel = unit.format(value);
-
-      // TODO: figure out how to use unit
       this.min = unit.format(minValue);
       this.max = unit.format(maxValue);
 
