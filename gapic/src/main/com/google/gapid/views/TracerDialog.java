@@ -336,6 +336,7 @@ public class TracerDialog {
       private final Spinner duration;
       private final Label durationUnit;
       private final Label startUnit;
+      private final Button respectAndroidFrameBoundary;
       private final Button withoutBuffering;
       private final Button includeUnsupportedExtensions;
       private final Button loadValidationLayer;
@@ -489,6 +490,8 @@ public class TracerDialog {
         duration.setVisible(DURATION_FRAMES_MAX > 1);
         durationUnit = createLabel(durGroup, DURATION_FRAMES_UNIT);
         durationUnit.setVisible(DURATION_FRAMES_MAX > 1);
+        respectAndroidFrameBoundary = createCheckbox(durGroup, "Respect ANDROID_frame_boundary", false);
+        respectAndroidFrameBoundary.setEnabled(true);
 
         Group optGroup  = withLayoutData(
             createGroup(this, "Trace Options", new GridLayout(2, false)),
@@ -1028,6 +1031,7 @@ public class TracerDialog {
             .setUri(traceTarget.getText())
             .setAdditionalCommandLineArgs(arguments.getText())
             .setFramesToCapture(duration.getSelection())
+            .setRespectAndroidFrameBoundary(respectAndroidFrameBoundary.getSelection())
             .setNoBuffer(withoutBuffering.getSelection())
             .setHideUnknownExtensions(!includeUnsupportedExtensions.getSelection())
             .setServerLocalSavePath(output.getAbsolutePath())

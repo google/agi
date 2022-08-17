@@ -322,6 +322,7 @@ type (
 		Capture struct {
 			Frames int `help:"only capture the given number of frames. 0 for all"`
 		}
+		RespectAndroidFrameBoundary bool `help:"If true: respect the ANDROID_frame_boundary extension. If false: ignore."`
 		No struct {
 			Buffer bool `help:"Do not buffer the output, this helps if the application crashes"`
 		}

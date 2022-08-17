@@ -132,6 +132,10 @@ void CallObserver::observeTimestamp() {
   encode_message(&timestamp);
 }
 
+bool CallObserver::respectAndroidFrameBoundary() {
+  return mSpy->respectAndroidFrameBoundary();
+}
+
 void CallObserver::enter(const ::google::protobuf::Message* cmd) {
   endTraceIfRequested();
   if (!mShouldTrace) {

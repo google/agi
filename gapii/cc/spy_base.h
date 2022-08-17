@@ -110,6 +110,9 @@ class SpyBase {
   void set_record_timestamps(bool record) { mRecordTimestamps = record; }
   bool should_record_timestamps() const { return mRecordTimestamps; }
 
+  // TODO ALAN
+  virtual bool respectAndroidFrameBoundary() { return false; }
+
   // Ends the current trace if requested by client.
   virtual void endTraceIfRequested() {}
 

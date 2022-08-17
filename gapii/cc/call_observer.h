@@ -202,6 +202,9 @@ class CallObserver : gapil::Encoder {
   // observeTimestamp encodes a timestamp extra in the trace
   void observeTimestamp();
 
+  // ALAN TODO
+  bool respectAndroidFrameBoundary();
+
  private:
   // shouldObserve returns true if the given slice is located in application
   // pool and we are supposed to observe application pool.

@@ -219,6 +219,12 @@
         called = true;
         {{if GetAnnotation $ "frame_end"}}
           onPreEndOfFrame(observer, {{Global "ApiIndex"}});
+        {{else}}
+          {{if GetAnnotation $ "frame_delimiter"}}
+            if(observer->respectAndroidFrameBoundary()) {
+              onPreEndOfFrame(observer, {{Global "ApiIndex"}});
+            }
+          {{end}}
         {{end}}
 
         observer->observePending();
@@ -272,7 +278,16 @@
       observer->observePending();
       observer->exit();
 
-      {{if GetAnnotation $ "frame_end"}}onPostEndOfFrame();{{end}}
+      {{if GetAnnotation $ "frame_end"}}
+        onPostEndOfFrame();
+      {{else}}
+        {{if GetAnnotation $ "frame_delimiter"}}
+        if(observer->respectAndroidFrameBoundary()) {
+          onPostEndOfFrame();
+        }
+        {{end}}
+      {{end}}
+
       {{if not (IsVoid $.Return.Type)}}¶
         return result;
       {{end}}
