@@ -18,7 +18,7 @@ cc_library(
         "*.h",
         "*.cpp",
         "*.hpp",
-    ]),
+    ], exclude = ["main.cpp"]),
     hdrs = [
         "spirv_glsl.hpp",
         "spirv_hlsl.hpp",
