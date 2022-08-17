@@ -174,7 +174,6 @@ void* createXcbWindow(uint32_t width, uint32_t height) {
   return window_info.window ? (void*)&window_info : nullptr;
 }
 
-static const int32_t stream_index = 0;
 #elif TARGET_OS == GAPID_OS_WINDOWS
 static Win32WindowInfo window_info;
 
