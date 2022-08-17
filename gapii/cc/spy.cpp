@@ -94,7 +94,7 @@ Spy::Spy()
       mCaptureFrames(0),
       mObserveFrameFrequency(0),
       mFrameNumber(0),
-      mRespectAndroidFrameBoundary(false) {
+      mRespectFrameBoundaryDelimiters(false) {
   // Start by checking whether to capture the current process: compare the
   // current process name with the "capture_proc_name" that we get from the
   // environment. An empty "capture_proc_name" means capture any process. This
@@ -167,7 +167,7 @@ Spy::Spy()
                               ? kSuspendIndefinitely
                               : header.mStartFrame;
   mCaptureFrames = header.mNumFrames;
-  mRespectAndroidFrameBoundary = (header.mFlags & ConnectionHeader::FLAG_RESPECT_ANDROID_FRAME_BOUNDARY) != 0;
+  mRespectFrameBoundaryDelimiters = (header.mFlags & ConnectionHeader::FLAG_RESPECT_FRAME_BOUNDARY_DELIMITERS) != 0;
 
   set_valid_apis(header.mAPIs);
   GAPID_ERROR("APIS %08x", header.mAPIs);

@@ -221,7 +221,7 @@
           onPreEndOfFrame(observer, {{Global "ApiIndex"}});
         {{else}}
           {{if GetAnnotation $ "frame_delimiter"}}
-            if(observer->respectAndroidFrameBoundary()) {
+            if(observer->respectFrameBoundaryDelimiters()) {
               onPreEndOfFrame(observer, {{Global "ApiIndex"}});
             }
           {{end}}
@@ -282,7 +282,7 @@
         onPostEndOfFrame();
       {{else}}
         {{if GetAnnotation $ "frame_delimiter"}}
-        if(observer->respectAndroidFrameBoundary()) {
+        if(observer->respectFrameBoundaryDelimiters()) {
           onPostEndOfFrame();
         }
         {{end}}

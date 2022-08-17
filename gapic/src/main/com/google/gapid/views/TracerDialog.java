@@ -1031,7 +1031,7 @@ public class TracerDialog {
             .setUri(traceTarget.getText())
             .setAdditionalCommandLineArgs(arguments.getText())
             .setFramesToCapture(duration.getSelection())
-            .setRespectAndroidFrameBoundary(respectAndroidFrameBoundary.getSelection())
+            .setRespectFrameBoundaryDelimiters(respectAndroidFrameBoundary.getSelection())
             .setNoBuffer(withoutBuffering.getSelection())
             .setHideUnknownExtensions(!includeUnsupportedExtensions.getSelection())
             .setServerLocalSavePath(output.getAbsolutePath())

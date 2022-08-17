@@ -132,8 +132,8 @@ void CallObserver::observeTimestamp() {
   encode_message(&timestamp);
 }
 
-bool CallObserver::respectAndroidFrameBoundary() {
-  return mSpy->respectAndroidFrameBoundary();
+bool CallObserver::respectFrameBoundaryDelimiters() {
+  return mSpy->respectFrameBoundaryDelimiters();
 }
 
 void CallObserver::enter(const ::google::protobuf::Message* cmd) {

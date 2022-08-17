@@ -85,8 +85,8 @@ class Spy : public VulkanSpy {
   int mObserveFrameFrequency;
   uint64_t mFrameNumber;
 
-  bool mRespectAndroidFrameBoundary;
-  bool respectAndroidFrameBoundary() override { return mRespectAndroidFrameBoundary; }
+  bool mRespectFrameBoundaryDelimiters;
+  bool respectFrameBoundaryDelimiters() override { return mRespectFrameBoundaryDelimiters; }
 
   std::unique_ptr<core::AsyncJob> mMessageReceiverJob;
 

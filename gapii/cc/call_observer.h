@@ -202,8 +202,8 @@ class CallObserver : gapil::Encoder {
   // observeTimestamp encodes a timestamp extra in the trace
   void observeTimestamp();
 
-  // ALAN TODO
-  bool respectAndroidFrameBoundary();
+  // If true, respect frame delimiter hints (ie, ANDROID_frame_boundary)
+  bool respectFrameBoundaryDelimiters();
 
  private:
   // shouldObserve returns true if the given slice is located in application

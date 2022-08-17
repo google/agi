@@ -53,7 +53,7 @@ const (
 	// WaitForDebugger makes gapii wait for a debugger to connect
 	WaitForDebugger Flags = 0x000000200
 	// FLAG_RESPECT_ANDROID_FRAME_BOUNDARY
-	RespectAndroidFrameBoundary = 0x00001000
+	RespectFrameBoundaryDelimiters = 0x00001000
 
 
 	// VulkanAPI is hard-coded bit mask for Vulkan API, it needs to be kept in sync
