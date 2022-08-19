@@ -217,14 +217,17 @@
       bool called = false;
       auto call = [{{Macro "CallCapture" $}}] {
         called = true;
+
         {{if GetAnnotation $ "frame_end"}}
-          onPreEndOfFrame(observer, {{Global "ApiIndex"}});
-        {{else}}
-          {{if GetAnnotation $ "frame_delimiter"}}
-            if(!observer->ignoreFrameBoundaryDelimiters()) {
-              onPreEndOfFrame(observer, {{Global "ApiIndex"}});
-            }
-          {{end}}
+          if(observer->ignoreFrameBoundaryDelimiters()) {
+            onPreEndOfFrame(observer, {{Global "ApiIndex"}});
+          }
+        {{end}}
+
+        {{if GetAnnotation $ "frame_delimiter"}}
+          if(!observer->ignoreFrameBoundaryDelimiters()) {
+            onPreEndOfFrame(observer, {{Global "ApiIndex"}});
+          }
         {{end}}
 
         observer->observePending();
@@ -279,13 +282,15 @@
       observer->exit();
 
       {{if GetAnnotation $ "frame_end"}}
-        onPostEndOfFrame();
-      {{else}}
-        {{if GetAnnotation $ "frame_delimiter"}}
+        if(observer->ignoreFrameBoundaryDelimiters()) {
+          onPostEndOfFrame();
+        }
+      {{end}}
+
+      {{if GetAnnotation $ "frame_delimiter"}}
         if(!observer->ignoreFrameBoundaryDelimiters()) {
           onPostEndOfFrame();
         }
-        {{end}}
       {{end}}
 
       {{if not (IsVoid $.Return.Type)}}¶
