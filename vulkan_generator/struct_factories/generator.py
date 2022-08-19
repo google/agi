@@ -21,7 +21,7 @@ from typing import List
 from typing import Dict
 
 from textwrap import dedent
-from vulkan_generator.vulkan_parser import types
+from vulkan_generator.vulkan_parser.api import types
 from vulkan_generator.codegen_utils import codegen
 
 def struct_factory_name(struct: str) -> str:
@@ -32,8 +32,8 @@ def set_member_name(member: str) -> str:
     return "set" + member[0:1].upper() + member[1:]
 
 
-def set_member_arg_type(member: types.VulkanStructMember, vulkan_metadata: types.VulkanMetadata) -> str:
-    remapped_type = remap_member_type(member.variable_type, member.variable_name, vulkan_metadata)
+def set_member_arg_type(member: types.VulkanStructMember, vulkan_info: types.VulkanInfo) -> str:
+    remapped_type = remap_member_type(member.full_typename, member.name, vulkan_info)
     if "*" in remapped_type:
         return remapped_type
     else:
@@ -44,8 +44,8 @@ def get_member_name(member: str) -> str:
     return "get" + member[0:1].upper() + member[1:]
 
 
-def get_member_return_type(member: types.VulkanStructMember, vulkan_metadata: types.VulkanMetadata) -> str:
-    remapped_type = remap_member_type(member.variable_type, member.variable_name, vulkan_metadata)
+def get_member_return_type(member: types.VulkanStructMember, vulkan_info: types.VulkanInfo) -> str:
+    remapped_type = remap_member_type(member.full_typename, member.name, vulkan_info)
     if "*" in remapped_type:
         return remapped_type
     else:
@@ -76,21 +76,18 @@ def tokenize_typename(member_type: str) -> List[str]:
     return tokens
 
 
-def generate_ignore_structs(vulkan_metadata : types.VulkanMetadata) -> List[str]:
+def generate_ignore_structs(vulkan_info : types.VulkanInfo) -> List[str]:
     ignore_structs : List[str] = []
 
-    for extension_name in vulkan_metadata.extensions:
-        extension = vulkan_metadata.extensions[extension_name]
+    for extension_name in vulkan_info.extensions:
+        extension = vulkan_info.extensions[extension_name]
 
         if extension.platform and extension.platform != "":
 
             for requirement in extension.requirements:
 
-                for feature_name in requirement.features:
-                    feature = requirement.features[feature_name]
-
-                    if feature.feature_type == "type":
-                        ignore_structs += [feature.name]
+                for feature_name in requirement.features.types:
+                    ignore_structs += [feature_name]
 
     return ignore_structs
 
@@ -98,32 +95,32 @@ def generate_ignore_structs(vulkan_metadata : types.VulkanMetadata) -> List[str]
 def sort_structs_dep_order_impl(struct :str,
                      processed_structs : Dict[str, bool],
                      sorted_structs : List[str],
-                     vulkan_metadata: types.VulkanMetadata) :
+                     vulkan_info: types.VulkanInfo) :
 
     if struct in processed_structs:
         return
 
-    for member in vulkan_metadata.types.structs[struct].members:
-        tokens = tokenize_typename(vulkan_metadata.types.structs[struct].members[member].variable_type)
+    for member in vulkan_info.types.structs[struct].members:
+        tokens = tokenize_typename(vulkan_info.types.structs[struct].members[member].full_typename)
         for token in tokens:
-            if token in vulkan_metadata.types.structs and token != struct:
-                sort_structs_dep_order_impl(token, processed_structs, sorted_structs, vulkan_metadata)
+            if token in vulkan_info.types.structs and token != struct:
+                sort_structs_dep_order_impl(token, processed_structs, sorted_structs, vulkan_info)
 
     processed_structs[struct] = True
     sorted_structs += [struct]
 
 
-def sort_structs_dep_order(vulkan_metadata: types.VulkanMetadata) -> List[str] :
+def sort_structs_dep_order(vulkan_info: types.VulkanInfo) -> List[str] :
     processed_structs : Dict[str, bool] = {}
     sorted_structs : List[str] = []
 
-    for struct in vulkan_metadata.types.structs:
-        sort_structs_dep_order_impl(struct, processed_structs, sorted_structs, vulkan_metadata)
+    for struct in vulkan_info.types.structs:
+        sort_structs_dep_order_impl(struct, processed_structs, sorted_structs, vulkan_info)
 
     return sorted_structs
 
 
-def remap_member_type(member_type: str, member_name: str, vulkan_metadata: types.VulkanMetadata) -> str:
+def remap_member_type(member_type: str, member_name: str, vulkan_info: types.VulkanInfo) -> str:
 
     if member_name == "pNext":
         return "std::shared_ptr<VkStructFactory>"
@@ -133,7 +130,7 @@ def remap_member_type(member_type: str, member_name: str, vulkan_metadata: types
     ret = ""
 
     for token in tokens:
-        if token in vulkan_metadata.types.structs:
+        if token in vulkan_info.types.structs:
             stripped_tokens += [struct_factory_name(token)]
         elif token != "const" and token != "struct" and token != "conststruct":  # TODO: conststruct is to work around a bug.remove when fixed!
             stripped_tokens += [token]
@@ -162,23 +159,23 @@ def remap_member_type(member_type: str, member_name: str, vulkan_metadata: types
     raise BaseException("TYPE ERROR: Cannot remap type " + member_type)
 
 
-def generate_struct_member_setter(member: types.VulkanStructMember, vulkan_metadata: types.VulkanMetadata) -> str:
-    return codegen.create_function_declaration(set_member_name(member.variable_name),
-                                               arguments={"val": set_member_arg_type(member, vulkan_metadata)})
+def generate_struct_member_setter(member: types.VulkanStructMember, vulkan_info: types.VulkanInfo) -> str:
+    return codegen.create_function_declaration(set_member_name(member.name),
+                                               arguments={"val": set_member_arg_type(member, vulkan_info)})
 
 
-def generate_struct_member_getter(member: types.VulkanStructMember, vulkan_metadata: types.VulkanMetadata) -> str:
-    return codegen.create_function_declaration(get_member_name(member.variable_name),
-                                               return_type=get_member_return_type(member, vulkan_metadata),
+def generate_struct_member_getter(member: types.VulkanStructMember, vulkan_info: types.VulkanInfo) -> str:
+    return codegen.create_function_declaration(get_member_name(member.name),
+                                               return_type=get_member_return_type(member, vulkan_info),
                                                const_func=True)
 
 
-def generate_struct_member(member: types.VulkanStructMember, vulkan_metadata: types.VulkanMetadata) -> str:
-    return remap_member_type(member.variable_type, member.variable_name,
-                             vulkan_metadata) + " " + member.variable_name + "_;"
+def generate_struct_member(member: types.VulkanStructMember, vulkan_info: types.VulkanInfo) -> str:
+    return remap_member_type(member.full_typename, member.name,
+                             vulkan_info) + " " + member.name + "_;"
 
 
-def generate_struct_factories_h(file_path: Path, vulkan_metadata: types.VulkanMetadata):
+def generate_struct_factories_h(file_path: Path, vulkan_info: types.VulkanInfo):
 
     ''' Generates struct_factories.h '''
     with open(file_path, "w", encoding="ascii") as remapper_h:
@@ -206,10 +203,10 @@ def generate_struct_factories_h(file_path: Path, vulkan_metadata: types.VulkanMe
 
         """))
 
-        all_vulkan_structs = vulkan_metadata.types.structs
-        ignore_structs = generate_ignore_structs(vulkan_metadata)
+        all_vulkan_structs = vulkan_info.types.structs
+        ignore_structs = generate_ignore_structs(vulkan_info)
 
-        for struct in sort_structs_dep_order(vulkan_metadata):
+        for struct in sort_structs_dep_order(vulkan_info):
             if not struct in ignore_structs:
 
                 public_members: List[str] = [f"""{struct_factory_name(struct)}();""",
@@ -220,9 +217,9 @@ def generate_struct_factories_h(file_path: Path, vulkan_metadata: types.VulkanMe
 
                 for member in all_vulkan_structs[struct].members:
                     member_data = all_vulkan_structs[struct].members[member]
-                    public_members += [generate_struct_member_setter(member_data, vulkan_metadata),
-                                       generate_struct_member_getter(member_data, vulkan_metadata)]
-                    private_members += [generate_struct_member(member_data, vulkan_metadata)]
+                    public_members += [generate_struct_member_setter(member_data, vulkan_info),
+                                       generate_struct_member_getter(member_data, vulkan_info)]
+                    private_members += [generate_struct_member(member_data, vulkan_info)]
 
                 public_members += ["",
                                    "size_t VkStructMemorySize() override;",
@@ -264,9 +261,9 @@ def generate_factory_dtor_def(struct : str) -> str :
 def generate_factory_setter_def(struct : str,
                                 member : str,
                                 member_data: types.VulkanStructMember,
-                                vulkan_metadata: types.VulkanMetadata) -> str :
+                                vulkan_info: types.VulkanInfo) -> str :
     return dedent(f"""
-                  void {struct_factory_name(struct)}::{set_member_name(member)}({set_member_arg_type(member_data, vulkan_metadata)} val) {{
+                  void {struct_factory_name(struct)}::{set_member_name(member)}({set_member_arg_type(member_data, vulkan_info)} val) {{
                       {member}_ = val;
                   }}
                   """)
@@ -275,9 +272,9 @@ def generate_factory_setter_def(struct : str,
 def generate_factory_getter_def(struct : str,
                                 member : str,
                                 member_data: types.VulkanStructMember,
-                                vulkan_metadata: types.VulkanMetadata) -> str :
+                                vulkan_info: types.VulkanInfo) -> str :
     return dedent(f"""
-                  {get_member_return_type(member_data, vulkan_metadata)} {struct_factory_name(struct)}::{get_member_name(member)}() const {{
+                  {get_member_return_type(member_data, vulkan_info)} {struct_factory_name(struct)}::{get_member_name(member)}() const {{
                       return {member}_;
                   }}
                   """)
@@ -291,8 +288,8 @@ def generate_factory_size_def(struct : str) -> str :
                   """)
 
 
-def generate_factory_chain_size_def(struct : str, vulkan_metadata: types.VulkanMetadata) -> str :
-    if "pNext" in vulkan_metadata.types.structs[struct].members:
+def generate_factory_chain_size_def(struct : str, vulkan_info: types.VulkanInfo) -> str :
+    if "pNext" in vulkan_info.types.structs[struct].members:
         return dedent(f"""
                       size_t {struct_factory_name(struct)}::PNextChainMemorySize() {{
                           if(pNext_ != nullptr) {{
@@ -331,7 +328,7 @@ def generate_factory_generate_def(struct : str) -> str :
                   """)
 
 
-def generate_struct_factories_cpp(file_path: Path, vulkan_metadata: types.VulkanMetadata):
+def generate_struct_factories_cpp(file_path: Path, vulkan_info: types.VulkanInfo):
     ''' Generates struct_factories.cc '''
     with open(file_path, "w", encoding="ascii") as remapper_cpp:
 
@@ -345,10 +342,10 @@ def generate_struct_factories_cpp(file_path: Path, vulkan_metadata: types.Vulkan
 
         """))
 
-        all_vulkan_structs = vulkan_metadata.types.structs
-        ignore_structs = generate_ignore_structs(vulkan_metadata)
+        all_vulkan_structs = vulkan_info.types.structs
+        ignore_structs = generate_ignore_structs(vulkan_info)
 
-        for struct in sort_structs_dep_order(vulkan_metadata):
+        for struct in sort_structs_dep_order(vulkan_info):
             if not struct in ignore_structs:
 
                 remapper_cpp.write(generate_factory_ctor_def(struct))
@@ -356,11 +353,11 @@ def generate_struct_factories_cpp(file_path: Path, vulkan_metadata: types.Vulkan
 
                 for member in all_vulkan_structs[struct].members:
                     member_data = all_vulkan_structs[struct].members[member]
-                    remapper_cpp.write(generate_factory_setter_def(struct, member, member_data, vulkan_metadata))
-                    remapper_cpp.write(generate_factory_getter_def(struct, member, member_data, vulkan_metadata))
+                    remapper_cpp.write(generate_factory_setter_def(struct, member, member_data, vulkan_info))
+                    remapper_cpp.write(generate_factory_getter_def(struct, member, member_data, vulkan_info))
 
                 remapper_cpp.write(generate_factory_size_def(struct))
-                remapper_cpp.write(generate_factory_chain_size_def(struct, vulkan_metadata))
+                remapper_cpp.write(generate_factory_chain_size_def(struct, vulkan_info))
                 remapper_cpp.write(generate_factory_generate_def(struct))
                 remapper_cpp.write("\n")
 
@@ -371,7 +368,7 @@ def generate_struct_factories_cpp(file_path: Path, vulkan_metadata: types.Vulkan
         """))
 
 
-def generate_struct_factories_tests(file_path: Path, vulkan_metadata: types.VulkanMetadata):
+def generate_struct_factories_tests(file_path: Path, vulkan_info: types.VulkanInfo):
     ''' Generates struct_factories_tests.cc '''
     with open(file_path, "w", encoding="ascii") as tests_cpp:
 
