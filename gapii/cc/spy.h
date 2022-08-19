@@ -91,6 +91,11 @@ class Spy : public VulkanSpy {
   int mObserveFrameFrequency;
   uint64_t mFrameNumber;
 
+  bool mIgnoreFrameBoundaryDelimiters;
+  bool ignoreFrameBoundaryDelimiters() override {
+    return mIgnoreFrameBoundaryDelimiters;
+  }
+
   std::unique_ptr<core::AsyncJob> mMessageReceiverJob;
 
 #if TARGET_OS == GAPID_OS_FUCHSIA
