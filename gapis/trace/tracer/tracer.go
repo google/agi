@@ -127,8 +127,8 @@ func GapiiOptions(o *service.TraceOptions) gapii.Options {
 	if o.WaitForDebugger {
 		flags |= gapii.WaitForDebugger
 	}
-	if o.RespectFrameBoundaryDelimiters {
-		flags |= gapii.RespectFrameBoundaryDelimiters
+	if o.IgnoreFrameBoundaryDelimiters {
+		flags |= gapii.IgnoreFrameBoundaryDelimiters
 	}
 
 	return gapii.Options{

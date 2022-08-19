@@ -57,7 +57,7 @@ class ConnectionHeader {
   // Waits for the debugger to attach (useful for debug)
   static const uint32_t FLAG_WAIT_FOR_DEBUGGER = 0x00000200;
   // Set to enable use of frame delimiters, eg ANDROID_frame_boundary extension 
-  static const uint32_t FLAG_RESPECT_FRAME_BOUNDARY_DELIMITERS = 0x00001000;
+  static const uint32_t FLAG_IGNORE_FRAME_BOUNDARY_DELIMITERS = 0x00001000;
 
   // read reads the ConnectionHeader from the provided stream, returning true
   // on success or false on error.
