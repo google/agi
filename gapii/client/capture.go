@@ -55,7 +55,6 @@ const (
 	// FLAG_IGNORE_ANDROID_FRAME_BOUNDARY
 	IgnoreFrameBoundaryDelimiters Flags = 0x00001000
 
-
 	// VulkanAPI is hard-coded bit mask for Vulkan API, it needs to be kept in sync
 	// with the api_index in the vulkan.api file.
 	VulkanAPI = uint32(1 << 2)

@@ -86,7 +86,9 @@ class Spy : public VulkanSpy {
   uint64_t mFrameNumber;
 
   bool mIgnoreFrameBoundaryDelimiters;
-  bool ignoreFrameBoundaryDelimiters() override { return mIgnoreFrameBoundaryDelimiters; }
+  bool ignoreFrameBoundaryDelimiters() override {
+    return mIgnoreFrameBoundaryDelimiters;
+  }
 
   std::unique_ptr<core::AsyncJob> mMessageReceiverJob;
 

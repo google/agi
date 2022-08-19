@@ -167,7 +167,9 @@ Spy::Spy()
                               ? kSuspendIndefinitely
                               : header.mStartFrame;
   mCaptureFrames = header.mNumFrames;
-  mIgnoreFrameBoundaryDelimiters = (header.mFlags & ConnectionHeader::FLAG_IGNORE_FRAME_BOUNDARY_DELIMITERS) != 0;
+  mIgnoreFrameBoundaryDelimiters =
+      (header.mFlags &
+       ConnectionHeader::FLAG_IGNORE_FRAME_BOUNDARY_DELIMITERS) != 0;
 
   set_valid_apis(header.mAPIs);
   GAPID_ERROR("APIS %08x", header.mAPIs);
