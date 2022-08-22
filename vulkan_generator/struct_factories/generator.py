@@ -240,8 +240,12 @@ def generate_struct_factories_h(file_path: Path, vulkan_info: types.VulkanInfo):
 
         """))
 
-#for handle in vulkan_metadata.types.handles:
-def zero_value_for_type(type : str, vulkan_info : types.VulkanInfo) -> str:
+def zero_value_for_type(type : str, name : str, parent_struct_type : str, vulkan_info : types.VulkanInfo) -> str:
+
+    expected_value = vulkan_info.types.structs[parent_struct_type].members[name].expected_value
+    if expected_value:
+        return expected_value.name
+
     if type.endswith("Factory"):
         return ""
     if type.startswith("std::vector<"):
@@ -250,14 +254,13 @@ def zero_value_for_type(type : str, vulkan_info : types.VulkanInfo) -> str:
         return "nullptr"
     if type.startswith("std::string"):
         return "\"\""
-    if type == "VkStructureType":
-        return "VK_STRUCTURE_TYPE_APPLICATION_INFO"
     if type in vulkan_info.types.handles or type in vulkan_info.types.handle_aliases:
         return "VK_NULL_HANDLE"
     if type in vulkan_info.types.enums or type in vulkan_info.types.enum_aliases:
         return f"""(({type})0)"""
     if type in vulkan_info.types.unions:
-        return "" #TODO
+        raise Exception("zero_value_for_type() cannot provide zero values for vk unions. Please use memset().")
+
     return "0"
 
 
@@ -273,8 +276,7 @@ def generate_factory_ctor_def(struct : str, vulkan_info: types.VulkanInfo) -> st
         if mapped_type in vulkan_info.types.unions:
             middle += f"""\n{codegen.indent_characters()}memset(&{member}_, 0, sizeof({mapped_type}));""" 
         else:
-            zero_value = zero_value_for_type(mapped_type, vulkan_info)
-            print(mapped_type + " -> " + zero_value)
+            zero_value = zero_value_for_type(mapped_type, member, struct, vulkan_info)
             if zero_value != "":
                 middle += f"""\n{codegen.indent_characters()}{member}_ = {zero_value};""" 
 
