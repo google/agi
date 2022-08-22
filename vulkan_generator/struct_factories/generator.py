@@ -190,7 +190,6 @@ def generate_struct_factories_h(file_path: Path, vulkan_info: types.VulkanInfo):
 
             #include "replay2/struct_factories/vulkan/vulkan.h"
 
-
             namespace agi {
             namespace replay2 {
 
@@ -241,16 +240,52 @@ def generate_struct_factories_h(file_path: Path, vulkan_info: types.VulkanInfo):
 
         """))
 
-def generate_factory_ctor_def(struct : str) -> str :
-    return dedent(f"""
-                  {struct_factory_name(struct)}::{struct_factory_name(struct)}() {{
-                      //TODO: Zero out all plain ordinary member types
-                  }}
+#for handle in vulkan_metadata.types.handles:
+def zero_value_for_type(type : str, vulkan_info : types.VulkanInfo) -> str:
+    if type.endswith("Factory"):
+        return ""
+    if type.startswith("std::vector<"):
+        return ""
+    if type.startswith("std::shared_ptr<"):
+        return "nullptr"
+    if type.startswith("std::string"):
+        return "\"\""
+    if type == "VkStructureType":
+        return "VK_STRUCTURE_TYPE_APPLICATION_INFO"
+    if type in vulkan_info.types.handles or type in vulkan_info.types.handle_aliases:
+        return "VK_NULL_HANDLE"
+    if type in vulkan_info.types.enums or type in vulkan_info.types.enum_aliases:
+        return f"""(({type})0)"""
+    if type in vulkan_info.types.unions:
+        return "" #TODO
+    return "0"
 
+
+def generate_factory_ctor_def(struct : str, vulkan_info: types.VulkanInfo) -> str :
+    head = dedent(f"""
+                  {struct_factory_name(struct)}::{struct_factory_name(struct)}() {{""")
+
+    struct_data = vulkan_info.types.structs[struct]
+    middle = ""
+    for member in struct_data.members:
+        unmapped_type = struct_data.members[member].full_typename
+        mapped_type = remap_member_type(unmapped_type, member, vulkan_info)
+        if mapped_type in vulkan_info.types.unions:
+            middle += f"""\n{codegen.indent_characters()}memset(&{member}_, 0, sizeof({mapped_type}));""" 
+        else:
+            zero_value = zero_value_for_type(mapped_type, vulkan_info)
+            print(mapped_type + " -> " + zero_value)
+            if zero_value != "":
+                middle += f"""\n{codegen.indent_characters()}{member}_ = {zero_value};""" 
+
+    tail = dedent(f"""
+                  }}
                   """)
 
+    return head + middle + tail
 
-def generate_factory_dtor_def(struct : str) -> str :
+
+def generate_factory_dtor_def(struct : str, vulkan_info: types.VulkanInfo) -> str :
     return dedent(f"""
                   {struct_factory_name(struct)}::~{struct_factory_name(struct)}() {{
                   }}
@@ -348,8 +383,8 @@ def generate_struct_factories_cpp(file_path: Path, vulkan_info: types.VulkanInfo
         for struct in sort_structs_dep_order(vulkan_info):
             if not struct in ignore_structs:
 
-                remapper_cpp.write(generate_factory_ctor_def(struct))
-                remapper_cpp.write(generate_factory_dtor_def(struct))
+                remapper_cpp.write(generate_factory_ctor_def(struct, vulkan_info))
+                remapper_cpp.write(generate_factory_dtor_def(struct, vulkan_info))
 
                 for member in all_vulkan_structs[struct].members:
                     member_data = all_vulkan_structs[struct].members[member]
@@ -382,9 +417,20 @@ def generate_struct_factories_tests(file_path: Path, vulkan_info: types.VulkanIn
             """))
 
         tests_cpp.write(dedent("""
-            TEST(VulkanStructFactories, Pass) {{
+            TEST(VulkanStructFactories, Pass) {
                 EXPECT_TRUE(true);
-            }}"""))
+            }"""))
+
+        all_vulkan_structs = vulkan_info.types.structs
+        ignore_structs = generate_ignore_structs(vulkan_info)
+
+        for struct in all_vulkan_structs:
+            if not struct in ignore_structs:
+                tests_cpp.write(dedent(f"""
+                    TEST(VulkanStructFactories, DefaultConstruct_{struct}) {{
+                        {struct} s;
+                        EXPECT_TRUE(&s != nullptr);
+                    }}"""))
 
         tests_cpp.write(dedent("""
         int main(int argc, char **argv) {
