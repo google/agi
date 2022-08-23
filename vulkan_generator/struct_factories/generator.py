@@ -33,7 +33,7 @@ def set_member_name(member: str) -> str:
 
 
 def set_member_arg_type(member: types.VulkanStructMember, vulkan_info: types.VulkanInfo) -> str:
-    remapped_type = remap_member_type(member.full_typename, member.name, vulkan_info)
+    remapped_type = remap_member_type(member, vulkan_info)
     if "*" in remapped_type:
         return remapped_type
     else:
@@ -45,7 +45,7 @@ def get_member_name(member: str) -> str:
 
 
 def get_member_return_type(member: types.VulkanStructMember, vulkan_info: types.VulkanInfo) -> str:
-    remapped_type = remap_member_type(member.full_typename, member.name, vulkan_info)
+    remapped_type = remap_member_type(member, vulkan_info)
     if "*" in remapped_type:
         return remapped_type
     else:
@@ -78,11 +78,14 @@ def tokenize_typename(member_type: str) -> List[str]:
 
 def generate_ignore_structs(vulkan_info : types.VulkanInfo) -> List[str]:
 
-    #TODO: Move these to some common location for the whole project
+    #TODO: Move these to some common location for the whole project.
+    # This whole function should move to that location, so we can ask what to generate.
     supported_versions : List[str] = ["VK_VERSION_1_0"]
-    supported_extensions : List[str] = []
+    supported_extensions : List[str] = [] # TODO
 
-    ignore_structs : List[str] = []
+    # VkBaseInStructure and VkBaseOutStructure are not used directly as complete types.
+    # We'll ignore them by default.
+    ignore_structs : List[str] = ["VkBaseInStructure", "VkBaseOutStructure"]
 
     for struct in vulkan_info.types.structs:
         supported : bool = False
@@ -101,6 +104,9 @@ def sort_structs_dep_order_impl(struct :str,
                      sorted_structs : List[str],
                      vulkan_info: types.VulkanInfo) :
 
+    #TODO: Move these to some common location for the whole project.
+    # This whole function should move to that location, so we can ask what to generate.
+
     if struct in processed_structs:
         return
 
@@ -115,6 +121,10 @@ def sort_structs_dep_order_impl(struct :str,
 
 
 def sort_structs_dep_order(vulkan_info: types.VulkanInfo) -> List[str] :
+
+    #TODO: Move these to some common location for the whole project.
+    # This whole function should move to that location, so we can ask what to generate.
+
     processed_structs : Dict[str, bool] = {}
     sorted_structs : List[str] = []
 
@@ -124,10 +134,19 @@ def sort_structs_dep_order(vulkan_info: types.VulkanInfo) -> List[str] :
     return sorted_structs
 
 
-def remap_member_type(member_type: str, member_name: str, vulkan_info: types.VulkanInfo) -> str:
+def remap_member_type(member: types.VulkanStructMember, vulkan_info: types.VulkanInfo) -> str:
+
+    member_type = member.full_typename
+    member_name = member.name
 
     if member_name == "pNext":
         return "std::shared_ptr<VkStructFactory>"
+
+    if member.size and isinstance(member.size, list):
+        return f"""std::array<{member.type.typename}, {str(member.size).replace("[", "").replace("]", "")}>""" #TODO: size
+
+    if member.size and isinstance(member.size, types.VulkanDefine):
+        return f"""std::array<{member.type.typename}, {member.size.name}>"""
 
     tokens = tokenize_typename(member_type)
     stripped_tokens: List[str] = []
@@ -160,7 +179,7 @@ def remap_member_type(member_type: str, member_name: str, vulkan_info: types.Vul
             else:
                 return "std::vector<std::vector<" + stripped_tokens[0] + ">>"
 
-    raise BaseException("TYPE ERROR: Cannot remap type " + member_type)
+    raise BaseException("remap_member_type(): cannot remap type " + member_type)
 
 
 def generate_struct_member_setter(member: types.VulkanStructMember, vulkan_info: types.VulkanInfo) -> str:
@@ -175,8 +194,7 @@ def generate_struct_member_getter(member: types.VulkanStructMember, vulkan_info:
 
 
 def generate_struct_member(member: types.VulkanStructMember, vulkan_info: types.VulkanInfo) -> str:
-    return remap_member_type(member.full_typename, member.name,
-                             vulkan_info) + " " + member.name + "_;"
+    return remap_member_type(member, vulkan_info) + " " + member.name + "_;"
 
 
 def generate_struct_factories_h(file_path: Path, vulkan_info: types.VulkanInfo):
@@ -191,17 +209,57 @@ def generate_struct_factories_h(file_path: Path, vulkan_info: types.VulkanInfo):
             #include <memory>
             #include <string>
             #include <vector>
+            #include <array>
 
             #include "replay2/struct_factories/vulkan/vulkan.h"
 
             namespace agi {
             namespace replay2 {
 
+            class VkStructSidecar {
+            public:
+
+                typedef uint64_t ALIGN_TYPE;
+
+                VkStructSidecar() : scratchPtr_(nullptr) {}
+                ~VkStructSidecar() {}
+
+                void reset() {
+                    scratch_.resize(0);
+                }
+
+                template<typename T>
+                T* allocateSidecarData(size_t elements) {
+                    size_t new_data = (sizeof(T) *elements +sizeof(ALIGN_TYPE) -1) /sizeof(ALIGN_TYPE);
+                    if(scratchPtr_ != nullptr) {
+                        scratchPtr_->resize(scratchPtr_->size() +new_data);
+                        return ((T*)(&(*scratchPtr_)[scratchPtr_->size() -1 -new_data]));
+                    }
+                    else {
+                        scratch_.resize(scratch_.size() +new_data);
+                        return ((T*)(&scratch_[scratch_.size() -1 -new_data]));
+                    }
+                }
+
+                std::unique_ptr<VkStructSidecar> CreateSubordinate() {
+                    std::unique_ptr<VkStructSidecar> ret(new VkStructSidecar);
+                    ret->scratchPtr_ = &scratch_;
+                    return ret;
+                }
+
+                bool isSubordinate() const { return scratchPtr_ != nullptr; }
+
+            private:
+                std::vector<ALIGN_TYPE> *scratchPtr_;
+                std::vector<ALIGN_TYPE> scratch_;
+            };
+
+
             class VkStructFactory {
             public:
                 virtual ~VkStructFactory() {}
                 virtual size_t VkStructMemorySize() = 0;
-                virtual size_t PNextChainMemorySize() = 0;
+                virtual VkBaseInStructure* GenerateAsPNext(std::unique_ptr<VkStructSidecar> sidecar) = 0;
             };
 
         """))
@@ -209,6 +267,28 @@ def generate_struct_factories_h(file_path: Path, vulkan_info: types.VulkanInfo):
         all_vulkan_structs = vulkan_info.types.structs
         ignore_structs = generate_ignore_structs(vulkan_info)
         sorted_structs = sort_structs_dep_order(vulkan_info)
+
+        for struct in sorted_structs:
+            if not struct in ignore_structs:
+
+                remapper_h.write(dedent(f"""
+                    class Generated{struct} {{
+                    public:
+                        Generated{struct}(std::unique_ptr<VkStructSidecar> sidecar) {{ sidecar_ = std::move(sidecar); }}
+                        {struct}& object() {{ return object_; }}
+
+                    protected:
+                        template<typename T> T* allocateSidecarData(size_t elements) {{ return sidecar_->allocateSidecarData<T>(elements); }}
+                        std::unique_ptr<VkStructSidecar> CreateSubordinateSidecar() {{ return sidecar_->CreateSubordinate(); }}
+
+                    private:
+                        std::unique_ptr<VkStructSidecar> sidecar_;
+                        {struct} object_;
+
+                        friend class {struct}Factory;
+                    }};
+
+                """))
 
         for struct in sorted_structs:
             if not struct in ignore_structs:
@@ -227,9 +307,10 @@ def generate_struct_factories_h(file_path: Path, vulkan_info: types.VulkanInfo):
 
                 public_members += ["",
                                    "size_t VkStructMemorySize() override;",
-                                   "size_t PNextChainMemorySize() override;",
                                    "",
-                                   f"""{struct} Generate();"""]
+                                   f"""Generated{struct} Generate();""",
+                                   f"""Generated{struct} Generate(std::unique_ptr<VkStructSidecar> sidecar);""",
+                                   f"""VkBaseInStructure* GenerateAsPNext(std::unique_ptr<VkStructSidecar> sidecar) override;"""]
 
                 class_def = codegen.create_class_definition(struct_factory_name(struct),
                                                             public_inheritance=["VkStructFactory"],
@@ -272,75 +353,87 @@ def get_derived_pointer_types(vulkan_info : types.VulkanInfo) -> List[str]:
     return derived_pointer_types
 
 
-def zero_value_for_type(type : str, name : str, parent_struct_type : str, vulkan_info : types.VulkanInfo) -> str:
+def zero_value_for_type(mapped_type : str, member: types.VulkanStructMember, vulkan_info: types.VulkanInfo) -> str:
 
-    expected_value = vulkan_info.types.structs[parent_struct_type].members[name].expected_value
+    expected_value = member.expected_value
     if expected_value:
         return expected_value.name
 
     trivial_types = ["int64_t", "uint64_t", "int32_t", "uint32_t", "int16_t", "uint16_t", "int8_t", "uint8_t", "char", "bool", "size_t", "float"]
-    if type in trivial_types:
+    if mapped_type in trivial_types:
         return "0"
 
     derived_trivial_types = get_derived_trivial_types(trivial_types, vulkan_info)
-    if type in derived_trivial_types:
+    if mapped_type in derived_trivial_types:
         return "0"
 
-    if type.endswith("Factory"):
+    if mapped_type.endswith("Factory"):
         return ""
-    if type.startswith("std::vector<"):
+    if mapped_type.startswith("std::vector<"):
         return ""
 
-    if type.startswith("std::string"):
+    if mapped_type.startswith("std::array<"):
+        return "{}"
+
+    if mapped_type.startswith("std::string"):
         return "\"\""
 
-    if type in vulkan_info.types.handles or type in vulkan_info.types.handle_aliases:
+    if mapped_type in vulkan_info.types.handles or mapped_type in vulkan_info.types.handle_aliases:
         return "VK_NULL_HANDLE"
 
-    if type in vulkan_info.types.enums or type in vulkan_info.types.enum_aliases:
-        return f"""(({type})0)"""
+    if mapped_type in vulkan_info.types.enums or mapped_type in vulkan_info.types.enum_aliases:
+        return f"""(({mapped_type})0)"""
 
-    if type in vulkan_info.types.bitmasks or type in vulkan_info.types.bitmask_aliases:
+    if mapped_type in vulkan_info.types.bitmasks or mapped_type in vulkan_info.types.bitmask_aliases:
         return "0"
 
-    if type in vulkan_info.types.unions:
+    if mapped_type in vulkan_info.types.unions:
         raise Exception("zero_value_for_type() cannot provide zero values for vk unions. Please use memset().")
 
-    if type == "void*":
+    if mapped_type == "void*":
         return "nullptr"
-    if type == "void**":
+    if mapped_type == "void**":
         return "nullptr"
-    if type.startswith("std::shared_ptr<"):
+    if mapped_type.startswith("std::shared_ptr<"):
         return "nullptr"
 
     derived_pointer_types = get_derived_pointer_types(vulkan_info)
-    if type in derived_pointer_types:
+    if mapped_type in derived_pointer_types:
         return "nullptr"
 
-    if type in vulkan_info.types.funcpointers:
+    if mapped_type in vulkan_info.types.funcpointers:
         return "nullptr"
 
-    raise Exception("Cannot create zero value for unknown type: " + type + " (name: " + name + ", parent struct: " + parent_struct_type +")")
+    raise Exception("Cannot create zero value for unknown type: " + mapped_type + " (name: " + member.name + ")")
+
+
+def set_member_to_zero_value(member: types.VulkanStructMember, vulkan_info: types.VulkanInfo) -> str:
+
+    unmapped_type = member.full_typename
+    mapped_type = remap_member_type(member, vulkan_info)
+    if mapped_type in vulkan_info.types.unions:
+        #TODO: Is this the right thing to do with unions? Maybe we should pick one value type and zero that one?
+        return f"""{codegen.indent_characters()}memset(&{member.name}_, 0, sizeof({mapped_type}));""" 
+    else:
+        zero_value = zero_value_for_type(mapped_type, member, vulkan_info)
+        if zero_value != "":
+            return f"""{codegen.indent_characters()}{member.name}_ = {zero_value};"""
+        else:
+            return f"""{codegen.indent_characters()}//Using default constructor for this.{member.name}_""" 
 
 
 def generate_factory_ctor_def(struct : str, vulkan_info: types.VulkanInfo) -> str :
     head = dedent(f"""
-                  {struct_factory_name(struct)}::{struct_factory_name(struct)}() {{""")
+                  {struct_factory_name(struct)}::{struct_factory_name(struct)}() {{
+                  """)
 
     struct_data = vulkan_info.types.structs[struct]
     middle = ""
     for member in struct_data.members:
-        unmapped_type = struct_data.members[member].full_typename
-        mapped_type = remap_member_type(unmapped_type, member, vulkan_info)
-        if mapped_type in vulkan_info.types.unions:
-            middle += f"""\n{codegen.indent_characters()}memset(&{member}_, 0, sizeof({mapped_type}));""" 
-        else:
-            zero_value = zero_value_for_type(mapped_type, member, struct, vulkan_info)
-            if zero_value != "":
-                middle += f"""\n{codegen.indent_characters()}{member}_ = {zero_value};""" 
+        member_data = struct_data.members[member]
+        middle += set_member_to_zero_value(member_data, vulkan_info) +"\n"
 
-    tail = dedent(f"""
-                  }}
+    tail = dedent(f"""}}
                   """)
 
     return head + middle + tail
@@ -384,56 +477,76 @@ def generate_factory_size_def(struct : str) -> str :
                   """)
 
 
-def generate_factory_chain_size_def(struct : str, vulkan_info: types.VulkanInfo) -> str :
-    if "pNext" in vulkan_info.types.structs[struct].members:
-        return dedent(f"""
-                      size_t {struct_factory_name(struct)}::PNextChainMemorySize() {{
-                          if(pNext_ != nullptr) {{
-                              size_t directNextSize = pNext_->VkStructMemorySize();
-                              if(directNextSize % sizeof(void*) != 0) {{
-                                  directNextSize += sizeof(void*) -(directNextSize % sizeof(void*));
-                              }}
-                              return directNextSize +pNext_->PNextChainMemorySize();
-                          }}
-                          return 0;
-                      }}
-                      """)
-    else:
-        return dedent(f"""
-                      size_t {struct_factory_name(struct)}::PNextChainMemorySize() {{
-                          return 0;
-                      }}
-                      """)
+def generate_factory_argless_generate_def(struct : str, vulkan_info: types.VulkanInfo) -> str :
 
-def assign_to_generated(member : str, parent_struct_type : str, vulkan_info : types.VulkanInfo) -> str:
-    struct_data = vulkan_info.types.structs[parent_struct_type]
-    unmapped_type = struct_data.members[member].full_typename
-    mapped_type = remap_member_type(unmapped_type, member, vulkan_info)
-
-    if mapped_type.endswith("Factory"):
-        return f"""{member}_.Generate()/*|{unmapped_type}|{mapped_type}|*/"""
-    if mapped_type.startswith("std::vector<"):
-        return f"""{member}_.data()/*|{unmapped_type}|{mapped_type}|*/"""
-    if mapped_type.startswith("std::shared_ptr<"):
-        return f"""{member}_.get()/*|{unmapped_type}|{mapped_type}|*/"""
-    if mapped_type.startswith("std::string"):
-        return f"""{member}_.c_str()/*|{unmapped_type}|{mapped_type}|*/"""
-    if mapped_type in vulkan_info.types.handles or mapped_type in vulkan_info.types.handle_aliases:
-        return f"""{member}_/*REMAP*//*|{unmapped_type}|{mapped_type}|*/"""
-
-    return f"""{member}_/*|{unmapped_type}|{mapped_type}|*/"""
-
+    return dedent(f"""
+                    Generated{struct} {struct_factory_name(struct)}::Generate() {{
+                        std::unique_ptr<VkStructSidecar> sidecar(new VkStructSidecar());
+                        return Generate(std::move(sidecar));
+                    }}""")
 
 def generate_factory_generate_def(struct : str, vulkan_info: types.VulkanInfo) -> str :
+
     head = dedent(f"""
-                  {struct} {struct_factory_name(struct)}::Generate() {{
-                      {struct} ret;
+                  Generated{struct} {struct_factory_name(struct)}::Generate(std::unique_ptr<VkStructSidecar> sidecar) {{
+                      Generated{struct} ret(std::move(sidecar));
                   """)
 
     struct_data = vulkan_info.types.structs[struct]
     middle = ""
+
     for member in struct_data.members:
-        middle += f"""\n{codegen.indent_characters()}ret.{member} = {assign_to_generated(member, struct, vulkan_info)};""" 
+
+        member_data = struct_data.members[member]
+
+        struct_data = member_data.parent
+        unmapped_type = member_data.full_typename
+        mapped_type = remap_member_type(member_data, vulkan_info)
+
+        middle += f"""\n{codegen.indent_characters()}"""
+
+        if member == "pNext":
+            middle += f"""ret.object().{member} = {member}_->GenerateAsPNext(ret.CreateSubordinateSidecar());"""
+        elif mapped_type.endswith("Factory"):
+            middle += f"""auto Generated{member} = {member}_.Generate(ret.CreateSubordinateSidecar());\n"""
+            middle += f"""ret.object().{member} = Generated{member}.object();""";
+        elif mapped_type.startswith("std::vector<"):
+            vector_type = mapped_type[len("std::vector<"): -len(">")]
+            if vector_type.startswith("std::vector<"):
+                raise Exception("generate_factory_generate_def() does not yet implement vectors of vectors.")
+            elif vector_type == "std::string":
+                middle += f"""char **{member}Scratch = ret.allocateSidecarData<char*>({member}_.size());\n"""
+                middle += f"""for(int i = 0; i < {member}_.size(); ++i){{\n"""
+                middle += f"""{member}Scratch[i] = {member}_[i].data();\n"""
+                middle += f"""}}\n"""
+                middle += f"""ret.object().{member} = {member}Scratch;"""
+            elif vector_type.endswith("Factory"):
+                element_type = vector_type[0:-len("Factory")]
+                middle += f"""{element_type} *{member}Scratch = ret.allocateSidecarData<{element_type}>({member}_.size());\n"""
+                middle += f"""for(int i = 0; i < {member}_.size(); ++i){{\n"""
+                middle += f"""auto Generated{member} = {member}_[i].Generate(ret.CreateSubordinateSidecar());\n"""
+                middle += f"""{member}Scratch[i] = Generated{member}.object();//HELLO\n"""
+                middle += f"""}}\n"""
+                middle += f"""ret.object().{member} = {member}Scratch;"""
+            else:
+                middle += f"""ret.object().{member} = {member}_.data();"""
+        elif mapped_type.startswith("std::array<"):
+            if member_data.size and isinstance(member_data.size, list):
+                middle += f"""memcpy(&ret.object().{member}, {member}_.data(), {str(member_data.size).replace("[", "").replace("]", "")} * sizeof({unmapped_type}));""" #TODO: size
+            elif member_data.size and isinstance(member_data.size, types.VulkanDefine):
+                middle += f"""memcpy(&ret.object().{member}, {member}_.data(), {member_data.size.name} * sizeof({unmapped_type}));"""
+            else:
+                raise Exception("")
+        elif mapped_type.startswith("std::shared_ptr<"):
+            middle += f"""ret.object().{member} = {member}_.get();"""
+        elif mapped_type.startswith("std::string"):
+            middle += f"""ret.object().{member} = {member}_.c_str();"""
+        elif mapped_type in vulkan_info.types.handles or mapped_type in vulkan_info.types.handle_aliases:
+            middle += f"""ret.object().{member} = {member}_;/* TODO: REMAP THIS VALUE */"""
+        else:
+            middle += f"""ret.object().{member} = {member}_;"""
+
+        middle += f"""   /*|unmapped_type = {unmapped_type}| mapped_type = {mapped_type}|*/"""
 
     tail = dedent(f"""
                       return ret;
@@ -441,6 +554,17 @@ def generate_factory_generate_def(struct : str, vulkan_info: types.VulkanInfo) -
                   """)
 
     return head + middle + tail
+
+
+def generate_factory_pnext_generate_def(struct : str, vulkan_info: types.VulkanInfo) -> str :
+
+    return dedent(f"""
+                    VkBaseInStructure* {struct_factory_name(struct)}::GenerateAsPNext(std::unique_ptr<VkStructSidecar> sidecar) {{
+                        {struct} *{struct}Ptr = sidecar->allocateSidecarData<{struct}>(sizeof({struct}));
+                        Generated{struct} pNext = Generate(sidecar->CreateSubordinate());
+                        *{struct}Ptr = pNext.object();
+                        return ((VkBaseInStructure*){struct}Ptr);
+                    }}""")
 
 
 def generate_struct_factories_cpp(file_path: Path, vulkan_info: types.VulkanInfo):
@@ -473,8 +597,9 @@ def generate_struct_factories_cpp(file_path: Path, vulkan_info: types.VulkanInfo
                     remapper_cpp.write(generate_factory_getter_def(struct, member, member_data, vulkan_info))
 
                 remapper_cpp.write(generate_factory_size_def(struct))
-                remapper_cpp.write(generate_factory_chain_size_def(struct, vulkan_info))
+                remapper_cpp.write(generate_factory_argless_generate_def(struct, vulkan_info))
                 remapper_cpp.write(generate_factory_generate_def(struct, vulkan_info))
+                remapper_cpp.write(generate_factory_pnext_generate_def(struct, vulkan_info))
                 remapper_cpp.write("\n")
 
         remapper_cpp.write(dedent("""
