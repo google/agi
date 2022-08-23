@@ -77,17 +77,21 @@ def tokenize_typename(member_type: str) -> List[str]:
 
 
 def generate_ignore_structs(vulkan_info : types.VulkanInfo) -> List[str]:
+
+    #TODO: Move these to some common location for the whole project
+    supported_versions : List[str] = ["VK_VERSION_1_0"]
+    supported_extensions : List[str] = []
+
     ignore_structs : List[str] = []
 
-    for extension_name in vulkan_info.extensions:
-        extension = vulkan_info.extensions[extension_name]
-
-        if extension.platform and extension.platform != "":
-
-            for requirement in extension.requirements:
-
-                for feature_name in requirement.features.types:
-                    ignore_structs += [feature_name]
+    for struct in vulkan_info.types.structs:
+        supported : bool = False
+        for version in supported_versions:
+            features = vulkan_info.core_versions[version].features
+            if struct in features.types or struct in features.type_aliases:
+                supported = True
+        if not supported:
+            ignore_structs += [struct]
 
     return ignore_structs
 
@@ -132,7 +136,7 @@ def remap_member_type(member_type: str, member_name: str, vulkan_info: types.Vul
     for token in tokens:
         if token in vulkan_info.types.structs:
             stripped_tokens += [struct_factory_name(token)]
-        elif token != "const" and token != "struct" and token != "conststruct":  # TODO: conststruct is to work around a bug.remove when fixed!
+        elif token != "const" and token != "struct": 
             stripped_tokens += [token]
 
     if len(stripped_tokens) == 1:
@@ -204,8 +208,9 @@ def generate_struct_factories_h(file_path: Path, vulkan_info: types.VulkanInfo):
 
         all_vulkan_structs = vulkan_info.types.structs
         ignore_structs = generate_ignore_structs(vulkan_info)
+        sorted_structs = sort_structs_dep_order(vulkan_info)
 
-        for struct in sort_structs_dep_order(vulkan_info):
+        for struct in sorted_structs:
             if not struct in ignore_structs:
 
                 public_members: List[str] = [f"""{struct_factory_name(struct)}();""",
@@ -240,28 +245,82 @@ def generate_struct_factories_h(file_path: Path, vulkan_info: types.VulkanInfo):
 
         """))
 
+
+def get_derived_trivial_types(trivial_types : List[str], vulkan_info : types.VulkanInfo) -> List[str]:
+
+    derived_trivial_types : List[str] = []
+    for base_type in vulkan_info.types.basetypes:
+        real_type = vulkan_info.types.basetypes[base_type].basetype
+        if real_type:
+            if real_type in trivial_types:
+                if not base_type in derived_trivial_types:
+                    derived_trivial_types += [base_type]
+
+    return derived_trivial_types
+
+
+def get_derived_pointer_types(vulkan_info : types.VulkanInfo) -> List[str]:
+
+    derived_pointer_types : List[str] = []
+    for base_type in vulkan_info.types.basetypes:
+        real_type = vulkan_info.types.basetypes[base_type].basetype
+        if real_type:
+            if "*" in real_type:
+                if not real_type in derived_pointer_types:
+                    derived_pointer_types += [real_type]
+
+    return derived_pointer_types
+
+
 def zero_value_for_type(type : str, name : str, parent_struct_type : str, vulkan_info : types.VulkanInfo) -> str:
 
     expected_value = vulkan_info.types.structs[parent_struct_type].members[name].expected_value
     if expected_value:
         return expected_value.name
 
+    trivial_types = ["int64_t", "uint64_t", "int32_t", "uint32_t", "int16_t", "uint16_t", "int8_t", "uint8_t", "char", "bool", "size_t", "float"]
+    if type in trivial_types:
+        return "0"
+
+    derived_trivial_types = get_derived_trivial_types(trivial_types, vulkan_info)
+    if type in derived_trivial_types:
+        return "0"
+
     if type.endswith("Factory"):
         return ""
     if type.startswith("std::vector<"):
         return ""
-    if type.startswith("std::shared_ptr<"):
-        return "nullptr"
+
     if type.startswith("std::string"):
         return "\"\""
+
     if type in vulkan_info.types.handles or type in vulkan_info.types.handle_aliases:
         return "VK_NULL_HANDLE"
+
     if type in vulkan_info.types.enums or type in vulkan_info.types.enum_aliases:
         return f"""(({type})0)"""
+
+    if type in vulkan_info.types.bitmasks or type in vulkan_info.types.bitmask_aliases:
+        return "0"
+
     if type in vulkan_info.types.unions:
         raise Exception("zero_value_for_type() cannot provide zero values for vk unions. Please use memset().")
 
-    return "0"
+    if type == "void*":
+        return "nullptr"
+    if type == "void**":
+        return "nullptr"
+    if type.startswith("std::shared_ptr<"):
+        return "nullptr"
+
+    derived_pointer_types = get_derived_pointer_types(vulkan_info)
+    if type in derived_pointer_types:
+        return "nullptr"
+
+    if type in vulkan_info.types.funcpointers:
+        return "nullptr"
+
+    raise Exception("Cannot create zero value for unknown type: " + type + " (name: " + name + ", parent struct: " + parent_struct_type +")")
 
 
 def generate_factory_ctor_def(struct : str, vulkan_info: types.VulkanInfo) -> str :
@@ -346,23 +405,42 @@ def generate_factory_chain_size_def(struct : str, vulkan_info: types.VulkanInfo)
                       }}
                       """)
 
+def assign_to_generated(member : str, parent_struct_type : str, vulkan_info : types.VulkanInfo) -> str:
+    struct_data = vulkan_info.types.structs[parent_struct_type]
+    unmapped_type = struct_data.members[member].full_typename
+    mapped_type = remap_member_type(unmapped_type, member, vulkan_info)
 
-def generate_factory_generate_def(struct : str) -> str :
-    return dedent(f"""
+    if mapped_type.endswith("Factory"):
+        return f"""{member}_.Generate()/*|{unmapped_type}|{mapped_type}|*/"""
+    if mapped_type.startswith("std::vector<"):
+        return f"""{member}_.data()/*|{unmapped_type}|{mapped_type}|*/"""
+    if mapped_type.startswith("std::shared_ptr<"):
+        return f"""{member}_.get()/*|{unmapped_type}|{mapped_type}|*/"""
+    if mapped_type.startswith("std::string"):
+        return f"""{member}_.c_str()/*|{unmapped_type}|{mapped_type}|*/"""
+    if mapped_type in vulkan_info.types.handles or mapped_type in vulkan_info.types.handle_aliases:
+        return f"""{member}_/*REMAP*//*|{unmapped_type}|{mapped_type}|*/"""
+
+    return f"""{member}_/*|{unmapped_type}|{mapped_type}|*/"""
+
+
+def generate_factory_generate_def(struct : str, vulkan_info: types.VulkanInfo) -> str :
+    head = dedent(f"""
                   {struct} {struct_factory_name(struct)}::Generate() {{
                       {struct} ret;
-                      //TODO: Populate the fields of ret here.
-                      //    This involves recursing though the factory's pNext_ (if it exists as a member)
-                      //    and calling generate on that nested factory and its pNext_->pNext_->... as well,
-                      //    generating all vulkan structs in the pNext chain. 
-                      //    VkStructFactory::PNextChainMemorySize() will tell you how much memory
-                      //    will be needed to store all of these generated structures. This memory will
-                      //    need to be allocated (or taken from a pool in the replay context).
-                      //    The actual vulkan pNext fields will need to point into this allocation
-                      //    after the appropriate data has been generated into that allocation.
+                  """)
+
+    struct_data = vulkan_info.types.structs[struct]
+    middle = ""
+    for member in struct_data.members:
+        middle += f"""\n{codegen.indent_characters()}ret.{member} = {assign_to_generated(member, struct, vulkan_info)};""" 
+
+    tail = dedent(f"""
                       return ret;
                   }}
                   """)
+
+    return head + middle + tail
 
 
 def generate_struct_factories_cpp(file_path: Path, vulkan_info: types.VulkanInfo):
@@ -381,8 +459,9 @@ def generate_struct_factories_cpp(file_path: Path, vulkan_info: types.VulkanInfo
 
         all_vulkan_structs = vulkan_info.types.structs
         ignore_structs = generate_ignore_structs(vulkan_info)
-
-        for struct in sort_structs_dep_order(vulkan_info):
+        sorted_structs = sort_structs_dep_order(vulkan_info)
+        
+        for struct in sorted_structs:
             if not struct in ignore_structs:
 
                 remapper_cpp.write(generate_factory_ctor_def(struct, vulkan_info))
@@ -395,7 +474,7 @@ def generate_struct_factories_cpp(file_path: Path, vulkan_info: types.VulkanInfo
 
                 remapper_cpp.write(generate_factory_size_def(struct))
                 remapper_cpp.write(generate_factory_chain_size_def(struct, vulkan_info))
-                remapper_cpp.write(generate_factory_generate_def(struct))
+                remapper_cpp.write(generate_factory_generate_def(struct, vulkan_info))
                 remapper_cpp.write("\n")
 
         remapper_cpp.write(dedent("""
