@@ -5,7 +5,7 @@ This document is to be able to build, run and test the Vulkan Generator in AGI.
 
 ## Pre-requirements:
 
-Vulkan generator requires Python 3.9.2 Install Python 3.9.2 and pyenv.
+Vulkan generator requires Python 3.9.2 Install Python 3.9.2 with an environment(e.g pyenv, virtualenv)
 
 Then add these to `.bashrc` or `.zshrc`
 
@@ -57,6 +57,12 @@ Presubmit can be run from `./kokoro/presubmit/presubmit.sh`. This will require t
 
 ```
 autopep8==1.6.0
+```
+
+Note: If you do not have a python environment, ensure that autopep8 is in your path. For default Pyhon installation:
+
+```
+export AUTOPEP8=~/.local/bin/autopep8
 ```
 
 ## Command Line
