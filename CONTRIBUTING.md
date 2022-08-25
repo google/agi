@@ -79,7 +79,7 @@ Do the following to contribute to the AGI project:
     ```
     bazel test tests
     ```
-    To skip thest that requires a GPU, run:
+    To skip test that requires a GPU, run:
     
     ```
     bazel test tests --test_tag_filters=needs_gpu
