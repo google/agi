@@ -28,9 +28,9 @@ mkdir bazel
 bash bazel-${BAZEL_VERSION}-installer-linux-x86_64.sh --prefix=$PWD/bazel
 
 # Get Clang-12.
-wget https://apt.llvm.org/llvm.sh
-chmod +x llvm.sh
-sudo ./llvm.sh 12
+sudo add-apt-repository 'deb http://apt.llvm.org/xenial/  llvm-toolchain-xenial-12 main'
+sudo apt-get update
+sudo apt-get install -y clang-12
 export CC=/usr/bin/clang-12
 
 # Get the Android NDK.
