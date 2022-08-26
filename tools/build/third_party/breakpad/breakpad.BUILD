@@ -16,7 +16,7 @@ load("@gapid//tools/build:rules.bzl", "cc_copts", "mm_library")
 
 LIB_POSIX = [
     "src/client/minidump_file_writer.cc",
-    "src/common/convert_UTF.c",
+    "src/common/convert_UTF.cc",
     "src/common/convert_UTF.h",  # needs to be here, because of an unqualified import
     "src/common/md5.cc",
     "src/common/simple_string_dictionary.cc",
@@ -34,6 +34,9 @@ LIB_LINUX = LIB_POSIX + [
     "src/client/linux/minidump_writer/linux_dumper.cc",
     "src/client/linux/minidump_writer/linux_ptrace_dumper.cc",
     "src/client/linux/minidump_writer/minidump_writer.cc",
+    "src/client/linux/minidump_writer/pe_file.cc",
+    "src/client/linux/minidump_writer/pe_file.h",
+    "src/common/linux/breakpad_getcontext.S",
     "src/common/linux/elfutils.cc",
     "src/common/linux/file_id.cc",
     "src/common/linux/guid_creator.cc",
@@ -79,11 +82,10 @@ cc_library(
     srcs = select({
         "@gapid//tools/build:linux": LIB_LINUX,
         "@gapid//tools/build:darwin": LIB_MACOS,
+        "@gapid//tools/build:darwin_arm64": LIB_MACOS,
         "@gapid//tools/build:windows": LIB_WINDOWS,
         # Android.
-        "//conditions:default": LIB_LINUX + [
-            "src/common/android/breakpad_getcontext.S",
-        ],
+        "//conditions:default": LIB_LINUX,
     }),
     hdrs = glob(["src/**/*.h"]),
     copts = cc_copts() + select({
@@ -93,6 +95,7 @@ cc_library(
             "-Wno-array-bounds",
         ],
         "@gapid//tools/build:darwin": [],
+        "@gapid//tools/build:darwin_arm64": [],
         "@gapid//tools/build:windows": [
             "-D_UNICODE",
             "-DUNICODE",
@@ -104,6 +107,7 @@ cc_library(
     linkopts = select({
         "@gapid//tools/build:linux": ["-lpthread"],
         "@gapid//tools/build:darwin": [],
+        "@gapid//tools/build:darwin_arm64": [],
         "@gapid//tools/build:windows": ["-lwininet"],
         # Android.
         "//conditions:default": [],
@@ -113,6 +117,7 @@ cc_library(
     deps = select({
         "@gapid//tools/build:linux": ["@lss"],
         "@gapid//tools/build:darwin": [":breakpad_darwin"],
+        "@gapid//tools/build:darwin_arm64": [":breakpad_darwin"],
         "@gapid//tools/build:windows": [],
         # Android.
         "//conditions:default": [
@@ -221,6 +226,7 @@ cc_library(
     srcs = select({
         "@gapid//tools/build:linux": DUMP_SYMS_LINUX,
         "@gapid//tools/build:darwin": DUMP_SYMS_MACOS,
+        "@gapid//tools/build:darwin_arm64": DUMP_SYMS_MACOS,
         "@gapid//tools/build:windows": DUMP_SYMS_WINDOWS,
     }),
     hdrs = glob(["src/**/*.h"]),
