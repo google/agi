@@ -29,6 +29,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//replay2/core_utils",
+        "//replay2/replay_context",
     ],
 )
 
@@ -37,7 +38,8 @@ cc_test(
     srcs = glob(["**/*.h"]) +[":struct_factories_src"],
     deps = [
         "//replay2/core_utils",
-        "//replay2/vulkan_base",
+        "//replay2/handle_remapper:handle_remapper_src_hdrs",
+        "//replay2/replay_context",
         "@com_google_googletest//:gtest_main",
     ],
 )

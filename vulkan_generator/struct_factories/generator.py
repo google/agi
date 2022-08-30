@@ -206,12 +206,13 @@ def generate_struct_factories_h(file_path: Path, vulkan_info: types.VulkanInfo):
 
         remapper_h.write(dedent("""
 
+            #include "replay2/struct_factories/vulkan/vulkan.h"
+            #include "replay2/replay_context/replay_context.h"
+
             #include <memory>
             #include <string>
             #include <vector>
             #include <array>
-
-            #include "replay2/struct_factories/vulkan/vulkan.h"
 
             namespace agi {
             namespace replay2 {
@@ -308,9 +309,9 @@ def generate_struct_factories_h(file_path: Path, vulkan_info: types.VulkanInfo):
                 public_members += ["",
                                    "size_t VkStructMemorySize() override;",
                                    "",
-                                   f"""Generated{struct} Generate();""",
-                                   f"""Generated{struct} Generate(std::unique_ptr<VkStructSidecar> sidecar);""",
-                                   f"""VkBaseInStructure* GenerateAsPNext(std::unique_ptr<VkStructSidecar> sidecar) override;"""]
+                                   f"""Generated{struct} Generate(const ReplayContext& context);""",
+                                   f"""Generated{struct} Generate(const ReplayContext& context, std::unique_ptr<VkStructSidecar> sidecar);""",
+                                   f"""VkBaseInStructure* GenerateAsPNext(const ReplayContext& context, std::unique_ptr<VkStructSidecar> sidecar) override;"""]
 
                 class_def = codegen.create_class_definition(struct_factory_name(struct),
                                                             public_inheritance=["VkStructFactory"],
@@ -480,7 +481,7 @@ def generate_factory_size_def(struct : str) -> str :
 def generate_factory_argless_generate_def(struct : str, vulkan_info: types.VulkanInfo) -> str :
 
     return dedent(f"""
-                    Generated{struct} {struct_factory_name(struct)}::Generate() {{
+                    Generated{struct} {struct_factory_name(struct)}::Generate(const ReplayContext& context) {{
                         std::unique_ptr<VkStructSidecar> sidecar(new VkStructSidecar());
                         return Generate(std::move(sidecar));
                     }}""")
@@ -488,7 +489,7 @@ def generate_factory_argless_generate_def(struct : str, vulkan_info: types.Vulka
 def generate_factory_generate_def(struct : str, vulkan_info: types.VulkanInfo) -> str :
 
     head = dedent(f"""
-                  Generated{struct} {struct_factory_name(struct)}::Generate(std::unique_ptr<VkStructSidecar> sidecar) {{
+                  Generated{struct} {struct_factory_name(struct)}::Generate(const ReplayContext& context, std::unique_ptr<VkStructSidecar> sidecar) {{
                       Generated{struct} ret(std::move(sidecar));
                   """)
 
@@ -559,7 +560,7 @@ def generate_factory_generate_def(struct : str, vulkan_info: types.VulkanInfo) -
 def generate_factory_pnext_generate_def(struct : str, vulkan_info: types.VulkanInfo) -> str :
 
     return dedent(f"""
-                    VkBaseInStructure* {struct_factory_name(struct)}::GenerateAsPNext(std::unique_ptr<VkStructSidecar> sidecar) {{
+                    VkBaseInStructure* {struct_factory_name(struct)}::GenerateAsPNext(const ReplayContext& context, std::unique_ptr<VkStructSidecar> sidecar) {{
                         {struct} *{struct}Ptr = sidecar->allocateSidecarData<{struct}>(sizeof({struct}));
                         Generated{struct} pNext = Generate(sidecar->CreateSubordinate());
                         *{struct}Ptr = pNext.object();
