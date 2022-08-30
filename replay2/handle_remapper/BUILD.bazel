@@ -20,8 +20,8 @@ basic_vulkan_generator(
 )
 
 cc_import(
-  name = "handle_remapper_src_hdrs",
-  hdrs = glob(
+    name = "handle_remapper_src_hdrs",
+    hdrs = glob(
         [":handle_remapper_src"],
         exclude = ["*.cc"],
     ),
@@ -42,9 +42,9 @@ cc_library(
     ),
     visibility = ["//visibility:public"],
     deps = [
-        "//replay2/core_utils:core_utils",
-        "//replay2/vulkan_base:vulkan_base",
-        "handle_remapper_src_hdrs"
+        "handle_remapper_src_hdrs",
+        "//replay2/core_utils",
+        "//replay2/vulkan_base",
     ],
 )
 
@@ -52,8 +52,8 @@ cc_test(
     name = "handle_remapper_tests",
     srcs = [":handle_remapper_src"],
     deps = [
-        "//replay2/core_utils:core_utils",
-        "//replay2/vulkan_base:vulkan_base",
+        "//replay2/core_utils",
+        "//replay2/vulkan_base",
         "@com_google_googletest//:gtest_main",
     ],
 )

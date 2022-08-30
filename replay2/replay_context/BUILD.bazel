@@ -18,7 +18,7 @@ cc_library(
     hdrs = glob(["*.h"]),
     visibility = ["//visibility:public"],
     deps = [
-        "//replay2/handle_remapper:handle_remapper",
-        "//replay2/memory_remapper:memory_remapper",
+        "//replay2/handle_remapper",
+        "//replay2/memory_remapper",
     ],
 )
