@@ -30,6 +30,7 @@ cc_library(
     deps = [
         "//replay2/core_utils",
         "//replay2/replay_context",
+        "//replay2/handle_remapper",
     ],
 )
 
@@ -38,7 +39,6 @@ cc_test(
     srcs = glob(["**/*.h"]) +[":struct_factories_src"],
     deps = [
         "//replay2/core_utils",
-        "//replay2/handle_remapper:handle_remapper_src_hdrs",
         "//replay2/replay_context",
         "@com_google_googletest//:gtest_main",
     ],
