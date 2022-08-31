@@ -260,7 +260,7 @@ def generate_struct_factories_h(file_path: Path, vulkan_info: types.VulkanInfo):
             public:
                 virtual ~VkStructFactory() {}
                 virtual size_t VkStructMemorySize() = 0;
-                virtual VkBaseInStructure* GenerateAsPNext(std::unique_ptr<VkStructSidecar> sidecar) = 0;
+                virtual VkBaseInStructure* GenerateAsPNext(const ReplayContext& context, std::unique_ptr<VkStructSidecar> sidecar) = 0;
             };
 
         """))
@@ -483,7 +483,7 @@ def generate_factory_argless_generate_def(struct : str, vulkan_info: types.Vulka
     return dedent(f"""
                     Generated{struct} {struct_factory_name(struct)}::Generate(const ReplayContext& context) {{
                         std::unique_ptr<VkStructSidecar> sidecar(new VkStructSidecar());
-                        return Generate(std::move(sidecar));
+                        return Generate(context, std::move(sidecar));
                     }}""")
 
 def generate_factory_generate_def(struct : str, vulkan_info: types.VulkanInfo) -> str :
@@ -507,9 +507,9 @@ def generate_factory_generate_def(struct : str, vulkan_info: types.VulkanInfo) -
         middle += f"""\n{codegen.indent_characters()}"""
 
         if member == "pNext":
-            middle += f"""ret.object().{member} = {member}_->GenerateAsPNext(ret.CreateSubordinateSidecar());"""
+            middle += f"""ret.object().{member} = {member}_->GenerateAsPNext(context, ret.CreateSubordinateSidecar());"""
         elif mapped_type.endswith("Factory"):
-            middle += f"""auto Generated{member} = {member}_.Generate(ret.CreateSubordinateSidecar());\n"""
+            middle += f"""auto Generated{member} = {member}_.Generate(context, ret.CreateSubordinateSidecar());\n"""
             middle += f"""ret.object().{member} = Generated{member}.object();""";
         elif mapped_type.startswith("std::vector<"):
             vector_type = mapped_type[len("std::vector<"): -len(">")]
@@ -525,7 +525,7 @@ def generate_factory_generate_def(struct : str, vulkan_info: types.VulkanInfo) -
                 element_type = vector_type[0:-len("Factory")]
                 middle += f"""{element_type} *{member}Scratch = ret.allocateSidecarData<{element_type}>({member}_.size());\n"""
                 middle += f"""for(int i = 0; i < {member}_.size(); ++i){{\n"""
-                middle += f"""auto Generated{member} = {member}_[i].Generate(ret.CreateSubordinateSidecar());\n"""
+                middle += f"""auto Generated{member} = {member}_[i].Generate(context, ret.CreateSubordinateSidecar());\n"""
                 middle += f"""{member}Scratch[i] = Generated{member}.object();//HELLO\n"""
                 middle += f"""}}\n"""
                 middle += f"""ret.object().{member} = {member}Scratch;"""
@@ -562,7 +562,7 @@ def generate_factory_pnext_generate_def(struct : str, vulkan_info: types.VulkanI
     return dedent(f"""
                     VkBaseInStructure* {struct_factory_name(struct)}::GenerateAsPNext(const ReplayContext& context, std::unique_ptr<VkStructSidecar> sidecar) {{
                         {struct} *{struct}Ptr = sidecar->allocateSidecarData<{struct}>(sizeof({struct}));
-                        Generated{struct} pNext = Generate(sidecar->CreateSubordinate());
+                        Generated{struct} pNext = Generate(context, sidecar->CreateSubordinate());
                         *{struct}Ptr = pNext.object();
                         return ((VkBaseInStructure*){struct}Ptr);
                     }}""")

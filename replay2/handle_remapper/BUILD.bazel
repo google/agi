@@ -28,10 +28,7 @@ cc_library(
             "*.h",
         ],
     ),
-    hdrs = glob(
-        [":handle_remapper_src"],
-        exclude = ["*.cc"],
-    ),
+    hdrs = [":handle_remapper_src"],
     visibility = ["//visibility:public"],
     deps = [
         "//replay2/core_utils",

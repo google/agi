@@ -25,7 +25,7 @@ cc_library(
         [":struct_factories_src"],
         exclude = ["*_test.cpp"],
     ),
-    hdrs = glob(["*.h"]),
+    hdrs = [":struct_factories_src"],
     visibility = ["//visibility:public"],
     deps = [
         "//replay2/core_utils",
