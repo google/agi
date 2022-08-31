@@ -156,20 +156,20 @@ def gapid_dependencies(android = True, mingw = True, locals = {}):
         sha256 = "20ab6da9929826c7c81ea3b7348190538a23f823a8b749c2da9715ecb7a6b545",
     )
 
-    # Override the gRPC abseil dependency, so we can patch it.
-    maybe_repository(
-        github_repository,
-        name = "com_google_absl",
-        locals = locals,
-        organization = "abseil",
-        project = "abseil-cpp",
-        commit = "273292d1cfc0a94a65082ee350509af1d113344d",  # LTS 20220623, Patch 0
-        sha256 = "6764f226bd6e2d8ab9fe2f3cab5f45fb1a4a15c04b58b87ba7fa87456054f98b",
-        patches = [
-            # Workaround for https://github.com/abseil/abseil-cpp/issues/326.
-            "@gapid//tools/build/third_party:abseil_macos_fix.patch",
-        ],
-    )
+    # # Override the gRPC abseil dependency, so we can patch it.
+    # maybe_repository(
+    #     github_repository,
+    #     name = "com_google_absl",
+    #     locals = locals,
+    #     organization = "abseil",
+    #     project = "abseil-cpp",
+    #     commit = "273292d1cfc0a94a65082ee350509af1d113344d",  # LTS 20220623, Patch 0
+    #     sha256 = "6764f226bd6e2d8ab9fe2f3cab5f45fb1a4a15c04b58b87ba7fa87456054f98b",
+    #     patches = [
+    #         # Workaround for https://github.com/abseil/abseil-cpp/issues/326.
+    #         "@gapid//tools/build/third_party:abseil_macos_fix.patch",
+    #     ],
+    # )
 
     maybe_repository(
         github_repository,
