@@ -322,7 +322,7 @@ type (
 		Capture struct {
 			Frames int `help:"only capture the given number of frames. 0 for all"`
 		}
-		UseAndroidFrameBoundary bool `help:"If false: ignore the ANDROID_frame_boundary extension. If true: respect it."`
+		UseAndroidFrameBoundary bool `help:"When enabled, AGI uses ANDROID_frame_boundary extension as frame delimiters. Otherwise, present calls are used. Default is false."`
 		No                         struct {
 			Buffer bool `help:"Do not buffer the output, this helps if the application crashes"`
 		}
