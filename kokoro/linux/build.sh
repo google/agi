@@ -166,8 +166,8 @@ sudo apt-get -qy install libvulkan1 xvfb
 # Get prebuilt SwiftShader.
 # This is the latest commit at the time of writing.
 # Should be updated periodically.
-$CURL -o swiftshader.zip https://github.com/google/gfbuild-swiftshader/releases/download/github%2Fgoogle%2Fgfbuild-swiftshader%2F0bbf7ba9f909092f0328b1d519d5f7db1773be57/gfbuild-swiftshader-0bbf7ba9f909092f0328b1d519d5f7db1773be57-Linux_x64_Debug.zip
-echo "0b9fc77c469da6f047df6bf2b9103350551c93cde21eee5d51013c1cda046619  swiftshader.zip" | sha256sum --check
+$CURL -o swiftshader.zip https://github.com/google/gfbuild-swiftshader/releases/download/github%2Fgoogle%2Fgfbuild-swiftshader%2F8f075627d16bdd2a8d861e9d81df541f5cf68e2e/gfbuild-swiftshader-8f075627d16bdd2a8d861e9d81df541f5cf68e2e-Linux_x64_Debug.zip
+echo "820c7bf9aacd8105999cff5c2d82a48ab851b3f2f9b1fc48947f0e87e7566094  swiftshader.zip" | sha256sum --check
 unzip -d swiftshader swiftshader.zip
 
 # Use SwiftShader.
