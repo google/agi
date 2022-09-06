@@ -591,7 +591,9 @@ int main(int argc, const char** argv) {
         }
       }
       if (!found) {
-        write_error(kOutHandle, "Could not find all instance extensions");
+        std::string errorMessage = "Could not find instance extension: ";
+        errorMessage.append(kRequiredInstanceExtensions[i]);
+        write_error(kOutHandle, errorMessage.c_str());
       } else {
         instance_extensions.push_back(kRequiredInstanceExtensions[i]);
       }
