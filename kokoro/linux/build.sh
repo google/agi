@@ -173,7 +173,7 @@ unzip -d swiftshader swiftshader.zip
 # Use SwiftShader.
 export VK_ICD_FILENAMES="$(pwd)/swiftshader/lib/vk_swiftshader_icd.json"
 # For extensive Vulkan loader logs, set to VK_LOADER_DEBUG=all
-export VK_LOADER_DEBUG=warn
+export VK_LOADER_DEBUG=all
 
 # Just try running the app first.
 
