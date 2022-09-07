@@ -163,6 +163,11 @@ popd
 # Install the Vulkan loader and xvfb (X virtual framebuffer).
 sudo apt-get -qy install libvulkan1 xvfb
 
+# Upgrade libstdc++6 for Swiftshader
+sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+sudo apt-get update
+sudo apt-get upgrade -y libstdc++6
+
 # Get prebuilt SwiftShader.
 # This is the latest commit at the time of writing.
 # Should be updated periodically.
