@@ -18,6 +18,7 @@ fuchsia_cc_binary(
     name = "gapii_server",
     srcs = ["gapii_server.cc"],
     deps = [
+        "@fuchsia_sdk//fidl/fuchsia.gpu.agis:fuchsia.gpu.agis_cc",
         "@fuchsia_sdk//fidl/fuchsia.io:fuchsia.io_cc",
         "@fuchsia_sdk//fidl/fuchsia.ldsvc:fuchsia.ldsvc_cc",
         "@fuchsia_sdk//pkg/async-loop-cpp",

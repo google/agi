@@ -56,8 +56,12 @@ cc_library(
     ] + select({
         "//tools/build:darwin": [":darwin_query"],
         "//tools/build:fuchsia-arm64": [
+            "@fuchsia_sdk//fidl/fuchsia.gpu.agis:fuchsia.gpu.agis_cc",
             "@fuchsia_sdk//fidl/fuchsia.hwinfo:fuchsia.hwinfo_cc",
+            "@fuchsia_sdk//pkg/async-loop-cpp",
+            "@fuchsia_sdk//pkg/async-loop-default",
             "@fuchsia_sdk//pkg/sys_cpp",
+
         ],
         "//conditions:default": [],
     }),
