@@ -60,4 +60,3 @@ class Pool {
 }  // namespace gapil
 
 #endif  // GAPIL_POOL_H
-

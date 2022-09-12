@@ -17,16 +17,15 @@ load("@rules_fuchsia//fuchsia:defs.bzl", "fuchsia_cc_binary", "fuchsia_component
 fuchsia_cc_binary(
     name = "gapii_server",
     srcs = ["gapii_server.cc"],
+    sdk_root_label = "@fuchsia_sdk",
     deps = [
         "@fuchsia_sdk//fidl/fuchsia.gpu.agis:fuchsia.gpu.agis_cc",
         "@fuchsia_sdk//fidl/fuchsia.io:fuchsia.io_cc",
         "@fuchsia_sdk//fidl/fuchsia.ldsvc:fuchsia.ldsvc_cc",
         "@fuchsia_sdk//pkg/async-loop-cpp",
         "@fuchsia_sdk//pkg/async-loop-default",
-        "@fuchsia_sdk//pkg/fdio",
         "@fuchsia_sdk//pkg/vfs_cpp",
     ],
-    sdk_root_label = "@fuchsia_sdk",
 )
 
 fuchsia_component_manifest(
@@ -56,12 +55,3 @@ fuchsia_package(
         ":graphics_spy_json",
     ],
 )
-
-#
-# Deprecated
-#
-# fuchsia_package_archive(
-#     name = "gapii.far",
-#     archive_name = "gapii.far",
-#     package = ":gapii",
-# )

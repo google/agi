@@ -61,7 +61,6 @@ cc_library(
             "@fuchsia_sdk//pkg/async-loop-cpp",
             "@fuchsia_sdk//pkg/async-loop-default",
             "@fuchsia_sdk//pkg/sys_cpp",
-
         ],
         "//conditions:default": [],
     }),

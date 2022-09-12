@@ -100,15 +100,15 @@ class Spy : public VulkanSpy {
 
 #if TARGET_OS == GAPID_OS_FUCHSIA
   // Register with agis service.  Returns the socket.
-  int AgisRegister();
+  void AgisRegister();
 
   // Process all outstanding async fidl requests.
   void LoopWait();
 
   int mAgisNumConnections;
   std::unique_ptr<async::Loop> mAgisLoop;
-  fuchsia::gpu::agis::SessionPtr mAgisSession;
-  int mSocketFd;
+  fuchsia::gpu::agis::ComponentRegistryPtr mAgisComponentRegistry;
+  zx::socket mSocket;
 #endif
 
   friend struct spy_creator;

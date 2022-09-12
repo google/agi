@@ -64,12 +64,7 @@ cc_library(
             "-framework OpenGL",
         ],
         "//tools/build:windows": [],
-        "//tools/build:fuchsia-arm64": [
-            "@fuchsia_sdk//fidl/fuchsia.gpu.agis:fuchsia.gpu.agis_cc",
-            "@fuchsia_sdk//pkg/async-loop-cpp",
-            "@fuchsia_sdk//pkg/async-loop-default",
-            "@fuchsia_sdk//pkg/fdio",
-	],
+        "//tools/build:fuchsia-arm64": [],
         # Android
         "//conditions:default": [
             "-ldl",

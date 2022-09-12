@@ -49,8 +49,8 @@
 #endif  // TARGET_OS == GAPID_OS_ANDROID
 
 #if TARGET_OS == GAPID_OS_FUCHSIA
-#include <atomic>
 #include <lib/sys/cpp/component_context.h>
+#include <atomic>
 #endif
 
 namespace {
@@ -96,9 +96,13 @@ struct spy_creator {
 zx_koid_t FuchsiaProcessID() {
   zx::unowned<zx::process> process = zx::process::self();
   zx_info_handle_basic_t info;
-  zx_status_t status = zx_object_get_info(process->get(), ZX_INFO_HANDLE_BASIC, &info, sizeof(info),
-                                          nullptr /* actual */, nullptr /* avail */);
-  EXPECT_EQ(status, ZX_OK);
+  zx_status_t status = zx_object_get_info(
+      process->get(), ZX_INFO_HANDLE_BASIC, &info, sizeof(info),
+      nullptr /* actual */, nullptr /* avail */);
+  if (status != ZX_OK) {
+    GAPID_ERROR("Failed to get process handle.");
+    return 0;
+  }
   return info.koid;
 }
 
@@ -161,12 +165,12 @@ Spy::Spy()
       pipe = envPipe;
     }
     mConnection = ConnectionStream::listenPipe(pipe.c_str(), true);
-#else                                           // TARGET_OS
+#else  // TARGET_OS
 #if TARGET_OS == GAPID_OS_FUCHSIA
-    mSocketFd = AgisRegister();
-    assert(mSocketFd != -1) && "Bad socket file descriptor";
-    auto socketString = std::to_string(mSocketFd);
-    mConnection = ConnectionStream::listenSocket("127.0.0.1", socketString.c_str());
+    AgisRegister();
+    // TODO(rosasco): amend Connection and related to work with Zircon sockets.
+    // mConnection = ConnectionStream::listenSocket("127.0.0.1",
+    // socketString.c_str());
 #else
     mConnection = ConnectionStream::listenSocket("127.0.0.1", "9286");
 #endif
@@ -291,55 +295,47 @@ Spy::~Spy() {
 
 #if TARGET_OS == GAPID_OS_FUCHSIA
 void Spy::AgisRegister() {
-    mSocketFd = -1;
-    mAgisNumConnections = 0;
+  mAgisNumConnections = 0;
 
-    // Make AgisRegister() re-entrant by flushing outstanding loop requests.
-    if (mAgisLoop) {
-      LoopWait();
-      mAgisLoop->Quit();
-    }
-
-    // Establish message loop, component context and agis session.
-    mAgisLoop = std::make_unique<async::Loop>(&kAsyncLoopConfigAttachToCurrentThread);
-
-    std::unique_ptr<sys::ComponentContext> context = sys::ComponentContext::Create();
-    context->svc()->Connect(mAgisSession.NewRequest(mAgisLoop->dispatcher()));
-
-    mAgisSession.set_error_handler([this](zx_status_t status) {
-      GAPID_FATAL("Unable to set agis error handler");
-      mAgisLoop->Quit();
-    });
-
-    // Get process info.
-    zx_koid_t processId = FuchsiaProcessID();
-    std::string processName = FuchsiaProcessName();
-
-    // Issue register request.
-    outstanding++;
-    mAgisSession->Register(
-        processId, std::move(processName),
-        [&](fuchsia::gpu::agis::Session_Register_Result result) {
-          fuchsia::gpu::agis::Session_Register_Response response(
-              std::move(result.response()));
-          const auto registerStatus = result.err();
-          if (status != fuchsia::gpu::agis::Status::OK) {
-            GAPID_FATAL("Couldn't register component with fuchsia::gpu::agis: (%d)",
-                registerStatus);
-          }
-          zx::handle socket = response.ResultValue_();
-          if (socket.get() == 0ul) {
-            GAPID_FATAL("Null socket handle response.");
-          }
-          zx_status_t fdioStatus = fdio_fd_create(socket.release(), &mSocketFd);
-          if (fdioStatus != ZX_OK) {
-            GAPID_FATAL("Socket to fd conversion failed.");
-          }
-          outstanding--;
-        });
-
+  // Make AgisRegister() re-entrant by flushing outstanding loop requests.
+  if (mAgisLoop) {
     LoopWait();
-    return mSocketFd;
+    mAgisLoop->Quit();
+  }
+
+  // Establish message loop, component context and agis session.
+  mAgisLoop =
+      std::make_unique<async::Loop>(&kAsyncLoopConfigAttachToCurrentThread);
+
+  std::unique_ptr<sys::ComponentContext> context =
+      sys::ComponentContext::Create();
+  context->svc()->Connect(
+      mAgisComponentRegistry.NewRequest(mAgisLoop->dispatcher()));
+
+  mAgisComponentRegistry.set_error_handler([this](zx_status_t status) {
+    GAPID_FATAL("Unable to set agis error handler");
+    mAgisLoop->Quit();
+  });
+
+  // Get process info.
+  zx_koid_t processId = FuchsiaProcessID();
+  std::string processName = FuchsiaProcessName();
+
+  // Issue register request.
+  outstanding++;
+
+  // TODO(rosasco): generate a usable client id here.
+  const uint64_t kPlaceholderClientId = 0xCAFE9999;
+  mAgisComponentRegistry->Register(
+      kPlaceholderClientId, processId, std::move(processName),
+      [&](fuchsia::gpu::agis::ComponentRegistry_Register_Result result) {
+        if (result.is_err()) {
+          GAPID_FATAL("Agis Register() failed.");
+        }
+        outstanding--;
+      });
+
+  LoopWait();
 }
 
 void Spy::LoopWait() {
@@ -380,7 +376,7 @@ void Spy::endTraceIfRequested() {
     // allow some time for the message to arrive
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
 #if TARGET_OS == GAPID_OS_FUCHSIA
-    close(mSocketFd);
+    mSocket.reset();
 #endif
     mConnection->close();
     set_suspended(true);
