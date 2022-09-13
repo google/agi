@@ -82,8 +82,8 @@ def gapid_dependencies(android = True, mingw = True, locals = {}):
         locals = locals,
         organization = "google",
         project = "protobuf",
-        commit = "909a0f36a10075c4b4bc70fdee2c7e32dd612a72",  # 3.17.3
-        sha256 = "e1853700543f5dfccf05648bb54f16e0add0154a03024334e8b0abd96655f652",
+        commit = "839b18b1ba42639fedecfd751102afcc5736b5d4",  # 3.21.2
+        sha256 = "7678c30b99f40500fc1409355cd58353dc6e0991893db5b1fbad443d30e5b21e",
         repo_mapping = {"@zlib": "@net_zlib"},
     )
 
