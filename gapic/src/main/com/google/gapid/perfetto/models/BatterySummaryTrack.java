@@ -26,7 +26,6 @@ import com.google.gapid.models.Perfetto;
 import com.google.gapid.perfetto.models.QueryEngine.Row;
 import com.google.gapid.perfetto.views.BatterySelectionView;
 import com.google.gapid.perfetto.views.BatterySummaryPanel;
-import com.google.gapid.perfetto.views.EnergyBreakdownPanel;
 import com.google.gapid.perfetto.views.State;
 import com.google.gapid.perfetto.views.TitlePanel;
 
