@@ -20,11 +20,11 @@ go get github.com/bazelbuild/buildtools/buildifier
 # Buildozer
 go get github.com/bazelbuild/buildtools/buildozer
 
-# Clang format 6.0
+# Clang format 11
 ## On Debian-based Linux (see https://releases.llvm.org/download.html for binaries)
-apt-get install clang-format-6.0
+apt-get install clang-format-11
 ## Make sure to set the CLANG_FORMAT environment variable, e.g. in bash:
-export CLANG_FORMAT=clang-format-6.0
+export CLANG_FORMAT=clang-format-11
 ```
 
 With the above setup, you can run presubmit tests locally with:
