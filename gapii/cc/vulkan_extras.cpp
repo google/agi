@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 #include <bitset>
+
 #include "gapii/cc/vulkan_layer_extras.h"
 #include "gapii/cc/vulkan_spy.h"
 #include "gapis/api/vulkan/vulkan_pb/extras.pb.h"
-
 #include "spirv_reflect.h"
 
 namespace gapii {

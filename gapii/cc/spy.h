@@ -17,12 +17,12 @@
 #ifndef GAPII_SPY_H
 #define GAPII_SPY_H
 
-#include "core/cc/thread.h"
-#include "gapii/cc/vulkan_spy.h"
-
 #include <atomic>
 #include <memory>
 #include <unordered_map>
+
+#include "core/cc/thread.h"
+#include "gapii/cc/vulkan_spy.h"
 
 namespace gapii {
 struct spy_creator;

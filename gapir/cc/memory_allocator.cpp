@@ -14,16 +14,17 @@
  * limitations under the License.
  */
 
+#include "memory_allocator.h"
+
 #include <assert.h>
+#include <sys/time.h>
+
 #include <cstring>
 #include <iostream>
 #include <set>
 #include <sstream>
 
-#include <sys/time.h>
-
 #include "core/cc/log.h"
-#include "memory_allocator.h"
 
 namespace gapir {
 

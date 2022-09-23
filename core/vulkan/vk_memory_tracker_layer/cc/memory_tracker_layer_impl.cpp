@@ -15,6 +15,7 @@
  */
 
 #include <stdlib.h>
+
 #include <algorithm>
 #include <sstream>
 #include <thread>
@@ -25,10 +26,9 @@
 #endif
 
 #include "core/cc/make_unique.h"
+#include "core/vulkan/vk_memory_tracker_layer/cc/memory_tracker_layer_impl.h"
 #include "core/vulkan/vk_memory_tracker_layer/cc/tracing_helpers.h"
 #include "perfetto/base/time.h"
-
-#include "core/vulkan/vk_memory_tracker_layer/cc/memory_tracker_layer_impl.h"
 
 using namespace std::chrono;
 

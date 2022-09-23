@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 
-#include "GlslangToSpv.h"
-#include "spirv-tools/libspirv.hpp"
-
 #include "libmanager.h"
 
 #include <cstring>
@@ -24,6 +21,9 @@
 #include <sstream>
 #include <string>
 #include <vector>
+
+#include "GlslangToSpv.h"
+#include "spirv-tools/libspirv.hpp"
 
 const TBuiltInResource DefaultTBuiltInResource = {
     /* .MaxLights = */ 32,

@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include "gapil/runtime/cc/encoder.h"
+
 #include <gmock/gmock.h>
 #include <google/protobuf/descriptor.pb.h>
 #include <gtest/gtest.h>
@@ -23,7 +25,6 @@
 
 #include "gapil/encoder/test/api.pb.h"
 #include "gapil/encoder/test/encoder_types.h"
-#include "gapil/runtime/cc/encoder.h"
 
 using testing::_;
 using testing::DoAll;

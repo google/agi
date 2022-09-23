@@ -18,6 +18,7 @@
 #ifndef __PERFETTO_THREADLOCAL_EMITTER_H__
 #define __PERFETTO_THREADLOCAL_EMITTER_H__
 #include <atomic>
+
 #include "core/memory/arena/cc/arena.h"
 #include "core/vulkan/perfetto_producer/perfetto_proto_structs.h"
 #include "core/vulkan/perfetto_producer/threadlocal_emitter_base.h"

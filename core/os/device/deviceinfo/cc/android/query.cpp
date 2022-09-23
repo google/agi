@@ -16,14 +16,14 @@
 
 #include "../query.h"
 
-#include "core/cc/assert.h"
-#include "core/cc/log.h"
+#include <android/log.h>
+#include <sys/system_properties.h>
 
 #include <cstring>
 #include <sstream>
 
-#include <android/log.h>
-#include <sys/system_properties.h>
+#include "core/cc/assert.h"
+#include "core/cc/log.h"
 
 #define LOG_ERR(...) __android_log_print(ANDROID_LOG_ERROR, "AGI", __VA_ARGS__);
 

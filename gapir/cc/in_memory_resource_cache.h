@@ -17,16 +17,14 @@
 #ifndef GAPIR_IN_MEMORY_RESOURCE_CACHE_H
 #define GAPIR_IN_MEMORY_RESOURCE_CACHE_H
 
-#include "memory_allocator.h"
-
-#include "replay_service.h"
-#include "resource_cache.h"
-
-#include "core/cc/assert.h"
-
 #include <functional>
 #include <memory>
 #include <unordered_map>
+
+#include "core/cc/assert.h"
+#include "memory_allocator.h"
+#include "replay_service.h"
+#include "resource_cache.h"
 
 namespace gapir {
 

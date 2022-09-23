@@ -14,6 +14,24 @@
  * limitations under the License.
  */
 
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+#include <memory>
+#include <mutex>
+#include <sstream>
+#include <thread>
+
+#include "core/cc/crash_handler.h"
+#include "core/cc/debugger.h"
+#include "core/cc/log.h"
+#include "core/cc/socket_connection.h"
+#include "core/cc/supported_abis.h"
+#include "core/cc/target.h"
+#include "core/cc/version.h"
 #include "gapir/cc/archive_replay_service.h"
 #include "gapir/cc/cached_resource_loader.h"
 #include "gapir/cc/context.h"
@@ -25,28 +43,11 @@
 #include "gapir/cc/server.h"
 #include "gapir/cc/surface.h"
 
-#include "core/cc/crash_handler.h"
-#include "core/cc/debugger.h"
-#include "core/cc/log.h"
-#include "core/cc/socket_connection.h"
-#include "core/cc/supported_abis.h"
-#include "core/cc/target.h"
-#include "core/cc/version.h"
-
-#include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <memory>
-#include <mutex>
-#include <sstream>
-#include <thread>
-
 #if TARGET_OS == GAPID_OS_ANDROID
 #include <android/window.h>
 #include <sys/stat.h>
 #include <sys/system_properties.h>
+
 #include "android_native_app_glue.h"
 #include "gapir/cc/android/asset_replay_service.h"
 #include "gapir/cc/android/asset_resource_cache.h"
@@ -490,7 +491,9 @@ std::unique_ptr<Server> Setup(const char* uri, const char* authToken,
               }
               break;
             }
-            default: { GAPID_FATAL("Unknown replay request type"); }
+            default: {
+              GAPID_FATAL("Unknown replay request type");
+            }
           }
         } while (true);
       });
@@ -881,18 +884,19 @@ std::unique_ptr<ResourceCache> createCache(
         if (useTempCacheFolder) {
           // Using temporary folder for cache files, delete both the files and
           // the folder.
-          nftw(onDiskCachePath.c_str(),
-               [](const char* fpath, const struct stat* sb, int typeflag,
-                  struct FTW* ftwbuf) -> int {
-                 switch (typeflag) {
-                   case FTW_D:
-                     return rmdir(fpath);
-                   default:
-                     return unlink(fpath);
-                 }
-                 return 0;
-               },
-               64, FTW_DEPTH);
+          nftw(
+              onDiskCachePath.c_str(),
+              [](const char* fpath, const struct stat* sb, int typeflag,
+                 struct FTW* ftwbuf) -> int {
+                switch (typeflag) {
+                  case FTW_D:
+                    return rmdir(fpath);
+                  default:
+                    return unlink(fpath);
+                }
+                return 0;
+              },
+              64, FTW_DEPTH);
           rmdir(onDiskCachePath.c_str());
         } else {
           // The OnDiskResourceCache must have been created with "clean up"

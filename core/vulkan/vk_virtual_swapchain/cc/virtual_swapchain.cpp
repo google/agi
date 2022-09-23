@@ -290,19 +290,21 @@ VirtualSwapchain::VirtualSwapchain(
   }
 
 #ifdef _WIN32
-  thread_ = CreateThread(NULL, 0,
-                         [](void* data) -> DWORD {
-                           ((VirtualSwapchain*)data)->CopyThreadFunc();
-                           return 0;
-                         },
-                         this, 0, nullptr);
+  thread_ = CreateThread(
+      NULL, 0,
+      [](void* data) -> DWORD {
+        ((VirtualSwapchain*)data)->CopyThreadFunc();
+        return 0;
+      },
+      this, 0, nullptr);
 #else
-  pthread_create(&thread_, nullptr,
-                 +[](void* data) -> void* {
-                   ((VirtualSwapchain*)data)->CopyThreadFunc();
-                   return nullptr;
-                 },
-                 this);
+  pthread_create(
+      &thread_, nullptr,
+      +[](void* data) -> void* {
+        ((VirtualSwapchain*)data)->CopyThreadFunc();
+        return nullptr;
+      },
+      this);
 #endif
   GetParameter(kImageDumpPathEnv, kImageDumpPathAndroidProp, &image_dump_dir_);
 }

@@ -15,10 +15,11 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
-#include "etc2.h"
-#include "third_party/etc2comp/EtcLib/Etc/EtcImage.h"
 
 #include <vector>
+
+#include "etc2.h"
+#include "third_party/etc2comp/EtcLib/Etc/EtcImage.h"
 
 static_assert(sizeof(etc_error) >= sizeof(Etc::Image::EncodingStatus),
               "etc_error should superset of Etc::Image::EncodingStatus to "

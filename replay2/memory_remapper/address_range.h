@@ -15,11 +15,11 @@
 #ifndef REPLAY2_MEMORY_REMAPPER_ADDRESS_RANGE_H
 #define REPLAY2_MEMORY_REMAPPER_ADDRESS_RANGE_H
 
+#include <type_traits>
+
 #include "capture_address.h"
 #include "replay_address.h"
 #include "typesafe_address.h"
-
-#include <type_traits>
 
 namespace agi {
 namespace replay2 {

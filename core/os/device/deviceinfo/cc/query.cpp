@@ -17,6 +17,7 @@
 #include "query.h"
 
 #include <city.h>
+
 #include <iostream>
 
 namespace {

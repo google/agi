@@ -20,13 +20,12 @@
 
 #include "core/cc/recursive_spinlock.h"
 #include "core/memory/arena/cc/arena.h"
+#include "core/vulkan/perfetto_producer/threadlocal_emitter_base.h"
 #include "gapil/runtime/cc/map.h"
 #include "gapil/runtime/cc/map.inc"
 #include "perfetto/tracing/core/data_source_descriptor.h"
 #include "perfetto/tracing/data_source.h"
 #include "perfetto/tracing/tracing.h"
-
-#include "core/vulkan/perfetto_producer/threadlocal_emitter_base.h"
 
 namespace core {
 

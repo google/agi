@@ -17,21 +17,19 @@
 #ifndef GAPIR_INTERPRETER_H
 #define GAPIR_INTERPRETER_H
 
-#include "function_table.h"
-#include "stack.h"
-#include "thread_pool.h"
-
-#include "gapir/cc/replay_service.h"
-#include "gapir/replay_service/vm.h"
-
-#include "core/cc/crash_handler.h"
-
 #include <stdint.h>
 
 #include <functional>
 #include <future>
 #include <unordered_map>
 #include <utility>
+
+#include "core/cc/crash_handler.h"
+#include "function_table.h"
+#include "gapir/cc/replay_service.h"
+#include "gapir/replay_service/vm.h"
+#include "stack.h"
+#include "thread_pool.h"
 
 namespace gapir {
 

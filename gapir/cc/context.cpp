@@ -15,6 +15,9 @@
  */
 
 #include "context.h"
+
+#include "core/cc/log.h"
+#include "core/cc/target.h"
 #include "gapir/cc/vulkan_gfx_api.h"
 #include "interpreter.h"
 #include "memory_manager.h"
@@ -25,9 +28,6 @@
 #include "resource_loader.h"
 #include "stack.h"
 #include "vulkan_renderer.h"
-
-#include "core/cc/log.h"
-#include "core/cc/target.h"
 
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>

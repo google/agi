@@ -18,6 +18,7 @@
 
 #if COHERENT_TRACKING_ENABLED
 #include <Windows.h>
+
 #include <atomic>
 #include <functional>
 
@@ -26,12 +27,10 @@ namespace track_memory {
 
 bool set_protection(void* p, size_t size, PageProtections prot) {
   DWORD oldProt;
-  DWORD protections =
-      (prot == PageProtections::kRead)
-          ? PAGE_READONLY
-          : (prot == PageProtections::kWrite)
-                ? PAGE_READWRITE
-                : (prot == PageProtections::kReadWrite) ? PAGE_READWRITE : 0;
+  DWORD protections = (prot == PageProtections::kRead)        ? PAGE_READONLY
+                      : (prot == PageProtections::kWrite)     ? PAGE_READWRITE
+                      : (prot == PageProtections::kReadWrite) ? PAGE_READWRITE
+                                                              : 0;
   return VirtualProtect(p, size, protections, &oldProt);
 }
 

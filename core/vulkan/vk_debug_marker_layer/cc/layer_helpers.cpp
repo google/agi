@@ -24,6 +24,7 @@ __attribute__((constructor)) void _layer_keep_alive_func__();
 class keep_alive_struct {};
 #else
 #include <dlfcn.h>
+
 #include <cstdint>
 #include <cstdio>
 class keep_alive_struct {

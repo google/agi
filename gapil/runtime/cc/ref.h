@@ -15,11 +15,10 @@
 #ifndef __GAPIL_RUNTIME_REF_H__
 #define __GAPIL_RUNTIME_REF_H__
 
-#include "maker.h"
+#include <cstddef>  // nullptr_t
 
 #include "core/memory/arena/cc/arena.h"
-
-#include <cstddef>  // nullptr_t
+#include "maker.h"
 
 namespace gapil {
 

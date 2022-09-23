@@ -16,14 +16,14 @@
 
 #include "layer.h"
 
+#include <vulkan/vk_layer.h>
+#include <vulkan/vulkan.h>
+
 #include <cstring>
 #include <string>
 #include <type_traits>
 #include <unordered_map>
 #include <vector>
-
-#include <vulkan/vk_layer.h>
-#include <vulkan/vulkan.h>
 
 #include "swapchain.h"
 

@@ -16,11 +16,10 @@
 
 #include "core/cc/thread.h"
 
+#include "utils.h"
 #include "zircon/syscalls.h"
 #include "zircon/syscalls/object.h"
 #include "zircon/threads.h"
-
-#include "utils.h"
 namespace core {
 
 Thread Thread::current() {
