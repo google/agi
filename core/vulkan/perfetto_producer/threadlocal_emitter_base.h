@@ -18,6 +18,8 @@
 #ifndef __THREADLOCAL_EMITTER_BASE_H__
 #define __THREADLOCAL_EMITTER_BASE_H__
 
+#include "perfetto/tracing/data_source.h"
+
 class ThreadlocalEmitterBase {
  public:
   virtual void StartTracing() = 0;
