@@ -14,7 +14,7 @@
 
 package langsvr
 
-import "github.com/google/gapid/core/langsvr/protocol"
+import "github.com/google/agi/core/langsvr/protocol"
 
 // SourceCode contains some source code and a language specifier.
 type SourceCode struct {

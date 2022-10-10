@@ -19,7 +19,7 @@ import (
 	"math"
 	"sort"
 
-	"github.com/google/gapid/core/math/interval"
+	"github.com/google/agi/core/math/interval"
 )
 
 // Allocator is a memory allocator.

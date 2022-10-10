@@ -18,8 +18,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/google/gapid/core/assert"
-	"github.com/google/gapid/gapis/api"
+	"github.com/google/agi/core/assert"
+	"github.com/google/agi/gapis/api"
 )
 
 func TestSubCmdIdxTrie(t *testing.T) {

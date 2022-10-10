@@ -19,8 +19,8 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/google/gapid/core/app/flags"
-	"github.com/google/gapid/core/assert"
+	"github.com/google/agi/core/app/flags"
+	"github.com/google/agi/core/assert"
 )
 
 const (

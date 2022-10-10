@@ -28,7 +28,7 @@ go_library(
     name = "go_default_library",
     srcs = ["doc.go"],
     embed = [":vulkan_pb_go_proto"],  # keep
-    importpath = "github.com/google/gapid/gapis/api/vulkan/vulkan_pb",
+    importpath = "github.com/google/agi/gapis/api/vulkan/vulkan_pb",
     visibility = ["//visibility:public"],
 )
 
@@ -64,7 +64,7 @@ cc_proto_library(
 # keep
 go_proto_library(
     name = "vulkan_pb_go_proto",
-    importpath = "github.com/google/gapid/gapis/api/vulkan/vulkan_pb",
+    importpath = "github.com/google/agi/gapis/api/vulkan/vulkan_pb",
     proto = ":vulkan_pb_proto",
     visibility = ["//visibility:public"],
     deps = ["//gapis/memory/memory_pb:go_default_library"],

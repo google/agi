@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/google/gapid/core/data"
+	"github.com/google/agi/core/data"
 )
 
 type seenMap map[interface{}]reflect.Value

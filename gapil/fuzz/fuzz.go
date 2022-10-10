@@ -20,8 +20,8 @@
 package fuzz
 
 import (
-	"github.com/google/gapid/gapil"
-	"github.com/google/gapid/gapil/semantic"
+	"github.com/google/agi/gapil"
+	"github.com/google/agi/gapil/semantic"
 )
 
 func compile(data []byte) bool {

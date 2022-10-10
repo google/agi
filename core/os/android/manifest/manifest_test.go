@@ -17,9 +17,9 @@ package manifest_test
 import (
 	"testing"
 
-	"github.com/google/gapid/core/assert"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/os/android/manifest"
+	"github.com/google/agi/core/assert"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/os/android/manifest"
 )
 
 const xml = `<manifest xmlns:android="http://schemas.android.com/apk/res/android"

@@ -17,15 +17,15 @@ package replay
 import (
 	"context"
 
-	"github.com/google/gapid/core/app/status"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/os/device/bind"
-	"github.com/google/gapid/gapir"
-	"github.com/google/gapid/gapis/capture"
-	"github.com/google/gapid/gapis/config"
-	"github.com/google/gapid/gapis/replay/builder"
-	"github.com/google/gapid/gapis/resolve/initialcmds"
-	"github.com/google/gapid/gapis/service/path"
+	"github.com/google/agi/core/app/status"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/os/device/bind"
+	"github.com/google/agi/gapir"
+	"github.com/google/agi/gapis/capture"
+	"github.com/google/agi/gapis/config"
+	"github.com/google/agi/gapis/replay/builder"
+	"github.com/google/agi/gapis/resolve/initialcmds"
+	"github.com/google/agi/gapis/service/path"
 )
 
 // Exporter stores the input replays and export them as gapir instruction.

@@ -24,11 +24,11 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
-	"github.com/google/gapid/core/app"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/gapil/ast"
-	"github.com/google/gapid/gapil/format"
-	"github.com/google/gapid/gapil/parser"
+	"github.com/google/agi/core/app"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/gapil/ast"
+	"github.com/google/agi/gapil/format"
+	"github.com/google/agi/gapil/parser"
 )
 
 func init() {

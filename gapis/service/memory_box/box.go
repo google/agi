@@ -18,11 +18,11 @@ import (
 	"context"
 	"reflect"
 
-	"github.com/google/gapid/core/data/pod"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/gapis/memory"
-	"github.com/google/gapid/gapis/service/path"
-	"github.com/google/gapid/gapis/service/types"
+	"github.com/google/agi/core/data/pod"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/gapis/memory"
+	"github.com/google/agi/gapis/service/path"
+	"github.com/google/agi/gapis/service/types"
 )
 
 var (

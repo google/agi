@@ -20,7 +20,7 @@ go_library(
         "doc.go",
         "endian.go",
     ],
-    importpath = "github.com/google/gapid/core/data/endian",
+    importpath = "github.com/google/agi/core/data/endian",
     visibility = ["//visibility:public"],
     deps = [
         "//core/data/binary:go_default_library",

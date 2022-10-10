@@ -15,8 +15,8 @@
 package validate
 
 import (
-	"github.com/google/gapid/core/text/parse/cst"
-	"github.com/google/gapid/gapil/semantic"
+	"github.com/google/agi/core/text/parse/cst"
+	"github.com/google/agi/gapil/semantic"
 )
 
 type fieldUsage struct{ read, written bool }

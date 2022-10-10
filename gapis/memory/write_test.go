@@ -18,8 +18,8 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/google/gapid/core/data/endian"
-	"github.com/google/gapid/core/os/device"
+	"github.com/google/agi/core/data/endian"
+	"github.com/google/agi/core/os/device"
 )
 
 func TestWriteOn32bitArch(t *testing.T) {

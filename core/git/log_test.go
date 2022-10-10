@@ -17,7 +17,7 @@ package git
 import (
 	"testing"
 
-	"github.com/google/gapid/core/assert"
+	"github.com/google/agi/core/assert"
 )
 
 func TestParseLog(t *testing.T) {

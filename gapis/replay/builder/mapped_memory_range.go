@@ -15,9 +15,9 @@
 package builder
 
 import (
-	"github.com/google/gapid/core/math/interval"
-	"github.com/google/gapid/gapis/memory"
-	"github.com/google/gapid/gapis/replay/value"
+	"github.com/google/agi/core/math/interval"
+	"github.com/google/agi/gapis/memory"
+	"github.com/google/agi/gapis/replay/value"
 )
 
 type mappedMemoryRange struct {

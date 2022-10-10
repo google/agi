@@ -20,10 +20,10 @@ import (
 	"io"
 	"testing"
 
-	"github.com/google/gapid/core/assert"
-	"github.com/google/gapid/core/data/id"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/gapis/database"
+	"github.com/google/agi/core/assert"
+	"github.com/google/agi/core/data/id"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/gapis/database"
 	"github.com/pkg/errors"
 )
 

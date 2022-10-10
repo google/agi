@@ -17,7 +17,7 @@ package api
 import (
 	"fmt"
 
-	"github.com/google/gapid/core/math/interval"
+	"github.com/google/agi/core/math/interval"
 )
 
 // CmdIDRange describes an interval of commands.

@@ -6,7 +6,7 @@ go_library(
         "profiling_data.go",
         "validate.go",
     ],
-    importpath = "github.com/google/gapid/gapis/trace/android/adreno",
+    importpath = "github.com/google/agi/gapis/trace/android/adreno",
     visibility = ["//visibility:public"],
     deps = [
         "//core/log:go_default_library",

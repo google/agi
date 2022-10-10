@@ -20,12 +20,12 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/google/gapid/core/data/endian"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/gapis/api"
-	"github.com/google/gapid/gapis/api/sync"
-	"github.com/google/gapid/gapis/memory"
-	"github.com/google/gapid/gapis/service/path"
+	"github.com/google/agi/core/data/endian"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/gapis/api"
+	"github.com/google/agi/gapis/api/sync"
+	"github.com/google/agi/gapis/memory"
+	"github.com/google/agi/gapis/service/path"
 )
 
 type counterType uint32

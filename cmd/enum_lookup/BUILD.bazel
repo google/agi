@@ -32,7 +32,7 @@ go_library(
     embed = [
         ":vulkan_lookup",  # keep
     ],
-    importpath = "github.com/google/gapid/cmd/enum_lookup",
+    importpath = "github.com/google/agi/cmd/enum_lookup",
     visibility = ["//visibility:public"],
     deps = ["//core/app:go_default_library"],
 )

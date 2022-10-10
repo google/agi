@@ -18,10 +18,10 @@ import (
 	"context"
 	"math/bits"
 
-	"github.com/google/gapid/core/math/interval"
-	"github.com/google/gapid/gapis/api"
+	"github.com/google/agi/core/math/interval"
+	"github.com/google/agi/gapis/api"
 
-	"github.com/google/gapid/gapis/memory"
+	"github.com/google/agi/gapis/memory"
 )
 
 type MemoryAccess struct {

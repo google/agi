@@ -15,7 +15,7 @@
 syntax = "proto3";
 
 package replay;
-option go_package = "github.com/google/gapid/gapis/replay";
+option go_package = "github.com/google/agi/gapis/replay";
 
 // ID is a 20-byte identifier.
 message ID {

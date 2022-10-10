@@ -17,7 +17,7 @@ syntax = "proto3";
 package perfetto;
 option java_package = "com.google.gapid.proto.perfetto";
 option java_outer_classname = "Perfetto";
-option go_package = "github.com/google/gapid/gapis/perfetto/service";
+option go_package = "github.com/google/agi/gapis/perfetto/service";
 
 message QueryResult {
   message ColumnDesc {

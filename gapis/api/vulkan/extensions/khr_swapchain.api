@@ -405,7 +405,7 @@ cmd VkResult vkQueuePresentKHR(
           semaphore.SubmitCount = semaphore.SubmitCount - 1
         } else {
           // TODO: handle case when semaphore is not yet signaled
-          // see https://github.com/google/gapid/issues/1860
+          // see https://github.com/google/agi/issues/1860
         }
       }
     }

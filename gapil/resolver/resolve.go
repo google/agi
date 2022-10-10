@@ -20,9 +20,9 @@ package resolver
 import (
 	"fmt"
 
-	"github.com/google/gapid/core/text/parse"
-	"github.com/google/gapid/gapil/ast"
-	"github.com/google/gapid/gapil/semantic"
+	"github.com/google/agi/core/text/parse"
+	"github.com/google/agi/gapil/ast"
+	"github.com/google/agi/gapil/semantic"
 )
 
 // Resolve takes valid asts as produced by the parser and converts them to the

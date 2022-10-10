@@ -17,7 +17,7 @@ package sync
 import (
 	"sort"
 
-	"github.com/google/gapid/gapis/api"
+	"github.com/google/agi/gapis/api"
 )
 
 // SynchronizationIndices is a list of command identifiers, defining the

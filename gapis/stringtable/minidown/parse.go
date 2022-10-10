@@ -18,9 +18,9 @@
 package minidown
 
 import (
-	"github.com/google/gapid/core/text/parse"
-	"github.com/google/gapid/gapis/stringtable/minidown/node"
-	"github.com/google/gapid/gapis/stringtable/minidown/parser"
+	"github.com/google/agi/core/text/parse"
+	"github.com/google/agi/gapis/stringtable/minidown/node"
+	"github.com/google/agi/gapis/stringtable/minidown/parser"
 )
 
 // Parse parses a minidown file.

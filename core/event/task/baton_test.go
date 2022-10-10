@@ -17,9 +17,9 @@ package task_test
 import (
 	"testing"
 
-	"github.com/google/gapid/core/assert"
-	"github.com/google/gapid/core/event/task"
-	"github.com/google/gapid/core/log"
+	"github.com/google/agi/core/assert"
+	"github.com/google/agi/core/event/task"
+	"github.com/google/agi/core/log"
 )
 
 func TestBatonYield(t *testing.T) {

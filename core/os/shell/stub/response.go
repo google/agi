@@ -19,8 +19,8 @@ import (
 	"io"
 	"sync"
 
-	"github.com/google/gapid/core/event/task"
-	"github.com/google/gapid/core/os/shell"
+	"github.com/google/agi/core/event/task"
+	"github.com/google/agi/core/os/shell"
 )
 
 // Response is an implementation of Target that always gives exactly the same response.

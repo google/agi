@@ -17,10 +17,10 @@ package adb
 import (
 	"context"
 
-	"github.com/google/gapid/core/app"
-	"github.com/google/gapid/core/os/android"
-	"github.com/google/gapid/core/os/device/bind"
-	"github.com/google/gapid/core/os/shell"
+	"github.com/google/agi/core/app"
+	"github.com/google/agi/core/os/android"
+	"github.com/google/agi/core/os/device/bind"
+	"github.com/google/agi/core/os/shell"
 )
 
 // Device extends the android.Device interface with adb specific features.

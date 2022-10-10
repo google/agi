@@ -18,9 +18,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/google/gapid/core/assert"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/gapil/analysis"
+	"github.com/google/agi/core/assert"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/gapil/analysis"
 )
 
 func TestU32ToU32MapGlobalAnalysis(t *testing.T) {

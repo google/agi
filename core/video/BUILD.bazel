@@ -20,7 +20,7 @@ go_library(
         "doc.go",
         "encoder.go",
     ],
-    importpath = "github.com/google/gapid/core/video",
+    importpath = "github.com/google/agi/core/video",
     visibility = ["//visibility:public"],
     deps = [
         "//core/app/crash:go_default_library",

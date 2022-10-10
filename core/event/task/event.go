@@ -19,7 +19,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/gapid/core/app/crash"
+	"github.com/google/agi/core/app/crash"
 )
 
 // Event is the interface to things that can be used to wait for conditions to occur.

@@ -18,11 +18,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/google/gapid/core/assert"
-	"github.com/google/gapid/core/data/slice"
-	"github.com/google/gapid/core/fault"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/gapis/api"
+	"github.com/google/agi/core/assert"
+	"github.com/google/agi/core/data/slice"
+	"github.com/google/agi/core/fault"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/gapis/api"
 )
 
 func check(t *testing.T, name string, expected, got uint64) {

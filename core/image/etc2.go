@@ -17,8 +17,8 @@ package image
 import (
 	"fmt"
 
-	"github.com/google/gapid/core/math/sint"
-	"github.com/google/gapid/core/stream"
+	"github.com/google/agi/core/math/sint"
+	"github.com/google/agi/core/stream"
 )
 
 func NewETC2(name string, colorMode FmtETC2_ColorMode, alphaMode FmtETC2_AlphaMode) *Format {

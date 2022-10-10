@@ -14,7 +14,7 @@
 
 package langsvr
 
-import "github.com/google/gapid/core/langsvr/protocol"
+import "github.com/google/agi/core/langsvr/protocol"
 
 // Symbol represents information about programming constructs like variables,
 // classes, interfaces etc.

@@ -17,7 +17,7 @@ package parse
 import (
 	"unicode/utf8"
 
-	"github.com/google/gapid/core/text/parse/cst"
+	"github.com/google/agi/core/text/parse/cst"
 )
 
 type SkipMode int

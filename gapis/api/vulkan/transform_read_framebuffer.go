@@ -19,16 +19,16 @@ import (
 	"fmt"
 	"math/rand"
 
-	"github.com/google/gapid/core/data/binary"
-	"github.com/google/gapid/core/image"
-	"github.com/google/gapid/gapis/api"
-	"github.com/google/gapid/gapis/api/transform"
-	"github.com/google/gapid/gapis/memory"
-	"github.com/google/gapid/gapis/messages"
-	"github.com/google/gapid/gapis/replay"
-	"github.com/google/gapid/gapis/replay/builder"
-	"github.com/google/gapid/gapis/replay/value"
-	"github.com/google/gapid/gapis/service"
+	"github.com/google/agi/core/data/binary"
+	"github.com/google/agi/core/image"
+	"github.com/google/agi/gapis/api"
+	"github.com/google/agi/gapis/api/transform"
+	"github.com/google/agi/gapis/memory"
+	"github.com/google/agi/gapis/messages"
+	"github.com/google/agi/gapis/replay"
+	"github.com/google/agi/gapis/replay/builder"
+	"github.com/google/agi/gapis/replay/value"
+	"github.com/google/agi/gapis/service"
 )
 
 type pendingRead struct {

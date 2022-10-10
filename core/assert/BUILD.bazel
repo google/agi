@@ -30,7 +30,7 @@ go_library(
         "time.go",
         "value.go",
     ],
-    importpath = "github.com/google/gapid/core/assert",
+    importpath = "github.com/google/agi/core/assert",
     visibility = ["//visibility:public"],
     deps = [
         "//core/data/compare:go_default_library",

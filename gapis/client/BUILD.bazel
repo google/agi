@@ -21,7 +21,7 @@ go_library(
         "doc.go",
         "process.go",
     ],
-    importpath = "github.com/google/gapid/gapis/client",
+    importpath = "github.com/google/agi/gapis/client",
     visibility = ["//visibility:public"],
     deps = [
         "//core/app/auth:go_default_library",

@@ -24,10 +24,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/google/gapid/core/app"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/gapil"
-	"github.com/google/gapid/gapil/validate"
+	"github.com/google/agi/core/app"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/gapil"
+	"github.com/google/agi/gapil/validate"
 )
 
 func init() {

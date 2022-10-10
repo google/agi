@@ -17,11 +17,11 @@ package resolve
 import (
 	"context"
 
-	"github.com/google/gapid/core/image"
-	"github.com/google/gapid/gapis/api"
-	"github.com/google/gapid/gapis/messages"
-	"github.com/google/gapid/gapis/service"
-	"github.com/google/gapid/gapis/service/path"
+	"github.com/google/agi/core/image"
+	"github.com/google/agi/gapis/api"
+	"github.com/google/agi/gapis/messages"
+	"github.com/google/agi/gapis/service"
+	"github.com/google/agi/gapis/service/path"
 )
 
 // As resolves and returns the object at p transformed to the requested type.

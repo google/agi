@@ -19,7 +19,7 @@ import (
 	"reflect"
 	"sort"
 
-	"github.com/google/gapid/gapil/semantic"
+	"github.com/google/agi/gapil/semantic"
 )
 
 // Unpack throws away type information to work around template system limitations

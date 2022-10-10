@@ -14,7 +14,7 @@
 
 package git
 
-import "github.com/google/gapid/core/data/id"
+import "github.com/google/agi/core/data/id"
 
 // SHA represents a Git changelist SHA.
 type SHA [20]byte

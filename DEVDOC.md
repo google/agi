@@ -150,7 +150,7 @@ To debug a specific test, you can start this executable under dlv:
 $ dlv exec ./bazel-out/k8-dbg/bin/core/data/slice/linux_amd64_debug/go_default_test -- -test.run TestReplace
 Type 'help' for list of commands.
 (dlv) break TestReplace
-Breakpoint 1 set at 0x5f5d4b for github.com/google/gapid/core/data/slice_test.TestReplace() core/data/slice/slice_test.go:26
+Breakpoint 1 set at 0x5f5d4b for github.com/google/agi/core/data/slice_test.TestReplace() core/data/slice/slice_test.go:26
 ```
 
 ### Use a Delve init script
@@ -259,7 +259,7 @@ In Go:
 ```go
 import (
 	// ...
-	"github.com/google/gapid/core/log"
+	"github.com/google/agi/core/log"
 )
 
 // ...
@@ -393,9 +393,9 @@ BUILD.bazel files to reflect your changes.
 
 A few useful homemade packages:
 
-- `github.com/google/gapid/core/assert` defines an assertion framework.
+- `github.com/google/agi/core/assert` defines an assertion framework.
 
-- `github.com/google/gapid/core/log` lets you create contexts for tests with
+- `github.com/google/agi/core/log` lets you create contexts for tests with
   `ctx := log.Testing(t)`
 
 ### C++

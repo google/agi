@@ -21,7 +21,7 @@ go_library(
         "reader.go",
         "writer.go",
     ],
-    importpath = "github.com/google/gapid/core/data/binary",
+    importpath = "github.com/google/agi/core/data/binary",
     visibility = ["//visibility:public"],
     deps = [
         "//core/math/f16:go_default_library",

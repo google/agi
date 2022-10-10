@@ -15,7 +15,7 @@
 package graph_visualization
 
 import (
-	"github.com/google/gapid/gapis/api"
+	"github.com/google/agi/gapis/api"
 	"reflect"
 	"testing"
 )

@@ -17,7 +17,7 @@ package vulkan
 import (
 	"fmt"
 
-	"github.com/google/gapid/gapis/shadertools"
+	"github.com/google/agi/gapis/shadertools"
 )
 
 // ipRenderVertexShaderSpirv returns a vertex shader for priming by rendering

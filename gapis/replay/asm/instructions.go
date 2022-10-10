@@ -18,10 +18,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/gapid/core/data/binary"
-	"github.com/google/gapid/gapis/replay/opcode"
-	"github.com/google/gapid/gapis/replay/protocol"
-	"github.com/google/gapid/gapis/replay/value"
+	"github.com/google/agi/core/data/binary"
+	"github.com/google/agi/gapis/replay/opcode"
+	"github.com/google/agi/gapis/replay/protocol"
+	"github.com/google/agi/gapis/replay/value"
 )
 
 const (

@@ -19,15 +19,15 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/google/gapid/core/image"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/stream/fmts"
-	"github.com/google/gapid/gapis/api"
-	"github.com/google/gapid/gapis/database"
-	"github.com/google/gapid/gapis/messages"
-	"github.com/google/gapid/gapis/replay/devices"
-	"github.com/google/gapid/gapis/service"
-	"github.com/google/gapid/gapis/service/path"
+	"github.com/google/agi/core/image"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/stream/fmts"
+	"github.com/google/agi/gapis/api"
+	"github.com/google/agi/gapis/database"
+	"github.com/google/agi/gapis/messages"
+	"github.com/google/agi/gapis/replay/devices"
+	"github.com/google/agi/gapis/service"
+	"github.com/google/agi/gapis/service/path"
 )
 
 func FramebufferAttachments(ctx context.Context, p *path.FramebufferAttachments, r *path.ResolveConfig) (interface{}, error) {

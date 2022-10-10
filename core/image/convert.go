@@ -18,8 +18,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/gapid/core/data/protoutil"
-	"github.com/google/gapid/gapis/database"
+	"github.com/google/agi/core/data/protoutil"
+	"github.com/google/agi/gapis/database"
 )
 
 // Converter is used to convert the the image formed from the parameters data,

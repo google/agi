@@ -199,7 +199,7 @@ fi
 # was anything other than 130 (128+SIGINT).
 test "${APP_EXIT_STATUS}" -eq 130
 
-# TODO(https://github.com/google/gapid/issues/3163): The coherent memory
+# TODO(https://github.com/google/agi/issues/3163): The coherent memory
 #  tracker must be disabled with SwiftShader for now.
 # TODO(b/144158856): workaround: force GAPIS idle timeout to 0 (infinite) to
 # avoid build flakes due to b/144158856

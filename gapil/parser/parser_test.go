@@ -17,12 +17,12 @@ package parser_test
 import (
 	"testing"
 
-	"github.com/google/gapid/core/assert"
-	"github.com/google/gapid/core/text/parse"
-	"github.com/google/gapid/core/text/parse/cst"
-	"github.com/google/gapid/core/text/parse/test"
-	"github.com/google/gapid/gapil/ast"
-	"github.com/google/gapid/gapil/parser"
+	"github.com/google/agi/core/assert"
+	"github.com/google/agi/core/text/parse"
+	"github.com/google/agi/core/text/parse/cst"
+	"github.com/google/agi/core/text/parse/test"
+	"github.com/google/agi/gapil/ast"
+	"github.com/google/agi/gapil/parser"
 )
 
 var (

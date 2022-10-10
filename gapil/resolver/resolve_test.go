@@ -19,14 +19,14 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/google/gapid/core/assert"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/text/parse"
-	"github.com/google/gapid/gapil/ast"
-	"github.com/google/gapid/gapil/parser"
-	"github.com/google/gapid/gapil/resolver"
-	"github.com/google/gapid/gapil/semantic"
-	"github.com/google/gapid/gapil/semantic/printer"
+	"github.com/google/agi/core/assert"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/text/parse"
+	"github.com/google/agi/gapil/ast"
+	"github.com/google/agi/gapil/parser"
+	"github.com/google/agi/gapil/resolver"
+	"github.com/google/agi/gapil/semantic"
+	"github.com/google/agi/gapil/semantic/printer"
 )
 
 func err(msg string) parse.ErrorList {

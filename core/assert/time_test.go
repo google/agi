@@ -17,7 +17,7 @@ package assert_test
 import (
 	"time"
 
-	"github.com/google/gapid/core/assert"
+	"github.com/google/agi/core/assert"
 )
 
 // An example of testing time durations

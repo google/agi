@@ -23,7 +23,7 @@ go_library(
         "split_args.go",
         "writer.go",
     ],
-    importpath = "github.com/google/gapid/core/text",
+    importpath = "github.com/google/agi/core/text",
     visibility = ["//visibility:public"],
     deps = ["//core/math/sint:go_default_library"],
 )

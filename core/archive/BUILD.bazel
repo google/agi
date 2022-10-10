@@ -20,6 +20,6 @@ go_library(
     cdeps = ["//core/cc"],
     cgo = True,
     clinkopts = [],  # keep
-    importpath = "github.com/google/gapid/core/archive",
+    importpath = "github.com/google/agi/core/archive",
     visibility = ["//visibility:public"],
 )

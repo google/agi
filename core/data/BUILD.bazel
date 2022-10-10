@@ -20,7 +20,7 @@ go_library(
         "assignable.go",
         "dedupe.go",
     ],
-    importpath = "github.com/google/gapid/core/data",
+    importpath = "github.com/google/agi/core/data",
     visibility = ["//visibility:public"],
 )
 

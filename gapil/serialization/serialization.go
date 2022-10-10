@@ -19,7 +19,7 @@ package serialization
 import (
 	"fmt"
 
-	"github.com/google/gapid/gapil/semantic"
+	"github.com/google/agi/gapil/semantic"
 )
 
 // ProtoFieldID is a field identifier

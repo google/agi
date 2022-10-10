@@ -20,12 +20,12 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/google/gapid/core/assert"
-	"github.com/google/gapid/core/fault"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/text/parse"
-	"github.com/google/gapid/core/text/parse/cst"
-	"github.com/google/gapid/core/text/parse/test"
+	"github.com/google/agi/core/assert"
+	"github.com/google/agi/core/fault"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/text/parse"
+	"github.com/google/agi/core/text/parse/cst"
+	"github.com/google/agi/core/text/parse/test"
 )
 
 var (

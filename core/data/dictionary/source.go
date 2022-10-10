@@ -17,7 +17,7 @@ package dictionary
 import (
 	"reflect"
 
-	"github.com/google/gapid/core/data/generic"
+	"github.com/google/agi/core/data/generic"
 )
 
 type (

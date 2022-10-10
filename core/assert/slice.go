@@ -17,7 +17,7 @@ package assert
 import (
 	"reflect"
 
-	"github.com/google/gapid/core/data/compare"
+	"github.com/google/agi/core/data/compare"
 )
 
 // OnSlice is the result of calling ThatSlice on an Assertion.

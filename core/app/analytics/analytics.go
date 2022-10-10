@@ -23,9 +23,9 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/google/gapid/core/net"
-	"github.com/google/gapid/core/os/device"
-	"github.com/google/gapid/core/os/device/host"
+	"github.com/google/agi/core/net"
+	"github.com/google/agi/core/os/device"
+	"github.com/google/agi/core/os/device/host"
 )
 
 const (

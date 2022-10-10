@@ -22,9 +22,9 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/google/gapid/core/event/task"
-	"github.com/google/gapid/core/langsvr/protocol"
-	"github.com/google/gapid/core/log"
+	"github.com/google/agi/core/event/task"
+	"github.com/google/agi/core/langsvr/protocol"
+	"github.com/google/agi/core/log"
 )
 
 // InitConfig is returned by Server.Initialize().

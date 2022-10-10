@@ -21,11 +21,11 @@ import (
 	"io/ioutil"
 	"strings"
 
-	"github.com/google/gapid/core/fault"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/os/android/binaryxml"
-	"github.com/google/gapid/core/os/android/manifest"
-	"github.com/google/gapid/core/os/device"
+	"github.com/google/agi/core/fault"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/os/android/binaryxml"
+	"github.com/google/agi/core/os/android/manifest"
+	"github.com/google/agi/core/os/device"
 )
 
 const (

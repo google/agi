@@ -14,7 +14,7 @@
 
 package analysis
 
-import "github.com/google/gapid/gapil/semantic"
+import "github.com/google/agi/gapil/semantic"
 
 // Value interface compliance check.
 var _ = Value(&BoolValue{})

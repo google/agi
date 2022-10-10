@@ -19,8 +19,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/google/gapid/core/os/file"
-	"github.com/google/gapid/core/os/shell"
+	"github.com/google/agi/core/os/file"
+	"github.com/google/agi/core/os/shell"
 )
 
 // ADB is the path to the adb executable, or an empty string if the adb

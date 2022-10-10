@@ -19,8 +19,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/gapid/core/assert"
-	"github.com/google/gapid/core/event/task"
+	"github.com/google/agi/core/assert"
+	"github.com/google/agi/core/event/task"
 )
 
 func TestContextCancel(t *testing.T) {

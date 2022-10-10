@@ -16,5 +16,5 @@
 package all
 
 import (
-	_ "github.com/google/gapid/gapis/api/vulkan"
+	_ "github.com/google/agi/gapis/api/vulkan"
 )

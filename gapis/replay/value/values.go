@@ -17,8 +17,8 @@ package value
 import (
 	"math"
 
-	"github.com/google/gapid/core/math/interval"
-	"github.com/google/gapid/gapis/replay/protocol"
+	"github.com/google/agi/core/math/interval"
+	"github.com/google/agi/gapis/replay/protocol"
 )
 
 // Bool is a Value of type TypeBool.

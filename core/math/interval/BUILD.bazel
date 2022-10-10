@@ -23,7 +23,7 @@ go_library(
         "u64.go",
         "value_list.go",
     ],
-    importpath = "github.com/google/gapid/core/math/interval",
+    importpath = "github.com/google/agi/core/math/interval",
     visibility = ["//visibility:public"],
     deps = [
         "//core/math/u64:go_default_library",

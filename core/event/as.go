@@ -18,7 +18,7 @@ import (
 	"context"
 	"reflect"
 
-	"github.com/google/gapid/core/log"
+	"github.com/google/agi/core/log"
 )
 
 // AsHandler wraps a destination into an event handler.

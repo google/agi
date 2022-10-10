@@ -17,6 +17,6 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = ["constset.go"],
-    importpath = "github.com/google/gapid/gapil/constset",
+    importpath = "github.com/google/agi/gapil/constset",
     visibility = ["//visibility:public"],
 )

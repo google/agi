@@ -23,7 +23,7 @@ import (
 	"net"
 	"path/filepath"
 
-	"github.com/google/gapid/gapis/perfetto"
+	"github.com/google/agi/gapis/perfetto"
 )
 
 const (

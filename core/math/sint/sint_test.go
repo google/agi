@@ -16,7 +16,7 @@ package sint_test
 import (
 	"fmt"
 
-	"github.com/google/gapid/core/math/sint"
+	"github.com/google/agi/core/math/sint"
 )
 
 func ExampleLog10() {

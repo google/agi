@@ -20,10 +20,10 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/google/gapid/core/data/endian"
-	"github.com/google/gapid/core/data/id"
-	"github.com/google/gapid/core/os/device"
-	"github.com/google/gapid/gapis/database"
+	"github.com/google/agi/core/data/endian"
+	"github.com/google/agi/core/data/id"
+	"github.com/google/agi/core/os/device"
+	"github.com/google/agi/gapis/database"
 )
 
 type blob struct {

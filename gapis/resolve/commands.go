@@ -18,14 +18,14 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/math/u64"
-	"github.com/google/gapid/gapis/api"
-	"github.com/google/gapid/gapis/api/sync"
-	"github.com/google/gapid/gapis/capture"
-	"github.com/google/gapid/gapis/messages"
-	"github.com/google/gapid/gapis/service"
-	"github.com/google/gapid/gapis/service/path"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/math/u64"
+	"github.com/google/agi/gapis/api"
+	"github.com/google/agi/gapis/api/sync"
+	"github.com/google/agi/gapis/capture"
+	"github.com/google/agi/gapis/messages"
+	"github.com/google/agi/gapis/service"
+	"github.com/google/agi/gapis/service/path"
 )
 
 // Commands resolves and returns the command list from the path p.

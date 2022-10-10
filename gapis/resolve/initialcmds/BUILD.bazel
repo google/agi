@@ -25,7 +25,7 @@ proto_library(
 
 go_proto_library(
     name = "initialcmds_go_proto",
-    importpath = "github.com/google/gapid/gapis/resolve/initialcmds",
+    importpath = "github.com/google/agi/gapis/resolve/initialcmds",
     proto = ":initialcmds_proto",
     visibility = ["//visibility:public"],
     deps = ["//gapis/service/path:go_default_library"],
@@ -35,7 +35,7 @@ go_library(
     name = "go_default_library",
     srcs = ["initial_commands.go"],
     embed = [":initialcmds_go_proto"],
-    importpath = "github.com/google/gapid/gapis/resolve/initialcmds",
+    importpath = "github.com/google/agi/gapis/resolve/initialcmds",
     visibility = ["//visibility:public"],
     deps = [
         "//core/app/benchmark:go_default_library",

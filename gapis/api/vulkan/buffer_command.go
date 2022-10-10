@@ -17,7 +17,7 @@
 package vulkan
 
 import (
-	"github.com/google/gapid/gapis/api"
+	"github.com/google/agi/gapis/api"
 )
 
 type QueuedCommand struct {

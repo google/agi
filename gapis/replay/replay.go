@@ -17,11 +17,11 @@ package replay
 import (
 	"context"
 
-	"github.com/google/gapid/core/event/task"
-	"github.com/google/gapid/core/os/device"
-	"github.com/google/gapid/gapis/api/transform"
-	"github.com/google/gapid/gapis/capture"
-	"github.com/google/gapid/gapis/service/path"
+	"github.com/google/agi/core/event/task"
+	"github.com/google/agi/core/os/device"
+	"github.com/google/agi/gapis/api/transform"
+	"github.com/google/agi/gapis/capture"
+	"github.com/google/agi/gapis/service/path"
 )
 
 // Generator is the interface for types that support replay generation.

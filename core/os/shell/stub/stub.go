@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/google/gapid/core/os/shell"
+	"github.com/google/agi/core/os/shell"
 )
 
 // This is the error type returned when a command is not handled by the stub target.

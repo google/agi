@@ -28,6 +28,6 @@ go_library(
         "//tools/build:darwin_arm64": [],
         "//tools/build:windows": [],
     }),  # keep
-    importpath = "github.com/google/gapid/core/app/linker",
+    importpath = "github.com/google/agi/core/app/linker",
     visibility = ["//visibility:public"],
 )

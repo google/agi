@@ -18,8 +18,8 @@ import (
 	"context"
 	"math/bits"
 
-	"github.com/google/gapid/gapis/api"
-	"github.com/google/gapid/gapis/capture"
+	"github.com/google/agi/gapis/api"
+	"github.com/google/agi/gapis/capture"
 )
 
 type GraphBuilder interface {

@@ -17,8 +17,8 @@ package resolver
 import (
 	"strings"
 
-	"github.com/google/gapid/core/text/parse/cst"
-	"github.com/google/gapid/gapil/ast"
+	"github.com/google/agi/core/text/parse/cst"
+	"github.com/google/agi/gapil/ast"
 )
 
 const (

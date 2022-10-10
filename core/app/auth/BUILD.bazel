@@ -20,7 +20,7 @@ go_library(
         "auth.go",
         "doc.go",
     ],
-    importpath = "github.com/google/gapid/core/app/auth",
+    importpath = "github.com/google/agi/core/app/auth",
     visibility = ["//visibility:public"],
     deps = [
         "//core/data/endian:go_default_library",

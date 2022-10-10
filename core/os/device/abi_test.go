@@ -17,8 +17,8 @@ package device_test
 import (
 	"testing"
 
-	"github.com/google/gapid/core/assert"
-	"github.com/google/gapid/core/os/device"
+	"github.com/google/agi/core/assert"
+	"github.com/google/agi/core/os/device"
 )
 
 func TestAndroidABIByName(t *testing.T) {

@@ -19,9 +19,9 @@ import (
 	"reflect"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/google/gapid/core/data/pod"
-	"github.com/google/gapid/core/data/protoconv"
-	"github.com/google/gapid/core/log"
+	"github.com/google/agi/core/data/pod"
+	"github.com/google/agi/core/data/protoconv"
+	"github.com/google/agi/core/log"
 )
 
 func toProto(ctx context.Context, v interface{}) (proto.Message, error) {

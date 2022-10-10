@@ -17,7 +17,7 @@ package trace
 import (
 	"context"
 
-	"github.com/google/gapid/core/context/keys"
+	"github.com/google/agi/core/context/keys"
 )
 
 type contextKey string

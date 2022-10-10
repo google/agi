@@ -17,11 +17,11 @@ package resolve
 import (
 	"fmt"
 
-	"github.com/google/gapid/core/data/id"
-	"github.com/google/gapid/gapis/api"
-	"github.com/google/gapid/gapis/service/box"
-	"github.com/google/gapid/gapis/service/path"
-	"github.com/google/gapid/gapis/service/types"
+	"github.com/google/agi/core/data/id"
+	"github.com/google/agi/gapis/api"
+	"github.com/google/agi/gapis/service/box"
+	"github.com/google/agi/gapis/service/path"
+	"github.com/google/agi/gapis/service/types"
 )
 
 func internalToService(v interface{}) (interface{}, error) {

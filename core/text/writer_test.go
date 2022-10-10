@@ -18,8 +18,8 @@ import (
 	"io"
 	"testing"
 
-	"github.com/google/gapid/core/fault"
-	"github.com/google/gapid/core/text"
+	"github.com/google/agi/core/fault"
+	"github.com/google/agi/core/text"
 )
 
 func TestWriter(t *testing.T) {

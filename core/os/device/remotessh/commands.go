@@ -27,13 +27,13 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/google/gapid/core/app"
-	"github.com/google/gapid/core/app/crash"
-	"github.com/google/gapid/core/os/device"
-	"github.com/google/gapid/core/os/device/bind"
-	"github.com/google/gapid/core/os/shell"
-	"github.com/google/gapid/core/text"
-	"github.com/google/gapid/gapis/perfetto"
+	"github.com/google/agi/core/app"
+	"github.com/google/agi/core/app/crash"
+	"github.com/google/agi/core/os/device"
+	"github.com/google/agi/core/os/device/bind"
+	"github.com/google/agi/core/os/shell"
+	"github.com/google/agi/core/text"
+	"github.com/google/agi/gapis/perfetto"
 )
 
 // remoteProcess is the interface to a running process, as started by a Target.

@@ -19,7 +19,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/google/gapid/core/text/parse/cst"
+	"github.com/google/agi/core/text/parse/cst"
 )
 
 // Reader is the interface to an object that converts a rune array into tokens.

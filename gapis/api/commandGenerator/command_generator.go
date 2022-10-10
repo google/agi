@@ -19,7 +19,7 @@ package commandGenerator
 import (
 	"context"
 
-	"github.com/google/gapid/gapis/api"
+	"github.com/google/agi/gapis/api"
 )
 
 // CommandGenerator is the interface to get commands from an arbitrary source.

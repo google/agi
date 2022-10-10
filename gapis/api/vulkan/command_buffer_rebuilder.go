@@ -19,9 +19,9 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/google/gapid/core/data/dictionary"
-	"github.com/google/gapid/gapis/api"
-	"github.com/google/gapid/gapis/memory"
+	"github.com/google/agi/core/data/dictionary"
+	"github.com/google/agi/gapis/api"
+	"github.com/google/agi/gapis/memory"
 )
 
 // unpackDenseMapWithAllocator takes a dense map of u32 -> structure, flattens the

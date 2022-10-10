@@ -19,8 +19,8 @@ import (
 	"io"
 	"reflect"
 
-	"github.com/google/gapid/core/app/crash"
-	"github.com/google/gapid/core/log"
+	"github.com/google/agi/core/app/crash"
+	"github.com/google/agi/core/log"
 )
 
 // Buffer returns a handler that will feed the supplied handler, but inserts a unbounded buffer

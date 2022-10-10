@@ -14,7 +14,7 @@
 
 package langsvr
 
-import "github.com/google/gapid/core/langsvr/protocol"
+import "github.com/google/agi/core/langsvr/protocol"
 
 // Command represents a reference to a command.
 // Provides a title which will be used to represent a command in the UI and,

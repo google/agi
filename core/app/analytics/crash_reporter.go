@@ -20,9 +20,9 @@ import (
 	"bytes"
 	"encoding/base64"
 
-	"github.com/google/gapid/core/app/crash"
-	"github.com/google/gapid/core/fault/stacktrace"
-	"github.com/google/gapid/core/fault/stacktrace/crunch"
+	"github.com/google/agi/core/app/crash"
+	"github.com/google/agi/core/fault/stacktrace"
+	"github.com/google/agi/core/fault/stacktrace/crunch"
 )
 
 const (
@@ -34,7 +34,7 @@ func init() {
 }
 
 func onCrash(e interface{}, s stacktrace.Callstack) {
-	filter := stacktrace.MatchPackage("github.com/google/gapid/.*")
+	filter := stacktrace.MatchPackage("github.com/google/agi/.*")
 	stack := s.Filter(stacktrace.Trim(filter))
 	encoded := encodeCrashCode(stack, maxExceptionLength)
 	SendException(encoded, true)

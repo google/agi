@@ -39,7 +39,7 @@
 
 import (
   "fmt"
-  ϟmem "github.com/google/gapid/gapis/memory"
+  ϟmem "github.com/google/agi/gapis/memory"
 )
 
   {{template "Go.CommentHeader" "Enums"}}
@@ -55,13 +55,13 @@ import(
   "fmt"
   "reflect"
   "sort"
-  "github.com/google/gapid/core/data"
-  "github.com/google/gapid/core/os/device"
-  "github.com/google/gapid/gapis/replay/builder"
-  "github.com/google/gapid/gapis/replay/value"
-  "github.com/google/gapid/gapis/service/path"
-  ϟapi "github.com/google/gapid/gapis/api"
-  ϟmem "github.com/google/gapid/gapis/memory"
+  "github.com/google/agi/core/data"
+  "github.com/google/agi/core/os/device"
+  "github.com/google/agi/gapis/replay/builder"
+  "github.com/google/agi/gapis/replay/value"
+  "github.com/google/agi/gapis/service/path"
+  ϟapi "github.com/google/agi/gapis/api"
+  ϟmem "github.com/google/agi/gapis/memory"
 )
 
 var ( // Don't error if these packages aren't used.
@@ -94,16 +94,16 @@ import(
   "context"
   "fmt"
   "reflect"
-  "github.com/google/gapid/core/data/binary"
-  "github.com/google/gapid/core/data/id"
-  "github.com/google/gapid/core/math/u64"
-  "github.com/google/gapid/core/os/device"
-  "github.com/google/gapid/gapis/replay/builder"
-  "github.com/google/gapid/gapis/replay/protocol"
-  "github.com/google/gapid/gapis/replay/value"
-  "github.com/google/gapid/gapis/service/path"
-  ϟapi "github.com/google/gapid/gapis/api"
-  ϟmem "github.com/google/gapid/gapis/memory"
+  "github.com/google/agi/core/data/binary"
+  "github.com/google/agi/core/data/id"
+  "github.com/google/agi/core/math/u64"
+  "github.com/google/agi/core/os/device"
+  "github.com/google/agi/gapis/replay/builder"
+  "github.com/google/agi/gapis/replay/protocol"
+  "github.com/google/agi/gapis/replay/value"
+  "github.com/google/agi/gapis/service/path"
+  ϟapi "github.com/google/agi/gapis/api"
+  ϟmem "github.com/google/agi/gapis/memory"
 )
 
 var ( // Don't error if these packages aren't used.
@@ -132,13 +132,13 @@ import(
   "context"
   "fmt"
   "reflect"
-  "github.com/google/gapid/core/data"
-  "github.com/google/gapid/core/os/device"
-  "github.com/google/gapid/gapis/replay/builder"
-  "github.com/google/gapid/gapis/replay/value"
-  "github.com/google/gapid/gapis/service/path"
-  ϟapi "github.com/google/gapid/gapis/api"
-  ϟmem "github.com/google/gapid/gapis/memory"
+  "github.com/google/agi/core/data"
+  "github.com/google/agi/core/os/device"
+  "github.com/google/agi/gapis/replay/builder"
+  "github.com/google/agi/gapis/replay/value"
+  "github.com/google/agi/gapis/service/path"
+  ϟapi "github.com/google/agi/gapis/api"
+  ϟmem "github.com/google/agi/gapis/memory"
 )
 
   {{template "Go.CommentHeader" "Pointers"}}
@@ -161,10 +161,10 @@ import(
 import(
   "context"
   "fmt"
-  "github.com/google/gapid/core/math/u64"
-  "github.com/google/gapid/core/os/device"
-  ϟapi "github.com/google/gapid/gapis/api"
-  ϟmem "github.com/google/gapid/gapis/memory"
+  "github.com/google/agi/core/math/u64"
+  "github.com/google/agi/core/os/device"
+  ϟapi "github.com/google/agi/gapis/api"
+  ϟmem "github.com/google/agi/gapis/memory"
 )
 
   {{template "Go.CommentHeader" "Classes"}}
@@ -178,9 +178,9 @@ import(
 import (
   "context"
   "fmt"
-  "github.com/google/gapid/core/data/id"
-  ϟapi "github.com/google/gapid/gapis/api"
-  ϟmem "github.com/google/gapid/gapis/memory"
+  "github.com/google/agi/core/data/id"
+  ϟapi "github.com/google/agi/gapis/api"
+  ϟmem "github.com/google/agi/gapis/memory"
 )
 
  {{template "Go.CommentHeader" "Commands"}}
@@ -197,10 +197,10 @@ import (
 
 import (
   "context"
-  "github.com/google/gapid/gapis/replay"
-  "github.com/google/gapid/gapis/replay/builder"
-  ϟapi "github.com/google/gapid/gapis/api"
-  ϟmem "github.com/google/gapid/gapis/memory"
+  "github.com/google/agi/gapis/replay"
+  "github.com/google/agi/gapis/replay/builder"
+  ϟapi "github.com/google/agi/gapis/api"
+  ϟmem "github.com/google/agi/gapis/memory"
 )
 
   {{template "Go.CommentHeader" "CommandBuilder"}}
@@ -213,7 +213,7 @@ import (
 
 import (
   "context"
-  ϟapi "github.com/google/gapid/gapis/api"
+  ϟapi "github.com/google/agi/gapis/api"
 )
 
 
@@ -230,8 +230,8 @@ var ( // Don't error if these packages aren't used.
   {{template "Go.GeneratedHeader" (Global "OutputDir")}}
 
 import (
-    "github.com/google/gapid/core/data/id"
-    ϟapi "github.com/google/gapid/gapis/api"
+    "github.com/google/agi/core/data/id"
+    ϟapi "github.com/google/agi/gapis/api"
 )
 
   {{template "Go.CommentHeader" "API"}}

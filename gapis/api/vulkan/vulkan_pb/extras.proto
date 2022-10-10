@@ -15,7 +15,7 @@
 syntax = "proto3";
 
 package vulkan_pb;
-option go_package = "github.com/google/gapid/gapis/api/vulkan/vulkan_pb";
+option go_package = "github.com/google/agi/gapis/api/vulkan/vulkan_pb";
 
 message FenceState {
   repeated uint64 fences = 1;

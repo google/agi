@@ -18,7 +18,7 @@ import (
 	"context"
 	"flag"
 
-	"github.com/google/gapid/core/app"
+	"github.com/google/agi/core/app"
 )
 
 type makeDocVerb struct{ MakeDocFlags }

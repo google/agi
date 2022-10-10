@@ -17,12 +17,12 @@ package dependencygraph2
 import (
 	"context"
 
-	"github.com/google/gapid/core/math/interval"
-	"github.com/google/gapid/gapis/api"
-	"github.com/google/gapid/gapis/capture"
-	"github.com/google/gapid/gapis/database"
-	"github.com/google/gapid/gapis/resolve/initialcmds"
-	"github.com/google/gapid/gapis/service/path"
+	"github.com/google/agi/core/math/interval"
+	"github.com/google/agi/gapis/api"
+	"github.com/google/agi/gapis/capture"
+	"github.com/google/agi/gapis/database"
+	"github.com/google/agi/gapis/resolve/initialcmds"
+	"github.com/google/agi/gapis/service/path"
 )
 
 func GetDependencyGraph(ctx context.Context, c *path.Capture, config DependencyGraphConfig) (DependencyGraph, error) {

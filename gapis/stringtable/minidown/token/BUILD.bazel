@@ -17,7 +17,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = ["token.go"],
-    importpath = "github.com/google/gapid/gapis/stringtable/minidown/token",
+    importpath = "github.com/google/agi/gapis/stringtable/minidown/token",
     visibility = ["//visibility:public"],
     deps = ["//core/text/parse/cst:go_default_library"],
 )

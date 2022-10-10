@@ -17,8 +17,8 @@ package api
 import (
 	"reflect"
 
-	"github.com/google/gapid/core/data/deep"
-	"github.com/google/gapid/core/data/generic"
+	"github.com/google/agi/core/data/deep"
+	"github.com/google/agi/core/data/generic"
 )
 
 // Property represents a single field on an object.

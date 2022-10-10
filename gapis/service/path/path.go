@@ -21,12 +21,12 @@ import (
 	"strings"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/google/gapid/core/data/id"
-	"github.com/google/gapid/core/data/protoutil"
-	"github.com/google/gapid/core/data/slice"
-	"github.com/google/gapid/core/image"
-	"github.com/google/gapid/gapis/service/box"
-	"github.com/google/gapid/gapis/vertex"
+	"github.com/google/agi/core/data/id"
+	"github.com/google/agi/core/data/protoutil"
+	"github.com/google/agi/core/data/slice"
+	"github.com/google/agi/core/image"
+	"github.com/google/agi/gapis/service/box"
+	"github.com/google/agi/gapis/vertex"
 )
 
 // Node is the interface for types that represent a reference to a capture,

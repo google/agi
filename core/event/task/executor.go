@@ -17,7 +17,7 @@ package task
 import (
 	"context"
 
-	"github.com/google/gapid/core/app/crash"
+	"github.com/google/agi/core/app/crash"
 )
 
 // Executor is the signature for a function that executes a Task.

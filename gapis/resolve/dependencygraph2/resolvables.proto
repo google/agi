@@ -15,7 +15,7 @@
 syntax = "proto3";
 
 package dependencygraph;
-option go_package = "github.com/google/gapid/gapis/resolve/dependencygraph2";
+option go_package = "github.com/google/agi/gapis/resolve/dependencygraph2";
 
 import "gapis/service/path/path.proto";
 

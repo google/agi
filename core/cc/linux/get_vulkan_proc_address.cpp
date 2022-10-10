@@ -34,7 +34,7 @@ typedef size_t VkInstance;
 // we can't have the mesa driver do bad things to our code.
 // Therefore we should preload any versions of llvm that may be required
 // into the start of our address space.
-// See: https://github.com/google/gapid/issues/1707 for more information
+// See: https://github.com/google/agi/issues/1707 for more information
 struct MesaLLVMOpener {
   MesaLLVMOpener() {
     char name[512];

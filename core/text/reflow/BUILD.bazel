@@ -20,6 +20,6 @@ go_library(
         "doc.go",
         "writer.go",
     ],
-    importpath = "github.com/google/gapid/core/text/reflow",
+    importpath = "github.com/google/agi/core/text/reflow",
     visibility = ["//visibility:public"],
 )

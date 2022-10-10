@@ -20,7 +20,7 @@ go_library(
         "doc.go",
         "instructions.go",
     ],
-    importpath = "github.com/google/gapid/gapis/replay/asm",
+    importpath = "github.com/google/agi/gapis/replay/asm",
     visibility = ["//visibility:public"],
     deps = [
         "//core/data/binary:go_default_library",

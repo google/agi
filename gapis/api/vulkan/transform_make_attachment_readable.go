@@ -17,9 +17,9 @@ package vulkan
 import (
 	"context"
 
-	"github.com/google/gapid/gapis/api"
-	"github.com/google/gapid/gapis/api/transform"
-	"github.com/google/gapid/gapis/memory"
+	"github.com/google/agi/gapis/api"
+	"github.com/google/agi/gapis/api/transform"
+	"github.com/google/agi/gapis/memory"
 )
 
 var _ transform.Transform = &makeAttachmentReadable{}

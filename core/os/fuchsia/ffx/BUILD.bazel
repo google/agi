@@ -20,7 +20,7 @@ go_library(
         "bind.go",
         "device.go",
     ],
-    importpath = "github.com/google/gapid/core/os/fuchsia/ffx",
+    importpath = "github.com/google/agi/core/os/fuchsia/ffx",
     visibility = ["//visibility:public"],
     deps = [
         "//core/event/task:go_default_library",

@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/google/gapid/core/context/keys"
+	"github.com/google/agi/core/context/keys"
 )
 
 func TestNoKeys(t *testing.T) {

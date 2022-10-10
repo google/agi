@@ -14,7 +14,7 @@
 
 package resolver
 
-import "github.com/google/gapid/gapil/semantic"
+import "github.com/google/agi/gapil/semantic"
 
 // extractCalls moves all call expressions to subroutines out to locals.
 // This is done so that there is an oppotunity to test for abort() before

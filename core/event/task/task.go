@@ -19,7 +19,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/gapid/core/app/crash"
+	"github.com/google/agi/core/app/crash"
 )
 
 // Task is the unit of work used in the task system.

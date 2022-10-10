@@ -27,8 +27,8 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/google/gapid/core/fault"
-	"github.com/google/gapid/gapil/semantic"
+	"github.com/google/agi/core/fault"
+	"github.com/google/agi/gapil/semantic"
 )
 
 const (

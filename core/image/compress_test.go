@@ -21,9 +21,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/google/gapid/core/image"
-	"github.com/google/gapid/core/image/astc"
-	"github.com/google/gapid/core/image/etc"
+	"github.com/google/agi/core/image"
+	"github.com/google/agi/core/image/astc"
+	"github.com/google/agi/core/image/etc"
 )
 
 type testImageInfo struct {

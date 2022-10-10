@@ -17,8 +17,8 @@ package adb_test
 import (
 	"testing"
 
-	"github.com/google/gapid/core/assert"
-	"github.com/google/gapid/core/log"
+	"github.com/google/agi/core/assert"
+	"github.com/google/agi/core/log"
 )
 
 func TestScreenState(t_ *testing.T) {

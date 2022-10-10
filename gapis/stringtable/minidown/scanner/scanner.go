@@ -20,9 +20,9 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/google/gapid/core/text/parse"
-	"github.com/google/gapid/core/text/parse/cst"
-	"github.com/google/gapid/gapis/stringtable/minidown/token"
+	"github.com/google/agi/core/text/parse"
+	"github.com/google/agi/core/text/parse/cst"
+	"github.com/google/agi/gapis/stringtable/minidown/token"
 )
 
 func skip(p *parse.Parser, mode parse.SkipMode) cst.Separator {

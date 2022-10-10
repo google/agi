@@ -19,7 +19,7 @@ load("@rules_proto//proto:defs.bzl", "proto_library")
 go_library(
     name = "go_default_library",
     embed = [":perfetto_go_proto"],
-    importpath = "github.com/google/gapid/gapis/perfetto/service",
+    importpath = "github.com/google/agi/gapis/perfetto/service",
     visibility = ["//visibility:public"],
 )
 
@@ -31,7 +31,7 @@ proto_library(
 
 go_proto_library(
     name = "perfetto_go_proto",
-    importpath = "github.com/google/gapid/gapis/perfetto/service",
+    importpath = "github.com/google/agi/gapis/perfetto/service",
     proto = ":service_proto",
     visibility = ["//visibility:public"],
 )

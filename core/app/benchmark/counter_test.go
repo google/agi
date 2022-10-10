@@ -18,8 +18,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/gapid/core/app/benchmark"
-	"github.com/google/gapid/core/assert"
+	"github.com/google/agi/core/app/benchmark"
+	"github.com/google/agi/core/assert"
 )
 
 func TestCounterCollectionAndIntegerCounter(t *testing.T) {

@@ -16,7 +16,7 @@
 // representation of the api language.
 package semantic
 
-import "github.com/google/gapid/gapil/ast"
+import "github.com/google/agi/gapil/ast"
 
 // API is the root of the ASG, and holds a fully resolved api.
 type API struct {

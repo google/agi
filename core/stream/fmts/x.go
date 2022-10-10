@@ -16,7 +16,7 @@
 
 package fmts
 
-import "github.com/google/gapid/core/stream"
+import "github.com/google/agi/core/stream"
 
 var (
 	X_U8 = &stream.Format{

@@ -22,10 +22,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/google/gapid/core/app/crash"
-	"github.com/google/gapid/core/app/status"
-	"github.com/google/gapid/core/data/id"
-	"github.com/google/gapid/core/event/task"
+	"github.com/google/agi/core/app/crash"
+	"github.com/google/agi/core/app/status"
+	"github.com/google/agi/core/data/id"
+	"github.com/google/agi/core/event/task"
 )
 
 var lastTaskID uint32

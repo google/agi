@@ -17,11 +17,11 @@ package fuchsia
 import (
 	"context"
 
-	"github.com/google/gapid/core/event/task"
-	"github.com/google/gapid/core/os/device/bind"
-	"github.com/google/gapid/core/os/file"
-	"github.com/google/gapid/core/os/shell"
-	"github.com/google/gapid/gapis/service"
+	"github.com/google/agi/core/event/task"
+	"github.com/google/agi/core/os/device/bind"
+	"github.com/google/agi/core/os/file"
+	"github.com/google/agi/core/os/shell"
+	"github.com/google/agi/gapis/service"
 )
 
 // Device extends the bind.Device interface with capabilities specific to Fuchsia devices.

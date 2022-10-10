@@ -27,7 +27,7 @@ go_library(
         "windows.go",
         "zip.go",
     ],
-    importpath = "github.com/google/gapid/core/os/file",
+    importpath = "github.com/google/agi/core/os/file",
     visibility = ["//visibility:public"],
     deps = [
         "//core/log:go_default_library",

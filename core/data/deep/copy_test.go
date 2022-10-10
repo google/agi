@@ -18,10 +18,10 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/google/gapid/core/assert"
-	"github.com/google/gapid/core/data"
-	"github.com/google/gapid/core/data/deep"
-	"github.com/google/gapid/core/log"
+	"github.com/google/agi/core/assert"
+	"github.com/google/agi/core/data"
+	"github.com/google/agi/core/data/deep"
+	"github.com/google/agi/core/log"
 )
 
 var _ data.Assignable = &assignable{}

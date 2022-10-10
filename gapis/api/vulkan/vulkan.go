@@ -19,15 +19,15 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/google/gapid/core/app/status"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/math/interval"
-	"github.com/google/gapid/gapis/api"
-	"github.com/google/gapid/gapis/api/sync"
-	"github.com/google/gapid/gapis/api/terminator"
-	"github.com/google/gapid/gapis/capture"
-	"github.com/google/gapid/gapis/resolve"
-	"github.com/google/gapid/gapis/service/path"
+	"github.com/google/agi/core/app/status"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/math/interval"
+	"github.com/google/agi/gapis/api"
+	"github.com/google/agi/gapis/api/sync"
+	"github.com/google/agi/gapis/api/terminator"
+	"github.com/google/agi/gapis/capture"
+	"github.com/google/agi/gapis/resolve"
+	"github.com/google/agi/gapis/service/path"
 )
 
 type customState struct {

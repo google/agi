@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"math/bits"
 
-	"github.com/google/gapid/gapis/memory"
+	"github.com/google/agi/gapis/memory"
 )
 
 // StateWatcher provides callbacks to track state effects

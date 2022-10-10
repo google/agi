@@ -15,7 +15,7 @@
 syntax = "proto3";
 
 package initialcmds;
-option go_package = "github.com/google/gapid/gapis/resolve/initialcmds";
+option go_package = "github.com/google/agi/gapis/resolve/initialcmds";
 
 import "gapis/service/path/path.proto";
 

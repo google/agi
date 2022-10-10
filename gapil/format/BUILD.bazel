@@ -21,7 +21,7 @@ go_library(
         "indenter.go",
         "ws_trimmer.go",
     ],
-    importpath = "github.com/google/gapid/gapil/format",
+    importpath = "github.com/google/agi/gapil/format",
     visibility = ["//visibility:public"],
     deps = [
         "//core/text/parse/cst:go_default_library",

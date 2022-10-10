@@ -22,10 +22,10 @@ import (
 
 	"net"
 
-	"github.com/google/gapid/core/assert"
-	"github.com/google/gapid/core/event/task"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/net/grpcutil"
+	"github.com/google/agi/core/assert"
+	"github.com/google/agi/core/event/task"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/net/grpcutil"
 )
 
 func TestPipeListener(t *testing.T) {

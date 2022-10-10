@@ -45,7 +45,7 @@ go_library(
         "test.go",
         ":generated",  # keep
     ],
-    importpath = "github.com/google/gapid/gapis/api/test",
+    importpath = "github.com/google/agi/gapis/api/test",
     visibility = ["//visibility:public"],
     deps = [
         "//core/data:go_default_library",  # keep

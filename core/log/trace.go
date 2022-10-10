@@ -17,7 +17,7 @@ package log
 import (
 	"context"
 
-	"github.com/google/gapid/core/context/keys"
+	"github.com/google/agi/core/context/keys"
 )
 
 // trace is a single entry in a stack of Enter()s.

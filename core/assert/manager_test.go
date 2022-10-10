@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/google/gapid/core/assert"
+	"github.com/google/agi/core/assert"
 )
 
 type fakeT struct {

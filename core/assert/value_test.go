@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/google/gapid/core/assert"
+	"github.com/google/agi/core/assert"
 )
 
 // An example that shows the simplest of value equality tests with a message

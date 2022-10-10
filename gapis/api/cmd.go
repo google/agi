@@ -17,8 +17,8 @@ package api
 import (
 	"context"
 
-	"github.com/google/gapid/core/fault"
-	"github.com/google/gapid/gapis/replay/builder"
+	"github.com/google/agi/core/fault"
+	"github.com/google/agi/gapis/replay/builder"
 )
 
 // Cmd is the interface implemented by all graphics API commands.

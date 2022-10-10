@@ -29,8 +29,8 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/google/gapid/core/data/binary"
-	"github.com/google/gapid/core/fault/stacktrace"
+	"github.com/google/agi/core/data/binary"
+	"github.com/google/agi/core/fault/stacktrace"
 )
 
 // Tweakables

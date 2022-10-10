@@ -24,16 +24,16 @@ import (
 	"math"
 	"time"
 
-	"github.com/google/gapid/core/event/task"
-	img "github.com/google/gapid/core/image"
-	"github.com/google/gapid/core/image/font"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/math/f32"
-	"github.com/google/gapid/core/math/sint"
-	"github.com/google/gapid/core/text/reflow"
-	"github.com/google/gapid/gapis/client"
-	"github.com/google/gapid/gapis/service"
-	"github.com/google/gapid/gapis/service/path"
+	"github.com/google/agi/core/event/task"
+	img "github.com/google/agi/core/image"
+	"github.com/google/agi/core/image/font"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/math/f32"
+	"github.com/google/agi/core/math/sint"
+	"github.com/google/agi/core/text/reflow"
+	"github.com/google/agi/gapis/client"
+	"github.com/google/agi/gapis/service"
+	"github.com/google/agi/gapis/service/path"
 )
 
 type videoFrame struct {

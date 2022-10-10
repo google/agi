@@ -24,7 +24,7 @@ go_library(
     cdeps = ["@astc_encoder//:astc-encoder"],
     cgo = True,
     clinkopts = [],  # keep
-    importpath = "github.com/google/gapid/core/image/astc",
+    importpath = "github.com/google/agi/core/image/astc",
     visibility = ["//visibility:public"],
     deps = ["//core/image:go_default_library"],
 )

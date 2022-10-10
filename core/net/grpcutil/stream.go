@@ -19,8 +19,8 @@ import (
 	"io"
 	"reflect"
 
-	"github.com/google/gapid/core/event"
-	"github.com/google/gapid/core/log"
+	"github.com/google/agi/core/event"
+	"github.com/google/agi/core/log"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 )

@@ -16,7 +16,7 @@ package graph_visualization
 
 import (
 	"fmt"
-	"github.com/google/gapid/gapis/api"
+	"github.com/google/agi/gapis/api"
 	"sort"
 )
 

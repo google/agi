@@ -19,13 +19,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/gapid/core/image"
-	"github.com/google/gapid/gapis/api"
-	"github.com/google/gapid/gapis/replay"
-	"github.com/google/gapid/gapis/resolve"
-	"github.com/google/gapid/gapis/service"
-	"github.com/google/gapid/gapis/service/path"
-	"github.com/google/gapid/gapis/trace"
+	"github.com/google/agi/core/image"
+	"github.com/google/agi/gapis/api"
+	"github.com/google/agi/gapis/replay"
+	"github.com/google/agi/gapis/resolve"
+	"github.com/google/agi/gapis/service"
+	"github.com/google/agi/gapis/service/path"
+	"github.com/google/agi/gapis/trace"
 )
 
 var (

@@ -17,7 +17,7 @@ package client
 import (
 	"context"
 
-	"github.com/google/gapid/core/event/task"
+	"github.com/google/agi/core/event/task"
 )
 
 // BindSync is a sync helper to turn async Bind calls into sync ones. Use the

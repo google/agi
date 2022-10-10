@@ -20,7 +20,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/google/gapid/core/text/cases"
+	"github.com/google/agi/core/text/cases"
 )
 
 type stringList []string

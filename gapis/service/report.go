@@ -18,8 +18,8 @@ import (
 	"bytes"
 	"context"
 
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/gapis/stringtable"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/gapis/stringtable"
 )
 
 // TODO: Move to the builder package.

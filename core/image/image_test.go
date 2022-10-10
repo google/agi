@@ -17,9 +17,9 @@ package image_test
 import (
 	"testing"
 
-	"github.com/google/gapid/core/image"
-	"github.com/google/gapid/core/math/f32"
-	"github.com/google/gapid/gapis/database"
+	"github.com/google/agi/core/image"
+	"github.com/google/agi/core/math/f32"
+	"github.com/google/agi/gapis/database"
 )
 
 // Interface compliance checks.

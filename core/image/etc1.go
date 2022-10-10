@@ -15,8 +15,8 @@
 package image
 
 import (
-	"github.com/google/gapid/core/math/sint"
-	"github.com/google/gapid/core/stream"
+	"github.com/google/agi/core/math/sint"
+	"github.com/google/agi/core/stream"
 )
 
 // NewETC1_RGB_U8_NORM returns a format representing the ETC1_RGB8 block texture

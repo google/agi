@@ -31,7 +31,7 @@ import "protos/perfetto/config/trace_config.proto";
 package service;
 option java_package = "com.google.gapid.proto.service";
 option java_outer_classname = "Service";
-option go_package = "github.com/google/gapid/gapis/service";
+option go_package = "github.com/google/agi/gapis/service";
 
 /******************************************************************************/
 /****                         Service Objects                              ****/

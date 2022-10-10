@@ -19,12 +19,12 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/google/gapid/core/assert"
-	"github.com/google/gapid/core/data/dictionary"
-	"github.com/google/gapid/core/data/generic"
-	"github.com/google/gapid/core/data/protoconv"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/gapis/api"
+	"github.com/google/agi/core/assert"
+	"github.com/google/agi/core/data/dictionary"
+	"github.com/google/agi/core/data/generic"
+	"github.com/google/agi/core/data/protoconv"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/gapis/api"
 )
 
 func TestReferences(t *testing.T) {

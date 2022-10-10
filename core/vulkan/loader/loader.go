@@ -22,12 +22,12 @@ import (
 	"os"
 	"strings"
 
-	"github.com/google/gapid/core/app"
-	"github.com/google/gapid/core/app/layout"
-	"github.com/google/gapid/core/os/device"
-	"github.com/google/gapid/core/os/device/bind"
-	"github.com/google/gapid/core/os/file"
-	"github.com/google/gapid/core/os/shell"
+	"github.com/google/agi/core/app"
+	"github.com/google/agi/core/app/layout"
+	"github.com/google/agi/core/os/device"
+	"github.com/google/agi/core/os/device/bind"
+	"github.com/google/agi/core/os/file"
+	"github.com/google/agi/core/os/shell"
 )
 
 const (
@@ -100,7 +100,7 @@ func SetupLayers(ctx context.Context, layers []string, skipMissingLayers bool, d
 	if abi.OS == device.Windows {
 		// Adds the extra MSYS DLL dependencies onto the path.
 		// TODO: remove this hacky work-around.
-		// https://github.com/google/gapid/issues/17
+		// https://github.com/google/agi/issues/17
 		gapit, err := layout.Gapit(ctx)
 		if err == nil {
 			env.AddPathStart("PATH", gapit.Parent().System())
@@ -143,7 +143,7 @@ func SetupTrace(ctx context.Context, d bind.Desktop, abi *device.ABI, env *shell
 	if abi.OS == device.Windows {
 		// Adds the extra MSYS DLL dependencies onto the path.
 		// TODO: remove this hacky work-around.
-		// https://github.com/google/gapid/issues/17
+		// https://github.com/google/agi/issues/17
 		gapit, err := layout.Gapit(ctx)
 		if err == nil {
 			env.AddPathStart("PATH", gapit.Parent().System())

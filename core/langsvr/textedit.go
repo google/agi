@@ -14,7 +14,7 @@
 
 package langsvr
 
-import "github.com/google/gapid/core/langsvr/protocol"
+import "github.com/google/agi/core/langsvr/protocol"
 
 // WorkspaceEdit is a collection of edits across an entire workspace.
 type WorkspaceEdit map[string]TextEditList

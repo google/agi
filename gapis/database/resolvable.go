@@ -17,7 +17,7 @@ package database
 import (
 	"context"
 
-	"github.com/google/gapid/core/data/id"
+	"github.com/google/agi/core/data/id"
 )
 
 var resolvablePrefix = []byte("resolvable:")

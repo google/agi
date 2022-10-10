@@ -17,9 +17,9 @@ package langsvr_test
 import (
 	"testing"
 
-	"github.com/google/gapid/core/assert"
+	"github.com/google/agi/core/assert"
 
-	ls "github.com/google/gapid/core/langsvr"
+	ls "github.com/google/agi/core/langsvr"
 )
 
 func TestBody(t *testing.T) {

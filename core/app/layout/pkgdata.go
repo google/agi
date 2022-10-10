@@ -19,9 +19,9 @@ import (
 	"flag"
 	"path/filepath"
 
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/os/device"
-	"github.com/google/gapid/core/os/file"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/os/device"
+	"github.com/google/agi/core/os/file"
 )
 
 // resolvedLayout is the data file layout discovered by layout()

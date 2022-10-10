@@ -17,7 +17,7 @@ package semantic
 import (
 	"fmt"
 
-	"github.com/google/gapid/gapil/ast"
+	"github.com/google/agi/gapil/ast"
 )
 
 // Type is the interface to any object that can act as a type to the api

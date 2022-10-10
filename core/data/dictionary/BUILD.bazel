@@ -20,7 +20,7 @@ go_library(
         "dictionary.go",
         "source.go",
     ],
-    importpath = "github.com/google/gapid/core/data/dictionary",
+    importpath = "github.com/google/agi/core/data/dictionary",
     visibility = ["//visibility:public"],
     deps = [
         "//core/data/generic:go_default_library",

@@ -26,7 +26,7 @@ go_library(
         "service.go",
     ],
     embed = [":service_go_proto"],
-    importpath = "github.com/google/gapid/gapis/service",
+    importpath = "github.com/google/agi/gapis/service",
     visibility = ["//visibility:public"],
     deps = [
         "//core/data/id:go_default_library",
@@ -69,7 +69,7 @@ proto_library(
 go_proto_library(
     name = "service_go_proto",
     compilers = ["@io_bazel_rules_go//proto:go_grpc"],
-    importpath = "github.com/google/gapid/gapis/service",
+    importpath = "github.com/google/agi/gapis/service",
     proto = ":service_proto",
     visibility = ["//visibility:public"],
     deps = [

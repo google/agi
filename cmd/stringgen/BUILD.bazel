@@ -28,7 +28,7 @@ go_library(
         "template.go",
         ":embed",  # keep
     ],
-    importpath = "github.com/google/gapid/cmd/stringgen",
+    importpath = "github.com/google/agi/cmd/stringgen",
     visibility = ["//visibility:private"],
     deps = [
         "//core/app:go_default_library",

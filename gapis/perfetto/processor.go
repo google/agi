@@ -23,8 +23,8 @@ import (
 	"unsafe"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/gapis/perfetto/service"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/gapis/perfetto/service"
 )
 
 type Processor struct {

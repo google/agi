@@ -14,7 +14,7 @@
 
 package ast
 
-import "github.com/google/gapid/core/text/parse/cst"
+import "github.com/google/agi/core/text/parse/cst"
 
 // Mappings is a two-way map of AST nodes to semantic nodes.
 type Mappings struct {

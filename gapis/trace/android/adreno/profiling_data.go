@@ -19,12 +19,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/os/device"
-	"github.com/google/gapid/gapis/api/sync"
-	"github.com/google/gapid/gapis/perfetto"
-	"github.com/google/gapid/gapis/service"
-	"github.com/google/gapid/gapis/trace/android/profile"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/os/device"
+	"github.com/google/agi/gapis/api/sync"
+	"github.com/google/agi/gapis/perfetto"
+	"github.com/google/agi/gapis/service"
+	"github.com/google/agi/gapis/trace/android/profile"
 )
 
 var (

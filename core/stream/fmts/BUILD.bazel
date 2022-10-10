@@ -41,7 +41,7 @@ go_library(
         "xyz.go",
         "xyzw.go",
     ],
-    importpath = "github.com/google/gapid/core/stream/fmts",
+    importpath = "github.com/google/agi/core/stream/fmts",
     visibility = ["//visibility:public"],
     deps = ["//core/stream:go_default_library"],
 )

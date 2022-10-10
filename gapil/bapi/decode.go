@@ -20,9 +20,9 @@ import (
 	"strings"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/google/gapid/core/text/parse/cst"
-	"github.com/google/gapid/gapil/ast"
-	"github.com/google/gapid/gapil/semantic"
+	"github.com/google/agi/core/text/parse/cst"
+	"github.com/google/agi/gapil/ast"
+	"github.com/google/agi/gapil/semantic"
 )
 
 type decoder struct {

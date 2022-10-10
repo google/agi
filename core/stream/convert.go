@@ -20,11 +20,11 @@ import (
 	"reflect"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/google/gapid/core/data/binary"
-	"github.com/google/gapid/core/math/f16"
-	"github.com/google/gapid/core/math/f32"
-	"github.com/google/gapid/core/math/f64"
-	"github.com/google/gapid/core/math/u64"
+	"github.com/google/agi/core/data/binary"
+	"github.com/google/agi/core/math/f16"
+	"github.com/google/agi/core/math/f32"
+	"github.com/google/agi/core/math/f64"
+	"github.com/google/agi/core/math/u64"
 )
 
 type buf struct {

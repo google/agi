@@ -34,7 +34,7 @@ go_library(
         "textedit.go",
         "uri.go",
     ],
-    importpath = "github.com/google/gapid/core/langsvr",
+    importpath = "github.com/google/agi/core/langsvr",
     visibility = ["//visibility:public"],
     deps = [
         "//core/event/task:go_default_library",

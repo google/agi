@@ -20,7 +20,7 @@ go_library(
         "control_flow_generator.go",
         "linear_control_flow_generator.go",
     ],
-    importpath = "github.com/google/gapid/gapis/api/controlFlowGenerator",
+    importpath = "github.com/google/agi/gapis/api/controlFlowGenerator",
     visibility = ["//visibility:public"],
     deps = [
         "//core/app/status:go_default_library",

@@ -21,10 +21,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/google/gapid/core/app/crash"
-	"github.com/google/gapid/core/event/task"
-	"github.com/google/gapid/core/fault/stacktrace"
-	"github.com/google/gapid/core/log"
+	"github.com/google/agi/core/app/crash"
+	"github.com/google/agi/core/event/task"
+	"github.com/google/agi/core/fault/stacktrace"
+	"github.com/google/agi/core/log"
 )
 
 // ExitCode is the type for named return values from the application main entry point.

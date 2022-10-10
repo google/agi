@@ -18,8 +18,8 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/google/gapid/gapil/analysis"
-	"github.com/google/gapid/gapil/semantic"
+	"github.com/google/agi/gapil/analysis"
+	"github.com/google/agi/gapil/semantic"
 )
 
 // ErrUnreachable is the error raised for unreachable code.

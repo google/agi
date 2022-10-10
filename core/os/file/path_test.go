@@ -20,9 +20,9 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/google/gapid/core/assert"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/os/file"
+	"github.com/google/agi/core/assert"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/os/file"
 )
 
 func TestPathContains(t *testing.T) {

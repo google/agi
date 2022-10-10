@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/google/gapid/core/context/keys"
+	"github.com/google/agi/core/context/keys"
 )
 
 // Port is the interface for sockets ports that can be forwarded from an Android

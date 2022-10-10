@@ -21,7 +21,7 @@ go_library(
         "lookup.go",
         "sync.go",
     ],
-    importpath = "github.com/google/gapid/gapis/api/sync",
+    importpath = "github.com/google/agi/gapis/api/sync",
     visibility = ["//visibility:public"],
     deps = [
         "//core/app/status:go_default_library",

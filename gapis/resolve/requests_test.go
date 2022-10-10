@@ -14,7 +14,7 @@
 
 package resolve
 
-import "github.com/google/gapid/gapis/database"
+import "github.com/google/agi/gapis/database"
 
 // Interface compliance tests
 var _ = []database.Resolvable{

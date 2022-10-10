@@ -21,11 +21,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/gapid/core/app/status"
-	"github.com/google/gapid/core/assert"
-	"github.com/google/gapid/core/data/id"
-	"github.com/google/gapid/core/event/task"
-	"github.com/google/gapid/core/log"
+	"github.com/google/agi/core/app/status"
+	"github.com/google/agi/core/assert"
+	"github.com/google/agi/core/data/id"
+	"github.com/google/agi/core/event/task"
+	"github.com/google/agi/core/log"
 )
 
 var delay = time.Millisecond * 100

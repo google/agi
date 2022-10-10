@@ -18,8 +18,8 @@ import (
 	"math"
 	"testing"
 
-	"github.com/google/gapid/core/assert"
-	"github.com/google/gapid/core/math/interval"
+	"github.com/google/agi/core/assert"
+	"github.com/google/agi/core/math/interval"
 )
 
 func TestInvertMemoryRanges(t *testing.T) {

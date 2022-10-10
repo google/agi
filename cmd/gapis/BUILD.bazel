@@ -18,7 +18,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = ["main.go"],
-    importpath = "github.com/google/gapid/cmd/gapis",
+    importpath = "github.com/google/agi/cmd/gapis",
     visibility = ["//visibility:private"],
     deps = [
         "//core/app:go_default_library",

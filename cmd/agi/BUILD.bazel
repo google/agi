@@ -21,7 +21,7 @@ go_library(
         "console_windows.go",
         "main.go",
     ],
-    importpath = "github.com/google/gapid/cmd/agi",
+    importpath = "github.com/google/agi/cmd/agi",
     visibility = ["//visibility:private"],
 )
 

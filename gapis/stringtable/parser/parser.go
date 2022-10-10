@@ -19,9 +19,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	st "github.com/google/gapid/gapis/stringtable"
-	"github.com/google/gapid/gapis/stringtable/minidown"
-	"github.com/google/gapid/gapis/stringtable/minidown/node"
+	st "github.com/google/agi/gapis/stringtable"
+	"github.com/google/agi/gapis/stringtable/minidown"
+	"github.com/google/agi/gapis/stringtable/minidown/node"
 )
 
 // ParameterID is a unique identifier for a stringtable parameter

@@ -17,10 +17,10 @@ package main
 import (
 	"context"
 
-	"github.com/google/gapid/core/os/file"
-	"github.com/google/gapid/gapil"
-	"github.com/google/gapid/gapil/resolver"
-	"github.com/google/gapid/gapil/semantic"
+	"github.com/google/agi/core/os/file"
+	"github.com/google/agi/gapil"
+	"github.com/google/agi/gapil/resolver"
+	"github.com/google/agi/gapil/semantic"
 )
 
 func resolve(ctx context.Context, paths []string, search file.PathList, opts resolver.Options) ([]*semantic.API, *semantic.Mappings, error) {

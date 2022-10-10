@@ -19,11 +19,11 @@ import (
 	"context"
 	"errors"
 
-	"github.com/google/gapid/core/data/endian"
-	"github.com/google/gapid/gapis/api"
-	"github.com/google/gapid/gapis/api/transform"
-	"github.com/google/gapid/gapis/database"
-	"github.com/google/gapid/gapis/memory"
+	"github.com/google/agi/core/data/endian"
+	"github.com/google/agi/gapis/api"
+	"github.com/google/agi/gapis/api/transform"
+	"github.com/google/agi/gapis/database"
+	"github.com/google/agi/gapis/memory"
 )
 
 // externalMemory is a transform that will transform commands using external

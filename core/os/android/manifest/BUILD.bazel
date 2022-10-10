@@ -20,7 +20,7 @@ go_library(
         "doc.go",
         "manifest.go",
     ],
-    importpath = "github.com/google/gapid/core/os/android/manifest",
+    importpath = "github.com/google/agi/core/os/android/manifest",
     visibility = ["//visibility:public"],
     deps = [
         "//core/fault:go_default_library",

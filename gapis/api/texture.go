@@ -18,8 +18,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/gapid/core/data/protoutil"
-	"github.com/google/gapid/core/image"
+	"github.com/google/agi/core/data/protoutil"
+	"github.com/google/agi/core/image"
 )
 
 func (l *CubemapLevel) faces() [6]*image.Info {

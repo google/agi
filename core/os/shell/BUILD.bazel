@@ -24,7 +24,7 @@ go_library(
         "process.go",
         "target.go",
     ],
-    importpath = "github.com/google/gapid/core/os/shell",
+    importpath = "github.com/google/agi/core/os/shell",
     visibility = ["//visibility:public"],
     deps = [
         "//core/event/task:go_default_library",

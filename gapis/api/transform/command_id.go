@@ -18,7 +18,7 @@
 package transform
 
 import (
-	"github.com/google/gapid/gapis/api"
+	"github.com/google/agi/gapis/api"
 )
 
 type CommandType uint32

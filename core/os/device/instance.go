@@ -17,7 +17,7 @@ package device
 import (
 	"fmt"
 
-	"github.com/google/gapid/core/data/id"
+	"github.com/google/agi/core/data/id"
 )
 
 // GenID assigns a new identifier to the instance from the serial, name and

@@ -25,11 +25,11 @@ import (
 	"sort"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/google/gapid/core/app"
-	"github.com/google/gapid/core/fault"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/gapis/stringtable"
-	"github.com/google/gapid/gapis/stringtable/parser"
+	"github.com/google/agi/core/app"
+	"github.com/google/agi/core/fault"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/gapis/stringtable"
+	"github.com/google/agi/gapis/stringtable/parser"
 )
 
 type tableAndTypeMap struct {

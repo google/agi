@@ -18,8 +18,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/google/gapid/core/assert"
-	st "github.com/google/gapid/gapis/stringtable"
+	"github.com/google/agi/core/assert"
+	st "github.com/google/agi/gapis/stringtable"
 )
 
 var source = `

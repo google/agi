@@ -28,16 +28,16 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/gapid/core/app"
-	"github.com/google/gapid/core/app/status"
-	"github.com/google/gapid/core/image"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/stream/fmts"
-	"github.com/google/gapid/gapis/api"
-	"github.com/google/gapid/gapis/client"
-	"github.com/google/gapid/gapis/service"
-	"github.com/google/gapid/gapis/service/path"
-	"github.com/google/gapid/gapis/vertex"
+	"github.com/google/agi/core/app"
+	"github.com/google/agi/core/app/status"
+	"github.com/google/agi/core/image"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/stream/fmts"
+	"github.com/google/agi/gapis/api"
+	"github.com/google/agi/gapis/client"
+	"github.com/google/agi/gapis/service"
+	"github.com/google/agi/gapis/service/path"
+	"github.com/google/agi/gapis/vertex"
 )
 
 var (

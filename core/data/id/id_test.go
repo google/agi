@@ -19,8 +19,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/google/gapid/core/assert"
-	"github.com/google/gapid/core/data/id"
+	"github.com/google/agi/core/assert"
+	"github.com/google/agi/core/data/id"
 )
 
 var (

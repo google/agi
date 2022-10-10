@@ -38,7 +38,7 @@ go_library(
         "values.go",
         "writer.go",
     ],
-    importpath = "github.com/google/gapid/core/log",
+    importpath = "github.com/google/agi/core/log",
     visibility = ["//visibility:public"],
     deps = [
         "//core/app/crash:go_default_library",

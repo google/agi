@@ -20,7 +20,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/google/gapid/core/app/flags"
+	"github.com/google/agi/core/app/flags"
 )
 
 // MakeDocs

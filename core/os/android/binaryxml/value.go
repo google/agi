@@ -17,7 +17,7 @@ package binaryxml
 import (
 	"fmt"
 
-	"github.com/google/gapid/core/data/binary"
+	"github.com/google/agi/core/data/binary"
 )
 
 const valueSize = 8

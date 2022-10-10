@@ -23,10 +23,10 @@ import (
 	"net"
 	"time"
 
-	"github.com/google/gapid/core/app/analytics"
-	"github.com/google/gapid/core/app/status"
-	"github.com/google/gapid/core/event/task"
-	"github.com/google/gapid/core/log"
+	"github.com/google/agi/core/app/analytics"
+	"github.com/google/agi/core/app/status"
+	"github.com/google/agi/core/event/task"
+	"github.com/google/agi/core/log"
 	"github.com/pkg/errors"
 )
 

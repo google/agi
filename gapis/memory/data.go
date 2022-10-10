@@ -18,7 +18,7 @@ import (
 	"context"
 	"io"
 
-	"github.com/google/gapid/core/data/id"
+	"github.com/google/agi/core/data/id"
 )
 
 // Data is the interface for a data source that can be resolved to a byte

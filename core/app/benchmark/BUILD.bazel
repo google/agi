@@ -22,7 +22,7 @@ go_library(
         "counter.go",
         "doc.go",
     ],
-    importpath = "github.com/google/gapid/core/app/benchmark",
+    importpath = "github.com/google/agi/core/app/benchmark",
     visibility = ["//visibility:public"],
 )
 

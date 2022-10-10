@@ -21,7 +21,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/google/gapid/core/text"
+	"github.com/google/agi/core/text"
 )
 
 // Logger provides a logging interface.

@@ -21,8 +21,8 @@ package validate
 import (
 	"sort"
 
-	"github.com/google/gapid/gapil/analysis"
-	"github.com/google/gapid/gapil/semantic"
+	"github.com/google/agi/gapil/analysis"
+	"github.com/google/agi/gapil/semantic"
 )
 
 // Options controls the validation that's performed.

@@ -17,7 +17,7 @@ package log
 import (
 	"context"
 
-	"github.com/google/gapid/core/context/keys"
+	"github.com/google/agi/core/context/keys"
 )
 
 // values is a linked-list of key-value pairs.

@@ -21,7 +21,7 @@ import (
 	"runtime"
 	"syscall"
 
-	"github.com/google/gapid/core/app/crash"
+	"github.com/google/agi/core/app/crash"
 )
 
 // Adds a signal handler for SIGQUIT to dump all go-routine stacks.

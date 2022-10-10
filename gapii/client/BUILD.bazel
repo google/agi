@@ -23,7 +23,7 @@ go_library(
         "header.go",
         "protocol.go",
     ],
-    importpath = "github.com/google/gapid/gapii/client",
+    importpath = "github.com/google/agi/gapii/client",
     visibility = ["//visibility:public"],
     deps = [
         "//core/app:go_default_library",

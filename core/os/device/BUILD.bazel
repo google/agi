@@ -34,7 +34,7 @@ go_library(
         "osx.go",
     ],
     embed = [":device_go_proto"],
-    importpath = "github.com/google/gapid/core/os/device",
+    importpath = "github.com/google/agi/core/os/device",
     visibility = ["//visibility:public"],
     deps = [
         "//core/data/id:go_default_library",
@@ -53,7 +53,7 @@ proto_library(
 
 go_proto_library(
     name = "device_go_proto",
-    importpath = "github.com/google/gapid/core/os/device",
+    importpath = "github.com/google/agi/core/os/device",
     proto = ":device_proto",
     visibility = ["//visibility:public"],
 )

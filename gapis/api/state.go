@@ -20,17 +20,17 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/google/gapid/core/data/binary"
-	"github.com/google/gapid/core/data/endian"
-	"github.com/google/gapid/core/data/id"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/math/interval"
-	"github.com/google/gapid/core/os/device"
-	"github.com/google/gapid/gapis/database"
-	"github.com/google/gapid/gapis/memory"
-	"github.com/google/gapid/gapis/replay/value"
-	"github.com/google/gapid/gapis/service/path"
-	"github.com/google/gapid/gapis/stringtable"
+	"github.com/google/agi/core/data/binary"
+	"github.com/google/agi/core/data/endian"
+	"github.com/google/agi/core/data/id"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/math/interval"
+	"github.com/google/agi/core/os/device"
+	"github.com/google/agi/gapis/database"
+	"github.com/google/agi/gapis/memory"
+	"github.com/google/agi/gapis/replay/value"
+	"github.com/google/agi/gapis/service/path"
+	"github.com/google/agi/gapis/stringtable"
 )
 
 // GlobalState represents the graphics state across all contexts.

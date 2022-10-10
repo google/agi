@@ -24,12 +24,12 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/google/gapid/core/app"
-	"github.com/google/gapid/core/fault"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/os/android"
-	"github.com/google/gapid/core/os/device"
-	"github.com/google/gapid/gapis/perfetto"
+	"github.com/google/agi/core/app"
+	"github.com/google/agi/core/fault"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/os/android"
+	"github.com/google/agi/core/os/device"
+	"github.com/google/agi/gapis/perfetto"
 
 	common_pb "protos/perfetto/common"
 )

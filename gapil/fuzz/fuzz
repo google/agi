@@ -1,6 +1,6 @@
 go get github.com/dvyukov/go-fuzz/go-fuzz
 go get github.com/dvyukov/go-fuzz/go-fuzz-build
-go-fuzz-build github.com/google/gapid/gapil/fuzz
+go-fuzz-build github.com/google/agi/gapil/fuzz
 
 mkdir -p ./fuzz-wd/corpus
 cp -r ./corpus/* ./fuzz-wd/corpus

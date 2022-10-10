@@ -20,12 +20,12 @@ import (
 	"sort"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/google/gapid/core/image"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/stream"
-	"github.com/google/gapid/gapis/api"
-	"github.com/google/gapid/gapis/memory"
-	"github.com/google/gapid/gapis/shadertools"
+	"github.com/google/agi/core/image"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/stream"
+	"github.com/google/agi/gapis/api"
+	"github.com/google/agi/gapis/memory"
+	"github.com/google/agi/gapis/shadertools"
 )
 
 // imagePrimer can create staging images and manages a series of image priming

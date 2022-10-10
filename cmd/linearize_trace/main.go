@@ -23,12 +23,12 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/google/gapid/core/app"
-	log "github.com/google/gapid/core/log"
-	_ "github.com/google/gapid/gapis/api/vulkan"
-	"github.com/google/gapid/gapis/capture"
-	"github.com/google/gapid/gapis/database"
-	"github.com/google/gapid/gapis/resolve/initialcmds"
+	"github.com/google/agi/core/app"
+	log "github.com/google/agi/core/log"
+	_ "github.com/google/agi/gapis/api/vulkan"
+	"github.com/google/agi/gapis/capture"
+	"github.com/google/agi/gapis/database"
+	"github.com/google/agi/gapis/resolve/initialcmds"
 )
 
 var (

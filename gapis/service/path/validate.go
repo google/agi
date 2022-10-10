@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/google/gapid/core/data/protoutil"
+	"github.com/google/agi/core/data/protoutil"
 )
 
 func isNil(f interface{}) bool {

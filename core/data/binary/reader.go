@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/google/gapid/core/math/f16"
+	"github.com/google/agi/core/math/f16"
 )
 
 // Reader provides methods for decoding values.

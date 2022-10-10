@@ -14,7 +14,7 @@
 
 package cst
 
-import "github.com/google/gapid/core/data/compare"
+import "github.com/google/agi/core/data/compare"
 
 // Node is a Fragment in a cst that represents unskipped tokens.
 type Node interface {

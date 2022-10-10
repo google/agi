@@ -17,7 +17,7 @@ package image
 import (
 	"context"
 
-	"github.com/google/gapid/gapis/database"
+	"github.com/google/agi/gapis/database"
 )
 
 // Resolve returns the byte array holding the resized image for the

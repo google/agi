@@ -20,7 +20,7 @@ import "gapis/service/path/path.proto";
 package memory_box;
 option java_package = "com.google.gapid.proto.service.memory_box";
 option java_outer_classname = "MemoryBox";
-option go_package = "github.com/google/gapid/gapis/service/memory_box";
+option go_package = "github.com/google/agi/gapis/service/memory_box";
 
 message Value {
   oneof val {

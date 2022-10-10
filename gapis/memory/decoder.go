@@ -15,9 +15,9 @@
 package memory
 
 import (
-	"github.com/google/gapid/core/data/binary"
-	"github.com/google/gapid/core/math/u64"
-	"github.com/google/gapid/core/os/device"
+	"github.com/google/agi/core/data/binary"
+	"github.com/google/agi/core/math/u64"
+	"github.com/google/agi/core/os/device"
 )
 
 // Decoder provides methods to read primitives from a binary.Reader, respecting

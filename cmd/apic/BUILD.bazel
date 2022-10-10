@@ -25,7 +25,7 @@ go_library(
         "template.go",
         "validate.go",
     ],
-    importpath = "github.com/google/gapid/cmd/apic",
+    importpath = "github.com/google/agi/cmd/apic",
     visibility = ["//visibility:private"],
     deps = [
         "//core/app:go_default_library",

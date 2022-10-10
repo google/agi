@@ -18,12 +18,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/gapid/core/image"
-	"github.com/google/gapid/gapis/api"
-	"github.com/google/gapid/gapis/database"
-	"github.com/google/gapid/gapis/messages"
-	"github.com/google/gapid/gapis/service"
-	"github.com/google/gapid/gapis/service/path"
+	"github.com/google/agi/core/image"
+	"github.com/google/agi/gapis/api"
+	"github.com/google/agi/gapis/database"
+	"github.com/google/agi/gapis/messages"
+	"github.com/google/agi/gapis/service"
+	"github.com/google/agi/gapis/service/path"
 )
 
 // Thumbnail resolves and returns the thumbnail from the path p.

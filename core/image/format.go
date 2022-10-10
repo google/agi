@@ -17,8 +17,8 @@ package image
 import (
 	"fmt"
 
-	"github.com/google/gapid/core/data/protoutil"
-	"github.com/google/gapid/core/stream"
+	"github.com/google/agi/core/data/protoutil"
+	"github.com/google/agi/core/stream"
 )
 
 // ErrResizeUnsupported is returned by Format.Resize() when the format does

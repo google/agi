@@ -21,7 +21,7 @@ go_library(
         "transform.go",
         "transform_chain.go",
     ],
-    importpath = "github.com/google/gapid/gapis/api/transform",
+    importpath = "github.com/google/agi/gapis/api/transform",
     visibility = ["//visibility:public"],
     deps = [
         "//core/log:go_default_library",

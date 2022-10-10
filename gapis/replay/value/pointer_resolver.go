@@ -14,7 +14,7 @@
 
 package value
 
-import "github.com/google/gapid/gapis/replay/protocol"
+import "github.com/google/agi/gapis/replay/protocol"
 
 // PointerResolver is used to translate pointers into the volatile address-space.
 type PointerResolver interface {

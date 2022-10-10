@@ -23,8 +23,8 @@ import (
 	"sync"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/google/gapid/core/data/generic"
-	"github.com/google/gapid/core/log"
+	"github.com/google/agi/core/data/generic"
+	"github.com/google/agi/core/log"
 )
 
 var (

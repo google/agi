@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/google/gapid/core/math/sint"
+	"github.com/google/agi/core/math/sint"
 )
 
 // LineNumber prefixes returns s prefixed with a line number for each line,

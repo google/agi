@@ -20,9 +20,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/google/gapid/core/data/slice"
-	"github.com/google/gapid/core/math/interval"
-	"github.com/google/gapid/core/math/sint"
+	"github.com/google/agi/core/data/slice"
+	"github.com/google/agi/core/math/interval"
+	"github.com/google/agi/core/math/sint"
 )
 
 // CmdIDGroup represents a named group of commands with support for sparse

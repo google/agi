@@ -19,9 +19,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/google/gapid/core/assert"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/os/fuchsia/ffx"
+	"github.com/google/agi/core/assert"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/os/fuchsia/ffx"
 )
 
 const deviceJSONPattern = `{

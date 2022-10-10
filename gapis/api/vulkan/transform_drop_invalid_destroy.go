@@ -17,9 +17,9 @@ package vulkan
 import (
 	"context"
 
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/gapis/api"
-	"github.com/google/gapid/gapis/api/transform"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/gapis/api"
+	"github.com/google/agi/gapis/api/transform"
 )
 
 var _ transform.Transform = &dropInvalidDestroy{}

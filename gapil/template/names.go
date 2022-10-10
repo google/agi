@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"unicode"
 
-	"github.com/google/gapid/gapil/resolver"
+	"github.com/google/agi/gapil/resolver"
 )
 
 type nameOptions struct {

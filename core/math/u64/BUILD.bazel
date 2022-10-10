@@ -20,6 +20,6 @@ go_library(
         "doc.go",
         "u64.go",
     ],
-    importpath = "github.com/google/gapid/core/math/u64",
+    importpath = "github.com/google/agi/core/math/u64",
     visibility = ["//visibility:public"],
 )

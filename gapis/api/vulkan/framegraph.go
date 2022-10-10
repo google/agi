@@ -20,13 +20,13 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/google/gapid/core/image"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/gapis/api"
-	"github.com/google/gapid/gapis/api/sync"
-	"github.com/google/gapid/gapis/memory"
-	"github.com/google/gapid/gapis/resolve/dependencygraph2"
-	"github.com/google/gapid/gapis/service/path"
+	"github.com/google/agi/core/image"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/gapis/api"
+	"github.com/google/agi/gapis/api/sync"
+	"github.com/google/agi/gapis/memory"
+	"github.com/google/agi/gapis/resolve/dependencygraph2"
+	"github.com/google/agi/gapis/service/path"
 )
 
 // backedByCoherentMemory returns true if the device memory object is backed by

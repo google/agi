@@ -14,7 +14,7 @@
 
 package stub
 
-import "github.com/google/gapid/core/os/shell"
+import "github.com/google/agi/core/os/shell"
 
 // Sequence is an implementation of Target that holds a list of 'consumable'
 // targets. Once a target's Start() returns an error that is not a

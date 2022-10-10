@@ -30,7 +30,7 @@ go_library(
         "shared_exp.go",
     ],
     embed = [":stream_go_proto"],
-    importpath = "github.com/google/gapid/core/stream",
+    importpath = "github.com/google/agi/core/stream",
     visibility = ["//visibility:public"],
     deps = [
         "//core/data/binary:go_default_library",
@@ -53,7 +53,7 @@ proto_library(
 
 go_proto_library(
     name = "stream_go_proto",
-    importpath = "github.com/google/gapid/core/stream",
+    importpath = "github.com/google/agi/core/stream",
     proto = ":stream_proto",
     visibility = ["//visibility:public"],
 )

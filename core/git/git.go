@@ -21,7 +21,7 @@ import (
 	"io"
 	"os/exec"
 
-	"github.com/google/gapid/core/os/shell"
+	"github.com/google/agi/core/os/shell"
 )
 
 var exe string

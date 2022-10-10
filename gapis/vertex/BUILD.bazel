@@ -23,7 +23,7 @@ go_library(
         "vertex.go",
     ],
     embed = [":vertex_go_proto"],
-    importpath = "github.com/google/gapid/gapis/vertex",
+    importpath = "github.com/google/agi/gapis/vertex",
     visibility = ["//visibility:public"],
     deps = ["//core/stream:go_default_library"],
 )
@@ -37,7 +37,7 @@ proto_library(
 
 go_proto_library(
     name = "vertex_go_proto",
-    importpath = "github.com/google/gapid/gapis/vertex",
+    importpath = "github.com/google/agi/gapis/vertex",
     proto = ":vertex_proto",
     visibility = ["//visibility:public"],
     deps = ["//core/stream:go_default_library"],

@@ -17,7 +17,7 @@ package dependencygraph2
 import (
 	"context"
 
-	"github.com/google/gapid/core/log"
+	"github.com/google/agi/core/log"
 )
 
 type ForwardAccessMode uint

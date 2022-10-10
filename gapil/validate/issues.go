@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/google/gapid/core/text/parse/cst"
+	"github.com/google/agi/core/text/parse/cst"
 )
 
 // Issue holds details of a problem found when validating an API file.

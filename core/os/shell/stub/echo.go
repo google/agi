@@ -20,7 +20,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/google/gapid/core/os/shell"
+	"github.com/google/agi/core/os/shell"
 )
 
 // Echo is an implementation of Target that acts like the echo command, printing the command arguments parameters to

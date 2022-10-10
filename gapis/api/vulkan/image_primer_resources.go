@@ -17,7 +17,7 @@ package vulkan
 import (
 	"sort"
 
-	"github.com/google/gapid/gapis/memory"
+	"github.com/google/agi/gapis/memory"
 )
 
 // descriptorSetPoolReservation is the result of descriptor set reservation

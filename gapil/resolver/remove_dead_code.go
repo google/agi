@@ -15,8 +15,8 @@
 package resolver
 
 import (
-	"github.com/google/gapid/gapil/ast"
-	"github.com/google/gapid/gapil/semantic"
+	"github.com/google/agi/gapil/ast"
+	"github.com/google/agi/gapil/semantic"
 )
 
 // removeDeadCode removes if statement blocks when the conditional is a literal

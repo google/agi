@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	"github.com/google/gapid/core/app"
-	"github.com/google/gapid/core/os/android/apk"
+	"github.com/google/agi/core/app"
+	"github.com/google/agi/core/os/android/apk"
 )
 
 func main() {

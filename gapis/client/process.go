@@ -18,13 +18,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/gapid/core/app/auth"
-	"github.com/google/gapid/core/app/layout"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/net/grpcutil"
-	"github.com/google/gapid/core/os/device/bind"
-	"github.com/google/gapid/core/os/file"
-	"github.com/google/gapid/core/os/process"
+	"github.com/google/agi/core/app/auth"
+	"github.com/google/agi/core/app/layout"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/net/grpcutil"
+	"github.com/google/agi/core/os/device/bind"
+	"github.com/google/agi/core/os/file"
+	"github.com/google/agi/core/os/process"
 	"google.golang.org/grpc"
 )
 

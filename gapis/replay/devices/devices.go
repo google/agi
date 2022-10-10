@@ -21,15 +21,15 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/os/device"
-	"github.com/google/gapid/core/os/device/bind"
-	"github.com/google/gapid/gapis/api"
-	"github.com/google/gapid/gapis/capture"
-	"github.com/google/gapid/gapis/messages"
-	"github.com/google/gapid/gapis/replay"
-	"github.com/google/gapid/gapis/service/path"
-	"github.com/google/gapid/gapis/stringtable"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/os/device"
+	"github.com/google/agi/core/os/device/bind"
+	"github.com/google/agi/gapis/api"
+	"github.com/google/agi/gapis/capture"
+	"github.com/google/agi/gapis/messages"
+	"github.com/google/agi/gapis/replay"
+	"github.com/google/agi/gapis/service/path"
+	"github.com/google/agi/gapis/stringtable"
 )
 
 // ForReplay returns three lists of the same size, at each index:

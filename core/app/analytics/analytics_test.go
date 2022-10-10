@@ -18,7 +18,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/gapid/core/log"
+	"github.com/google/agi/core/log"
 )
 
 func Test(t *testing.T) {

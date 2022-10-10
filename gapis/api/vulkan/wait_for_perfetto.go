@@ -21,12 +21,12 @@ import (
 	"context"
 	"time"
 
-	"github.com/google/gapid/core/event/task"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/gapir"
-	"github.com/google/gapid/gapis/replay"
-	"github.com/google/gapid/gapis/service"
-	"github.com/google/gapid/gapis/trace"
+	"github.com/google/agi/core/event/task"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/gapir"
+	"github.com/google/agi/gapis/replay"
+	"github.com/google/agi/gapis/service"
+	"github.com/google/agi/gapis/trace"
 )
 
 func getPerfettoLoopCallbacks(traceOptions *service.TraceOptions, signalHandler *replay.SignalHandler, buffer *bytes.Buffer) loopCallbacks {

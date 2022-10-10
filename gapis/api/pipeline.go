@@ -18,7 +18,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/google/gapid/gapis/service/path"
+	"github.com/google/agi/gapis/service/path"
 )
 
 var (

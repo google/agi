@@ -15,8 +15,8 @@
 package analysis
 
 import (
-	"github.com/google/gapid/gapil/ast"
-	"github.com/google/gapid/gapil/semantic"
+	"github.com/google/agi/gapil/ast"
+	"github.com/google/agi/gapil/semantic"
 )
 
 // scope contains the full context information for analysis of a semantic node.

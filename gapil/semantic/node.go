@@ -14,7 +14,7 @@
 
 package semantic
 
-import "github.com/google/gapid/gapil/ast"
+import "github.com/google/agi/gapil/ast"
 
 // Node represents any semantic-tree node type.
 type Node interface {

@@ -261,7 +261,7 @@ bool Vulkan::replayCreateVkDeviceImpl(Stack* stack, size_val physicalDevice,
     auto instance = static_cast<size_val>(stack->pop<size_val>());
     if (stack->isValid()) {
       // Leak this first instance. This is to work around a driver bug.
-      // See https://github.com/google/gapid/issues/1899
+      // See https://github.com/google/agi/issues/1899
       if (instance == leakInstance) {
         return true;
       }

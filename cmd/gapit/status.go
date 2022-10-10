@@ -26,11 +26,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/gapid/core/app"
-	"github.com/google/gapid/core/app/crash"
-	"github.com/google/gapid/core/event/task"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/gapis/service"
+	"github.com/google/agi/core/app"
+	"github.com/google/agi/core/app/crash"
+	"github.com/google/agi/core/event/task"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/gapis/service"
 )
 
 type statusVerb struct {

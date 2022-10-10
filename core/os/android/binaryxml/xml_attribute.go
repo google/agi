@@ -18,7 +18,7 @@ import (
 	"bytes"
 	"strings"
 
-	"github.com/google/gapid/core/data/binary"
+	"github.com/google/agi/core/data/binary"
 )
 
 type xmlAttributeList []xmlAttribute

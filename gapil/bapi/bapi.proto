@@ -15,7 +15,7 @@
 syntax = "proto3";
 
 package bapi;
-option go_package = "github.com/google/gapid/gapil/bapi";
+option go_package = "github.com/google/agi/gapil/bapi";
 
 message Content {
   Instances instances = 1;

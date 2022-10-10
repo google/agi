@@ -23,12 +23,12 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/google/gapid/core/assert"
-	"github.com/google/gapid/core/data/binary"
-	"github.com/google/gapid/core/data/endian"
-	"github.com/google/gapid/core/fault/stacktrace"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/os/device"
+	"github.com/google/agi/core/assert"
+	"github.com/google/agi/core/data/binary"
+	"github.com/google/agi/core/data/endian"
+	"github.com/google/agi/core/fault/stacktrace"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/os/device"
 )
 
 var callstack = stacktrace.Callstack{

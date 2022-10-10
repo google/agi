@@ -24,7 +24,7 @@ go_library(
         "source.go",
         "token.go",
     ],
-    importpath = "github.com/google/gapid/core/text/parse/cst",
+    importpath = "github.com/google/agi/core/text/parse/cst",
     visibility = ["//visibility:public"],
     deps = ["//core/data/compare:go_default_library"],
 )

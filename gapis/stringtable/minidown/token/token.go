@@ -16,7 +16,7 @@
 package token
 
 import (
-	"github.com/google/gapid/core/text/parse/cst"
+	"github.com/google/agi/core/text/parse/cst"
 )
 
 // Token is the interface implemented by all tokens.

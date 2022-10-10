@@ -32,7 +32,7 @@ go_library(
         "xml_start_namespace.go",
         "xml_tree.go",
     ],
-    importpath = "github.com/google/gapid/core/os/android/binaryxml",
+    importpath = "github.com/google/agi/core/os/android/binaryxml",
     visibility = ["//visibility:public"],
     deps = [
         "//core/data/binary:go_default_library",

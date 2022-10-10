@@ -23,10 +23,10 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/google/gapid/core/app/crash"
-	"github.com/google/gapid/core/event/task"
-	"github.com/google/gapid/core/fault"
-	"github.com/google/gapid/core/log"
+	"github.com/google/agi/core/app/crash"
+	"github.com/google/agi/core/event/task"
+	"github.com/google/agi/core/fault"
+	"github.com/google/agi/core/log"
 )
 
 const (

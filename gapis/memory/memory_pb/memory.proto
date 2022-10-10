@@ -15,7 +15,7 @@
 syntax = "proto3";
 
 package memory;
-option go_package = "github.com/google/gapid/gapis/memory/memory_pb";
+option go_package = "github.com/google/agi/gapis/memory/memory_pb";
 // cc_package
 
 // Observation is the structure for a single memory observation.

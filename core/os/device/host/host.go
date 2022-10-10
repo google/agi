@@ -18,7 +18,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/google/gapid/core/os/device"
+	"github.com/google/agi/core/os/device"
 )
 
 var (

@@ -14,7 +14,7 @@
 
 package main
 
-import "github.com/google/gapid/core/app"
+import "github.com/google/agi/core/app"
 
 const maxErrors = 10
 

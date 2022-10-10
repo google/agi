@@ -24,17 +24,17 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/gapid/core/app/crash"
-	"github.com/google/gapid/core/event/task"
-	ls "github.com/google/gapid/core/langsvr"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/os/file"
-	"github.com/google/gapid/core/text/parse"
-	"github.com/google/gapid/gapil"
-	"github.com/google/gapid/gapil/analysis"
-	"github.com/google/gapid/gapil/ast"
-	"github.com/google/gapid/gapil/semantic"
-	"github.com/google/gapid/gapil/validate"
+	"github.com/google/agi/core/app/crash"
+	"github.com/google/agi/core/event/task"
+	ls "github.com/google/agi/core/langsvr"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/os/file"
+	"github.com/google/agi/core/text/parse"
+	"github.com/google/agi/gapil"
+	"github.com/google/agi/gapil/analysis"
+	"github.com/google/agi/gapil/ast"
+	"github.com/google/agi/gapil/semantic"
+	"github.com/google/agi/gapil/validate"
 )
 
 const (

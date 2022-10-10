@@ -24,7 +24,7 @@ go_library(
     ],
     cgo = True,
     clinkopts = [],  # keep
-    importpath = "github.com/google/gapid/gapis/shadertools",
+    importpath = "github.com/google/agi/gapis/shadertools",
     visibility = ["//visibility:public"],
     deps = [
         "//core/fault:go_default_library",

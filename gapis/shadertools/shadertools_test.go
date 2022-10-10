@@ -17,9 +17,9 @@ package shadertools_test
 import (
 	"testing"
 
-	"github.com/google/gapid/core/assert"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/gapis/shadertools"
+	"github.com/google/agi/core/assert"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/gapis/shadertools"
 )
 
 func TestCompileGlsl(t *testing.T) {

@@ -19,9 +19,9 @@ import (
 	"fmt"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/google/gapid/core/data/id"
-	"github.com/google/gapid/core/data/protoconv"
-	"github.com/google/gapid/gapis/api"
+	"github.com/google/agi/core/data/id"
+	"github.com/google/agi/core/data/protoconv"
+	"github.com/google/agi/gapis/api"
 )
 
 type cmdGroup struct {

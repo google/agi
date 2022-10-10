@@ -23,11 +23,11 @@ import (
 	"sync"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/google/gapid/core/app/crash"
-	"github.com/google/gapid/core/app/status"
-	"github.com/google/gapid/core/data/id"
-	"github.com/google/gapid/core/data/protoconv"
-	"github.com/google/gapid/core/event/task"
+	"github.com/google/agi/core/app/crash"
+	"github.com/google/agi/core/app/status"
+	"github.com/google/agi/core/data/id"
+	"github.com/google/agi/core/data/protoconv"
+	"github.com/google/agi/core/event/task"
 )
 
 // NewInMemory builds a new in memory database.

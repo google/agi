@@ -27,10 +27,10 @@ import (
 	"net/url"
 	"sync"
 
-	"github.com/google/gapid/core/app/crash"
-	"github.com/google/gapid/core/fault/stacktrace"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/os/device/host"
+	"github.com/google/agi/core/app/crash"
+	"github.com/google/agi/core/fault/stacktrace"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/os/device/host"
 )
 
 const (

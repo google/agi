@@ -15,9 +15,9 @@
 package resolve
 
 import (
-	"github.com/google/gapid/gapis/messages"
-	"github.com/google/gapid/gapis/service"
-	"github.com/google/gapid/gapis/service/path"
+	"github.com/google/agi/gapis/messages"
+	"github.com/google/agi/gapis/service"
+	"github.com/google/agi/gapis/service/path"
 )
 
 func errPathOOB(val uint64, name string, min, max uint64, p path.Node) error {

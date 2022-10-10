@@ -19,8 +19,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/os/file"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/os/file"
 )
 
 const logChanBufferSize = 100

@@ -19,13 +19,13 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/google/gapid/core/app/benchmark"
-	"github.com/google/gapid/core/app/status"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/math/interval"
-	"github.com/google/gapid/gapis/api"
-	"github.com/google/gapid/gapis/capture"
-	"github.com/google/gapid/gapis/memory"
+	"github.com/google/agi/core/app/benchmark"
+	"github.com/google/agi/core/app/status"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/math/interval"
+	"github.com/google/agi/gapis/api"
+	"github.com/google/agi/gapis/capture"
+	"github.com/google/agi/gapis/memory"
 )
 
 var (

@@ -18,7 +18,7 @@ import "gapis/service/severity/severity.proto";
 
 package replay_service;
 
-option go_package = "github.com/google/gapid/gapir/replay_service";
+option go_package = "github.com/google/agi/gapir/replay_service";
 
 // ResourceInfo describes the ID and the size in bytes of a piece of resource
 // data.

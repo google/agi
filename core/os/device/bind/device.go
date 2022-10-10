@@ -17,9 +17,9 @@ package bind
 import (
 	"context"
 
-	"github.com/google/gapid/core/os/device"
-	"github.com/google/gapid/core/os/shell"
-	"github.com/google/gapid/gapis/perfetto"
+	"github.com/google/agi/core/os/device"
+	"github.com/google/agi/core/os/shell"
+	"github.com/google/agi/gapis/perfetto"
 )
 
 type Status int

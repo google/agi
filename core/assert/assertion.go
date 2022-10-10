@@ -21,7 +21,7 @@ import (
 	"text/tabwriter"
 	"unicode"
 
-	"github.com/google/gapid/core/data/compare"
+	"github.com/google/agi/core/data/compare"
 )
 
 type (

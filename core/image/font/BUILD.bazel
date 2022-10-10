@@ -20,6 +20,6 @@ go_library(
         "font.go",
         "glyphs.go",
     ],
-    importpath = "github.com/google/gapid/core/image/font",
+    importpath = "github.com/google/agi/core/image/font",
     visibility = ["//visibility:public"],
 )

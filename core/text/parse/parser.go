@@ -15,7 +15,7 @@
 package parse
 
 import (
-	"github.com/google/gapid/core/text/parse/cst"
+	"github.com/google/agi/core/text/parse/cst"
 )
 
 // RootParser is a function that is passed to Parse. It is handed the Branch to

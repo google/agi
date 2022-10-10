@@ -15,7 +15,7 @@
 syntax = "proto3";
 
 package resolve;
-option go_package = "github.com/google/gapid/gapis/resolve";
+option go_package = "github.com/google/agi/gapis/resolve";
 
 import "core/image/image.proto";
 import "gapis/api/service.proto";

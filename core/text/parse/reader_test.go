@@ -17,8 +17,8 @@ package parse_test
 import (
 	"testing"
 
-	"github.com/google/gapid/core/assert"
-	"github.com/google/gapid/core/text/parse"
+	"github.com/google/agi/core/assert"
+	"github.com/google/agi/core/text/parse"
 )
 
 var numericTests = []struct {

@@ -17,7 +17,7 @@ package vertex
 import (
 	"context"
 
-	"github.com/google/gapid/core/stream"
+	"github.com/google/agi/core/stream"
 )
 
 type semanticKey struct {

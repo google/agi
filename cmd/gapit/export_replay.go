@@ -29,13 +29,13 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/google/gapid/core/app"
-	"github.com/google/gapid/core/app/layout"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/os/file"
-	"github.com/google/gapid/core/os/shell"
-	"github.com/google/gapid/gapis/service"
-	gapidPath "github.com/google/gapid/gapis/service/path"
+	"github.com/google/agi/core/app"
+	"github.com/google/agi/core/app/layout"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/os/file"
+	"github.com/google/agi/core/os/shell"
+	"github.com/google/agi/gapis/service"
+	gapidPath "github.com/google/agi/gapis/service/path"
 )
 
 // These versions must match the ones in gapidapk/android/apk/AndroidManifest.xml.in

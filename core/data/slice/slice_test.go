@@ -18,9 +18,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/google/gapid/core/assert"
-	"github.com/google/gapid/core/data/slice"
-	"github.com/google/gapid/core/log"
+	"github.com/google/agi/core/assert"
+	"github.com/google/agi/core/data/slice"
+	"github.com/google/agi/core/log"
 )
 
 func TestReplace(t *testing.T) {
