@@ -32,7 +32,7 @@ var (
 		{31, "Textures / Fragment", validate.And(validate.IsNumber, validate.CheckAverageApproximateTo(1.0, 0.1))},
 		{37, "% Time Shading Fragments", validate.And(validate.IsNumber, validate.CheckLargerThanZero())},
 		{38, "% Time Shading Vertices", validate.And(validate.IsNumber, validate.CheckLargerThanZero())},
-		{39, "% Time Compute", validate.And(validate.IsNumber, validate.CheckNonNegative(0.0))},
+		{39, "% Time Compute", validate.And(validate.IsNumber, validate.CheckNonNegative())},
 	}
 )
 
