@@ -17,6 +17,7 @@
 #define CORE_MEMORY_ARENA_CC_STL_COMPATIBLE_ALLOCATOR_H__
 
 #include <limits>
+
 #include "core/memory/arena/cc/arena.h"
 
 namespace core {

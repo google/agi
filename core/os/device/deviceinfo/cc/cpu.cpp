@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-#include "query.h"
-
 #include "core/cc/target.h"
+#include "query.h"
 
 #if (defined(__x86_64) || defined(__i386))
 #include <cpuid.h>
@@ -65,6 +64,7 @@ bool query::queryCpu(CpuInfo* info, std::string* error) {
 #elif ((defined(__arm__) || defined(__aarch64__)) && \
        TARGET_OS == GAPID_OS_ANDROID)
 #include <sys/system_properties.h>
+
 #include <fstream>
 
 bool query::queryCpu(CpuInfo* info, std::string* error) {

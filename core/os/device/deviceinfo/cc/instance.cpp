@@ -15,6 +15,7 @@
  */
 
 #include "instance.h"
+
 #include "core/cc/log.h"
 #include "query.h"
 

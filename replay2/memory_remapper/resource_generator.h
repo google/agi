@@ -15,10 +15,10 @@
 #ifndef REPLAY2_MEMORY_REMAPPER_RESOURCE_GENERATOR_H
 #define REPLAY2_MEMORY_REMAPPER_RESOURCE_GENERATOR_H
 
-#include "replay_address.h"
-
 #include <cstddef>
 #include <memory>
+
+#include "replay_address.h"
 
 namespace agi {
 namespace replay2 {

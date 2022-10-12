@@ -45,8 +45,7 @@ message Slice {
   pod.Value representation = 2;
 }
 
-message Null {
-}
+message Null {}
 
 message Struct {
   repeated Value fields = 1;

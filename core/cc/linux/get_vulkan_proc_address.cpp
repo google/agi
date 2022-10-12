@@ -15,10 +15,11 @@
  */
 
 #include "../get_vulkan_proc_address.h"
-#include "../dl_loader.h"
-#include "../log.h"
 
 #include <dlfcn.h>
+
+#include "../dl_loader.h"
+#include "../log.h"
 
 namespace {
 

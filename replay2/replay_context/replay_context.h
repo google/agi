@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <string>
+
 #include "replay2/core_utils/non_copyable.h"
 #include "replay2/handle_remapper/handle_remapper.h"
 #include "replay2/memory_remapper/memory_remapper.h"
-
-#include <string>
 
 namespace agi {
 namespace replay2 {

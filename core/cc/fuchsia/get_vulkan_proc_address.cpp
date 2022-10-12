@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
+#include "../get_vulkan_proc_address.h"
+
 #include <iostream>
 
 #include "../dl_loader.h"
-#include "../get_vulkan_proc_address.h"
 #include "../log.h"
 
 namespace {

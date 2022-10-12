@@ -19,6 +19,7 @@
 #define __CORE_VULKAN_VK_API_TIMING_LAYER_CC_VK_API_EMITTER_H__
 
 #include <unordered_map>
+
 #include "core/vulkan/perfetto_producer/perfetto_data_source.h"
 #include "core/vulkan/perfetto_producer/perfetto_threadlocal_emitter.h"
 

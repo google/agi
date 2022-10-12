@@ -18,6 +18,7 @@
 #define VULKAN_TOOLS_IMAGE_H_
 
 #include <vulkan/vulkan.h>
+
 #include <ostream>
 
 namespace vk_tools {

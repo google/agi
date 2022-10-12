@@ -102,12 +102,11 @@ class Logger {
 
 #define GAPID_LOGGER_INIT(...) ::core::Logger::init(__VA_ARGS__)
 #define GAPID_SHOULD_LOG(LEVEL) (::core::Logger::level() >= LEVEL)
-#define GAPID_LOG(LEVEL, FORMAT, ...)                                    \
-  if                                                                     \
-    GAPID_SHOULD_LOG(LEVEL) {                                            \
-      ::core::Logger::instance().logf(LEVEL, __FILE__, __LINE__, FORMAT, \
-                                      ##__VA_ARGS__);                    \
-    }
+#define GAPID_LOG(LEVEL, FORMAT, ...)                                  \
+  if GAPID_SHOULD_LOG (LEVEL) {                                        \
+    ::core::Logger::instance().logf(LEVEL, __FILE__, __LINE__, FORMAT, \
+                                    ##__VA_ARGS__);                    \
+  }
 #define GAPID_FATAL(FORMAT, ...) \
   GAPID_LOG(LOG_LEVEL_FATAL, FORMAT, ##__VA_ARGS__)
 #define GAPID_ERROR(FORMAT, ...) \

@@ -24,10 +24,6 @@
 
 #include "connection_header.h"
 #include "connection_stream.h"
-#include "protocol.h"
-
-#include "gapii/cc/spy.h"
-
 #include "core/cc/debugger.h"
 #include "core/cc/lock.h"
 #include "core/cc/log.h"
@@ -36,9 +32,10 @@
 #include "core/cc/target.h"
 #include "core/cc/timer.h"
 #include "core/os/device/deviceinfo/cc/query.h"
-
+#include "gapii/cc/spy.h"
 #include "gapis/capture/capture.pb.h"
 #include "gapis/memory/memory_pb/memory.pb.h"
+#include "protocol.h"
 
 #if TARGET_OS == GAPID_OS_WINDOWS
 #include <windows.h>

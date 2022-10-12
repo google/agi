@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-#include "spirv-tools/libspirv.hpp"
-#include "spirv_parser.hpp"
-
 #include "staticanalysis.h"
 
 #include <cstring>
 #include <map>
 #include <set>
 #include <vector>
+
+#include "spirv-tools/libspirv.hpp"
+#include "spirv_parser.hpp"
 
 struct AnalysisBlock {
   std::set<uint32_t> def;

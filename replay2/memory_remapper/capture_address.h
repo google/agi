@@ -15,9 +15,9 @@
 #ifndef REPLAY2_MEMORY_REMAPPER_CAPTURE_ADDRESS_H
 #define REPLAY2_MEMORY_REMAPPER_CAPTURE_ADDRESS_H
 
-#include "typesafe_address.h"
-
 #include <cstddef>
+
+#include "typesafe_address.h"
 
 namespace agi {
 namespace replay2 {

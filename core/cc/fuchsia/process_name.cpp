@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-#include "utils.h"
-
 #include <string>
 
+#include "utils.h"
 #include "zircon/process.h"
 #include "zircon/syscalls.h"
 #include "zircon/syscalls/object.h"

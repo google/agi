@@ -15,9 +15,9 @@
 #ifndef __GAPIL_RUNTIME_SLICE_H__
 #define __GAPIL_RUNTIME_SLICE_H__
 
-#include "pool.h"
-
 #include <functional>
+
+#include "pool.h"
 
 namespace gapil {
 

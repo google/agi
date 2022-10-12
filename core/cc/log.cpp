@@ -16,17 +16,17 @@
 
 #include "log.h"
 
-#include "core/cc/target.h"
-
 #include <errno.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sstream>
 
 #include <chrono>
 #include <ctime>  // Required for MSVC.
+#include <sstream>
+
+#include "core/cc/target.h"
 
 #if TARGET_OS == GAPID_OS_WINDOWS
 #include "Windows.h"

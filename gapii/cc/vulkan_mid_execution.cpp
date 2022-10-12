@@ -14,20 +14,18 @@
  * limitations under the License.
  */
 
-#include "core/cc/make_unique.h"
-
-#include "gapii/cc/state_serializer.h"
-#include "gapii/cc/vulkan_exports.h"
-#include "gapii/cc/vulkan_spy.h"
-
-#include "gapis/memory/memory_pb/memory.pb.h"
-
 #include <algorithm>
 #include <deque>
 #include <map>
 #include <tuple>
 #include <unordered_set>
 #include <vector>
+
+#include "core/cc/make_unique.h"
+#include "gapii/cc/state_serializer.h"
+#include "gapii/cc/vulkan_exports.h"
+#include "gapii/cc/vulkan_spy.h"
+#include "gapis/memory/memory_pb/memory.pb.h"
 
 namespace {
 const uint64_t kChunkSizeLimit =

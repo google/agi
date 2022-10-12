@@ -15,9 +15,9 @@
  */
 
 #include "chunk_writer.h"
-#include "protocol.h"
 
 #include "core/cc/stream_writer.h"
+#include "protocol.h"
 
 using namespace gapii::protocol;
 

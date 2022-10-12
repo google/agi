@@ -15,15 +15,15 @@
 #ifndef REPLAY2_MEMORY_REMAPPER_MEMORY_REMAPPER_H
 #define REPLAY2_MEMORY_REMAPPER_MEMORY_REMAPPER_H
 
+#include <assert.h>
+
+#include <map>
+
 #include "address_range.h"
 #include "capture_address.h"
 #include "memory_observation.h"
-#include "replay_address.h"
-
-#include <assert.h>
-#include <map>
-
 #include "replay2/core_utils/non_copyable.h"
+#include "replay_address.h"
 
 namespace agi {
 namespace replay2 {

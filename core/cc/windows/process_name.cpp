@@ -15,6 +15,7 @@
  */
 
 #include <Shlwapi.h>
+
 #include <string>
 namespace core {
 
