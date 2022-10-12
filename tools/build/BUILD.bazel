@@ -104,6 +104,16 @@ config_setting(
 )
 
 config_setting(
+    name = "fuchsia-x86_64",
+    define_values = {
+        "FUCHSIA_BUILD": "1",
+    },
+    values = {
+        "cpu": "x86_64",
+    },
+)
+
+config_setting(
     name = "debug",
     values = {
         "compilation_mode": "dbg",

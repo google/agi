@@ -90,6 +90,7 @@ def cc_dynamic_library(name, exports = "", visibility = ["//visibility:private"]
         srcs = select({
             "//tools/build:linux": [":" + name + ".so"],
             "//tools/build:fuchsia-arm64": [":" + name + ".so"],
+            "//tools/build:fuchsia-x86_64": [":" + name + ".so"],
             "//tools/build:darwin": [":" + name + ".dylib"],
             "//tools/build:darwin_arm64": [":" + name + ".dylib"],
             "//tools/build:windows": [":" + name + ".dll"],
