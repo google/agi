@@ -30,8 +30,8 @@ int main(int argc, const char* const* argv) {
     return -1;
   }
   status = fdio_open("/pkg",
-                     static_cast<uint32_t>(fuchsia::io::OPEN_RIGHT_READABLE |
-                                           fuchsia::io::OPEN_RIGHT_EXECUTABLE),
+                     static_cast<uint32_t>(fuchsia::io::OpenFlags::RIGHT_READABLE |
+                                           fuchsia::io::OpenFlags::RIGHT_EXECUTABLE),
                      server_end.release());
   if (status != ZX_OK) {
     fprintf(stderr, "Failed to open /pkg");
@@ -42,7 +42,7 @@ int main(int argc, const char* const* argv) {
   root_dir.AddEntry("pkg", std::make_unique<vfs::RemoteDir>(std::move(client_end)));
 
   status = root_dir.Serve(
-      fuchsia::io::OPEN_RIGHT_READABLE | fuchsia::io::OPEN_RIGHT_EXECUTABLE,
+      fuchsia::io::OpenFlags::RIGHT_READABLE | fuchsia::io::OpenFlags::RIGHT_EXECUTABLE,
       zx::channel(zx_take_startup_handle(PA_DIRECTORY_REQUEST)));
 
   if (status != ZX_OK) {

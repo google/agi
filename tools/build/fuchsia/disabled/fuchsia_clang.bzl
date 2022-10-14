@@ -12,16 +12,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@gapid//tools/build/rules:repository.bzl", "maybe_repository")
-load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
-
-def fuchsia_base_dependencies(locals = {}):
-  maybe_repository(
-    git_repository,
-    name = "rules_fuchsia",
-    locals = locals,
-    remote = "https://fuchsia.googlesource.com/sdk-integration",
-    commit = "55ae0411ebfeee39af3ecde061c5a9df09e00775",
-    shallow_since = "1665598959 +0000",
-    patch_cmds = ["rm -R scripts", "mv bazel_rules_fuchsia/* ."],
-  )
+def fuchsia_clang_dependencies(locals = {}):
+  pass

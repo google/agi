@@ -65,7 +65,7 @@ def _strip_impl(ctx):
     ctx.actions.run(
         executable = cc_toolchain.strip_executable,
         arguments = flags + ["-o", out.path, src.path],
-	inputs = depset(direct = [src], transitive = [ cc_toolchain.all_files ]),
+        inputs = depset(direct = [src], transitive = [ cc_toolchain.all_files ]),
         outputs = [out],
     )
 

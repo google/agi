@@ -45,6 +45,13 @@
 #include <sys/system_properties.h>
 #endif  // TARGET_OS == GAPID_OS_ANDROID
 
+#if TARGET_OS == GAPID_OS_FUCHSIA
+#include <lib/sys/component/cpp/service_client.h>
+#include <lib/sys/cpp/component_context.h>
+
+#include "core/cc/fuchsia/zircon_socket_connection.h"
+#endif
+
 namespace {
 
 const uint32_t kMaxFramebufferObservationWidth = 3840;
@@ -80,6 +87,28 @@ struct spy_creator {
   std::unique_ptr<gapii::Spy> m_spy;
 };
 
+#if TARGET_OS == GAPID_OS_FUCHSIA
+zx_koid_t FuchsiaProcessID() {
+  zx::unowned<zx::process> process = zx::process::self();
+  zx_info_handle_basic_t info;
+  zx_status_t status = zx_object_get_info(
+      process->get(), ZX_INFO_HANDLE_BASIC, &info, sizeof(info),
+      nullptr /* actual */, nullptr /* avail */);
+  if (status != ZX_OK) {
+    GAPID_ERROR("Failed to get process handle.");
+    return 0;
+  }
+  return info.koid;
+}
+
+std::string FuchsiaProcessName() {
+  zx::unowned<zx::process> process = zx::process::self();
+  char process_name[ZX_MAX_NAME_LEN];
+  process->get_property(ZX_PROP_NAME, process_name, sizeof(process_name));
+  return process_name;
+}
+#endif
+
 Spy* Spy::get() {
   static spy_creator creator;
   return creator.m_spy.get();
@@ -95,8 +124,8 @@ Spy::Spy()
   // Start by checking whether to capture the current process: compare the
   // current process name with the "capture_proc_name" that we get from the
   // environment. An empty "capture_proc_name" means capture any process. This
-  // is useful for games where the process initially started by AGI creates an
-  // other process where the actual game rendering happens.
+  // is useful for games where the process initially started by AGI creates
+  // another process where the actual game rendering happens.
   bool this_executable = true;
   auto this_proc_name = core::get_process_name();
   GAPID_INFO("this process name: %s", this_proc_name.c_str());
@@ -131,7 +160,14 @@ Spy::Spy()
       pipe = envPipe;
     }
     mConnection = ConnectionStream::listenPipe(pipe.c_str(), true);
-#else                                           // TARGET_OS
+#elif TARGET_OS == GAPID_OS_FUCHSIA
+    zx::socket vulkan_socket(AgisRegisterAndRetrieve(core::GetNanoseconds()));
+    if (!vulkan_socket.is_valid()) {
+      GAPID_ERROR("Vulkan socket is invalid.");
+    }
+    mConnection =
+        ConnectionStream::listenZirconSocket(std::move(vulkan_socket));
+#else
     mConnection = ConnectionStream::listenSocket("127.0.0.1", "9286");
 #endif                                          // TARGET_OS
     if (mConnection->write("gapii", 5) != 5) {  // handshake magic
@@ -251,6 +287,51 @@ Spy::~Spy() {
   mCaptureFrames = -1;
   endTraceIfRequested();
 }
+
+#if TARGET_OS == GAPID_OS_FUCHSIA
+zx_handle_t Spy::AgisRegisterAndRetrieve(uint64_t client_id) {
+  std::unique_ptr<sys::ComponentContext> context =
+      sys::ComponentContext::Create();
+  zx::status client_end =
+      component::Connect<fuchsia_gpu_agis::ComponentRegistry>();
+  if (!client_end.is_ok()) {
+    GAPID_ERROR("Unable to establish client endpoint for Agis.");
+    return 0;
+  }
+  mAgisComponentRegistry =
+      fidl::SyncClient<fuchsia_gpu_agis::ComponentRegistry>(
+          std::move(*client_end));
+
+  // Get process info.
+  zx_koid_t process_id = FuchsiaProcessID();
+  std::string process_name = FuchsiaProcessName();
+
+  // Issue register request.
+  fuchsia_gpu_agis::ComponentRegistryRegisterRequest request(
+      client_id, process_id, std::move(process_name));
+  fidl::Result<fuchsia_gpu_agis::ComponentRegistry::Register> register_result =
+      mAgisComponentRegistry->Register(request);
+  if (register_result.is_error()) {
+    GAPID_FATAL("Agis Register() - failed.");
+  }
+
+  // Retrieve Vulkan socket.
+  fidl::Result<fuchsia_gpu_agis::ComponentRegistry::GetVulkanSocket>
+      socket_result = mAgisComponentRegistry->GetVulkanSocket(client_id);
+  if (!socket_result.is_ok()) {
+    GAPID_ERROR("Agis GetVulkanSocket() - failed");
+  }
+  zx::socket vulkan_socket(std::move(socket_result->socket()));
+  if (!vulkan_socket.is_valid()) {
+    GAPID_ERROR("Agis GetVulkanSocket() - invalid socket");
+  }
+  GAPID_INFO("Agis GetVulkanSocket() - socket established.");
+
+  // Release socket back to the caller.
+  return vulkan_socket.release();
+}
+
+#endif  // TARGET_OS == GAPID_OS_FUCHSIA
 
 CallObserver* Spy::enter(const char* name, uint32_t api) {
   lock();

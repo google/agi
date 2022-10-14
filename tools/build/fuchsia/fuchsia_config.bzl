@@ -19,6 +19,7 @@ def _fuchsia_config_impl(ctx):
 
   ctx.file("BUILD.bazel", content = "", executable = False)
   ctx.symlink(Label(dir + "/fuchsia_sdk.bzl"), "fuchsia_sdk.bzl")
+  ctx.symlink(Label(dir + "/fuchsia_clang.bzl"), "fuchsia_clang.bzl")
   ctx.symlink(Label(dir + "/workspace.bzl"), "workspace.bzl")
 
 

@@ -24,6 +24,10 @@
 #include "core/cc/thread.h"
 #include "gapii/cc/vulkan_spy.h"
 
+#if TARGET_OS == GAPID_OS_FUCHSIA
+#include <fidl/fuchsia.gpu.agis/cpp/fidl.h>
+#endif  // TARGET_OS == GAPID_OS_FUCHSIA
+
 namespace gapii {
 struct spy_creator;
 class ConnectionStream;
@@ -91,6 +95,13 @@ class Spy : public VulkanSpy {
   }
 
   std::unique_ptr<core::AsyncJob> mMessageReceiverJob;
+
+#if TARGET_OS == GAPID_OS_FUCHSIA
+  // Register with agis service and retrieve the Vulkan socket.
+  zx_handle_t AgisRegisterAndRetrieve(uint64_t client_id);
+
+  fidl::SyncClient<fuchsia_gpu_agis::ComponentRegistry> mAgisComponentRegistry;
+#endif
 
   friend struct spy_creator;
 };

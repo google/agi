@@ -25,6 +25,7 @@ cc_library(
         "-fno-exceptions",
     ],
     linkopts = select({
+        "//tools/build:fuchsia-arm64": [],
         "//tools/build:linux": ["-ldl"],
         "//tools/build:darwin": [],
         "//tools/build:darwin_arm64": [],

@@ -77,3 +77,4 @@ void write_zig_zag(buffer* buf, int64_t v) {
 }  // namespace
 
 #endif  // __GAPIL_RUNTIME_ENCODER_INC__
+
