@@ -69,8 +69,14 @@ cc_library(
             "-framework OpenGL",
         ],
         "//tools/build:windows": [],
-        "//tools/build:fuchsia-arm64": [],
-        "//tools/build:fuchsia-x86_64": [],
+        "//tools/build:fuchsia-arm64": [
+            "-static-libstdc++",
+            "-static-libgcc",
+        ],
+        "//tools/build:fuchsia-x86_64": [
+            "-static-libstdc++",
+            "-static-libgcc",
+        ],
         # Android
         "//conditions:default": [
             "-ldl",
@@ -80,19 +86,30 @@ cc_library(
         ],
     }),
     visibility = ["//visibility:public"],
-    deps = [
-        "//core/cc",
-        "//core/memory/arena/cc",
-        "//core/memory_tracker/cc",
-        "//core/os/device/deviceinfo/cc",
-        "//gapil/runtime/cc",
-        "//gapis/api:api_cc_proto",
-        "//gapis/api/vulkan/vulkan_pb:extras_cc_proto",
-        "//gapis/capture:capture_cc_proto",
-        "//gapis/memory/memory_pb:memory_pb_cc_proto",
-        "@com_google_protobuf//:protobuf",
-        "@spirv_reflect//:libspirv_reflect",
-    ],
+    deps =
+        [
+            "//core/cc",
+            "//core/memory/arena/cc",
+            "//core/memory_tracker/cc",
+            "//core/os/device/deviceinfo/cc",
+            "//gapil/runtime/cc",
+            "//gapis/api:api_cc_proto",
+            "//gapis/api/vulkan/vulkan_pb:extras_cc_proto",
+            "//gapis/capture:capture_cc_proto",
+            "//gapis/memory/memory_pb:memory_pb_cc_proto",
+            "@com_google_protobuf//:protobuf",
+            "@spirv_reflect//:libspirv_reflect",
+        ] + select({
+            "//tools/build:fuchsia-arm64": [
+                "@fuchsia_sdk//fidl/fuchsia.gpu.agis:fuchsia.gpu.agis_llcpp_cc",
+                "@fuchsia_sdk//pkg/fdio",
+            ],
+            "//tools/build:fuchsia-x86_64": [
+                "@fuchsia_sdk//fidl/fuchsia.gpu.agis:fuchsia.gpu.agis_llcpp_cc",
+                "@fuchsia_sdk//pkg/fdio",
+            ],
+            "//conditions:default": [],
+        }),
     alwayslink = True,
 )
 
