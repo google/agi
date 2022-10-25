@@ -32,6 +32,11 @@ cc_library(
             "fuchsia/*.h",
             "posix/*.cpp",
         ]),
+        "//tools/build:fuchsia-x86_64": glob([
+            "fuchsia/*.cpp",
+            "fuchsia/*.h",
+            "posix/*.cpp",
+        ]),
         "//tools/build:darwin": glob([
             "osx/*.cpp",
             "posix/*.cpp",
@@ -54,6 +59,7 @@ cc_library(
         "//tools/build:darwin": [],
         "//tools/build:darwin_arm64": [],
         "//tools/build:fuchsia-arm64": [],
+        "//tools/build:fuchsia-x86_64": [],
         "//tools/build:windows": [
             "-lws2_32",
             "-lshlwapi",
@@ -66,6 +72,9 @@ cc_library(
         "@cityhash",
     ] + select({
         "//tools/build:fuchsia-arm64": [
+            "@fuchsia_sdk//pkg/zx",
+        ],
+        "//tools/build:fuchsia-x86_64": [
             "@fuchsia_sdk//pkg/zx",
         ],
         "//conditions:default": ["@breakpad"],

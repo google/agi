@@ -55,6 +55,7 @@ cc_library(
     copts = cc_copts() + select({
         "//tools/build:windows": ["-Wa,-mbig-obj"],
         "//tools/build:fuchsia-arm64": [],
+        "//tools/build:fuchsia-x86_64": [],
         "//conditions:default": [],
     }),
     linkopts = select({
@@ -69,6 +70,7 @@ cc_library(
         ],
         "//tools/build:windows": [],
         "//tools/build:fuchsia-arm64": [],
+        "//tools/build:fuchsia-x86_64": [],
         # Android
         "//conditions:default": [
             "-ldl",

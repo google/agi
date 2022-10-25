@@ -30,6 +30,7 @@ cc_library(
         "//tools/build:darwin": [],
         "//tools/build:darwin_arm64": [],
         "//tools/build:fuchsia-arm64": glob(["fuchsia/query.cpp"]),
+        "//tools/build:fuchsia-x86_64": glob(["fuchsia/query.cpp"]),
         # Android
         "//conditions:default": glob([
             "android/*.cpp",
@@ -43,6 +44,7 @@ cc_library(
         "//tools/build:darwin": [],
         "//tools/build:darwin_arm64": [],
         "//tools/build:fuchsia-arm64": [],
+        "//tools/build:fuchsia-x86_64": [],
         "//tools/build:windows": [],
         # Android
         "//conditions:default": [
@@ -59,6 +61,12 @@ cc_library(
         "//tools/build:darwin": [":darwin_query"],
         "//tools/build:darwin_arm64": [":darwin_query"],
         "//tools/build:fuchsia-arm64": [
+            "@fuchsia_sdk//fidl/fuchsia.gpu.agis:fuchsia.gpu.agis_llcpp_cc",
+            "@fuchsia_sdk//fidl/fuchsia.hwinfo:fuchsia.hwinfo_cc",
+            "@fuchsia_sdk//pkg/sys_cpp",
+            "@fuchsia_sdk//pkg/sys_component_cpp",
+        ],
+        "//tools/build:fuchsia-x86_64": [
             "@fuchsia_sdk//fidl/fuchsia.gpu.agis:fuchsia.gpu.agis_llcpp_cc",
             "@fuchsia_sdk//fidl/fuchsia.hwinfo:fuchsia.hwinfo_cc",
             "@fuchsia_sdk//pkg/sys_cpp",

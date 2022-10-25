@@ -54,3 +54,9 @@ build:fuchsia_arm64 --cxxopt="-Wno-extra-semi"
 build:fuchsia_arm64 --copt="-Wno-deprecated-non-prototype"
 build:fuchsia_arm64 --copt="-Wno-unused-function"
 build:fuchsia_arm64 --define FUCHSIA_BUILD=1 --action_env=AGI_FUCHSIA_BUILD=1
+
+build:fuchsia_x64 --crosstool_top=@fuchsia_clang//:toolchain --cpu=x86_64 --host_crosstool_top=@bazel_tools//tools/cpp:toolchain
+build:fuchsia_x64 --cxxopt="-Wno-extra-semi"
+build:fuchsia_x64 --copt="-Wno-deprecated-non-prototype"
+build:fuchsia_x64 --copt="-Wno-unused-function"
+build:fuchsia_x64 --define FUCHSIA_BUILD=1 --action_env=AGI_FUCHSIA_BUILD=1
