@@ -46,8 +46,8 @@
 #endif  // TARGET_OS == GAPID_OS_ANDROID
 
 #if TARGET_OS == GAPID_OS_FUCHSIA
-#include <lib/sys/component/cpp/service_client.h>
-#include <lib/sys/cpp/component_context.h>
+#include <lib/fdio/directory.h>
+#include <lib/zx/process.h>
 
 #include "core/cc/fuchsia/zircon_socket_connection.h"
 #endif
@@ -290,17 +290,22 @@ Spy::~Spy() {
 
 #if TARGET_OS == GAPID_OS_FUCHSIA
 zx_handle_t Spy::AgisRegisterAndRetrieve(uint64_t client_id) {
-  std::unique_ptr<sys::ComponentContext> context =
-      sys::ComponentContext::Create();
-  zx::status client_end =
-      component::Connect<fuchsia_gpu_agis::ComponentRegistry>();
-  if (!client_end.is_ok()) {
+  auto endpoints = fidl::CreateEndpoints<fuchsia_gpu_agis::ComponentRegistry>();
+  if (!endpoints.is_ok()) {
+    GAPID_ERROR("FIDL channel endpoint creation failure.");
+    return 0;
+  }
+  auto [client_end, server_end] = *std::move(endpoints);
+  zx_status_t status =
+      fdio_service_connect("/svc/fuchsia.gpu.agis.ComponentRegistry",
+                           server_end.channel().release());
+  if (status != ZX_OK) {
     GAPID_ERROR("Unable to establish client endpoint for Agis.");
     return 0;
   }
   mAgisComponentRegistry =
       fidl::SyncClient<fuchsia_gpu_agis::ComponentRegistry>(
-          std::move(*client_end));
+          std::move(client_end));
 
   // Get process info.
   zx_koid_t process_id = FuchsiaProcessID();
