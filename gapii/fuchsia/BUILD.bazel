@@ -36,8 +36,13 @@ fuchsia_component(
     manifest = ":manifest",
     deps = [
         ":gapii_server",
-        "//gapii/cc:libgapii",
     ],
+)
+
+fuchsia_package_resource(
+    name = "libgapii",
+    src = "//gapii/cc:libgapii",
+    dest = "lib/libgapii.so",
 )
 
 fuchsia_package_resource(
@@ -51,5 +56,6 @@ fuchsia_package(
     deps = [
         ":gapii-server",
         ":graphics_spy_json",
+        ":libgapii",
     ],
 )
