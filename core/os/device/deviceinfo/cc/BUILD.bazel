@@ -64,13 +64,11 @@ cc_library(
             "@fuchsia_sdk//fidl/fuchsia.gpu.agis:fuchsia.gpu.agis_llcpp_cc",
             "@fuchsia_sdk//fidl/fuchsia.hwinfo:fuchsia.hwinfo_cc",
             "@fuchsia_sdk//pkg/sys_cpp",
-            "@fuchsia_sdk//pkg/sys_component_cpp",
         ],
         "//tools/build:fuchsia-x86_64": [
             "@fuchsia_sdk//fidl/fuchsia.gpu.agis:fuchsia.gpu.agis_llcpp_cc",
             "@fuchsia_sdk//fidl/fuchsia.hwinfo:fuchsia.hwinfo_cc",
             "@fuchsia_sdk//pkg/sys_cpp",
-            "@fuchsia_sdk//pkg/sys_component_cpp",
         ],
         "//conditions:default": [],
     }),
