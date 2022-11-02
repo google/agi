@@ -43,16 +43,16 @@ fuchsia_package_resource(
 )
 
 fuchsia_package_resource(
-    name = "graphics_spy_json",
+    name = "gpu_inspector_json",
     src = "//gapii/vulkan/vk_graphics_spy/fuchsia:fuchsia_json",
-    dest = "data/vulkan/explicit_layer.d/GraphicsSpyLayer.json",
+    dest = "data/vulkan/explicit_layer.d/GpuInspectorLayer.json",
 )
 
 fuchsia_package(
     name = "gapii",
     deps = [
         ":gapii-server",
-        ":graphics_spy_json",
+        ":gpu_inspector_json",
         ":libgapii",
     ],
 )

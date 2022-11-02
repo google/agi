@@ -1,12 +1,12 @@
 {
   "file_format_version" : "1.0.0",
   "layer": {
-    "name": "GraphicsSpy",
+    "name": "VK_LAYER_GOOGLE_gpu_inspector",
     "type": "GLOBAL",
     "library_path": "../../../lib/libgapii.so",
     "api_version" : "1.3.231",
     "implementation_version" : "1",
-    "description" : "Graphics Spy Layer",
+    "description" : "GPU Inspector Layer",
     "functions": {
       "vkGetDeviceProcAddr": "gapid_vkGetDeviceProcAddr",
       "vkGetInstanceProcAddr": "gapid_vkGetInstanceProcAddr"
