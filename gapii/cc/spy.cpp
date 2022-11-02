@@ -128,7 +128,7 @@ Spy::Spy()
   // another process where the actual game rendering happens.
   bool this_executable = true;
   auto this_proc_name = core::get_process_name();
-  GAPID_INFO("this process name: %s", this_proc_name.c_str());
+  GAPID_INFO("Spy process name: %s", this_proc_name.c_str());
 
 #if TARGET_OS == GAPID_OS_ANDROID
   // PROP_VALUE_MAX is defined in <sys/system_properties.h>
@@ -163,17 +163,18 @@ Spy::Spy()
 #elif TARGET_OS == GAPID_OS_FUCHSIA
     zx::socket vulkan_socket(AgisRegisterAndRetrieve(core::GetNanoseconds()));
     if (!vulkan_socket.is_valid()) {
-      GAPID_ERROR("Vulkan socket is invalid.");
+      GAPID_ERROR("Spy(fuchsia) Vulkan socket is invalid.");
+    } else {
+      GAPID_INFO("Spy(fuchsia) listening on valid Zircon socket.");
     }
     mConnection =
         ConnectionStream::listenZirconSocket(std::move(vulkan_socket));
 #else
     mConnection = ConnectionStream::listenSocket("127.0.0.1", "9286");
 #endif                                          // TARGET_OS
-    if (mConnection->write("gapii", 5) != 5) {  // handshake magic
-      GAPID_FATAL("Couldn't send handshake magic");
+    if (mConnection->write("gapii", 5) != 5) {  // handshake string
+      GAPID_FATAL("Couldn't send \"gapii\" handshake string");
     }
-
     GAPID_INFO("Connection made");
   }
   ConnectionHeader header;
@@ -317,20 +318,21 @@ zx_handle_t Spy::AgisRegisterAndRetrieve(uint64_t client_id) {
   fidl::Result<fuchsia_gpu_agis::ComponentRegistry::Register> register_result =
       mAgisComponentRegistry->Register(request);
   if (register_result.is_error()) {
-    GAPID_FATAL("Agis Register() - failed.");
+    GAPID_FATAL("Agis Register() - failed: %s",
+                register_result.error_value().FormatDescription().c_str());
   }
 
   // Retrieve Vulkan socket.
   fidl::Result<fuchsia_gpu_agis::ComponentRegistry::GetVulkanSocket>
       socket_result = mAgisComponentRegistry->GetVulkanSocket(client_id);
-  if (!socket_result.is_ok()) {
-    GAPID_ERROR("Agis GetVulkanSocket() - failed");
+  if (socket_result.is_error()) {
+    GAPID_ERROR("Spy(fuchsia) GetVulkanSocket() - failed: %s",
+                socket_result.error_value().FormatDescription().c_str());
   }
   zx::socket vulkan_socket(std::move(socket_result->socket()));
   if (!vulkan_socket.is_valid()) {
-    GAPID_ERROR("Agis GetVulkanSocket() - invalid socket");
+    GAPID_ERROR("Spy(fuchsia) GetVulkanSocket() - invalid socket");
   }
-  GAPID_INFO("Agis GetVulkanSocket() - socket established.");
 
   // Release socket back to the caller.
   return vulkan_socket.release();
