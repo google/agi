@@ -89,7 +89,24 @@ features working. Make sure to edit the files through their link found under the
 
 The recommended Go debugger is
 [delve](https://github.com/go-delve/delve). You can start a **debug** build of
-gapis or a client under this debugger. To build in debug mode, use the `-c dbg`
+gapis or a client under this debugger.
+
+### Installing the `dlv` Debugger
+  1. Unset your `GOPATH` for the `dlv` installation
+  
+  ```
+  # For Bash
+  unset GOPATH
+  ```
+
+  2. Install latest `dlv`
+  
+  ```
+  go install github.com/go-delve/delve/cmd/dlv@latest
+  ```
+
+### Building for Debugging
+To build in debug mode, use the `-c dbg`
 Bazel flag, e.g.:
 
 ```
