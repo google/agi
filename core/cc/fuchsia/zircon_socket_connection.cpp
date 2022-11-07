@@ -19,6 +19,7 @@
 #include "zircon_socket_connection.h"
 
 #include <errno.h>
+#include <zircon/status.h>
 
 #include "core/cc/log.h"
 
@@ -30,7 +31,8 @@ size_t ZirconSocketConnection::send(const void* data, size_t size) {
   size_t bytes_written = 0;
   zx_status_t status = mSocket.write(0u, data, size, &bytes_written);
   if (status != ZX_OK) {
-    GAPID_ERROR("Failed to write data to Zircon socket.");
+    GAPID_ERROR("Failed to write data to Zircon socket: %s",
+                zx_status_get_string(status));
   }
   return bytes_written;
 }
@@ -39,7 +41,8 @@ size_t ZirconSocketConnection::recv(void* data, size_t size) {
   size_t bytes_read = 0;
   zx_status_t status = mSocket.read(0u, data, size, &bytes_read);
   if (status != ZX_OK) {
-    GAPID_ERROR("Failed to read data from Zircon socket.");
+    GAPID_ERROR("Failed to read data from Zircon socket: %s",
+                zx_status_get_string(status));
   }
   return bytes_read;
 }
