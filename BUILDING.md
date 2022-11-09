@@ -102,11 +102,17 @@ The following environment variables will need to be set prior to building:
 
 ---
 
-## MacOS
+## macOS
 
 ### Install Bazel
 
 Follow the [MacOS Bazel Install](https://docs.bazel.build/versions/master/install-os-x.html) directions to install bazel.
+
+### Install Buildifier and Buildozer
+
+`go install github.com/bazelbuild/buildtools/buildifier@latest`
+
+`go install github.com/bazelbuild/buildtools/buildozer@latest`
 
 ### Install Java Development Kit 11
 
