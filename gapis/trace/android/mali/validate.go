@@ -69,7 +69,7 @@ func NewMaliValidator(gpuName string, driverVersion uint32) *MaliValidator {
 }
 
 func (v *MaliValidator) Validate(ctx context.Context, processor *perfetto.Processor) error {
-	if err := validate.ValidateGpuCounters(ctx, processor, v.GetCounters()); err != nil {
+	if err := validate.ValidateGpuCounters(ctx, processor, v.GetCounters(), len(v.GetCounters())); err != nil {
 		return err
 	}
 	if err := validate.ValidateGpuSlices(ctx, processor); err != nil {

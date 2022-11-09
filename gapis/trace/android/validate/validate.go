@@ -156,12 +156,12 @@ func CheckAverageApproximateTo(num, margin float64) Checker {
 	})
 }
 
-// ValidateGpuCounters validates the GPU counters.
-// GPU counters validation will fail in the below cases:
-// 1. Fail to query
-// 2. Missing GPU counter samples
-// 3. Fail to check
-func ValidateGpuCounters(ctx context.Context, processor *perfetto.Processor, counters []GpuCounter) error {
+// ValidateGpuCounters queries for the GPU counter from the trace and 
+// validates the value based on associated the requirement, 
+// up to the amount specified in passThreshold.
+func ValidateGpuCounters(ctx context.Context, processor *perfetto.Processor, counters []GpuCounter, passThreshold int) error {
+	passCount := 0
+	var failedCounters []GpuCounter
 	for _, counter := range counters {
 		queryResult, err := processor.Query(fmt.Sprintf(counterIDQuery, counter.Name))
 		if err != nil {
@@ -190,11 +190,16 @@ func ValidateGpuCounters(ctx context.Context, processor *perfetto.Processor, cou
 			return log.Errf(ctx, nil, "Number of samples is incorrect for counter: %v %v", counter, queryResult.GetNumRecords())
 		}
 
-		if !counter.Check(queryResult.GetColumns()[0], queryResult.GetColumnDescriptors()[0].GetType()) {
-			return log.Errf(ctx, nil, "Check failed for counter: %v", counter)
+		if counter.Check(queryResult.GetColumns()[0], queryResult.GetColumnDescriptors()[0].GetType()) {
+			passCount++
+			if (passCount >= passThreshold) {
+				return nil
+			}
+		} else {
+			failedCounters = append(failedCounters, counter)
 		}
 	}
-	return nil
+	return log.Errf(ctx, nil, "Check failed for counters: %v", failedCounters)
 }
 
 // GetTrackIDs returns all track ids from gpu_track with the given scope.

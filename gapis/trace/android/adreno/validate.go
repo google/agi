@@ -40,7 +40,7 @@ type AdrenoValidator struct {
 }
 
 func (v *AdrenoValidator) Validate(ctx context.Context, processor *perfetto.Processor) error {
-	if err := validate.ValidateGpuCounters(ctx, processor, v.GetCounters()); err != nil {
+	if err := validate.ValidateGpuCounters(ctx, processor, v.GetCounters(), len(v.GetCounters())); err != nil {
 		return err
 	}
 	if err := validate.ValidateGpuSlices(ctx, processor); err != nil {

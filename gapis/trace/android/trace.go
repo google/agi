@@ -55,6 +55,7 @@ import (
 	"github.com/google/gapid/gapis/service/path"
 	"github.com/google/gapid/gapis/trace/android/adreno"
 	"github.com/google/gapid/gapis/trace/android/mali"
+	"github.com/google/gapid/gapis/trace/android/generic"
 	"github.com/google/gapid/gapis/trace/android/profile"
 	"github.com/google/gapid/gapis/trace/android/validate"
 	"github.com/google/gapid/gapis/trace/tracer"
@@ -90,7 +91,7 @@ func newValidator(dev bind.Device) validate.Validator {
 	} else if strings.Contains(gpuName, "Mali") {
 		return mali.NewMaliValidator(gpuName, gpu.GetVersion())
 	}
-	return nil
+	return generic.NewGenericValidator(dev)
 }
 
 func deviceValidationTraceOptions(ctx context.Context, v validate.Validator) *service.TraceOptions {

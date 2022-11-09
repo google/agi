@@ -57,7 +57,7 @@ import org.eclipse.swt.widgets.Text;
 /** Manages the device validation process and displays the result. */
 public class DeviceValidationView extends Composite {
   protected static final Logger LOG = Logger.getLogger(DeviceValidationView.class.getName());
-  private static final int TRACE_VALIDATION_FAILURE_COUNT = 3;
+  private static final int TRACE_VALIDATION_FAILURE_COUNT = 2;
 
   private final Widgets widgets;
   private final Models models;
@@ -168,7 +168,6 @@ public class DeviceValidationView extends Composite {
     removeAllSelectionListeners(retryButton);
     removeAllSelectionListeners(statusText);
 
-    traceValidationFailureCount = 0;
     passedValidation = false;
 
     if (errorMessageGroup != null) {
