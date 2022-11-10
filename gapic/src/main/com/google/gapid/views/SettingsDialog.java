@@ -55,6 +55,7 @@ public class SettingsDialog extends DialogBase {
   protected Button disableReplayOptimization;
   protected Button disableFrameLooping;
   protected Button enableAllExperimentalFeatures;
+  protected Button disableCommandThumbnails;
 
   public SettingsDialog(Shell parent, Models models, Theme theme) {
     super(parent, theme);
@@ -90,6 +91,10 @@ public class SettingsDialog extends DialogBase {
             "Enable all unsupported experimental features (requires restart)",
             models.settings.preferences().getEnableAllExperimentalFeatures()),
             withSpans(new GridData(SWT.LEFT, SWT.TOP, false, false), 2, 1));
+        disableCommandThumbnails = withLayoutData(createCheckbox(this,
+            "Disable thumbnail rendering for draw commands",
+            models.settings.preferences().getDisableCommandThumbnails()),
+            withSpans(new GridData(SWT.LEFT, SWT.TOP, false, false), 2, 1));
       }
     };
     form.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
@@ -118,6 +123,8 @@ public class SettingsDialog extends DialogBase {
         disableFrameLooping.getSelection() == false);
     models.settings.writePreferences().setEnableAllExperimentalFeatures(
         enableAllExperimentalFeatures.getSelection());
+    models.settings.writePreferences().setDisableCommandThumbnails(
+        disableCommandThumbnails.getSelection());
   }
 
   public static class SettingsFormBase extends Composite {
