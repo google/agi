@@ -32,6 +32,9 @@ const (
 	googleInfix   = "-google-"
 	minJavaMajor  = 11
 	minJavaMinor  = 0
+	colorReset    = "\033[0m"
+	colorYellow   = "\033[33m"
+	warning       = colorYellow + "WARNING: " + colorReset
 )
 
 type config struct {
@@ -94,6 +97,23 @@ func run() int {
 	}
 
 	fmt.Println("Starting", c.vm, c.gapic)
+
+	// Append java debugging arguments.
+	gapicDebugPort := os.Getenv("AGI_GAPIC_DEBUG_PORT")
+	javaDebuggerSuspend := false
+	if gapicDebugPort != "" {
+		port, err := strconv.ParseInt(gapicDebugPort, 10, 16)
+		if err != nil || port < 1024 {
+			fmt.Printf("\n%s AGI_GAPIC_DEBUG_PORT %s - invalid port number, ignoring\n\n",
+				warning, gapicDebugPort)
+		} else {
+			debugArgString := "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=" +
+				gapicDebugPort
+			c.vmArgs = append(c.vmArgs, debugArgString)
+			javaDebuggerSuspend = true
+		}
+	}
+
 	cmd := exec.Command(c.vm, append(append(c.vmArgs, "-jar", c.gapic), c.args...)...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
@@ -110,6 +130,9 @@ func run() int {
 		cmd.Dir = cwd
 	}
 
+	if javaDebuggerSuspend {
+		fmt.Println("\nWaiting for java debugger to attach to port: ", gapicDebugPort, "\n")
+	}
 	if err := cmd.Run(); err != nil {
 		if _, ok := err.(*exec.ExitError); !ok {
 			fmt.Println("Failed to start GAPIC:", err)
