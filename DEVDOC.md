@@ -103,35 +103,49 @@ With the GOPATH setup to gofuse and opening the `<path-to-agi-gofuse>` directory
 as the root of your workspace, you should get some jump-to-definition and autocomplete
 features working. Make sure to edit the files through their link found under the gofuse directory.
 
-## How to debug / breakpoint in Go code
+## How to Debug
 
-The recommended Go debugger is
-[delve](https://github.com/go-delve/delve). You can start a **debug** build of
-gapis or a client under this debugger.
-
-### Installing the `dlv` Debugger
-  1. Unset your `GOPATH` for the `dlv` installation
-  
-  ```
-  # For Bash
-  unset GOPATH
-  ```
-
-  2. Install latest `dlv`
-  
-  ```
-  go install github.com/go-delve/delve/cmd/dlv@latest
-  ```
-
-### Building for Debugging
-To build in debug mode, use the `-c dbg`
+You can start a **debug** build of
+gapis / gapic or a client under this debugger. To build in debug mode, use the `-c dbg`
 Bazel flag, e.g.:
 
 ```
 bazel build -c dbg pkg
 ```
 
-### Debugging GAPIS
+The recommended Go debugger is
+[delve](https://github.com/go-delve/delve).
+
+### Debugging Gapic
+
+Gapic, the AGI UI, is written in Java.  Gapic is launched with `java` by gapid Go code in
+//cmd/agi/main.go.
+
+Debugging gapic java code can be done by setting the `AGI_GAPIC_DEBUG_PORT=<port_no>` environment
+variable in the shell in which you launch AGI.  When `AGI_GAPIC_DEBUG_PORT` is set, AGI will
+suspend and wait for the debugger to attach.
+
+Using **vscode** as an example, configure for attach using a simple debugger launch configuration:
+  1. Choose the **Run & Debug** pane in vscode.
+  2. In the top left corner, from the **RUN AND DEBUG** menu, choose **Add Configuration...**.
+  3. With `AGI_GAPIC_DEBUG_PORT` set to `8000`, add this launch configuration:
+
+  ```
+  {
+      "type": "java",
+      "name": "Java Attach",
+      "request": "attach",
+      "hostName": "localhost",
+      "port": "8000"
+  }
+  ```
+
+With **vscode** configured, launch AGI using bazel in your shell as usual: `bazel run -c dbg pkg`.
+You should see the following output: `Waiting for java debugger to attach to port:  8000`.  Now
+debug from **vscode** normally using the new launch configuration that you you added in step (3)
+above.
+
+### Debugging Gapis
 
 To debug gapis, you can do:
 
