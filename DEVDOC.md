@@ -21,10 +21,28 @@ go get github.com/bazelbuild/buildtools/buildifier
 go get github.com/bazelbuild/buildtools/buildozer
 
 # Clang format 11
+
 ## On Debian-based Linux (see https://releases.llvm.org/download.html for binaries)
+
 apt-get install clang-format-11
+
+## On macOS
+brew install clang-format@11
+
 ## Make sure to set the CLANG_FORMAT environment variable, e.g. in bash:
+
 export CLANG_FORMAT=clang-format-11
+
+# Python
+
+## On macOS version 12.6.1 and later intall the XCode command line tools and symlink python to python3
+
+sudo ln -s /Library/Developer/CommandLineTools/usr/bin/python3 /Library/Developer/CommandLineTools/usr/bin/python
+
+# autopep8
+
+python3 -m pip install autopep8
+
 ```
 
 With the above setup, you can run presubmit tests locally with:
