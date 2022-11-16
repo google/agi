@@ -133,7 +133,7 @@ function run_gofmt() {
 }
 
 function run_autopep8() {
-  # Check if autopep8 binary is accessible
+  # Check if autopep8 python script is accessible
   if ! command -v $AUTOPEP8 &> /dev/null; then
     echo "ERROR: '${AUTOPEP8}' could not be found. Make sure it's installed in PATH or provide the location with 'AUTOPEP8' environment variable."
     return 1

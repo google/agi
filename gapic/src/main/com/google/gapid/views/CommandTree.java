@@ -1238,7 +1238,8 @@ public class CommandTree extends Canvas
   }
 
   private boolean shouldShowImage(CommandStream.Node node) {
-    return models.images.isReady() &&
+    boolean enableThumbs = !models.settings.preferences().getDisableCommandThumbnails();
+    return enableThumbs && models.images.isReady() &&
         node.getData() != null && !node.getData().getGroup().isEmpty();
   }
 
