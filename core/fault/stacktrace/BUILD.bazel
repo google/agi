@@ -21,7 +21,7 @@ go_library(
         "filter.go",
         "stacktrace.go",
     ],
-    importpath = "github.com/google/gapid/core/fault/stacktrace",
+    importpath = "github.com/google/agi/core/fault/stacktrace",
     visibility = ["//visibility:public"],
 )
 

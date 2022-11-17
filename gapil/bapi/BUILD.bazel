@@ -24,7 +24,7 @@ proto_library(
 
 go_proto_library(
     name = "bapi_go_proto",
-    importpath = "github.com/google/gapid/gapil/bapi",
+    importpath = "github.com/google/agi/gapil/bapi",
     proto = ":bapi_proto",
     visibility = ["//visibility:public"],
 )
@@ -37,7 +37,7 @@ go_library(
         "encode.go",
     ],
     embed = [":bapi_go_proto"],
-    importpath = "github.com/google/gapid/gapil/bapi",
+    importpath = "github.com/google/agi/gapil/bapi",
     visibility = ["//visibility:public"],
     deps = [
         "//core/text/parse/cst:go_default_library",

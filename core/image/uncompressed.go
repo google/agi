@@ -17,9 +17,9 @@ package image
 import (
 	"fmt"
 
-	"github.com/google/gapid/core/data/protoutil"
-	"github.com/google/gapid/core/stream"
-	"github.com/google/gapid/core/stream/fmts"
+	"github.com/google/agi/core/data/protoutil"
+	"github.com/google/agi/core/stream"
+	"github.com/google/agi/core/stream/fmts"
 )
 
 var (

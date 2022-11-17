@@ -18,9 +18,9 @@ package database
 import (
 	"context"
 
-	"github.com/google/gapid/core/app/status"
-	"github.com/google/gapid/core/context/keys"
-	"github.com/google/gapid/core/data/id"
+	"github.com/google/agi/core/app/status"
+	"github.com/google/agi/core/context/keys"
+	"github.com/google/agi/core/data/id"
 )
 
 // Database is the interface to a resource store.

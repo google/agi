@@ -14,7 +14,7 @@
 
 package log
 
-import "github.com/google/gapid/core/app/flags"
+import "github.com/google/agi/core/app/flags"
 
 // Severity defines the severity of a logging message.
 type Severity int32

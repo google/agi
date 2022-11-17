@@ -26,7 +26,7 @@ go_library(
         "task.go",
         "tracer.go",
     ],
-    importpath = "github.com/google/gapid/core/app/status",
+    importpath = "github.com/google/agi/core/app/status",
     visibility = ["//visibility:public"],
     deps = [
         "//core/context/keys:go_default_library",

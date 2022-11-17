@@ -15,8 +15,8 @@
 package resolver
 
 import (
-	"github.com/google/gapid/gapil/ast"
-	"github.com/google/gapid/gapil/semantic"
+	"github.com/google/agi/gapil/ast"
+	"github.com/google/agi/gapil/semantic"
 )
 
 func unaryOp(rv *resolver, in *ast.UnaryOp) *semantic.UnaryOp {

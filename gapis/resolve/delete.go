@@ -19,10 +19,10 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/google/gapid/gapis/api"
-	"github.com/google/gapid/gapis/capture"
-	"github.com/google/gapid/gapis/database"
-	"github.com/google/gapid/gapis/service/path"
+	"github.com/google/agi/gapis/api"
+	"github.com/google/agi/gapis/capture"
+	"github.com/google/agi/gapis/database"
+	"github.com/google/agi/gapis/service/path"
 )
 
 // Delete creates a copy of the capture referenced by p, but without the object, value

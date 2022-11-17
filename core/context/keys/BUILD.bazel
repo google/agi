@@ -21,7 +21,7 @@ go_library(
         "doc.go",
         "keys.go",
     ],
-    importpath = "github.com/google/gapid/core/context/keys",
+    importpath = "github.com/google/agi/core/context/keys",
     visibility = ["//visibility:public"],
 )
 

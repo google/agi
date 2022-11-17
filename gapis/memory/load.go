@@ -18,9 +18,9 @@ import (
 	"context"
 	"reflect"
 
-	"github.com/google/gapid/core/data/endian"
-	"github.com/google/gapid/core/data/slice"
-	"github.com/google/gapid/core/os/device"
+	"github.com/google/agi/core/data/endian"
+	"github.com/google/agi/core/data/slice"
+	"github.com/google/agi/core/os/device"
 )
 
 // LoadSlice loads the slice elements from s into a go-slice of the slice type.

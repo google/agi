@@ -14,7 +14,7 @@
 
 package semantic
 
-import "github.com/google/gapid/gapil/ast"
+import "github.com/google/agi/gapil/ast"
 
 // Length represents a length of object expression.
 // Object must be of either pointer, slice, map or string type.

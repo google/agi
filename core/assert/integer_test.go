@@ -14,7 +14,7 @@
 
 package assert_test
 
-import "github.com/google/gapid/core/assert"
+import "github.com/google/agi/core/assert"
 
 // An example of testing integer values
 func ExampleInteger() {

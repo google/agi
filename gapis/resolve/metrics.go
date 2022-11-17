@@ -18,11 +18,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/gapis/api"
-	"github.com/google/gapid/gapis/messages"
-	"github.com/google/gapid/gapis/service"
-	"github.com/google/gapid/gapis/service/path"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/gapis/api"
+	"github.com/google/agi/gapis/messages"
+	"github.com/google/agi/gapis/service"
+	"github.com/google/agi/gapis/service/path"
 )
 
 func Metrics(ctx context.Context, p *path.Metrics, r *path.ResolveConfig) (*api.Metrics, error) {

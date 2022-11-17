@@ -20,7 +20,7 @@ go_library(
         "encoder.go",
         "entities.go",
     ],
-    importpath = "github.com/google/gapid/gapil/encoder",
+    importpath = "github.com/google/agi/gapil/encoder",
     visibility = ["//visibility:public"],
     deps = [
         "//core/data:go_default_library",

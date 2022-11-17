@@ -18,10 +18,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/gapid/core/data/id"
-	"github.com/google/gapid/core/data/protoutil"
-	"github.com/google/gapid/core/image"
-	"github.com/google/gapid/gapis/service/path"
+	"github.com/google/agi/core/data/id"
+	"github.com/google/agi/core/data/protoutil"
+	"github.com/google/agi/core/image"
+	"github.com/google/agi/gapis/service/path"
 )
 
 // ResourceMap is a map from Resource handles to Resource IDs in the database.

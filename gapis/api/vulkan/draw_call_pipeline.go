@@ -18,10 +18,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/gapis/api"
-	"github.com/google/gapid/gapis/resolve"
-	"github.com/google/gapid/gapis/service/path"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/gapis/api"
+	"github.com/google/agi/gapis/resolve"
+	"github.com/google/agi/gapis/service/path"
 )
 
 // drawCallPipeline returns the bound pipeline for dc at p.

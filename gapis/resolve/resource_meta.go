@@ -18,9 +18,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/gapid/gapis/api"
-	"github.com/google/gapid/gapis/database"
-	"github.com/google/gapid/gapis/service/path"
+	"github.com/google/agi/gapis/api"
+	"github.com/google/agi/gapis/database"
+	"github.com/google/agi/gapis/service/path"
 )
 
 // ResourceMeta returns the metadata for the specified resource.

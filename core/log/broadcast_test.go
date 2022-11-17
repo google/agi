@@ -19,8 +19,8 @@ import (
 
 	"strings"
 
-	"github.com/google/gapid/core/assert"
-	"github.com/google/gapid/core/log"
+	"github.com/google/agi/core/assert"
+	"github.com/google/agi/core/log"
 )
 
 func TestBroadcast(t *testing.T) {

@@ -23,7 +23,7 @@ go_library(
         "reader.go",
         "skip.go",
     ],
-    importpath = "github.com/google/gapid/core/text/parse",
+    importpath = "github.com/google/agi/core/text/parse",
     visibility = ["//visibility:public"],
     deps = [
         "//core/data/compare:go_default_library",

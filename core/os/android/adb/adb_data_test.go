@@ -18,11 +18,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/gapid/core/assert"
-	"github.com/google/gapid/core/os/android/adb"
-	"github.com/google/gapid/core/os/file"
-	"github.com/google/gapid/core/os/shell"
-	"github.com/google/gapid/core/os/shell/stub"
+	"github.com/google/agi/core/assert"
+	"github.com/google/agi/core/os/android/adb"
+	"github.com/google/agi/core/os/file"
+	"github.com/google/agi/core/os/shell"
+	"github.com/google/agi/core/os/shell/stub"
 )
 
 var (

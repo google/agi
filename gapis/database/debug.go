@@ -21,7 +21,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/google/gapid/core/context/keys"
+	"github.com/google/agi/core/context/keys"
 )
 
 // resolveChain is a value that is stored in the context of a Resolve().

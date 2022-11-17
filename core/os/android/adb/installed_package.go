@@ -22,9 +22,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/os/android"
-	"github.com/google/gapid/core/os/device"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/os/android"
+	"github.com/google/agi/core/os/device"
 )
 
 // InstalledPackages returns the sorted list of installed packages on the

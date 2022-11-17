@@ -55,7 +55,7 @@ go_library(
         "thumbnail.go",
     ],
     embed = [":resolve_go_proto"],
-    importpath = "github.com/google/gapid/gapis/resolve",
+    importpath = "github.com/google/agi/gapis/resolve",
     visibility = ["//visibility:public"],
     deps = [
         "//core/app/analytics:go_default_library",
@@ -138,7 +138,7 @@ proto_library(
 
 go_proto_library(
     name = "resolve_go_proto",
-    importpath = "github.com/google/gapid/gapis/resolve",
+    importpath = "github.com/google/agi/gapis/resolve",
     proto = ":resolve_proto",
     visibility = ["//visibility:public"],
     deps = [

@@ -19,11 +19,11 @@ import (
 	"reflect"
 	"sort"
 
-	"github.com/google/gapid/core/data/deep"
-	"github.com/google/gapid/core/data/dictionary"
-	"github.com/google/gapid/core/data/pod"
-	"github.com/google/gapid/core/data/slice"
-	"github.com/google/gapid/gapis/memory"
+	"github.com/google/agi/core/data/deep"
+	"github.com/google/agi/core/data/dictionary"
+	"github.com/google/agi/core/data/pod"
+	"github.com/google/agi/core/data/slice"
+	"github.com/google/agi/gapis/memory"
 )
 
 // NewValue attempts to box and return v into a Value.

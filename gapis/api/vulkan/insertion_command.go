@@ -18,8 +18,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/gapid/gapis/api"
-	"github.com/google/gapid/gapis/replay/builder"
+	"github.com/google/agi/gapis/api"
+	"github.com/google/agi/gapis/replay/builder"
 )
 
 // InsertionCommand is a temporary command

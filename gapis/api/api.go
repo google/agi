@@ -19,12 +19,12 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/google/gapid/core/data/id"
-	"github.com/google/gapid/core/image"
-	"github.com/google/gapid/core/math/interval"
-	"github.com/google/gapid/gapil/constset"
-	"github.com/google/gapid/gapis/memory"
-	"github.com/google/gapid/gapis/service/path"
+	"github.com/google/agi/core/data/id"
+	"github.com/google/agi/core/image"
+	"github.com/google/agi/core/math/interval"
+	"github.com/google/agi/gapil/constset"
+	"github.com/google/agi/gapis/memory"
+	"github.com/google/agi/gapis/service/path"
 )
 
 // API is the common interface to a graphics programming api.

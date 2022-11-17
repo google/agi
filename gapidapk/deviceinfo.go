@@ -22,13 +22,13 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/google/gapid/core/app"
-	"github.com/google/gapid/core/event/task"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/os/android"
-	"github.com/google/gapid/core/os/android/adb"
-	"github.com/google/gapid/core/os/device"
-	"github.com/google/gapid/core/os/flock"
+	"github.com/google/agi/core/app"
+	"github.com/google/agi/core/event/task"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/os/android"
+	"github.com/google/agi/core/os/android/adb"
+	"github.com/google/agi/core/os/device"
+	"github.com/google/agi/core/os/flock"
 )
 
 const (

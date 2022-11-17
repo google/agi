@@ -26,7 +26,7 @@ go_library(
         "registry.go",
         "simple.go",
     ],
-    importpath = "github.com/google/gapid/core/os/device/bind",
+    importpath = "github.com/google/agi/core/os/device/bind",
     visibility = ["//visibility:public"],
     deps = [
         "//core/app:go_default_library",

@@ -20,7 +20,7 @@
 // 64 bit architectures, are all backed by uint64.
 package value
 
-import "github.com/google/gapid/gapis/replay/protocol"
+import "github.com/google/agi/gapis/replay/protocol"
 
 // Value is the interface for all values to be passed either in opcodes or
 // constant memory to the replay virtual machine.

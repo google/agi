@@ -21,10 +21,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/google/gapid/core/app/crash"
-	"github.com/google/gapid/core/event/task"
-	"github.com/google/gapid/core/os/device/bind"
-	"github.com/google/gapid/core/os/shell"
+	"github.com/google/agi/core/app/crash"
+	"github.com/google/agi/core/event/task"
+	"github.com/google/agi/core/os/device/bind"
+	"github.com/google/agi/core/os/shell"
 )
 
 var portPattern = regexp.MustCompile(`^Bound on port '(\d+)'$`)

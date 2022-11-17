@@ -17,9 +17,9 @@ package stacktrace_test
 import (
 	"testing"
 
-	"github.com/google/gapid/core/assert"
-	"github.com/google/gapid/core/fault/stacktrace"
-	"github.com/google/gapid/core/log"
+	"github.com/google/agi/core/assert"
+	"github.com/google/agi/core/fault/stacktrace"
+	"github.com/google/agi/core/log"
 )
 
 /*

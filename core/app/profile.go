@@ -23,8 +23,8 @@ import (
 	"runtime"
 	"runtime/pprof"
 
-	"github.com/google/gapid/core/app/status"
-	"github.com/google/gapid/core/log"
+	"github.com/google/agi/core/app/status"
+	"github.com/google/agi/core/log"
 )
 
 func applyProfiler(ctx context.Context, flags *ProfileFlags) func() {

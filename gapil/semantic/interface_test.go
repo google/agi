@@ -14,7 +14,7 @@
 
 package semantic_test
 
-import "github.com/google/gapid/gapil/semantic"
+import "github.com/google/agi/gapil/semantic"
 
 var (
 	_ = []semantic.Node{

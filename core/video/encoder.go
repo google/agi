@@ -21,9 +21,9 @@ import (
 	"io"
 	"os/exec"
 
-	"github.com/google/gapid/core/app/crash"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/os/shell"
+	"github.com/google/agi/core/app/crash"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/os/shell"
 )
 
 // Settings for encoding a video with Encode.

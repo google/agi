@@ -17,7 +17,7 @@ package vulkan
 import (
 	"fmt"
 
-	"github.com/google/gapid/gapis/api"
+	"github.com/google/agi/gapis/api"
 )
 
 func (st *State) getFramebufferAttachmentCount() (uint32, error) {

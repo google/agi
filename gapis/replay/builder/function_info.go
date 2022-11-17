@@ -14,7 +14,7 @@
 
 package builder
 
-import "github.com/google/gapid/gapis/replay/protocol"
+import "github.com/google/agi/gapis/replay/protocol"
 
 // FunctionInfo holds the information about a function that can be called by
 // the replay virtual-machine.

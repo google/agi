@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/google/gapid/core/app/flags"
+	"github.com/google/agi/core/app/flags"
 )
 
 // Verb holds information about a runnable api command.

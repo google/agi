@@ -20,7 +20,7 @@ import (
 	"regexp"
 	"strconv"
 
-	"github.com/google/gapid/core/os/android"
+	"github.com/google/agi/core/os/android"
 )
 
 // Event types

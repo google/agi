@@ -17,8 +17,8 @@ package reporting
 import (
 	"testing"
 
-	"github.com/google/gapid/core/assert"
-	"github.com/google/gapid/core/log"
+	"github.com/google/agi/core/assert"
+	"github.com/google/agi/core/log"
 )
 
 func TestFilterStack(t *testing.T) {

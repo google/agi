@@ -22,7 +22,7 @@ go_library(
         "id.go",
         "id_remap.go",
     ],
-    importpath = "github.com/google/gapid/core/data/id",
+    importpath = "github.com/google/agi/core/data/id",
     visibility = ["//visibility:public"],
 )
 

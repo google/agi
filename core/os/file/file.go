@@ -20,7 +20,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/google/gapid/core/log"
+	"github.com/google/agi/core/log"
 )
 
 // Mkdir creates the directory specified.

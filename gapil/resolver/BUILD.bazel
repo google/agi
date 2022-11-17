@@ -34,7 +34,7 @@ go_library(
         "statement.go",
         "type.go",
     ],
-    importpath = "github.com/google/gapid/gapil/resolver",
+    importpath = "github.com/google/agi/gapil/resolver",
     visibility = ["//visibility:public"],
     deps = [
         "//core/text/parse:go_default_library",

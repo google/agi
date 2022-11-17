@@ -19,10 +19,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/gapid/core/event/task"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/os/shell"
-	"github.com/google/gapid/core/os/shell/stub"
+	"github.com/google/agi/core/event/task"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/os/shell"
+	"github.com/google/agi/core/os/shell/stub"
 )
 
 // TestNothing exists because some tools don't like packages that don't have any tests in them.

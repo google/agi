@@ -19,9 +19,9 @@ import (
 
 	"fmt"
 
-	"github.com/google/gapid/gapil/analysis"
-	"github.com/google/gapid/gapil/constset"
-	"github.com/google/gapid/gapil/semantic"
+	"github.com/google/agi/gapil/analysis"
+	"github.com/google/agi/gapil/constset"
+	"github.com/google/agi/gapil/semantic"
 )
 
 // constsetEntryBuilder is a transient structure used to build a constset.Entry.

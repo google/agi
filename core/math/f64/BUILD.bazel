@@ -22,7 +22,7 @@ go_library(
         "vec3.go",
         "vec4.go",
     ],
-    importpath = "github.com/google/gapid/core/math/f64",
+    importpath = "github.com/google/agi/core/math/f64",
     visibility = ["//visibility:public"],
 )
 

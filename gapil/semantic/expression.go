@@ -14,7 +14,7 @@
 
 package semantic
 
-import "github.com/google/gapid/gapil/ast"
+import "github.com/google/agi/gapil/ast"
 
 var (
 	// BuiltinThreadGlobal represents the $Thread global variable.

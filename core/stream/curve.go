@@ -19,8 +19,8 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/google/gapid/core/data/endian"
-	"github.com/google/gapid/core/os/device"
+	"github.com/google/agi/core/data/endian"
+	"github.com/google/agi/core/os/device"
 )
 
 func (m *mapping) transform(count int, f func(float64) float64) error {

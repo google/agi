@@ -22,7 +22,7 @@ go_library(
         "flock_unix.go",
         "flock_windows.go",
     ],
-    importpath = "github.com/google/gapid/core/os/flock",
+    importpath = "github.com/google/agi/core/os/flock",
     visibility = ["//visibility:public"],
 )
 

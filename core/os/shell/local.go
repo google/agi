@@ -18,8 +18,8 @@ import (
 	"context"
 	"os/exec"
 
-	"github.com/google/gapid/core/event/task"
-	"github.com/google/gapid/core/log"
+	"github.com/google/agi/core/event/task"
+	"github.com/google/agi/core/log"
 )
 
 var (

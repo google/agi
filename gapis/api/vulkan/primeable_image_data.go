@@ -17,8 +17,8 @@ package vulkan
 import (
 	"fmt"
 
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/gapis/api"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/gapis/api"
 )
 
 // primeableImageData can be built by imagePrimer for a specific image, whose

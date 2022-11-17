@@ -17,7 +17,7 @@ package api
 import (
 	"sync/atomic"
 
-	"github.com/google/gapid/core/data/compare"
+	"github.com/google/agi/core/data/compare"
 )
 
 // RefID is a type used to identify instances of the reference types used in the API models.

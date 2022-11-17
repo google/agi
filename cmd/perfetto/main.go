@@ -20,13 +20,13 @@ import (
 	"io"
 	"os"
 
-	"github.com/google/gapid/core/app"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/os/android/adb"
-	"github.com/google/gapid/core/os/device/bind"
-	"github.com/google/gapid/core/os/device/remotessh"
-	_ "github.com/google/gapid/gapidapk"
-	"github.com/google/gapid/gapis/perfetto"
+	"github.com/google/agi/core/app"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/os/android/adb"
+	"github.com/google/agi/core/os/device/bind"
+	"github.com/google/agi/core/os/device/remotessh"
+	_ "github.com/google/agi/gapidapk"
+	"github.com/google/agi/gapis/perfetto"
 )
 
 var (

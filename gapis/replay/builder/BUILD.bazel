@@ -23,7 +23,7 @@ go_library(
         "function_info.go",
         "mapped_memory_range.go",
     ],
-    importpath = "github.com/google/gapid/gapis/replay/builder",
+    importpath = "github.com/google/agi/gapis/replay/builder",
     visibility = ["//visibility:public"],
     deps = [
         "//core/app/crash:go_default_library",

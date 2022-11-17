@@ -17,9 +17,9 @@ package vulkan
 import (
 	"context"
 
-	"github.com/google/gapid/core/data/protoconv"
-	"github.com/google/gapid/gapis/api"
-	"github.com/google/gapid/gapis/api/vulkan/vulkan_pb"
+	"github.com/google/agi/core/data/protoconv"
+	"github.com/google/agi/gapis/api"
+	"github.com/google/agi/gapis/api/vulkan/vulkan_pb"
 )
 
 type FenceState struct {

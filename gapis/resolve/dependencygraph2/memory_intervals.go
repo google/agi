@@ -15,7 +15,7 @@
 package dependencygraph2
 
 import (
-	"github.com/google/gapid/core/math/interval"
+	"github.com/google/agi/core/math/interval"
 )
 
 // memoryWrite stores a WriteMemEffect, together with a memory span affected by that write.

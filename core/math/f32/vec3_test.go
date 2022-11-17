@@ -17,8 +17,8 @@ package f32_test
 import (
 	"testing"
 
-	"github.com/google/gapid/core/assert"
-	"github.com/google/gapid/core/math/f32"
+	"github.com/google/agi/core/assert"
+	"github.com/google/agi/core/math/f32"
 )
 
 func TestV3DSqrMagnitude(t *testing.T) {

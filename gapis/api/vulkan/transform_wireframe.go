@@ -17,8 +17,8 @@ package vulkan
 import (
 	"context"
 
-	"github.com/google/gapid/gapis/api"
-	"github.com/google/gapid/gapis/api/transform"
+	"github.com/google/agi/gapis/api"
+	"github.com/google/agi/gapis/api/transform"
 )
 
 // wireframeTransform implements a transform that sets each graphics pipeline

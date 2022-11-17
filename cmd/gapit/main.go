@@ -15,7 +15,7 @@
 package main
 
 import (
-	"github.com/google/gapid/core/app"
+	"github.com/google/agi/core/app"
 )
 
 func main() {

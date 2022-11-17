@@ -20,7 +20,7 @@ go_library(
     name = "go_default_library",
     srcs = ["doc.go"],
     embed = [":memory_pb_go_proto"],
-    importpath = "github.com/google/gapid/gapis/memory/memory_pb",
+    importpath = "github.com/google/agi/gapis/memory/memory_pb",
     visibility = ["//visibility:public"],
 )
 
@@ -38,7 +38,7 @@ cc_proto_library(
 
 go_proto_library(
     name = "memory_pb_go_proto",
-    importpath = "github.com/google/gapid/gapis/memory/memory_pb",
+    importpath = "github.com/google/agi/gapis/memory/memory_pb",
     proto = ":memory_pb_proto",
     visibility = ["//visibility:public"],
 )

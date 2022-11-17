@@ -18,8 +18,8 @@ import (
 	"bytes"
 	"math"
 
-	"github.com/google/gapid/core/data/endian"
-	"github.com/google/gapid/core/os/device"
+	"github.com/google/agi/core/data/endian"
+	"github.com/google/agi/core/os/device"
 )
 
 func convertSharedExponent(dst, src *Format, data []byte) ([]byte, error) {

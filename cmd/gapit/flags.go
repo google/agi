@@ -17,8 +17,8 @@ package main
 import (
 	"time"
 
-	"github.com/google/gapid/core/app/flags"
-	"github.com/google/gapid/core/os/device"
+	"github.com/google/agi/core/app/flags"
+	"github.com/google/agi/core/os/device"
 )
 
 const (

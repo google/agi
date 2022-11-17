@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/google/gapid/core/langsvr/protocol"
+	"github.com/google/agi/core/langsvr/protocol"
 )
 
 // Signature represents the signature of something callable.

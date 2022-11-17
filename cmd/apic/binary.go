@@ -19,10 +19,10 @@ import (
 	"flag"
 	"io/ioutil"
 
-	"github.com/google/gapid/core/app"
-	"github.com/google/gapid/core/os/file"
-	"github.com/google/gapid/gapil/bapi"
-	"github.com/google/gapid/gapil/resolver"
+	"github.com/google/agi/core/app"
+	"github.com/google/agi/core/os/file"
+	"github.com/google/agi/gapil/bapi"
+	"github.com/google/agi/gapil/resolver"
 )
 
 func init() {

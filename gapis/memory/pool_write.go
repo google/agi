@@ -14,7 +14,7 @@
 
 package memory
 
-import "github.com/google/gapid/core/math/interval"
+import "github.com/google/agi/core/math/interval"
 
 type poolWrite struct {
 	dst Range

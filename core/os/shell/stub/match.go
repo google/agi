@@ -19,7 +19,7 @@ import (
 
 	"regexp"
 
-	"github.com/google/gapid/core/os/shell"
+	"github.com/google/agi/core/os/shell"
 )
 
 // MatchTarget is an implementation of Target that passes the command to it's child target if it matches the supplied

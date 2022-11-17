@@ -19,7 +19,7 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/google/gapid/core/assert"
+	"github.com/google/agi/core/assert"
 )
 
 func TestSettingDebuggableFlag(t *testing.T) {

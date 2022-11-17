@@ -15,8 +15,8 @@
 package parser
 
 import (
-	"github.com/google/gapid/core/text/parse/cst"
-	"github.com/google/gapid/gapil/ast"
+	"github.com/google/agi/core/text/parse/cst"
+	"github.com/google/agi/gapil/ast"
 )
 
 // { import | extern | enum | pseudonym | class | command | field }

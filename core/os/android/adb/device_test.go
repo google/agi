@@ -18,11 +18,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/google/gapid/core/assert"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/os/android/adb"
-	"github.com/google/gapid/core/os/device"
-	"github.com/google/gapid/core/os/shell/stub"
+	"github.com/google/agi/core/assert"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/os/android/adb"
+	"github.com/google/agi/core/os/device"
+	"github.com/google/agi/core/os/shell/stub"
 )
 
 func TestParseDevices(t_ *testing.T) {

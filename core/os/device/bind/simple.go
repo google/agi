@@ -19,8 +19,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/google/gapid/core/os/device"
-	"github.com/google/gapid/gapis/perfetto"
+	"github.com/google/agi/core/os/device"
+	"github.com/google/agi/gapis/perfetto"
 )
 
 // Simple is a very short implementation of the Device interface.

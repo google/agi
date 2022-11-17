@@ -17,13 +17,13 @@ package vulkan
 import (
 	"context"
 
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/gapis/api"
-	"github.com/google/gapid/gapis/api/sync"
-	"github.com/google/gapid/gapis/api/terminator"
-	"github.com/google/gapid/gapis/api/transform"
-	"github.com/google/gapid/gapis/resolve"
-	"github.com/google/gapid/gapis/service/path"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/gapis/api"
+	"github.com/google/agi/gapis/api/sync"
+	"github.com/google/agi/gapis/api/terminator"
+	"github.com/google/agi/gapis/api/transform"
+	"github.com/google/agi/gapis/resolve"
+	"github.com/google/agi/gapis/service/path"
 )
 
 // vulkanTerminator is very similar to EarlyTerminator.

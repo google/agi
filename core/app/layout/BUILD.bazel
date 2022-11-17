@@ -21,7 +21,7 @@ go_library(
         "layout.go",
         "pkgdata.go",
     ],
-    importpath = "github.com/google/gapid/core/app/layout",
+    importpath = "github.com/google/agi/core/app/layout",
     visibility = ["//visibility:public"],
     deps = [
         "//core/fault:go_default_library",

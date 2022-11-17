@@ -55,7 +55,7 @@ go_library(
         "validate_gpu_profiling.go",
         "video.go",
     ],
-    importpath = "github.com/google/gapid/cmd/gapit",
+    importpath = "github.com/google/agi/cmd/gapit",
     visibility = ["//visibility:private"],
     deps = [
         "//core/app:go_default_library",

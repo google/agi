@@ -18,9 +18,9 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/google/gapid/core/assert"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/os/device/remotessh"
+	"github.com/google/agi/core/assert"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/os/device/remotessh"
 )
 
 func TestReadConfiguration(t *testing.T) {

@@ -17,7 +17,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = ["device.go"],
-    importpath = "github.com/google/gapid/core/os/fuchsia",
+    importpath = "github.com/google/agi/core/os/fuchsia",
     visibility = ["//visibility:public"],
     deps = [
         "//core/event/task:go_default_library",

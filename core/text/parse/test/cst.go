@@ -17,8 +17,8 @@ package test
 import (
 	"bytes"
 
-	"github.com/google/gapid/core/text/parse"
-	"github.com/google/gapid/core/text/parse/cst"
+	"github.com/google/agi/core/text/parse"
+	"github.com/google/agi/core/text/parse/cst"
 )
 
 func Peek(r *parse.Reader, value string) bool {

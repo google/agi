@@ -17,7 +17,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = ["serialization.go"],
-    importpath = "github.com/google/gapid/gapil/serialization",
+    importpath = "github.com/google/agi/gapil/serialization",
     visibility = ["//visibility:public"],
     deps = [
         "//gapil/semantic:go_default_library",

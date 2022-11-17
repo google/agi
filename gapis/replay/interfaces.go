@@ -17,13 +17,13 @@ package replay
 import (
 	"context"
 
-	"github.com/google/gapid/core/image"
-	"github.com/google/gapid/core/os/device"
-	"github.com/google/gapid/gapis/api"
-	"github.com/google/gapid/gapis/capture"
-	"github.com/google/gapid/gapis/service"
-	"github.com/google/gapid/gapis/service/path"
-	"github.com/google/gapid/gapis/stringtable"
+	"github.com/google/agi/core/image"
+	"github.com/google/agi/core/os/device"
+	"github.com/google/agi/gapis/api"
+	"github.com/google/agi/gapis/capture"
+	"github.com/google/agi/gapis/service"
+	"github.com/google/agi/gapis/service/path"
+	"github.com/google/agi/gapis/stringtable"
 )
 
 // Support is the optional interface implemented by APIs that can describe

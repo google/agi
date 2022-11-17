@@ -20,7 +20,7 @@ go_library(
     name = "go_default_library",
     srcs = ["log.go"],
     embed = [":log_pb_go_proto"],
-    importpath = "github.com/google/gapid/core/log/log_pb",
+    importpath = "github.com/google/agi/core/log/log_pb",
     visibility = ["//visibility:public"],
     deps = [
         "//core/data/pod:go_default_library",
@@ -41,7 +41,7 @@ proto_library(
 
 go_proto_library(
     name = "log_pb_go_proto",
-    importpath = "github.com/google/gapid/core/log/log_pb",
+    importpath = "github.com/google/agi/core/log/log_pb",
     proto = ":log_pb_proto",
     visibility = ["//visibility:public"],
     deps = ["//core/data/pod:go_default_library"],

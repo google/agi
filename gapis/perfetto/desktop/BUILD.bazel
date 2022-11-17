@@ -20,7 +20,7 @@ go_library(
         "doc.go",
         "trace.go",
     ],
-    importpath = "github.com/google/gapid/gapis/perfetto/desktop",
+    importpath = "github.com/google/agi/gapis/perfetto/desktop",
     visibility = ["//visibility:public"],
     deps = [
         "//core/app:go_default_library",

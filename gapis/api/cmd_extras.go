@@ -14,7 +14,7 @@
 
 package api
 
-import "github.com/google/gapid/core/data/deep"
+import "github.com/google/agi/core/data/deep"
 
 // CmdExtra is the interface implemented by command 'extras' - additional
 // information that can be placed inside a command.

@@ -24,15 +24,15 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/gapid/core/app/status"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/gapis/api"
-	"github.com/google/gapid/gapis/api/commandGenerator"
-	"github.com/google/gapid/gapis/api/controlFlowGenerator"
-	"github.com/google/gapid/gapis/api/terminator"
-	"github.com/google/gapid/gapis/api/transform"
-	"github.com/google/gapid/gapis/capture"
-	"github.com/google/gapid/gapis/service/path"
+	"github.com/google/agi/core/app/status"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/gapis/api"
+	"github.com/google/agi/gapis/api/commandGenerator"
+	"github.com/google/agi/gapis/api/controlFlowGenerator"
+	"github.com/google/agi/gapis/api/terminator"
+	"github.com/google/agi/gapis/api/transform"
+	"github.com/google/agi/gapis/capture"
+	"github.com/google/agi/gapis/service/path"
 )
 
 // NoMECSubcommandsError is used to notify the caller that this API does not

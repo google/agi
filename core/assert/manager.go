@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/google/gapid/core/log"
+	"github.com/google/agi/core/log"
 )
 
 type (

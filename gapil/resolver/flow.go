@@ -14,7 +14,7 @@
 
 package resolver
 
-import "github.com/google/gapid/gapil/semantic"
+import "github.com/google/agi/gapil/semantic"
 
 type visitedFuncs map[*semantic.Function]bool
 

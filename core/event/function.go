@@ -18,8 +18,8 @@ import (
 	"context"
 	"reflect"
 
-	"github.com/google/gapid/core/fault"
-	"github.com/google/gapid/core/log"
+	"github.com/google/agi/core/fault"
+	"github.com/google/agi/core/log"
 )
 
 var (

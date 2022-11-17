@@ -18,7 +18,7 @@ package dictionary
 import (
 	"reflect"
 
-	"github.com/google/gapid/core/data/slice"
+	"github.com/google/agi/core/data/slice"
 )
 
 // I is the interface for a dictionary.

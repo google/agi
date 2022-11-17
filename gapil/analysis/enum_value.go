@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/google/gapid/gapil/semantic"
+	"github.com/google/agi/gapil/semantic"
 )
 
 // Value interface compliance checks.

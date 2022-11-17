@@ -17,10 +17,10 @@ package adb_test
 import (
 	"testing"
 
-	"github.com/google/gapid/core/assert"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/os/android"
-	"github.com/google/gapid/core/os/device"
+	"github.com/google/agi/core/assert"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/os/android"
+	"github.com/google/agi/core/os/device"
 )
 
 func TestParsePackages(t_ *testing.T) {

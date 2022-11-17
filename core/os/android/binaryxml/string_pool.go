@@ -19,9 +19,9 @@ import (
 	"fmt"
 	"unicode/utf16"
 
-	"github.com/google/gapid/core/data/binary"
-	"github.com/google/gapid/core/data/endian"
-	"github.com/google/gapid/core/os/device"
+	"github.com/google/agi/core/data/binary"
+	"github.com/google/agi/core/data/endian"
+	"github.com/google/agi/core/os/device"
 )
 
 type stringPoolRef struct {

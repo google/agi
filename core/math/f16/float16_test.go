@@ -18,7 +18,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/google/gapid/core/math/f16"
+	"github.com/google/agi/core/math/f16"
 )
 
 var checks = []struct {

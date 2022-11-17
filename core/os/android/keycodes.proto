@@ -15,7 +15,7 @@
 syntax = "proto3";
 
 package android;
-option go_package = "github.com/google/gapid/core/os/android";
+option go_package = "github.com/google/agi/core/os/android";
 
 // See authoritative list at:
 // https://android.googlesource.com/platform/frameworks/base/+/master/core/java/android/view/KeyEvent.java

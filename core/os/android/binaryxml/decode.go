@@ -20,10 +20,10 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/google/gapid/core/data/binary"
-	"github.com/google/gapid/core/data/endian"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/os/device"
+	"github.com/google/agi/core/data/binary"
+	"github.com/google/agi/core/data/endian"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/os/device"
 	"github.com/pkg/errors"
 )
 

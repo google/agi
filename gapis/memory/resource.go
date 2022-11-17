@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/google/gapid/core/data/id"
-	"github.com/google/gapid/gapis/database"
+	"github.com/google/agi/core/data/id"
+	"github.com/google/agi/gapis/database"
 )
 
 // Resource returns a Data that wraps a resource stored in the database.

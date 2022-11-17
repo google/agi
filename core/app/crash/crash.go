@@ -21,7 +21,7 @@ package crash
 import (
 	"sync"
 
-	"github.com/google/gapid/core/fault/stacktrace"
+	"github.com/google/agi/core/fault/stacktrace"
 )
 
 var (

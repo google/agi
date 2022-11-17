@@ -19,9 +19,9 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/os/shell"
-	"github.com/google/gapid/core/text/reflow"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/os/shell"
+	"github.com/google/agi/core/text/reflow"
 	"golang.org/x/tools/imports"
 )
 

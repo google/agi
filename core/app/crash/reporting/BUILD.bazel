@@ -23,7 +23,7 @@ go_library(
         "reporting.go",
         "stubs.go",  # keep
     ],
-    importpath = "github.com/google/gapid/core/app/crash/reporting",
+    importpath = "github.com/google/agi/core/app/crash/reporting",
     visibility = ["//visibility:public"],
     deps = [
         "//core/app/crash:go_default_library",

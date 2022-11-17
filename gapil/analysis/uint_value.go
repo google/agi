@@ -18,9 +18,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/google/gapid/core/math/interval"
-	"github.com/google/gapid/core/math/u64"
-	"github.com/google/gapid/gapil/semantic"
+	"github.com/google/agi/core/math/interval"
+	"github.com/google/agi/core/math/u64"
+	"github.com/google/agi/gapil/semantic"
 )
 
 // Value interface compliance checks.

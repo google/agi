@@ -18,9 +18,9 @@ import (
 	"fmt"
 	"runtime"
 
-	"github.com/google/gapid/core/data/compare"
-	"github.com/google/gapid/core/fault"
-	"github.com/google/gapid/core/text/parse/cst"
+	"github.com/google/agi/core/data/compare"
+	"github.com/google/agi/core/fault"
+	"github.com/google/agi/core/text/parse/cst"
 )
 
 var (

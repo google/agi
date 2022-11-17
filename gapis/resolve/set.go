@@ -19,14 +19,14 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/google/gapid/core/data/deep"
-	"github.com/google/gapid/core/data/dictionary"
-	"github.com/google/gapid/gapis/api"
-	"github.com/google/gapid/gapis/capture"
-	"github.com/google/gapid/gapis/database"
-	"github.com/google/gapid/gapis/messages"
-	"github.com/google/gapid/gapis/service"
-	"github.com/google/gapid/gapis/service/path"
+	"github.com/google/agi/core/data/deep"
+	"github.com/google/agi/core/data/dictionary"
+	"github.com/google/agi/gapis/api"
+	"github.com/google/agi/gapis/capture"
+	"github.com/google/agi/gapis/database"
+	"github.com/google/agi/gapis/messages"
+	"github.com/google/agi/gapis/service"
+	"github.com/google/agi/gapis/service/path"
 )
 
 // Set creates a copy of the capture referenced by the request's path, but

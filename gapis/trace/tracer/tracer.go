@@ -20,15 +20,15 @@ import (
 	"io"
 	"time"
 
-	"github.com/google/gapid/core/app"
-	"github.com/google/gapid/core/app/layout"
-	"github.com/google/gapid/core/event/task"
-	"github.com/google/gapid/core/os/device/bind"
-	gapii "github.com/google/gapid/gapii/client"
-	"github.com/google/gapid/gapis/api"
-	"github.com/google/gapid/gapis/api/sync"
-	"github.com/google/gapid/gapis/service"
-	"github.com/google/gapid/gapis/service/path"
+	"github.com/google/agi/core/app"
+	"github.com/google/agi/core/app/layout"
+	"github.com/google/agi/core/event/task"
+	"github.com/google/agi/core/os/device/bind"
+	gapii "github.com/google/agi/gapii/client"
+	"github.com/google/agi/gapis/api"
+	"github.com/google/agi/gapis/api/sync"
+	"github.com/google/agi/gapis/service"
+	"github.com/google/agi/gapis/service/path"
 )
 
 // TraceTargetTreeNode represents a node in the traceable application

@@ -14,7 +14,7 @@
 
 package resolver
 
-import "github.com/google/gapid/gapil/semantic"
+import "github.com/google/agi/gapil/semantic"
 
 func implicit(lhs semantic.Type, rhs semantic.Type) bool {
 	if lhs == semantic.AnyType {

@@ -18,7 +18,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/google/gapid/core/context/keys"
+	"github.com/google/agi/core/context/keys"
 )
 
 type clockKeyTy string

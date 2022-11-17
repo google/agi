@@ -25,15 +25,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/gapid/core/app/crash"
-	"github.com/google/gapid/core/app/layout"
-	"github.com/google/gapid/core/event/task"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/os/android"
-	"github.com/google/gapid/core/os/android/adb"
-	"github.com/google/gapid/core/os/android/apk"
-	"github.com/google/gapid/core/os/device"
-	"github.com/google/gapid/core/os/device/bind"
+	"github.com/google/agi/core/app/crash"
+	"github.com/google/agi/core/app/layout"
+	"github.com/google/agi/core/event/task"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/os/android"
+	"github.com/google/agi/core/os/android/adb"
+	"github.com/google/agi/core/os/android/apk"
+	"github.com/google/agi/core/os/device"
+	"github.com/google/agi/core/os/device/bind"
 )
 
 const (

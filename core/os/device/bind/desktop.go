@@ -19,8 +19,8 @@ import (
 	"io"
 	"os"
 
-	"github.com/google/gapid/core/app"
-	"github.com/google/gapid/core/os/shell"
+	"github.com/google/agi/core/app"
+	"github.com/google/agi/core/os/shell"
 )
 
 // Desktop represents a desktop-like device, either the local host, or remote.

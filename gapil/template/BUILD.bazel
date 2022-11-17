@@ -29,7 +29,7 @@ go_library(
         "template.go",
         "types.go",
     ],
-    importpath = "github.com/google/gapid/gapil/template",
+    importpath = "github.com/google/agi/gapil/template",
     visibility = ["//visibility:public"],
     deps = [
         "//core/fault:go_default_library",

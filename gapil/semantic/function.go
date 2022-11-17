@@ -14,7 +14,7 @@
 
 package semantic
 
-import "github.com/google/gapid/gapil/ast"
+import "github.com/google/agi/gapil/ast"
 
 // Function represents function like objects in the semantic graph.
 type Function struct {

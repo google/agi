@@ -17,8 +17,8 @@ package replay
 import (
 	"context"
 
-	"github.com/google/gapid/core/context/keys"
-	"github.com/google/gapid/gapis/service/path"
+	"github.com/google/agi/core/context/keys"
+	"github.com/google/agi/gapis/service/path"
 )
 
 type contextMgrKeyTy string

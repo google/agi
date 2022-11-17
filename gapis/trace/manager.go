@@ -18,14 +18,14 @@ import (
 	"context"
 	"sync"
 
-	"github.com/google/gapid/core/data/id"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/os/device"
-	"github.com/google/gapid/core/os/device/bind"
-	"github.com/google/gapid/gapis/trace/android"
-	"github.com/google/gapid/gapis/trace/desktop"
-	"github.com/google/gapid/gapis/trace/fuchsia"
-	"github.com/google/gapid/gapis/trace/tracer"
+	"github.com/google/agi/core/data/id"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/os/device"
+	"github.com/google/agi/core/os/device/bind"
+	"github.com/google/agi/gapis/trace/android"
+	"github.com/google/agi/gapis/trace/desktop"
+	"github.com/google/agi/gapis/trace/fuchsia"
+	"github.com/google/agi/gapis/trace/tracer"
 )
 
 // Manager is used discover trace devices and to send trace requests

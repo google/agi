@@ -17,7 +17,7 @@ package text_test
 import (
 	"fmt"
 
-	"github.com/google/gapid/core/text"
+	"github.com/google/agi/core/text"
 )
 
 func ExampleLineNumber() {

@@ -14,8 +14,8 @@
 
 package semantic
 
-import "github.com/google/gapid/gapil/ast"
-import "github.com/google/gapid/core/data/slice"
+import "github.com/google/agi/gapil/ast"
+import "github.com/google/agi/core/data/slice"
 
 // Statement is the interface implemented by all statement types.
 type Statement interface {

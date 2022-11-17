@@ -21,13 +21,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/gapid/core/event/task"
-	"github.com/google/gapid/core/fault"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/os/device"
-	"github.com/google/gapid/core/os/device/bind"
-	"github.com/google/gapid/core/os/fuchsia"
-	"github.com/google/gapid/core/os/shell"
+	"github.com/google/agi/core/event/task"
+	"github.com/google/agi/core/fault"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/os/device"
+	"github.com/google/agi/core/os/device/bind"
+	"github.com/google/agi/core/os/fuchsia"
+	"github.com/google/agi/core/os/shell"
 )
 
 const (

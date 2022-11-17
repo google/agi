@@ -21,10 +21,10 @@ import (
 
 	perfetto_pb "protos/perfetto/config"
 
-	"github.com/google/gapid/core/event/task"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/os/device"
-	"github.com/google/gapid/core/os/device/bind"
+	"github.com/google/agi/core/event/task"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/os/device"
+	"github.com/google/agi/core/os/device/bind"
 )
 
 // Device extends the bind.Device interface with capabilities specific to android devices.

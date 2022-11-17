@@ -22,7 +22,7 @@ go_library(
         "no_unused.go",
         "validate.go",
     ],
-    importpath = "github.com/google/gapid/gapil/validate",
+    importpath = "github.com/google/agi/gapil/validate",
     visibility = ["//visibility:public"],
     deps = [
         "//core/text/parse/cst:go_default_library",

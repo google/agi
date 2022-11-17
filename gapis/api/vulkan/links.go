@@ -18,8 +18,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/gapid/gapis/resolve"
-	"github.com/google/gapid/gapis/service/path"
+	"github.com/google/agi/gapis/resolve"
+	"github.com/google/agi/gapis/service/path"
 )
 
 // This file contains Link functions for each VkHandle (VkInstenace, VkDevice,

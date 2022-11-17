@@ -22,13 +22,13 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/google/gapid/core/event/task"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/os/device/bind"
-	"github.com/google/gapid/core/os/file"
-	"github.com/google/gapid/core/os/fuchsia"
-	"github.com/google/gapid/core/os/shell"
-	"github.com/google/gapid/gapis/service"
+	"github.com/google/agi/core/event/task"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/os/device/bind"
+	"github.com/google/agi/core/os/file"
+	"github.com/google/agi/core/os/fuchsia"
+	"github.com/google/agi/core/os/shell"
+	"github.com/google/agi/gapis/service"
 )
 
 // binding represents an attached Fuchsia device.

@@ -20,7 +20,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/gapid/core/log"
+	"github.com/google/agi/core/log"
 )
 
 // RegisterLogger registers a status listener that logs the updates to the

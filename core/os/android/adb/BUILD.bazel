@@ -31,7 +31,7 @@ go_library(
         "perfetto.go",
         "screen.go",
     ],
-    importpath = "github.com/google/gapid/core/os/android/adb",
+    importpath = "github.com/google/agi/core/os/android/adb",
     visibility = ["//visibility:public"],
     deps = [
         "//core/app:go_default_library",

@@ -20,7 +20,7 @@ go_library(
         "command_generator.go",
         "linear_command_generator.go",
     ],
-    importpath = "github.com/google/gapid/gapis/api/commandGenerator",
+    importpath = "github.com/google/agi/gapis/api/commandGenerator",
     visibility = ["//visibility:public"],
     deps = [
         "//gapis/api:go_default_library",

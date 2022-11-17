@@ -18,9 +18,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/google/gapid/core/assert"
-	"github.com/google/gapid/gapis/stringtable/minidown/scanner"
-	"github.com/google/gapid/gapis/stringtable/minidown/token"
+	"github.com/google/agi/core/assert"
+	"github.com/google/agi/gapis/stringtable/minidown/scanner"
+	"github.com/google/agi/gapis/stringtable/minidown/token"
 )
 
 var source = `# This is a H1 heading`

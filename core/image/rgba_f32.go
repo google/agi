@@ -18,9 +18,9 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/google/gapid/core/data/endian"
-	"github.com/google/gapid/core/math/sint"
-	"github.com/google/gapid/core/os/device"
+	"github.com/google/agi/core/data/endian"
+	"github.com/google/agi/core/math/sint"
+	"github.com/google/agi/core/os/device"
 )
 
 type rgbaF32 struct {

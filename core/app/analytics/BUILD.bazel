@@ -28,7 +28,7 @@ go_library(
         "payloads.go",
         "stubs.go",  # keep
     ],
-    importpath = "github.com/google/gapid/core/app/analytics",
+    importpath = "github.com/google/agi/core/app/analytics",
     visibility = ["//visibility:public"],
     deps = [
         "//core/app/analytics/param:go_default_library",

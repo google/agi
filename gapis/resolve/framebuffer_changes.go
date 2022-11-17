@@ -17,14 +17,14 @@ package resolve
 import (
 	"context"
 
-	"github.com/google/gapid/core/fault"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/gapis/api"
-	"github.com/google/gapid/gapis/api/sync"
-	"github.com/google/gapid/gapis/database"
-	"github.com/google/gapid/gapis/messages"
-	"github.com/google/gapid/gapis/service"
-	"github.com/google/gapid/gapis/service/path"
+	"github.com/google/agi/core/fault"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/gapis/api"
+	"github.com/google/agi/gapis/api/sync"
+	"github.com/google/agi/gapis/database"
+	"github.com/google/agi/gapis/messages"
+	"github.com/google/agi/gapis/service"
+	"github.com/google/agi/gapis/service/path"
 )
 
 // FramebufferChanges returns the list of attachment changes over the span of

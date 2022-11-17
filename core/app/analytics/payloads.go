@@ -19,8 +19,8 @@ package analytics
 import (
 	"time"
 
-	"github.com/google/gapid/core/app/analytics/param"
-	"github.com/google/gapid/core/os/device"
+	"github.com/google/agi/core/app/analytics/param"
+	"github.com/google/agi/core/os/device"
 )
 
 // Payload is the interface implemented by Google Analytic payload types.

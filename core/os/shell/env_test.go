@@ -17,8 +17,8 @@ package shell_test
 import (
 	"testing"
 
-	"github.com/google/gapid/core/assert"
-	"github.com/google/gapid/core/os/shell"
+	"github.com/google/agi/core/assert"
+	"github.com/google/agi/core/os/shell"
 )
 
 func TestEmptyEnv(t *testing.T) {

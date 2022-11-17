@@ -15,9 +15,9 @@
 package semantic
 
 import (
-	"github.com/google/gapid/core/data/slice"
-	"github.com/google/gapid/core/text/parse/cst"
-	"github.com/google/gapid/gapil/ast"
+	"github.com/google/agi/core/data/slice"
+	"github.com/google/agi/core/text/parse/cst"
+	"github.com/google/agi/gapil/ast"
 )
 
 // Mappings is a two-way map of AST nodes to semantic nodes.

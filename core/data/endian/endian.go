@@ -20,9 +20,9 @@ import (
 	"io"
 	"math"
 
-	"github.com/google/gapid/core/data/binary"
-	"github.com/google/gapid/core/math/f16"
-	"github.com/google/gapid/core/os/device"
+	"github.com/google/agi/core/data/binary"
+	"github.com/google/agi/core/math/f16"
+	"github.com/google/agi/core/os/device"
 )
 
 func byteOrder(endian device.Endian) eb.ByteOrder {

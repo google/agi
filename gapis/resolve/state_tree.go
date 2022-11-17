@@ -20,15 +20,15 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/google/gapid/core/data/dictionary"
-	"github.com/google/gapid/core/data/id"
-	"github.com/google/gapid/core/math/u64"
-	"github.com/google/gapid/gapis/api"
-	"github.com/google/gapid/gapis/database"
-	"github.com/google/gapid/gapis/memory"
-	"github.com/google/gapid/gapis/service"
-	"github.com/google/gapid/gapis/service/box"
-	"github.com/google/gapid/gapis/service/path"
+	"github.com/google/agi/core/data/dictionary"
+	"github.com/google/agi/core/data/id"
+	"github.com/google/agi/core/math/u64"
+	"github.com/google/agi/gapis/api"
+	"github.com/google/agi/gapis/database"
+	"github.com/google/agi/gapis/memory"
+	"github.com/google/agi/gapis/service"
+	"github.com/google/agi/gapis/service/box"
+	"github.com/google/agi/gapis/service/path"
 )
 
 // StateTree resolves the specified state tree path.

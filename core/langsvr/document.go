@@ -17,7 +17,7 @@ package langsvr
 import (
 	"fmt"
 
-	"github.com/google/gapid/core/langsvr/protocol"
+	"github.com/google/agi/core/langsvr/protocol"
 )
 
 // Document represents a text document file.

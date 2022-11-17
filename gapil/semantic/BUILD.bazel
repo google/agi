@@ -30,7 +30,7 @@ go_library(
         "type.go",
         "visit.go",
     ],
-    importpath = "github.com/google/gapid/gapil/semantic",
+    importpath = "github.com/google/agi/gapil/semantic",
     visibility = ["//visibility:public"],
     deps = [
         "//core/data/slice:go_default_library",

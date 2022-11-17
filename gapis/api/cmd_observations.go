@@ -19,11 +19,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/gapid/core/data/id"
-	"github.com/google/gapid/core/data/protoconv"
-	"github.com/google/gapid/gapis/database"
-	"github.com/google/gapid/gapis/memory"
-	"github.com/google/gapid/gapis/memory/memory_pb"
+	"github.com/google/agi/core/data/id"
+	"github.com/google/agi/core/data/protoconv"
+	"github.com/google/agi/gapis/database"
+	"github.com/google/agi/gapis/memory"
+	"github.com/google/agi/gapis/memory/memory_pb"
 )
 
 // CmdObservations is a collection of reads and write observations performed by an

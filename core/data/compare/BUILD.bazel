@@ -24,7 +24,7 @@ go_library(
         "handler.go",
         "path.go",
     ],
-    importpath = "github.com/google/gapid/core/data/compare",
+    importpath = "github.com/google/agi/core/data/compare",
     visibility = ["//visibility:public"],
     deps = [
         "@com_github_golang_protobuf//proto:go_default_library",

@@ -17,8 +17,8 @@ package langsvr
 import (
 	"sort"
 
-	"github.com/google/gapid/core/langsvr/protocol"
-	"github.com/google/gapid/core/math/sint"
+	"github.com/google/agi/core/langsvr/protocol"
+	"github.com/google/agi/core/math/sint"
 )
 
 // Body represents the body of a document.

@@ -24,7 +24,7 @@ go_library(
         "value.go",
     ],
     embed = [":pod_go_proto"],
-    importpath = "github.com/google/gapid/core/data/pod",
+    importpath = "github.com/google/agi/core/data/pod",
     visibility = ["//visibility:public"],
 )
 
@@ -36,7 +36,7 @@ proto_library(
 
 go_proto_library(
     name = "pod_go_proto",
-    importpath = "github.com/google/gapid/core/data/pod",
+    importpath = "github.com/google/agi/core/data/pod",
     proto = ":pod_proto",
     visibility = ["//visibility:public"],
 )

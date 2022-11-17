@@ -17,7 +17,7 @@ package analysis
 import (
 	"fmt"
 
-	"github.com/google/gapid/gapil/semantic"
+	"github.com/google/agi/gapil/semantic"
 )
 
 // Value interface compliance checks.

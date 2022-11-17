@@ -17,9 +17,9 @@ package analysis_test
 import (
 	"testing"
 
-	"github.com/google/gapid/core/assert"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/gapil/analysis"
+	"github.com/google/agi/core/assert"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/gapil/analysis"
 )
 
 func TestEnumGlobalAnalysis(t *testing.T) {

@@ -17,10 +17,10 @@ package transform
 import (
 	"context"
 
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/gapis/api"
-	"github.com/google/gapid/gapis/api/commandGenerator"
-	"github.com/google/gapid/gapis/config"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/gapis/api"
+	"github.com/google/agi/gapis/api/commandGenerator"
+	"github.com/google/agi/gapis/config"
 )
 
 // TransformChain is responsible for running all the transforms on

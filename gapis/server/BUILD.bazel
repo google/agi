@@ -22,7 +22,7 @@ go_library(
         "server.go",
         "update.go",
     ],
-    importpath = "github.com/google/gapid/gapis/server",
+    importpath = "github.com/google/agi/gapis/server",
     visibility = ["//visibility:public"],
     deps = [
         "//core/app:go_default_library",

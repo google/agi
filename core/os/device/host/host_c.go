@@ -22,7 +22,7 @@ import (
 	"unsafe"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/google/gapid/core/os/device"
+	"github.com/google/agi/core/os/device"
 )
 
 func getHostDevice() device.Instance {

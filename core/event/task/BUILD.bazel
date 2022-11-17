@@ -28,7 +28,7 @@ go_library(
         "signal.go",
         "task.go",
     ],
-    importpath = "github.com/google/gapid/core/event/task",
+    importpath = "github.com/google/agi/core/event/task",
     visibility = ["//visibility:public"],
     deps = ["//core/app/crash:go_default_library"],
 )

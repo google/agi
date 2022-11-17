@@ -19,8 +19,8 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/google/gapid/gapis/api"
-	"github.com/google/gapid/gapis/capture"
+	"github.com/google/agi/gapis/api"
+	"github.com/google/agi/gapis/capture"
 )
 
 // Node represents a node in the dependency graph, and holds data about the

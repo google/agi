@@ -18,13 +18,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/gapid/core/app/benchmark"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/gapis/api"
-	"github.com/google/gapid/gapis/api/transform"
-	"github.com/google/gapid/gapis/capture"
-	"github.com/google/gapid/gapis/config"
-	"github.com/google/gapid/gapis/service/path"
+	"github.com/google/agi/core/app/benchmark"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/gapis/api"
+	"github.com/google/agi/gapis/api/transform"
+	"github.com/google/agi/gapis/capture"
+	"github.com/google/agi/gapis/config"
+	"github.com/google/agi/gapis/service/path"
 )
 
 var (

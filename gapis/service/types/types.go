@@ -19,11 +19,11 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/google/gapid/core/data/pod"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/math/sint"
-	"github.com/google/gapid/core/os/device"
-	"github.com/google/gapid/gapis/memory"
+	"github.com/google/agi/core/data/pod"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/math/sint"
+	"github.com/google/agi/core/os/device"
+	"github.com/google/agi/gapis/memory"
 )
 
 type typeData struct {

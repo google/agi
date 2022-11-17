@@ -16,8 +16,8 @@
 package gapir
 
 import (
-	replaysrv "github.com/google/gapid/gapir/replay_service"
-	"github.com/google/gapid/gapis/service/severity"
+	replaysrv "github.com/google/agi/gapir/replay_service"
+	"github.com/google/agi/gapis/service/severity"
 )
 
 // Type aliases to avoid GAPIS code from using gRPC generated code directly.

@@ -20,10 +20,10 @@ import (
 	"io"
 	"strings"
 
-	"github.com/google/gapid/core/data/id"
-	"github.com/google/gapid/core/math/interval"
-	"github.com/google/gapid/core/math/u64"
-	"github.com/google/gapid/gapis/database"
+	"github.com/google/agi/core/data/id"
+	"github.com/google/agi/core/math/interval"
+	"github.com/google/agi/core/math/u64"
+	"github.com/google/agi/gapis/database"
 	"github.com/pkg/errors"
 )
 

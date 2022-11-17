@@ -73,7 +73,7 @@ func (c Callstack) Entries() []Entry {
 		var pkg, name string
 		if i := strings.LastIndex(fullname, "/"); i > 0 {
 			i += strings.IndexRune(fullname[i+1:], '.')
-			// name is of the form github.com/google/gapid/framework/log.StacktraceOnError
+			// name is of the form github.com/google/agi/framework/log.StacktraceOnError
 			// we find the last /, then find the next . to split the function name from the package name
 			pkg, name = fullname[:i+1], fullname[i+2:]
 		}
@@ -111,7 +111,7 @@ func (e Entry) String() string {
 }
 
 func (l Location) String() string {
-	const strip = "github.com/google/gapid/"
+	const strip = "github.com/google/agi/"
 	dir := l.Directory
 	if i := strings.LastIndex(dir, strip); i > 0 {
 		dir = dir[i+len(strip):]

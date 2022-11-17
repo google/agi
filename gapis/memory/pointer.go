@@ -18,8 +18,8 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/google/gapid/core/data"
-	"github.com/google/gapid/core/os/device"
+	"github.com/google/agi/core/data"
+	"github.com/google/agi/core/os/device"
 )
 
 // Nullptr is a zero-address pointer.

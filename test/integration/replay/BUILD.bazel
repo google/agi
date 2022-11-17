@@ -17,7 +17,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "go_default_library",
     srcs = ["doc.go"],
-    importpath = "github.com/google/gapid/test/integration/replay",
+    importpath = "github.com/google/agi/test/integration/replay",
     visibility = ["//visibility:public"],
 )
 

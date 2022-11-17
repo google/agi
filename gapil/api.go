@@ -24,12 +24,12 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/google/gapid/core/os/file"
-	"github.com/google/gapid/core/text/parse"
-	"github.com/google/gapid/gapil/ast"
-	"github.com/google/gapid/gapil/parser"
-	"github.com/google/gapid/gapil/resolver"
-	"github.com/google/gapid/gapil/semantic"
+	"github.com/google/agi/core/os/file"
+	"github.com/google/agi/core/text/parse"
+	"github.com/google/agi/gapil/ast"
+	"github.com/google/agi/gapil/parser"
+	"github.com/google/agi/gapil/resolver"
+	"github.com/google/agi/gapil/semantic"
 )
 
 // ParseResult holds the result of parsing a file.

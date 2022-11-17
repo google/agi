@@ -19,10 +19,10 @@ import (
 	"flag"
 	"os"
 
-	"github.com/google/gapid/core/app"
-	"github.com/google/gapid/core/os/file"
-	"github.com/google/gapid/gapil/encoder"
-	"github.com/google/gapid/gapil/resolver"
+	"github.com/google/agi/core/app"
+	"github.com/google/agi/core/os/file"
+	"github.com/google/agi/gapil/encoder"
+	"github.com/google/agi/gapil/resolver"
 )
 
 func init() {

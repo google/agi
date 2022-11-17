@@ -19,7 +19,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/google/gapid/core/text/reflow"
+	"github.com/google/agi/core/text/reflow"
 )
 
 // EntryParameter represents a parameter for a specific stringtable entry.

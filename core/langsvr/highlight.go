@@ -14,7 +14,7 @@
 
 package langsvr
 
-import "github.com/google/gapid/core/langsvr/protocol"
+import "github.com/google/agi/core/langsvr/protocol"
 
 // Highlight a range inside a text document which deserves special attention.
 // Usually a document highlight is visualized by changing the background color

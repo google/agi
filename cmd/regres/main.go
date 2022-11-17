@@ -31,10 +31,10 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/google/gapid/core/app"
-	"github.com/google/gapid/core/git"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/os/shell"
+	"github.com/google/agi/core/app"
+	"github.com/google/agi/core/git"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/os/shell"
 )
 
 var (

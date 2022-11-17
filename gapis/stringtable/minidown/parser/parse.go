@@ -19,10 +19,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/google/gapid/core/text/parse"
-	"github.com/google/gapid/gapis/stringtable/minidown/node"
-	"github.com/google/gapid/gapis/stringtable/minidown/scanner"
-	"github.com/google/gapid/gapis/stringtable/minidown/token"
+	"github.com/google/agi/core/text/parse"
+	"github.com/google/agi/gapis/stringtable/minidown/node"
+	"github.com/google/agi/gapis/stringtable/minidown/scanner"
+	"github.com/google/agi/gapis/stringtable/minidown/token"
 )
 
 // Parse parses a minidown file.

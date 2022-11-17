@@ -19,11 +19,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/gapid/core/data/endian"
-	"github.com/google/gapid/core/data/id"
-	"github.com/google/gapid/core/os/device"
-	"github.com/google/gapid/gapis/database"
-	"github.com/google/gapid/gapis/service/path"
+	"github.com/google/agi/core/data/endian"
+	"github.com/google/agi/core/data/id"
+	"github.com/google/agi/core/os/device"
+	"github.com/google/agi/gapis/database"
+	"github.com/google/agi/gapis/service/path"
 )
 
 // IndexRange represents the range of indices which were referenced by index buffer.

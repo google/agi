@@ -22,9 +22,9 @@ import (
 	"strings"
 
 	"github.com/golang/protobuf/jsonpb"
-	"github.com/google/gapid/core/app"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/gapis/api"
+	"github.com/google/agi/core/app"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/gapis/api"
 )
 
 type framegraphVerb struct{ FramegraphFlags }

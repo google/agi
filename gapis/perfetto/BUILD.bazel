@@ -23,7 +23,7 @@ go_library(
     ],
     cdeps = ["//gapis/perfetto/cc:cc"],
     cgo = True,
-    importpath = "github.com/google/gapid/gapis/perfetto",
+    importpath = "github.com/google/agi/gapis/perfetto",
     visibility = ["//visibility:public"],
     deps = [
         "//core/app:go_default_library",

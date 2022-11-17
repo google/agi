@@ -14,7 +14,7 @@
 
 package langsvr
 
-import "github.com/google/gapid/core/langsvr/protocol"
+import "github.com/google/agi/core/langsvr/protocol"
 
 // CompletionItem represents a completion item to be presented in the editor.
 type CompletionItem struct {

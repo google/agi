@@ -15,7 +15,7 @@
 // Package fmts contains a number of standard stream formats.
 package fmts
 
-import "github.com/google/gapid/core/stream"
+import "github.com/google/agi/core/stream"
 
 var (
 	XY_U8 = &stream.Format{

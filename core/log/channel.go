@@ -14,7 +14,7 @@
 
 package log
 
-import "github.com/google/gapid/core/app/crash"
+import "github.com/google/agi/core/app/crash"
 
 // Channel is a log handler that passes log messages to another Handler through
 // a chan.

@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/google/gapid/core/data/compare"
+	"github.com/google/agi/core/data/compare"
 )
 
 // A Token represents the smallest consumed unit input.

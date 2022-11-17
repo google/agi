@@ -25,7 +25,7 @@ go_library(
     cdeps = ["@etc2comp//:etc2comp"],
     cgo = True,
     clinkopts = [],  # keep
-    importpath = "github.com/google/gapid/core/image/etc",
+    importpath = "github.com/google/agi/core/image/etc",
     visibility = ["//visibility:public"],
     deps = [
         "//core/data/endian:go_default_library",

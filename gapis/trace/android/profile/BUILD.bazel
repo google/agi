@@ -7,7 +7,7 @@ go_library(
         "profile.go",
         "slices.go",
     ],
-    importpath = "github.com/google/gapid/gapis/trace/android/profile",
+    importpath = "github.com/google/agi/gapis/trace/android/profile",
     visibility = ["//visibility:public"],
     deps = [
         "//core/data/slice:go_default_library",

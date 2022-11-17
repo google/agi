@@ -17,10 +17,10 @@ package device_test
 import (
 	"testing"
 
-	"github.com/google/gapid/core/assert"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/os/device"
-	"github.com/google/gapid/core/os/device/host"
+	"github.com/google/agi/core/assert"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/os/device"
+	"github.com/google/agi/core/os/device/host"
 )
 
 func TestSamePhysicalDevice(t *testing.T) {

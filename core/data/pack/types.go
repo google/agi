@@ -21,7 +21,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
-	"github.com/google/gapid/core/data/protoutil"
+	"github.com/google/agi/core/data/protoutil"
 )
 
 // ty is an entry in the map of types stored in a packfile.

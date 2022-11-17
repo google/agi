@@ -28,7 +28,7 @@ go_test(
 go_library(
     name = "go_default_library",
     srcs = ["fuzz.go"],
-    importpath = "github.com/google/gapid/gapil/fuzz",
+    importpath = "github.com/google/agi/gapil/fuzz",
     visibility = ["//visibility:public"],
     deps = [
         "//gapil:go_default_library",

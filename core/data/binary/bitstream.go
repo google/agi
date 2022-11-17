@@ -14,7 +14,7 @@
 
 package binary
 
-import "github.com/google/gapid/core/math/u32"
+import "github.com/google/agi/core/math/u32"
 
 // BitStream provides methods for reading and writing bits to a slice of bytes.
 // Bits are packed in a least-significant-bit to most-significant-bit order.

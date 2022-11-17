@@ -14,7 +14,7 @@
 
 package replay
 
-import "github.com/google/gapid/core/os/device/bind"
+import "github.com/google/agi/core/os/device/bind"
 
 // Events holds a number of callback functions that can be used to monitor
 // replay activity.

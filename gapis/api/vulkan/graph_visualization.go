@@ -17,7 +17,7 @@ package vulkan
 import (
 	"bytes"
 	"fmt"
-	"github.com/google/gapid/gapis/api"
+	"github.com/google/agi/gapis/api"
 )
 
 // Interface compliance test

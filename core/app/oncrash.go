@@ -19,8 +19,8 @@ import (
 	"encoding/base64"
 	"io/ioutil"
 
-	"github.com/google/gapid/core/fault/stacktrace"
-	"github.com/google/gapid/core/fault/stacktrace/crunch"
+	"github.com/google/agi/core/fault/stacktrace"
+	"github.com/google/agi/core/fault/stacktrace/crunch"
 )
 
 func decodeCrashCode(s string) stacktrace.Callstack {

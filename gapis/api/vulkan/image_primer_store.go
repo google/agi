@@ -19,8 +19,8 @@ import (
 	"encoding/binary"
 	"fmt"
 
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/gapis/memory"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/gapis/memory"
 )
 
 const (

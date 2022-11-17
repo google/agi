@@ -29,20 +29,20 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"github.com/google/gapid/core/app"
-	"github.com/google/gapid/core/app/crash"
-	"github.com/google/gapid/core/event/task"
-	"github.com/google/gapid/core/image/font"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/math/sint"
-	"github.com/google/gapid/core/os/file"
-	"github.com/google/gapid/core/text/reflow"
-	"github.com/google/gapid/core/video"
-	"github.com/google/gapid/gapis/client"
-	"github.com/google/gapid/gapis/service"
-	"github.com/google/gapid/gapis/service/path"
+	"github.com/google/agi/core/app"
+	"github.com/google/agi/core/app/crash"
+	"github.com/google/agi/core/event/task"
+	"github.com/google/agi/core/image/font"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/math/sint"
+	"github.com/google/agi/core/os/file"
+	"github.com/google/agi/core/text/reflow"
+	"github.com/google/agi/core/video"
+	"github.com/google/agi/gapis/client"
+	"github.com/google/agi/gapis/service"
+	"github.com/google/agi/gapis/service/path"
 
-	img "github.com/google/gapid/core/image"
+	img "github.com/google/agi/core/image"
 )
 
 const allTheWay = -1

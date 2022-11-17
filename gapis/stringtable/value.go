@@ -17,8 +17,8 @@ package stringtable
 import (
 	"fmt"
 
-	"github.com/google/gapid/gapis/service/box"
-	"github.com/google/gapid/gapis/service/path"
+	"github.com/google/agi/gapis/service/box"
+	"github.com/google/agi/gapis/service/path"
 )
 
 // ToValue returns v boxed in a Value.

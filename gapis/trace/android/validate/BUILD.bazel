@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = ["validate.go"],
-    importpath = "github.com/google/gapid/gapis/trace/android/validate",
+    importpath = "github.com/google/agi/gapis/trace/android/validate",
     visibility = ["//visibility:public"],
     deps = [
         "//core/log:go_default_library",

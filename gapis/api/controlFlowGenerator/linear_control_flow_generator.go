@@ -18,10 +18,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/gapid/core/app/status"
-	"github.com/google/gapid/core/context/keys"
-	"github.com/google/gapid/core/event/task"
-	"github.com/google/gapid/gapis/api/transform"
+	"github.com/google/agi/core/app/status"
+	"github.com/google/agi/core/context/keys"
+	"github.com/google/agi/core/event/task"
+	"github.com/google/agi/gapis/api/transform"
 )
 
 type linearControlFlowGenerator struct {

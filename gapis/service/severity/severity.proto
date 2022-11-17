@@ -17,7 +17,7 @@ syntax = "proto3";
 package severity;
 option java_package = "com.google.gapid.proto.service.severity";
 option java_outer_classname = "SeverityLevel";
-option go_package = "github.com/google/gapid/gapis/service/severity";
+option go_package = "github.com/google/agi/gapis/service/severity";
 
 // Severity defines the severity of a logging message.
 // The values must be identical to values in core/log/severity.go

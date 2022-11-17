@@ -21,7 +21,7 @@ go_library(
         "doc.go",
         "types.go",
     ],
-    importpath = "github.com/google/gapid/core/fault",
+    importpath = "github.com/google/agi/core/fault",
     visibility = ["//visibility:public"],
 )
 

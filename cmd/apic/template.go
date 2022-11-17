@@ -24,12 +24,12 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/google/gapid/gapil/resolver"
+	"github.com/google/agi/gapil/resolver"
 
-	"github.com/google/gapid/core/app"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/os/file"
-	"github.com/google/gapid/gapil/template"
+	"github.com/google/agi/core/app"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/os/file"
+	"github.com/google/agi/gapil/template"
 )
 
 func init() {

@@ -26,8 +26,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/os/android/binaryxml"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/os/android/binaryxml"
 )
 
 // ApkDebugifier makes an APK debuggable. The fields in the struct

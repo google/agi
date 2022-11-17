@@ -33,7 +33,7 @@ go_library(
         "untracked_value.go",
         "value.go",
     ],
-    importpath = "github.com/google/gapid/gapil/analysis",
+    importpath = "github.com/google/agi/gapil/analysis",
     visibility = ["//visibility:public"],
     deps = [
         "//core/math/interval:go_default_library",

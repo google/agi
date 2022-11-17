@@ -23,7 +23,7 @@ go_library(
         "sync.go",
         "writer.go",
     ],
-    importpath = "github.com/google/gapid/gapis/perfetto/client",
+    importpath = "github.com/google/agi/gapis/perfetto/client",
     visibility = ["//visibility:public"],
     deps = [
         "//core/app:go_default_library",

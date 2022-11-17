@@ -15,9 +15,9 @@
 package image
 
 import (
-	"github.com/google/gapid/core/data/binary"
-	"github.com/google/gapid/core/math/sint"
-	"github.com/google/gapid/core/stream"
+	"github.com/google/agi/core/data/binary"
+	"github.com/google/agi/core/math/sint"
+	"github.com/google/agi/core/stream"
 )
 
 var (

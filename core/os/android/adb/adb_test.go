@@ -18,9 +18,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/google/gapid/core/assert"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/os/android/adb"
+	"github.com/google/agi/core/assert"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/os/android/adb"
 )
 
 func mustConnect(ctx context.Context, serial string) adb.Device {

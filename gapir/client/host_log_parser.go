@@ -19,7 +19,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/google/gapid/core/log"
+	"github.com/google/agi/core/log"
 )
 
 // "HH:MM:SS.FFF [VDIWEF] tag file:line : msg"

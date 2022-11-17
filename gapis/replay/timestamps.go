@@ -17,10 +17,10 @@ package replay
 import (
 	"context"
 
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/gapis/capture"
-	"github.com/google/gapid/gapis/service"
-	"github.com/google/gapid/gapis/service/path"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/gapis/capture"
+	"github.com/google/agi/gapis/service"
+	"github.com/google/agi/gapis/service/path"
 )
 
 // GetTimestamps replays the trace and return the start and end timestamps for each commandbuffers

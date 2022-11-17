@@ -19,12 +19,12 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/google/gapid/core/assert"
-	"github.com/google/gapid/core/data"
-	"github.com/google/gapid/core/data/deep"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/gapis/memory"
-	"github.com/google/gapid/gapis/service/box"
+	"github.com/google/agi/core/assert"
+	"github.com/google/agi/core/data"
+	"github.com/google/agi/core/data/deep"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/gapis/memory"
+	"github.com/google/agi/gapis/service/box"
 )
 
 type StructB struct {

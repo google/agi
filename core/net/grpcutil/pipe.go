@@ -21,8 +21,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/gapid/core/event/task"
-	"github.com/google/gapid/core/fault"
+	"github.com/google/agi/core/event/task"
+	"github.com/google/agi/core/fault"
 )
 
 const (

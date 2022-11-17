@@ -25,12 +25,12 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/google/gapid/core/assert"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/text/parse"
-	"github.com/google/gapid/gapil"
-	"github.com/google/gapid/gapil/bapi"
-	"github.com/google/gapid/gapil/semantic"
+	"github.com/google/agi/core/assert"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/text/parse"
+	"github.com/google/agi/gapil"
+	"github.com/google/agi/gapil/bapi"
+	"github.com/google/agi/gapil/semantic"
 )
 
 const toRoot = "../../"

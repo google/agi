@@ -21,7 +21,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/google/gapid/core/os/device"
+	"github.com/google/agi/core/os/device"
 )
 
 // https://android.googlesource.com/platform/bionic/+/master/libc/include/sys/system_properties.h#38

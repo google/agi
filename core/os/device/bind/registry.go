@@ -18,9 +18,9 @@ import (
 	"context"
 	"sync"
 
-	"github.com/google/gapid/core/context/keys"
-	"github.com/google/gapid/core/data/id"
-	"github.com/google/gapid/core/log"
+	"github.com/google/agi/core/context/keys"
+	"github.com/google/agi/core/data/id"
+	"github.com/google/agi/core/log"
 )
 
 type (

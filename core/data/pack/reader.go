@@ -22,8 +22,8 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
-	"github.com/google/gapid/core/event/task"
-	"github.com/google/gapid/core/math/sint"
+	"github.com/google/agi/core/event/task"
+	"github.com/google/agi/core/math/sint"
 	"github.com/pkg/errors"
 )
 

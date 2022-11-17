@@ -23,10 +23,10 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/google/gapid/core/app"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/gapis/service"
-	"github.com/google/gapid/gapis/stringtable"
+	"github.com/google/agi/core/app"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/gapis/service"
+	"github.com/google/agi/gapis/stringtable"
 )
 
 type reportVerb struct{ ReportFlags }

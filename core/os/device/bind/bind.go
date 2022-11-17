@@ -21,9 +21,9 @@ import (
 	"os"
 	"sync"
 
-	"github.com/google/gapid/core/app"
-	"github.com/google/gapid/core/os/device/host"
-	"github.com/google/gapid/core/os/shell"
+	"github.com/google/agi/core/app"
+	"github.com/google/agi/core/os/device/host"
+	"github.com/google/agi/core/os/shell"
 )
 
 type binding struct {

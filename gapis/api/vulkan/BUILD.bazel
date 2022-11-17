@@ -117,7 +117,7 @@ go_library(
     embed = [
         ":vulkan_go_proto",
     ],
-    importpath = "github.com/google/gapid/gapis/api/vulkan",
+    importpath = "github.com/google/agi/gapis/api/vulkan",
     visibility = ["//visibility:public"],
     deps = [
         "//core/app/status:go_default_library",
@@ -185,7 +185,7 @@ proto_library(
 
 go_proto_library(
     name = "vulkan_go_proto",
-    importpath = "github.com/google/gapid/gapis/api/vulkan",
+    importpath = "github.com/google/agi/gapis/api/vulkan",
     proto = ":vulkan_proto",
     visibility = ["//visibility:public"],
 )

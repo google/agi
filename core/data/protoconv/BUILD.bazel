@@ -17,7 +17,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = ["protoconv.go"],
-    importpath = "github.com/google/gapid/core/data/protoconv",
+    importpath = "github.com/google/agi/core/data/protoconv",
     visibility = ["//visibility:public"],
     deps = [
         "//core/data/generic:go_default_library",

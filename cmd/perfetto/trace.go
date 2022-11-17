@@ -26,11 +26,11 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/google/gapid/core/app"
-	"github.com/google/gapid/core/app/crash"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/os/device/bind"
-	"github.com/google/gapid/gapis/perfetto"
+	"github.com/google/agi/core/app"
+	"github.com/google/agi/core/app/crash"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/os/device/bind"
+	"github.com/google/agi/gapis/perfetto"
 
 	config "protos/perfetto/config"
 )

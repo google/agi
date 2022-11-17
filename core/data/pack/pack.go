@@ -17,7 +17,7 @@ package pack
 import (
 	"fmt"
 
-	"github.com/google/gapid/core/fault"
+	"github.com/google/agi/core/fault"
 )
 
 const (

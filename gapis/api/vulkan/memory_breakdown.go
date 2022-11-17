@@ -19,9 +19,9 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/google/gapid/core/data/id"
-	"github.com/google/gapid/gapis/api"
-	"github.com/google/gapid/gapis/service/path"
+	"github.com/google/agi/core/data/id"
+	"github.com/google/agi/gapis/api"
+	"github.com/google/agi/gapis/service/path"
 )
 
 // Interface compliance test

@@ -19,9 +19,9 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/google/gapid/core/text/parse"
-	"github.com/google/gapid/gapil/ast"
-	"github.com/google/gapid/gapil/semantic"
+	"github.com/google/agi/core/text/parse"
+	"github.com/google/agi/gapil/ast"
+	"github.com/google/agi/gapil/semantic"
 )
 
 // Options customize the final output of the resolve.

@@ -17,7 +17,7 @@ package memory
 import (
 	"fmt"
 
-	"github.com/google/gapid/core/math/interval"
+	"github.com/google/agi/core/math/interval"
 )
 
 func min(a, b uint64) uint64 {

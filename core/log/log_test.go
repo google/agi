@@ -18,7 +18,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/google/gapid/core/log"
+	"github.com/google/agi/core/log"
 )
 
 var testClock log.Clock

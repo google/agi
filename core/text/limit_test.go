@@ -19,7 +19,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/google/gapid/core/text"
+	"github.com/google/agi/core/text"
 )
 
 func TestLimit(t *testing.T) {

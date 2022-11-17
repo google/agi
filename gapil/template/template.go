@@ -24,7 +24,7 @@ import (
 	"text/template"
 	"unicode/utf8"
 
-	"github.com/google/gapid/core/log"
+	"github.com/google/agi/core/log"
 )
 
 const maxErrors = 10

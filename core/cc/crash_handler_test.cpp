@@ -27,7 +27,7 @@ namespace core {
 namespace test {
 
 #if TARGET_OS != GAPID_OS_OSX  // Work around for
-                               // https://github.com/google/gapid/issues/1788
+                               // https://github.com/google/agi/issues/1788
 TEST(CrashHandlerTest, HandleCrash) {
   CrashHandler crashHandler;
   crashHandler.registerHandler(

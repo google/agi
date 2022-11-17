@@ -18,8 +18,8 @@ import (
 	"context"
 	"math"
 
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/gapis/api"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/gapis/api"
 )
 
 // RenderPassKey is a combination of handles used to lookup a submitted render pass commands.

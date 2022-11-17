@@ -21,10 +21,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/google/gapid/core/app"
-	"github.com/google/gapid/core/fault"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/os/android/adb"
+	"github.com/google/agi/core/app"
+	"github.com/google/agi/core/fault"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/os/android/adb"
 )
 
 const (

@@ -18,8 +18,8 @@ import (
 	"math"
 	"testing"
 
-	"github.com/google/gapid/core/assert"
-	"github.com/google/gapid/core/math/f64"
+	"github.com/google/agi/core/assert"
+	"github.com/google/agi/core/math/f64"
 )
 
 func TestV3DSqrMagnitude(t *testing.T) {

@@ -18,8 +18,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/google/gapid/core/assert"
-	"github.com/google/gapid/gapil/analysis"
+	"github.com/google/agi/core/assert"
+	"github.com/google/agi/gapil/analysis"
 )
 
 func TestU32ValueEquals(t *testing.T) {

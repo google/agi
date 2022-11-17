@@ -22,7 +22,7 @@ go_library(
         "device.go",
         "forward.go",
     ],
-    importpath = "github.com/google/gapid/core/os/device/remotessh",
+    importpath = "github.com/google/agi/core/os/device/remotessh",
     visibility = ["//visibility:public"],
     deps = [
         "//core/app:go_default_library",

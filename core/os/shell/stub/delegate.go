@@ -14,7 +14,7 @@
 
 package stub
 
-import "github.com/google/gapid/core/os/shell"
+import "github.com/google/agi/core/os/shell"
 
 // Delegate is an implementation of Target that passes all command requests to a the first child that accepts
 // them.

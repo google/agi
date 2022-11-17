@@ -17,7 +17,7 @@ package adb_test
 import (
 	"testing"
 
-	"github.com/google/gapid/core/log"
+	"github.com/google/agi/core/log"
 )
 
 func TestFilePush(t_ *testing.T) {

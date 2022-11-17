@@ -29,7 +29,7 @@ go_library(
         "type.go",
         "visit.go",
     ],
-    importpath = "github.com/google/gapid/gapil/ast",
+    importpath = "github.com/google/agi/gapil/ast",
     visibility = ["//visibility:public"],
     deps = [
         "//core/text/parse/cst:go_default_library",

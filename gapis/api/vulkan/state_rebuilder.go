@@ -19,13 +19,13 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/google/gapid/core/data/id"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/math/interval"
-	"github.com/google/gapid/gapis/api"
-	"github.com/google/gapid/gapis/api/transform"
-	"github.com/google/gapid/gapis/database"
-	"github.com/google/gapid/gapis/memory"
+	"github.com/google/agi/core/data/id"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/math/interval"
+	"github.com/google/agi/gapis/api"
+	"github.com/google/agi/gapis/api/transform"
+	"github.com/google/agi/gapis/database"
+	"github.com/google/agi/gapis/memory"
 )
 
 const (

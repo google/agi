@@ -17,9 +17,9 @@ package parser_test
 import (
 	"testing"
 
-	"github.com/google/gapid/core/assert"
-	"github.com/google/gapid/gapis/stringtable/minidown/node"
-	"github.com/google/gapid/gapis/stringtable/minidown/parser"
+	"github.com/google/agi/core/assert"
+	"github.com/google/agi/gapis/stringtable/minidown/node"
+	"github.com/google/agi/gapis/stringtable/minidown/parser"
 )
 
 func TestParser(t *testing.T) {

@@ -18,7 +18,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/google/gapid/core/data/id"
+	"github.com/google/agi/core/data/id"
 )
 
 // Replay contains status information about a replay.

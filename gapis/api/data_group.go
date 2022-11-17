@@ -20,8 +20,8 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/google/gapid/core/data/pod"
-	"github.com/google/gapid/gapis/service/path"
+	"github.com/google/agi/core/data/pod"
+	"github.com/google/agi/gapis/service/path"
 )
 
 func (list *KeyValuePairList) AppendKeyValuePair(name string, value *DataValue, dynamic bool) *KeyValuePairList {

@@ -15,7 +15,7 @@
 package tracer
 
 import (
-	"github.com/google/gapid/gapis/service"
+	"github.com/google/agi/gapis/service"
 )
 
 // VulkanTraceOptions returns the default trace options for Vulkan.

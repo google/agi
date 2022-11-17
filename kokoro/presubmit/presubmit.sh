@@ -123,7 +123,7 @@ function run_enumerate_lints() {
 
 function run_gazelle() {
   echo # TODO: figure out a way to make bazel not print anything.
-  $BAZEL run gazelle
+  $BAZEL run gazelle -- update-repos -from_file=go.mod
 }
 
 function run_gofmt() {

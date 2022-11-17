@@ -25,11 +25,11 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
-	"github.com/google/gapid/core/app"
-	"github.com/google/gapid/core/data/endian"
-	"github.com/google/gapid/core/os/device"
-	replaysrv "github.com/google/gapid/gapir/replay_service"
-	"github.com/google/gapid/gapis/replay/opcode"
+	"github.com/google/agi/core/app"
+	"github.com/google/agi/core/data/endian"
+	"github.com/google/agi/core/os/device"
+	replaysrv "github.com/google/agi/gapir/replay_service"
+	"github.com/google/agi/gapis/replay/opcode"
 )
 
 type dumpReplayVerb struct{}

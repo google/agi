@@ -18,7 +18,7 @@ import (
 	"fmt"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/google/gapid/core/data/protoutil"
+	"github.com/google/agi/core/data/protoutil"
 )
 
 var (

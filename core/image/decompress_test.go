@@ -22,12 +22,12 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/google/gapid/core/data/endian"
-	"github.com/google/gapid/core/image"
-	"github.com/google/gapid/core/image/astc"
-	"github.com/google/gapid/core/image/etc"
-	"github.com/google/gapid/core/math/sint"
-	"github.com/google/gapid/core/os/device"
+	"github.com/google/agi/core/data/endian"
+	"github.com/google/agi/core/image"
+	"github.com/google/agi/core/image/astc"
+	"github.com/google/agi/core/image/etc"
+	"github.com/google/agi/core/math/sint"
+	"github.com/google/agi/core/os/device"
 )
 
 // See: https://www.khronos.org/opengles/sdk/tools/KTX/file_format_spec/

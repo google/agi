@@ -15,7 +15,7 @@
 package replay
 
 import (
-	"github.com/google/gapid/core/data/id"
+	"github.com/google/agi/core/data/id"
 )
 
 // ID returns the identifier as a id.ID.

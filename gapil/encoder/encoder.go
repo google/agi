@@ -26,10 +26,10 @@ import (
 	"io"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/google/gapid/core/text/cases"
-	"github.com/google/gapid/core/text/reflow"
-	"github.com/google/gapid/gapil/semantic"
-	"github.com/google/gapid/gapil/serialization"
+	"github.com/google/agi/core/text/cases"
+	"github.com/google/agi/core/text/reflow"
+	"github.com/google/agi/gapil/semantic"
+	"github.com/google/agi/gapil/serialization"
 )
 
 const (

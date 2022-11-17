@@ -21,8 +21,8 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/google/gapid/gapil/semantic"
-	"github.com/google/gapid/gapil/serialization"
+	"github.com/google/agi/gapil/semantic"
+	"github.com/google/agi/gapil/serialization"
 )
 
 var (

@@ -20,7 +20,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/gapid/core/app/flags"
+	"github.com/google/agi/core/app/flags"
 )
 
 // Style provides customization for printing messages.

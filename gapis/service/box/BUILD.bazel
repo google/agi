@@ -23,7 +23,7 @@ go_library(
         "doc.go",
     ],
     embed = [":box_go_proto"],
-    importpath = "github.com/google/gapid/gapis/service/box",
+    importpath = "github.com/google/agi/gapis/service/box",
     visibility = ["//visibility:public"],
     deps = [
         "//core/data/deep:go_default_library",
@@ -43,7 +43,7 @@ proto_library(
 
 go_proto_library(
     name = "box_go_proto",
-    importpath = "github.com/google/gapid/gapis/service/box",
+    importpath = "github.com/google/agi/gapis/service/box",
     proto = ":box_proto",
     visibility = ["//visibility:public"],
     deps = ["//core/data/pod:go_default_library"],

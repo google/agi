@@ -20,7 +20,7 @@ go_library(
         "default_api_trace_options.go",
         "tracer.go",
     ],
-    importpath = "github.com/google/gapid/gapis/trace/tracer",
+    importpath = "github.com/google/agi/gapis/trace/tracer",
     visibility = ["//visibility:public"],
     deps = [
         "//core/app:go_default_library",

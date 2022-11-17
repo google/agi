@@ -25,7 +25,7 @@ go_library(
         "sequence.go",
         "stub.go",
     ],
-    importpath = "github.com/google/gapid/core/os/shell/stub",
+    importpath = "github.com/google/agi/core/os/shell/stub",
     visibility = ["//visibility:public"],
     deps = [
         "//core/event/task:go_default_library",

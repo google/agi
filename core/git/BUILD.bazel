@@ -32,7 +32,7 @@ go_library(
         "sha.go",
         "status.go",
     ],
-    importpath = "github.com/google/gapid/core/git",
+    importpath = "github.com/google/agi/core/git",
     visibility = ["//visibility:public"],
     deps = [
         "//core/data/id:go_default_library",

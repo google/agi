@@ -21,8 +21,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/google/gapid/core/assert"
-	"github.com/google/gapid/core/os/file"
+	"github.com/google/agi/core/assert"
+	"github.com/google/agi/core/os/file"
 )
 
 func TestJunction(t *testing.T) {

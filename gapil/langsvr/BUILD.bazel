@@ -21,7 +21,7 @@ go_library(
         "debug_logger.go",
         "main.go",
     ],
-    importpath = "github.com/google/gapid/gapil/langsvr",
+    importpath = "github.com/google/agi/gapil/langsvr",
     visibility = ["//visibility:private"],
     deps = [
         "//core/app/crash:go_default_library",

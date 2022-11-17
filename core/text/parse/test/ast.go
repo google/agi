@@ -17,8 +17,8 @@ package test
 import (
 	"strconv"
 
-	"github.com/google/gapid/core/text/parse"
-	"github.com/google/gapid/core/text/parse/cst"
+	"github.com/google/agi/core/text/parse"
+	"github.com/google/agi/core/text/parse/cst"
 )
 
 type ListNode []interface{}

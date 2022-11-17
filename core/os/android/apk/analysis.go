@@ -19,7 +19,7 @@ import (
 	"context"
 	"path/filepath"
 
-	"github.com/google/gapid/core/log"
+	"github.com/google/agi/core/log"
 )
 
 // engineSignatures is used to identify the middleware engine used based on

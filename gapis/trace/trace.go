@@ -21,16 +21,16 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/google/gapid/core/app"
-	"github.com/google/gapid/core/event/task"
-	"github.com/google/gapid/core/log"
-	gapii "github.com/google/gapid/gapii/client"
-	"github.com/google/gapid/gapis/api"
-	"github.com/google/gapid/gapis/api/sync"
-	"github.com/google/gapid/gapis/config"
-	"github.com/google/gapid/gapis/service"
-	"github.com/google/gapid/gapis/service/path"
-	"github.com/google/gapid/gapis/trace/tracer"
+	"github.com/google/agi/core/app"
+	"github.com/google/agi/core/event/task"
+	"github.com/google/agi/core/log"
+	gapii "github.com/google/agi/gapii/client"
+	"github.com/google/agi/gapis/api"
+	"github.com/google/agi/gapis/api/sync"
+	"github.com/google/agi/gapis/config"
+	"github.com/google/agi/gapis/service"
+	"github.com/google/agi/gapis/service/path"
+	"github.com/google/agi/gapis/trace/tracer"
 )
 
 func trace(ctx context.Context, device *path.Device, start task.Signal, stop task.Signal, ready task.Task, options *service.TraceOptions, written *int64, buffer *bytes.Buffer) error {

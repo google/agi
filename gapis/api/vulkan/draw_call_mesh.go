@@ -18,13 +18,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/stream"
-	"github.com/google/gapid/core/stream/fmts"
-	"github.com/google/gapid/gapis/api"
-	"github.com/google/gapid/gapis/resolve"
-	"github.com/google/gapid/gapis/service/path"
-	"github.com/google/gapid/gapis/vertex"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/stream"
+	"github.com/google/agi/core/stream/fmts"
+	"github.com/google/agi/gapis/api"
+	"github.com/google/agi/gapis/resolve"
+	"github.com/google/agi/gapis/service/path"
+	"github.com/google/agi/gapis/vertex"
 )
 
 // drawCallMesh builds a mesh for dc at p.

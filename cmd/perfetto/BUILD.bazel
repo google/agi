@@ -30,7 +30,7 @@ go_library(
             "//gapidapk/android/apk:x86.apk",
         ],
     }),
-    importpath = "github.com/google/gapid/cmd/perfetto",
+    importpath = "github.com/google/agi/cmd/perfetto",
     visibility = ["//visibility:public"],
     deps = [
         "//core/app:go_default_library",

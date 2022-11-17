@@ -23,16 +23,16 @@ import (
 	gopath "path"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/google/gapid/core/archive"
-	"github.com/google/gapid/core/data/id"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/os/device/bind"
-	"github.com/google/gapid/gapis/capture"
-	"github.com/google/gapid/gapis/database"
-	"github.com/google/gapid/gapis/replay"
-	"github.com/google/gapid/gapis/resolve"
-	"github.com/google/gapid/gapis/service"
-	"github.com/google/gapid/gapis/service/path"
+	"github.com/google/agi/core/archive"
+	"github.com/google/agi/core/data/id"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/os/device/bind"
+	"github.com/google/agi/gapis/capture"
+	"github.com/google/agi/gapis/database"
+	"github.com/google/agi/gapis/replay"
+	"github.com/google/agi/gapis/resolve"
+	"github.com/google/agi/gapis/service"
+	"github.com/google/agi/gapis/service/path"
 )
 
 type mockDevice struct {

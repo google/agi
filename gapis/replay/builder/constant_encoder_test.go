@@ -17,9 +17,9 @@ package builder
 import (
 	"testing"
 
-	"github.com/google/gapid/core/assert"
-	"github.com/google/gapid/core/os/device"
-	"github.com/google/gapid/gapis/replay/value"
+	"github.com/google/agi/core/assert"
+	"github.com/google/agi/core/os/device"
+	"github.com/google/agi/gapis/replay/value"
 )
 
 func TestConstantEncoderCache(t *testing.T) {

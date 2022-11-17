@@ -21,9 +21,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/google/gapid/core/app"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/os/device"
+	"github.com/google/agi/core/app"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/os/device"
 )
 
 type devicesVerb struct{ DevicesFlags }

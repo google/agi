@@ -21,10 +21,10 @@ import (
 	"io"
 	"io/ioutil"
 
-	"github.com/google/gapid/core/app/analytics"
-	"github.com/google/gapid/gapis/perfetto"
-	"github.com/google/gapid/gapis/service"
-	"github.com/google/gapid/gapis/service/path"
+	"github.com/google/agi/core/app/analytics"
+	"github.com/google/agi/gapis/perfetto"
+	"github.com/google/agi/gapis/service"
+	"github.com/google/agi/gapis/service/path"
 	"github.com/pkg/errors"
 )
 

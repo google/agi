@@ -17,8 +17,8 @@ package replay
 import (
 	"context"
 
-	"github.com/google/gapid/gapis/api"
-	"github.com/google/gapid/gapis/replay/builder"
+	"github.com/google/agi/gapis/api"
+	"github.com/google/agi/gapis/replay/builder"
 )
 
 // Custom must conform to the api.Cmd interface.

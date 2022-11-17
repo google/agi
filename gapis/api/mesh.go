@@ -20,14 +20,14 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/google/gapid/core/data/endian"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/math/f32"
-	"github.com/google/gapid/core/os/device"
-	"github.com/google/gapid/core/stream"
-	"github.com/google/gapid/core/stream/fmts"
-	"github.com/google/gapid/gapis/service/path"
-	"github.com/google/gapid/gapis/vertex"
+	"github.com/google/agi/core/data/endian"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/math/f32"
+	"github.com/google/agi/core/os/device"
+	"github.com/google/agi/core/stream"
+	"github.com/google/agi/core/stream/fmts"
+	"github.com/google/agi/gapis/service/path"
+	"github.com/google/agi/gapis/vertex"
 )
 
 var (

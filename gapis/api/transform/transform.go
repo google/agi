@@ -20,7 +20,7 @@ package transform
 import (
 	"context"
 
-	"github.com/google/gapid/gapis/api"
+	"github.com/google/agi/gapis/api"
 )
 
 // StateMutator is a function that allows transformation to mutate state during transformation

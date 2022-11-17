@@ -25,7 +25,7 @@ go_library(
         "function.go",
         "pipe.go",
     ],
-    importpath = "github.com/google/gapid/core/event",
+    importpath = "github.com/google/agi/core/event",
     visibility = ["//visibility:public"],
     deps = [
         "//core/app/crash:go_default_library",

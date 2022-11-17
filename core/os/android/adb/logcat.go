@@ -24,8 +24,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/gapid/core/app/crash"
-	"github.com/google/gapid/core/os/android"
+	"github.com/google/agi/core/app/crash"
+	"github.com/google/agi/core/os/android"
 )
 
 // "[ MM-DD HH:MM:SS.FFF  PID: TID P/TAG ]"

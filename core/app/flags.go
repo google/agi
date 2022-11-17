@@ -14,7 +14,7 @@
 
 package app
 
-import "github.com/google/gapid/core/log"
+import "github.com/google/agi/core/log"
 
 type (
 	AppFlags struct {

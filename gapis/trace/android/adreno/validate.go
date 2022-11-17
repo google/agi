@@ -17,8 +17,8 @@ package adreno
 import (
 	"context"
 
-	"github.com/google/gapid/gapis/perfetto"
-	"github.com/google/gapid/gapis/trace/android/validate"
+	"github.com/google/agi/gapis/perfetto"
+	"github.com/google/agi/gapis/trace/android/validate"
 )
 
 var (

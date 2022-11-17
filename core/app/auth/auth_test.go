@@ -18,8 +18,8 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/google/gapid/core/app/auth"
-	"github.com/google/gapid/core/assert"
+	"github.com/google/agi/core/app/auth"
+	"github.com/google/agi/core/assert"
 )
 
 func TestWrite(t *testing.T) {

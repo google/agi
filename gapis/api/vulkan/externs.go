@@ -20,13 +20,13 @@ import (
 	"math/bits"
 	"reflect"
 
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/gapis/api"
-	"github.com/google/gapid/gapis/memory"
-	"github.com/google/gapid/gapis/replay"
-	rb "github.com/google/gapid/gapis/replay/builder"
-	"github.com/google/gapid/gapis/replay/protocol"
-	"github.com/google/gapid/gapis/service"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/gapis/api"
+	"github.com/google/agi/gapis/memory"
+	"github.com/google/agi/gapis/replay"
+	rb "github.com/google/agi/gapis/replay/builder"
+	"github.com/google/agi/gapis/replay/protocol"
+	"github.com/google/agi/gapis/service"
 )
 
 type externs struct {

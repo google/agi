@@ -24,8 +24,8 @@ import (
 	"image/color"
 	"os"
 
-	"github.com/google/gapid/core/app"
-	"github.com/google/gapid/core/log"
+	"github.com/google/agi/core/app"
+	"github.com/google/agi/core/log"
 
 	// Import to register image formats.
 	_ "image/gif"

@@ -24,7 +24,7 @@ go_library(
         "repeated.go",
         "strings.go",
     ],
-    importpath = "github.com/google/gapid/core/app/flags",
+    importpath = "github.com/google/agi/core/app/flags",
     visibility = ["//visibility:public"],
 )
 

@@ -18,10 +18,10 @@ import (
 	"context"
 
 	"github.com/golang/protobuf/jsonpb"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/os/android"
-	"github.com/google/gapid/core/os/android/adb"
-	"github.com/google/gapid/gapidapk/pkginfo"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/os/android"
+	"github.com/google/agi/core/os/android/adb"
+	"github.com/google/agi/gapidapk/pkginfo"
 )
 
 const (

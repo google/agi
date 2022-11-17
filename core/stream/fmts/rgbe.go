@@ -14,7 +14,7 @@
 
 package fmts
 
-import "github.com/google/gapid/core/stream"
+import "github.com/google/agi/core/stream"
 
 var (
 	RGBE_U9U9U9U5 = &stream.Format{

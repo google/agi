@@ -21,23 +21,23 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/gapid/core/app/auth"
-	"github.com/google/gapid/core/assert"
+	"github.com/google/agi/core/app/auth"
+	"github.com/google/agi/core/assert"
 
-	//"github.com/google/gapid/core/event/task"
-	"github.com/google/gapid/core/log"
-	"github.com/google/gapid/core/net/grpcutil"
-	"github.com/google/gapid/core/os/device/bind"
+	//"github.com/google/agi/core/event/task"
+	"github.com/google/agi/core/log"
+	"github.com/google/agi/core/net/grpcutil"
+	"github.com/google/agi/core/os/device/bind"
 
-	//"github.com/google/gapid/core/os/device/host"
-	"github.com/google/gapid/gapis/api"
-	gapis "github.com/google/gapid/gapis/client"
-	"github.com/google/gapid/gapis/database"
-	"github.com/google/gapid/gapis/replay"
-	"github.com/google/gapid/gapis/server"
-	"github.com/google/gapid/gapis/service"
-	"github.com/google/gapid/gapis/service/path"
-	"github.com/google/gapid/gapis/stringtable"
+	//"github.com/google/agi/core/os/device/host"
+	"github.com/google/agi/gapis/api"
+	gapis "github.com/google/agi/gapis/client"
+	"github.com/google/agi/gapis/database"
+	"github.com/google/agi/gapis/replay"
+	"github.com/google/agi/gapis/server"
+	"github.com/google/agi/gapis/service"
+	"github.com/google/agi/gapis/service/path"
+	"github.com/google/agi/gapis/stringtable"
 	"google.golang.org/grpc"
 )
 
@@ -183,7 +183,7 @@ func TestGet(t *testing.T) {
 		{capture.Commands(), T((*service.Commands)(nil))},
 		{capture.Command(swapCmdIndex), T((*api.Command)(nil))},
 		// TODO: box.go doesn't currently support serializing structs this big.
-		// See bug https://github.com/google/gapid/issues/1761
+		// See bug https://github.com/google/agi/issues/1761
 		// panic: reflect.nameFrom: name too long
 		// {capture.Command(swapCmdIndex).StateAfter(), any},
 		{capture.Command(swapCmdIndex).MemoryAfter(0, 0x1000, 0x1000), T((*service.Memory)(nil))},

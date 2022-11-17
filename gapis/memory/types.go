@@ -17,7 +17,7 @@ package memory
 import (
 	"reflect"
 
-	"github.com/google/gapid/core/os/device"
+	"github.com/google/agi/core/os/device"
 )
 
 var (
