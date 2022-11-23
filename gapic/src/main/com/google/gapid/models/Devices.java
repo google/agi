@@ -455,11 +455,11 @@ public class Devices {
 
   public static class DeviceValidationResult {
     public static final DeviceValidationResult PASSED = new DeviceValidationResult(
-      Service.DeviceValidationResult.ErrorCode.OK, "", "",  false);
+      ErrorCode.Ok, ValidatorType.Cached, "", "",  false);
     public static final DeviceValidationResult FAILED = new DeviceValidationResult(
-      Service.DeviceValidationResult.ErrorCode.FAILED_PRECONDITION, "", "", false);
+      ErrorCode.FailedPrecondition, ValidatorType.Cached, "", "", false);
     public static final DeviceValidationResult SKIPPED = new DeviceValidationResult(
-      Service.DeviceValidationResult.ErrorCode.OK, "", "", true);
+      ErrorCode.Ok, ValidatorType.Cached, "", "", true);
 
     // Corresponds to the error code from service.proto, but also includes Internal
     public static enum ErrorCode {
@@ -470,31 +470,47 @@ public class Devices {
       Internal,
     }
 
+    // Corresponds to the validator type from service.proto, but also includes a "cached" type.
+    // Cache type used to represent previous results, to not confuse with an invalid validator type.
+    public static enum ValidatorType {
+      Invalid,
+      Adreno,
+      Mali,
+      Generic,
+      Cached,
+    }
+
     public final ErrorCode errorCode;
+    public final ValidatorType validatorType;
     public final String validationFailureMsg;
     public final String tracePath;
     public final boolean skipped;
 
     public DeviceValidationResult(Service.DeviceValidationResult r) {
       this(r.getErrorCode(),
+           r.getValidatorType(),
            r.getValidationFailureMsg(),
            r.getTracePath(),   
            false);
     }
 
     public DeviceValidationResult(RpcException e) {
-      this(ErrorCode.Internal, e.toString(), "", false);
+      // Using cached here instead of invalid validator type to not confuse the error message with a possible validator issue,
+      // since this is based on an RpcException (independent of validator type).
+      this(ErrorCode.Internal, ValidatorType.Cached, e.toString(), "", false);
     }
 
-    private DeviceValidationResult(Service.DeviceValidationResult.ErrorCode errorCode, String validationFailureMsg, String tracePath, boolean skipped) {
+    private DeviceValidationResult(Service.DeviceValidationResult.ErrorCode errorCode, Service.DeviceValidationResult.ValidatorType validatorType, String validationFailureMsg, String tracePath, boolean skipped) {
       this.errorCode = ConvertErrorCode(errorCode);
+      this.validatorType = ConvertValidatorType(validatorType);
       this.validationFailureMsg = validationFailureMsg;
       this.tracePath = tracePath;
       this.skipped = skipped;
     }
 
-    private DeviceValidationResult(ErrorCode errorCode, String validationFailureMsg, String tracePath, boolean skipped) {
+    private DeviceValidationResult(ErrorCode errorCode, ValidatorType validatorType, String validationFailureMsg, String tracePath, boolean skipped) {
       this.errorCode = errorCode;
+      this.validatorType = validatorType;
       this.validationFailureMsg = validationFailureMsg;
       this.tracePath = tracePath;
       this.skipped = skipped;
@@ -510,6 +526,19 @@ public class Devices {
           return ErrorCode.FailedTraceValidation;
         default:
           return ErrorCode.Invalid;
+      }
+    }
+
+    private ValidatorType ConvertValidatorType(Service.DeviceValidationResult.ValidatorType validatorType) {
+      switch (validatorType) {
+        case ADRENO:
+          return ValidatorType.Adreno;
+        case MALI:
+          return ValidatorType.Mali;
+        case GENERIC:
+          return ValidatorType.Generic;
+        default:
+          return ValidatorType.Invalid;
       }
     }
 
@@ -531,7 +560,7 @@ public class Devices {
   }
 
   private static class DeviceValidationCache {
-    private static final long MAX_VALIDATION_AGE = DAYS.toMillis(30);
+    private static final long MAX_VALIDATION_AGE = DAYS.toMillis(0);
 
     private final Map<Key, SettingsProto.DeviceValidation.ValidationEntry.Builder> cache =
         Maps.newHashMap(); // We only remember passed validations.

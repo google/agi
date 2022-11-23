@@ -20,6 +20,7 @@ import (
 
 	"github.com/google/gapid/gapis/perfetto"
 	"github.com/google/gapid/gapis/trace/android/validate"
+	"github.com/google/gapid/gapis/service"
 )
 
 var (
@@ -109,4 +110,8 @@ func (v *MaliValidator) GetCounters() []validate.GpuCounter {
 			return csfCounters
 		}
 	}
+}
+
+func (v *MaliValidator) GetType() service.DeviceValidationResult_ValidatorType {
+	return service.DeviceValidationResult_MALI
 }

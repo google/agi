@@ -30,8 +30,10 @@ import static java.util.logging.Level.SEVERE;
 import com.google.gapid.models.Devices.DeviceCaptureInfo;
 import com.google.gapid.models.Devices.DeviceValidationResult;
 import com.google.gapid.models.Devices.DeviceValidationResult.ErrorCode;
+import com.google.gapid.models.Devices.DeviceValidationResult.ValidatorType;
 import com.google.gapid.models.Models;
 import com.google.gapid.proto.device.Device;
+import com.google.gapid.proto.service.Service;
 import com.google.gapid.rpc.SingleInFlight;
 import com.google.gapid.util.Logging;
 import com.google.gapid.util.OS;
@@ -185,7 +187,7 @@ public class DeviceValidationView extends Composite {
     statusLoader.updateStatus(passedOrSkipped);
     passedValidation = passedOrSkipped;
 
-    statusText.setText(convertToMessage(result.errorCode));
+    statusText.setText(convertToMessage(result.errorCode, result.validatorType));
     setStatusTextLink(result.errorCode);
 
     if (passedOrSkipped) {
@@ -229,16 +231,35 @@ public class DeviceValidationView extends Composite {
     notifyListeners(SWT.Modify, new Event());
   }
 
-  private String convertToMessage(ErrorCode errorCode) {
+  private String convertToMessage(ErrorCode errorCode, ValidatorType validatorType) {
+    String validatorName = "";
+    switch (validatorType) {
+      case Invalid:
+        validatorName = " with the invalid validator.";
+        break;
+      case Adreno:
+        validatorName = " with the Adreno validator.";
+        break;
+      case Mali:
+        validatorName = " with the Mali validator.";
+        break;
+      case Generic:
+        validatorName = " with the generic validator.";
+        break;
+      case Cached:
+        validatorName = ".";
+        break;
+    }
+
     switch (errorCode) {
       case Ok:
-        return "Device successfully validated.";
+        return "Device successfully validated" + validatorName;
       case FailedPrecondition:
         return "This device is not supported, learn more <a>here</a>.";
       case FailedTraceValidation:
-        return "Failed to validate the trace of the sample application.";
+        return "Failed to validate the trace of the sample application" + validatorName;
       default:
-        return "Encountered an unexpected error during validation.";
+        return "Encountered an unexpected error when validating" + validatorName;
     }
   }
 

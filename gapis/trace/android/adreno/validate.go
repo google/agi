@@ -19,6 +19,7 @@ import (
 
 	"github.com/google/gapid/gapis/perfetto"
 	"github.com/google/gapid/gapis/trace/android/validate"
+	"github.com/google/gapid/gapis/service"
 )
 
 var (
@@ -55,4 +56,8 @@ func (v *AdrenoValidator) Validate(ctx context.Context, processor *perfetto.Proc
 
 func (v *AdrenoValidator) GetCounters() []validate.GpuCounter {
 	return counters
+}
+
+func (v *AdrenoValidator) GetType() service.DeviceValidationResult_ValidatorType {
+	return service.DeviceValidationResult_ADRENO
 }

@@ -21,6 +21,7 @@ import (
 
 	"github.com/google/gapid/core/log"
 	"github.com/google/gapid/gapis/perfetto"
+	"github.com/google/gapid/gapis/service"
 	perfetto_service "github.com/google/gapid/gapis/perfetto/service"
 )
 
@@ -62,6 +63,7 @@ type GpuCounter struct {
 type Validator interface {
 	Validate(ctx context.Context, processor *perfetto.Processor) error
 	GetCounters() []GpuCounter
+	GetType() service.DeviceValidationResult_ValidatorType
 }
 
 // And returns a checker that is only valid if all of its arguments are.
@@ -174,8 +176,8 @@ func ValidateGpuCounters(ctx context.Context, processor *perfetto.Processor, cou
 		for _, column := range queryResult.GetColumns() {
 			longValues := column.GetLongValues()
 			if len(longValues) != 1 {
-				// This should never happen, but sill have a check.
-				return log.Errf(ctx, nil, "Queried result is not 1: %v", counter)
+				// This tends to happen when the device fails to report GPU counter values.
+				return log.Errf(ctx, nil, "Expected one result for %v but got %v", counter, len(longValues))
 			}
 			counterID = longValues[0]
 			break

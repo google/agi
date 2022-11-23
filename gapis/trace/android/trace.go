@@ -182,6 +182,10 @@ func (t *androidTracer) Validate(ctx context.Context, enableLocalFiles bool) (*s
 	ctx = status.Start(ctx, "Android Device Validation")
 	defer status.Finish(ctx)
 
+	res := &service.DeviceValidationResult{
+		ValidatorType: t.v.GetType(),
+	}
+
 	d := t.b.(adb.Device)
 	osConfiguration := d.Instance().GetConfiguration()
 
@@ -198,28 +202,24 @@ func (t *androidTracer) Validate(ctx context.Context, enableLocalFiles bool) (*s
 	}
 
 	if t.v == nil {
-		return &service.DeviceValidationResult{
-			ErrorCode:            service.DeviceValidationResult_FAILED_PRECONDITION,
-			ValidationFailureMsg: fmt.Sprintf("Unsupported GPU (%s) detected on device (%d)", osConfiguration.GetHardware().GetGPU(), d.Instance().ID.ID()),
-		}, nil
+		res.ErrorCode = service.DeviceValidationResult_FAILED_PRECONDITION
+		res.ValidationFailureMsg = fmt.Sprintf("Unsupported GPU (%s) detected on device (%d)", osConfiguration.GetHardware().GetGPU(), d.Instance().ID.ID())
+		return res, nil
 	}
 	if osConfiguration.GetOS().GetAPIVersion() < minimumSupportedApiLevel {
-		return &service.DeviceValidationResult{
-			ErrorCode:            service.DeviceValidationResult_FAILED_PRECONDITION,
-			ValidationFailureMsg: fmt.Sprintf("OS version (%d) is below the minimum supported API level (%d)", osConfiguration.GetOS().GetAPIVersion(), minimumSupportedApiLevel),
-		}, nil
+		res.ErrorCode = service.DeviceValidationResult_FAILED_PRECONDITION
+		res.ValidationFailureMsg = fmt.Sprintf("OS version (%d) is below the minimum supported API level (%d)", osConfiguration.GetOS().GetAPIVersion(), minimumSupportedApiLevel)
+		return res, nil
 	}
 	if osConfiguration.GetPerfettoCapability() == nil {
-		return &service.DeviceValidationResult{
-			ErrorCode:            service.DeviceValidationResult_FAILED_PRECONDITION,
-			ValidationFailureMsg: fmt.Sprintf("Perfetto Capability not detected on device (%d)", d.Instance().ID.ID()),
-		}, nil
+		res.ErrorCode = service.DeviceValidationResult_FAILED_PRECONDITION
+		res.ValidationFailureMsg = fmt.Sprintf("Perfetto Capability not detected on device (%d)", d.Instance().ID.ID())
+		return res, nil
 	}
 	if gpuProfiling := osConfiguration.GetPerfettoCapability().GetGpuProfiling(); gpuProfiling == nil || gpuProfiling.GetGpuCounterDescriptor() == nil {
-		return &service.DeviceValidationResult{
-			ErrorCode:            service.DeviceValidationResult_FAILED_PRECONDITION,
-			ValidationFailureMsg: fmt.Sprintf("GPU profiling support not detected on device (%d)", d.Instance().ID.ID()),
-		}, nil
+		res.ErrorCode = service.DeviceValidationResult_FAILED_PRECONDITION
+		res.ValidationFailureMsg = fmt.Sprintf("GPU profiling support not detected on device (%d)", d.Instance().ID.ID())
+		return res, nil
 	}
 
 	// Construct trace config
@@ -298,9 +298,7 @@ func (t *androidTracer) Validate(ctx context.Context, enableLocalFiles bool) (*s
 	if traceLoadingErr != nil {
 		return nil, traceLoadingErr
 	}
-	res := &service.DeviceValidationResult{
-		TracePath: temp.System(),
-	}
+
 	defer processor.Close()
 	ctx = status.Start(ctx, "Validation")
 	defer status.Finish(ctx)

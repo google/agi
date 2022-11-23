@@ -21,6 +21,7 @@ import (
 	"github.com/google/gapid/core/os/device/bind"
 	"github.com/google/gapid/gapis/perfetto"
 	"github.com/google/gapid/gapis/trace/android/validate"
+	"github.com/google/gapid/gapis/service"
 )
 
 type GenericValidator struct {
@@ -62,4 +63,8 @@ func (v *GenericValidator) Validate(ctx context.Context, processor *perfetto.Pro
 
 func (v *GenericValidator) GetCounters() []validate.GpuCounter {
 	return v.counters;
+}
+
+func (v *GenericValidator) GetType() service.DeviceValidationResult_ValidatorType {
+	return service.DeviceValidationResult_GENERIC
 }
