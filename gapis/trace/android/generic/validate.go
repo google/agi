@@ -20,8 +20,8 @@ import (
 
 	"github.com/google/gapid/core/os/device/bind"
 	"github.com/google/gapid/gapis/perfetto"
-	"github.com/google/gapid/gapis/trace/android/validate"
 	"github.com/google/gapid/gapis/service"
+	"github.com/google/gapid/gapis/trace/android/validate"
 )
 
 type GenericValidator struct {
@@ -43,12 +43,12 @@ func counterChecker() validate.Checker {
 }
 
 func (v *GenericValidator) Validate(ctx context.Context, processor *perfetto.Processor) error {
-	if (len(v.GetCounters()) == 0) {
+	if len(v.GetCounters()) == 0 {
 		return errors.New("Unable to query for GPU counters")
 	}
-	
+
 	// Loose check to make sure that at least one counter value is non-zero.
-	if err := validate.ValidateGpuCounters(ctx, processor, v.GetCounters(), /* passThreshold= */ 1); err != nil {
+	if err := validate.ValidateGpuCounters(ctx, processor, v.GetCounters() /* passThreshold= */, 1); err != nil {
 		return err
 	}
 	if err := validate.ValidateGpuSlices(ctx, processor); err != nil {
@@ -62,7 +62,7 @@ func (v *GenericValidator) Validate(ctx context.Context, processor *perfetto.Pro
 }
 
 func (v *GenericValidator) GetCounters() []validate.GpuCounter {
-	return v.counters;
+	return v.counters
 }
 
 func (v *GenericValidator) GetType() service.DeviceValidationResult_ValidatorType {

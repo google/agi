@@ -21,8 +21,8 @@ import (
 
 	"github.com/google/gapid/core/log"
 	"github.com/google/gapid/gapis/perfetto"
-	"github.com/google/gapid/gapis/service"
 	perfetto_service "github.com/google/gapid/gapis/perfetto/service"
+	"github.com/google/gapid/gapis/service"
 )
 
 const (
@@ -158,8 +158,8 @@ func CheckAverageApproximateTo(num, margin float64) Checker {
 	})
 }
 
-// ValidateGpuCounters queries for the GPU counter from the trace and 
-// validates the value based on associated the requirement, 
+// ValidateGpuCounters queries for the GPU counter from the trace and
+// validates the value based on associated the requirement,
 // up to the amount specified in passThreshold.
 func ValidateGpuCounters(ctx context.Context, processor *perfetto.Processor, counters []GpuCounter, passThreshold int) error {
 	passCount := 0
@@ -194,7 +194,7 @@ func ValidateGpuCounters(ctx context.Context, processor *perfetto.Processor, cou
 
 		if counter.Check(queryResult.GetColumns()[0], queryResult.GetColumnDescriptors()[0].GetType()) {
 			passCount++
-			if (passCount >= passThreshold) {
+			if passCount >= passThreshold {
 				return nil
 			}
 		} else {

@@ -19,8 +19,8 @@ import (
 	"strings"
 
 	"github.com/google/gapid/gapis/perfetto"
-	"github.com/google/gapid/gapis/trace/android/validate"
 	"github.com/google/gapid/gapis/service"
+	"github.com/google/gapid/gapis/trace/android/validate"
 )
 
 var (
