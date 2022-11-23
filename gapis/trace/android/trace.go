@@ -185,9 +185,10 @@ func (t *androidTracer) Validate(ctx context.Context, enableLocalFiles bool) (*s
 	res := &service.DeviceValidationResult{
 		ValidatorType: t.v.GetType(),
 	}
-
+	
 	d := t.b.(adb.Device)
 	osConfiguration := d.Instance().GetConfiguration()
+	log.I(ctx, "Validating device (%v) with (%v) validator", osConfiguration.GetHardware().GetGPU().GetName(), t.v.GetType())
 
 	// Get ActivityAction
 	gapidPackage := gapidapk.PackageName(osConfiguration.PreferredABI(nil))
