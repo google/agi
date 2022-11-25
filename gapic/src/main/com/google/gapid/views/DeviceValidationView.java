@@ -232,6 +232,7 @@ public class DeviceValidationView extends Composite {
   }
 
   private String convertToMessage(ErrorCode errorCode, ValidatorType validatorType) {
+    // TODO (b/260403178): Clean string building process by ensuring that validator type is cached.
     String validatorName = "";
     switch (validatorType) {
       case Invalid:
