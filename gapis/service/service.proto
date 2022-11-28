@@ -1462,6 +1462,7 @@ message ValidateDeviceResponse {
   }
 }
 
+// Next value: 5
 message DeviceValidationResult {
   enum ErrorCode {
     // Default, never set to any actual value.
@@ -1487,6 +1488,29 @@ message DeviceValidationResult {
 
   // Path to the perfetto trace file to help debug validation issues.
   string trace_path = 2;
+
+  // The specific type of validator that was used.
+  enum ValidatorType {
+    INVALID_VALIDATOR = 0;
+
+    // Adreno validator checks for specific counters to ensure that the name and
+    // id is consistent with hardcoded values. Also has specific check to make
+    // sure that the value is within expected ranges.
+    ADRENO = 1;
+
+    // Mali validator checks for specific counters to ensure that the name and
+    // id is consistent with hardcoded values. Also has specific check to make
+    // sure that the value is within expected ranges.
+    MALI = 2;
+
+    // The fallback validator that runs a minimal check for the GPU counter,
+    // running a trace for all available GPU counters and checking to see that
+    // at least one value is non-zero. This is consistent with the CTS test in
+    // Android U.
+    GENERIC = 3;
+  }
+
+  ValidatorType validator_type = 4;
 }
 
 message FuchsiaTraceConfig {

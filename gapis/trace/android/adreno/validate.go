@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"github.com/google/gapid/gapis/perfetto"
+	"github.com/google/gapid/gapis/service"
 	"github.com/google/gapid/gapis/trace/android/validate"
 )
 
@@ -40,7 +41,7 @@ type AdrenoValidator struct {
 }
 
 func (v *AdrenoValidator) Validate(ctx context.Context, processor *perfetto.Processor) error {
-	if err := validate.ValidateGpuCounters(ctx, processor, v.GetCounters()); err != nil {
+	if err := validate.ValidateGpuCounters(ctx, processor, v.GetCounters(), len(v.GetCounters())); err != nil {
 		return err
 	}
 	if err := validate.ValidateGpuSlices(ctx, processor); err != nil {
@@ -55,4 +56,8 @@ func (v *AdrenoValidator) Validate(ctx context.Context, processor *perfetto.Proc
 
 func (v *AdrenoValidator) GetCounters() []validate.GpuCounter {
 	return counters
+}
+
+func (v *AdrenoValidator) GetType() service.DeviceValidationResult_ValidatorType {
+	return service.DeviceValidationResult_ADRENO
 }
