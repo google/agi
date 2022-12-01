@@ -1508,6 +1508,11 @@ message DeviceValidationResult {
     // at least one value is non-zero. This is consistent with the CTS test in
     // Android U.
     GENERIC = 3;
+
+    // PowerVR validator checks for specific counters to ensure that the name and
+    // id is consistent with hardcoded values. Also has specific check to make
+    // sure that the value is within expected ranges.
+    POWERVR = 4;
   }
 
   ValidatorType validator_type = 4;

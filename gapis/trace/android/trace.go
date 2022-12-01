@@ -56,6 +56,7 @@ import (
 	"github.com/google/gapid/gapis/trace/android/adreno"
 	"github.com/google/gapid/gapis/trace/android/generic"
 	"github.com/google/gapid/gapis/trace/android/mali"
+	"github.com/google/gapid/gapis/trace/android/powervr"
 	"github.com/google/gapid/gapis/trace/android/profile"
 	"github.com/google/gapid/gapis/trace/android/validate"
 	"github.com/google/gapid/gapis/trace/tracer"
@@ -90,6 +91,8 @@ func newValidator(dev bind.Device) validate.Validator {
 		return &adreno.AdrenoValidator{}
 	} else if strings.Contains(gpuName, "Mali") {
 		return mali.NewMaliValidator(gpuName, gpu.GetVersion())
+	} else if strings.Contains(gpuName, "PowerVR") {
+		return powervr.NewPowerVRValidator(dev)
 	}
 	return generic.NewGenericValidator(dev)
 }
@@ -158,6 +161,10 @@ func (t *androidTracer) ProcessProfilingData(ctx context.Context, buffer *bytes.
 		}
 	} else if strings.Contains(gpuName, "Mali") {
 		if err := mali.ProcessProfilingData(ctx, processor, desc, handleMappings, syncData, data); err != nil {
+			return nil, err
+		}
+	} else if strings.Contains(gpuName, "PowerVR") {
+		if err := powervr.ProcessProfilingData(ctx, processor, desc, handleMappings, syncData, data); err != nil {
 			return nil, err
 		}
 	} else {
