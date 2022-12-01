@@ -87,7 +87,7 @@ func processGpuSlices(ctx context.Context, processor *perfetto.Processor,
 	}
 
 	data.Slices.MapIdentifiers(ctx, handleMapping)
-	
+
 	for i := range data.Slices {
 		slice := &data.Slices[i]
 		subOrder, ok := submissionOrdering[slice.Submission]
@@ -161,7 +161,7 @@ func processCounters(ctx context.Context, processor *perfetto.Processor, desc *d
 		for i, t := range timestampsLong {
 			timestamps[i] = uint64(t)
 		}
-		
+
 		values := countersColumns[1].GetDoubleValues()
 		spec, _ := nameToSpec[names[i]]
 
@@ -205,7 +205,7 @@ func updateCounterGroups(ctx context.Context, data *profile.ProfilingData) {
 		&service.ProfilingData_CounterGroup{
 			Id:    computeCounterGroup,
 			Label: "Compute",
-		},	
+		},
 		&service.ProfilingData_CounterGroup{
 			Id:    textureCounterGroup,
 			Label: "Texture",
@@ -223,8 +223,8 @@ func updateCounterGroups(ctx context.Context, data *profile.ProfilingData) {
 		if strings.Contains(name, "fragment") {
 			counter.CounterGroupIds = append(counter.CounterGroupIds, fragmentCounterGroup)
 		}
-		if (strings.Contains(name, "compute") ||
-			strings.Contains(name, "kernel")) {
+		if strings.Contains(name, "compute") ||
+			strings.Contains(name, "kernel") {
 			counter.CounterGroupIds = append(counter.CounterGroupIds, computeCounterGroup)
 		}
 		if strings.Contains(name, "texture") {

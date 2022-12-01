@@ -93,10 +93,10 @@ func counterCheckerNonNegative() validate.Checker {
 
 func counterCheckerHaveNonZero() validate.Checker {
 	return validate.And(validate.IsNumber, validate.Not(validate.CheckAllEqualTo(0)))
-} 
+}
 
 type PowerVRValidator struct {
-	counters []validate.GpuCounter
+	counters              []validate.GpuCounter
 	countersPassThreshold int
 }
 

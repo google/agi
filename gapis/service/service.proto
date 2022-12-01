@@ -1509,9 +1509,9 @@ message DeviceValidationResult {
     // Android U.
     GENERIC = 3;
 
-    // PowerVR validator checks for specific counters to ensure that the name and
-    // id is consistent with hardcoded values. Also has specific check to make
-    // sure that the value is within expected ranges.
+    // PowerVR validator checks for specific counters to ensure that the name
+    // and id is consistent with hardcoded values. Also has specific check to
+    // make sure that the value is within expected ranges.
     POWERVR = 4;
   }
 
