@@ -538,7 +538,7 @@ public class Devices {
           return ValidatorType.Mali;
         case GENERIC:
           return ValidatorType.Generic;
-        case POWERVR:
+        case POWER_VR:
           return ValidatorType.PowerVR;
         default:
           return ValidatorType.Invalid;

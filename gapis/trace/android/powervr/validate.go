@@ -154,5 +154,5 @@ func (v *PowerVRValidator) GetCounters() []validate.GpuCounter {
 }
 
 func (v *PowerVRValidator) GetType() service.DeviceValidationResult_ValidatorType {
-	return service.DeviceValidationResult_POWERVR
+	return service.DeviceValidationResult_POWER_VR
 }

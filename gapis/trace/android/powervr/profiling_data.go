@@ -93,25 +93,26 @@ func processGpuSlices(ctx context.Context, processor *perfetto.Processor,
 		subOrder, ok := submissionOrdering[slice.Submission]
 		if ok {
 			name := strings.ToLower(slice.Name)
-			if name == "vertex" || name == "fragment" {
-				key := sync.RenderPassKey{
-					subOrder, uint64(slice.CommandBuffer), uint64(slice.Renderpass), uint64(slice.RenderTarget),
-				}
+			if name != "vertex" && name != "fragment" {
+				continue
+			}
 
-				indices := syncData.RenderPassLookup.Lookup(ctx, key)
+			key := sync.RenderPassKey{
+				subOrder, uint64(slice.CommandBuffer), uint64(slice.Renderpass), uint64(slice.RenderTarget),
+			}
 
-				if !indices.IsNil() {
-					// Create a new group for each main renderPass slice.
-					slice.Name = fmt.Sprintf("%v-%v %v", indices.From, indices.To, name)
-					slice.GroupID = data.Groups.GetOrCreateGroup(
-						fmt.Sprintf("RenderPass %v, RenderTarget %v", uint64(slice.Renderpass), uint64(slice.RenderTarget)),
-						indices,
-					)
-					log.W(ctx, "Slice %v group %v", slice.Name, slice.GroupID)
-				} else {
-					log.W(ctx, "Group missing for slice %v at submission %v, commandBuffer %v, renderPass %v, renderTarget %v",
-						slice.Name, slice.Submission, slice.CommandBuffer, slice.Renderpass, slice.RenderTarget)
-				}
+			indices := syncData.RenderPassLookup.Lookup(ctx, key)
+			if !indices.IsNil() {
+				// Create a new group for each main renderPass slice.
+				slice.Name = fmt.Sprintf("%v-%v %v", indices.From, indices.To, name)
+				slice.GroupID = data.Groups.GetOrCreateGroup(
+					fmt.Sprintf("RenderPass %v, RenderTarget %v", uint64(slice.Renderpass), uint64(slice.RenderTarget)),
+					indices,
+				)
+				log.W(ctx, "Slice %v group %v", slice.Name, slice.GroupID)
+			} else {
+				log.W(ctx, "Group missing for slice %v at submission %v, commandBuffer %v, renderPass %v, renderTarget %v",
+					slice.Name, slice.Submission, slice.CommandBuffer, slice.Renderpass, slice.RenderTarget)
 			}
 		} else {
 			log.W(ctx, "Encountered submission ID mismatch %v", slice.Submission)

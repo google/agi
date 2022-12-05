@@ -1512,7 +1512,7 @@ message DeviceValidationResult {
     // PowerVR validator checks for specific counters to ensure that the name
     // and id is consistent with hardcoded values. Also has specific check to
     // make sure that the value is within expected ranges.
-    POWERVR = 4;
+    POWER_VR = 4;
   }
 
   ValidatorType validator_type = 4;
