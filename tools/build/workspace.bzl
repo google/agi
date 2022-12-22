@@ -48,12 +48,8 @@ def gapid_dependencies(android = True, mingw = True, locals = {}):
         locals = locals,
         organization = "bazelbuild",
         project = "rules_python",
-        commit = "a2b7f4288fc7ad4ed387aa20cb2d09bf497a1b10",  # 0.11.0
-        sha256 = "226f62de4dfd78fc6a2ee82c4747d4cce4d39dbf67108887ca5c7aa07a30dbd2",
-        patches = [
-            # Fix the problem with trying to use /usr/bin/python rather than a versioned python.
-            "@gapid//tools/build/third_party:rules_python.patch",
-        ],
+        commit = "9bf7c49ea1920e497f857ccc1e9c2d1189c8a1c9",
+        sha256 = "ebeae40415e1ac0ab4e4323f91d6213ec799ad8fcacecd4c499009e1d8d2eb51",
     )
 
     maybe_repository(
