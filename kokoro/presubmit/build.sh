@@ -34,12 +34,11 @@ go install github.com/bazelbuild/buildtools/buildifier@latest
 go install github.com/bazelbuild/buildtools/buildozer@latest
 
 # Get clang-format.
-sudo add-apt-repository 'deb http://apt.llvm.org/xenial/  llvm-toolchain-xenial-11 main'
-sudo add-apt-repository "deb http://ppa.launchpad.net/ubuntu-toolchain-r/test/ubuntu xenial main"
 $CURL -O https://apt.llvm.org/llvm-snapshot.gpg.key
 echo "ce6eee4130298f79b0e0f09a89f93c1bc711cd68e7e3182d37c8e96c5227e2f0  llvm-snapshot.gpg.key" | sha256sum --check
 sudo apt-key add llvm-snapshot.gpg.key
-sudo apt-get update
+sudo add-apt-repository 'deb http://apt.llvm.org/focal/ llvm-toolchain-focal main'
+sudo apt-get -y update
 sudo apt-get install -y clang-format-11
 
 # Get recent Android build tools.
