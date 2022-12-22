@@ -30,7 +30,8 @@ bash bazel-${BAZEL_VERSION}-installer-linux-x86_64.sh --prefix=$PWD/bazel
 # Get bazel build tools.
 mkdir tools
 export GOPATH=$PWD/tools
-go get github.com/bazelbuild/buildtools/buildifier github.com/bazelbuild/buildtools/buildozer
+go install github.com/bazelbuild/buildtools/buildifier@latest
+go install github.com/bazelbuild/buildtools/buildozer@latest
 
 # Get clang-format.
 sudo add-apt-repository 'deb http://apt.llvm.org/xenial/  llvm-toolchain-xenial-11 main'
