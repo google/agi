@@ -42,7 +42,7 @@ sudo apt-get -y update
 sudo apt-get install -y clang-format-11
 
 # Get recent Android build tools.
-echo y | $ANDROID_HOME/tools/bin/sdkmanager --install 'build-tools;30.0.3'
+echo y | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install 'build-tools;30.0.3'
 
 # Python Format tool
 python3 -m pip install autopep8==1.6.0 --user
