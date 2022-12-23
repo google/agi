@@ -48,7 +48,7 @@ unzip -q android-ndk-r21d-linux-x86_64.zip
 export ANDROID_NDK_HOME=$PWD/android-ndk-r21d
 
 # Get recent build tools.
-echo y | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install 'build-tools;30.0.3'
+echo y | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install 'build-tools;30.0.3' 'platforms;android-26'
 
 # Get the JDK from our mirror.
 JDK_BUILD=zulu11.39.15-ca
