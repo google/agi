@@ -59,6 +59,9 @@ echo "afbaa594447596a7fcd78df4ee59436ee19b43e27111e2e5a21a3272a89074cf  $JDK_NAM
 unzip -q $JDK_NAME.zip
 export JAVA_HOME=$PWD/$JDK_NAME
 
+# Get required graphics packages
+sudo apt-get install -y mesa-common-dev libgl1-mesa-dev
+
 cd $SRC
 BUILD_SHA=${DEV_PREFIX}${KOKORO_GITHUB_COMMIT:-$KOKORO_GITHUB_PULL_REQUEST_COMMIT}
 
