@@ -327,6 +327,7 @@ def gapid_dependencies(android = True, mingw = True, locals = {}):
             name = "androidsdk",
             locals = locals,
             api_level = 26, # This is the target API
+            build_tools_version = "30.0.3",
         )
 
         maybe_repository(
