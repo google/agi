@@ -295,6 +295,7 @@ func (t *androidTracer) Validate(ctx context.Context, enableLocalFiles bool) (*s
 			return
 		}
 		log.I(ctx, "Writing trace size %v bytes to %v", numWritten, file.Name())
+		res.TracePath = file.Name()
 	})
 	if traceLoadingErr != nil {
 		return nil, traceLoadingErr
