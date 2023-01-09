@@ -76,9 +76,6 @@ func (v *MaliValidator) Validate(ctx context.Context, processor *perfetto.Proces
 	if err := validate.ValidateGpuSlices(ctx, processor); err != nil {
 		return err
 	}
-	if err := validate.ValidateVulkanEvents(ctx, processor); err != nil {
-		return err
-	}
 
 	return nil
 }

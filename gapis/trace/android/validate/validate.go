@@ -262,44 +262,18 @@ func GetTrackIDs(ctx context.Context, s Scope, processor *perfetto.Processor) ([
 	return result, nil
 }
 
-// ValidateGpuSlices validates gpu slices, returns nil if all validation passes.
+// ValidateGpuSlices validates vulkan events & gpu slices, returns nil if all validation passes.
 func ValidateGpuSlices(ctx context.Context, processor *perfetto.Processor) error {
-	tIds, err := GetTrackIDs(ctx, renderStageTrackScope, processor)
-	if err != nil {
-		return err
-	}
-	for _, tId := range tIds {
-		queryResult, err := processor.Query(fmt.Sprintf(renderStageSlicesQuery, tId))
-		if err != nil {
-			return log.Errf(ctx, err, "Failed to query with %v", fmt.Sprintf(renderStageSlicesQuery, tId))
-		}
-		numRecords := queryResult.GetNumRecords()
-		if numRecords == 0 {
-			log.W(ctx, "No GPU activity slices found in GPU track: %v", tId)
-			continue
-		}
-		columns := queryResult.GetColumns()
-		names := columns[0].GetStringValues()
-		commandBuffers := columns[1].GetLongValues()
-		submissionIds := columns[2].GetLongValues()
-		for i := uint64(0); i < numRecords; i++ {
-			if commandBuffers[i] == 0 {
-				return log.Errf(ctx, nil, "GPU activity slice %v has null command buffer", names[i])
-			}
-			if submissionIds[i] == 0 {
-				return log.Errf(ctx, nil, "GPU activity slice %v has null submission id", names[i])
-			}
-		}
-	}
-	return nil
-}
-
-// ValidateVulkanEvents validates vulkan events slices, returns nil if all validation passes.
-func ValidateVulkanEvents(ctx context.Context, processor *perfetto.Processor) error {
 	tIds, err := GetTrackIDs(ctx, vulkanEventsTrackScope, processor)
 	if err != nil {
 		return err
 	}
+
+	// Use a map in place of a set to keep track of all the valid submission IDs from
+	// the vulkan_events track. This is used to screen gpu_slices in the gpu_render_stage
+	// tracks that could originate from elsewhere (not our sample app).
+	trackedSubmissionIds := make(map[int64]bool)
+
 	for _, tId := range tIds {
 		queryResult, err := processor.Query(fmt.Sprintf(vulkanEventSlicesQuery, tId))
 		if err != nil || queryResult.GetNumRecords() <= 0 {
@@ -315,6 +289,42 @@ func ValidateVulkanEvents(ctx context.Context, processor *perfetto.Processor) er
 		for i := uint64(0); i < numRecords; i++ {
 			if names[i] == "vkQueueSubmit" && submissionIds[i] == 0 {
 				return log.Errf(ctx, nil, "Vulkan event slice %v has null submission id", names[i])
+			}
+			trackedSubmissionIds[submissionIds[i]] = true
+		}
+	}
+
+	tIds, err = GetTrackIDs(ctx, renderStageTrackScope, processor)
+	if err != nil {
+		return err
+	}
+
+	for _, tId := range tIds {
+		queryResult, err := processor.Query(fmt.Sprintf(renderStageSlicesQuery, tId))
+		if err != nil {
+			return log.Errf(ctx, err, "Failed to query with %v", fmt.Sprintf(renderStageSlicesQuery, tId))
+		}
+		numRecords := queryResult.GetNumRecords()
+		if numRecords == 0 {
+			log.W(ctx, "No GPU activity slices found in GPU track: %v", tId)
+			continue
+		}
+		columns := queryResult.GetColumns()
+		names := columns[0].GetStringValues()
+		commandBuffers := columns[1].GetLongValues()
+		submissionIds := columns[2].GetLongValues()
+		for i := uint64(0); i < numRecords; i++ {
+			// GPU slices that don't have the same submission ID as one from the vulkan_events track
+			// may have a null command buffer as it did not originate from our sample app.
+			if _, ok := trackedSubmissionIds[submissionIds[i]]; !ok {
+				continue
+			}
+
+			if commandBuffers[i] == 0 {
+				return log.Errf(ctx, nil, "GPU activity slice %v has null command buffer", names[i])
+			}
+			if submissionIds[i] == 0 {
+				return log.Errf(ctx, nil, "GPU activity slice %v has null submission id", names[i])
 			}
 		}
 	}
