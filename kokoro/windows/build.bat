@@ -67,13 +67,13 @@ REM Install packages required by the build process.
 %BUILD_ROOT%\msys64\usr\bin\bash --login -c "pacman -S --noconfirm git patch zip unzip"
 
 REM Download and install specific compiler version.
-wget -q http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-10.2.0-9-any.pkg.tar.zst
-echo | set /p placeholder="d5e6b88a71693ae0d8b4dcd08234d3490252234a60732bf63007e013a567242a mingw-w64-x86_64-gcc-10.2.0-9-any.pkg.tar.zst" | sha256sum --check || exit /b 1
-wget -q http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-libs-10.2.0-9-any.pkg.tar.zst
-echo | set /p placeholder="316e4bbdb30ea70cf8f835d122b5dffe0c666cff4f86e423cdb06041f2c3c54e mingw-w64-x86_64-gcc-libs-10.2.0-9-any.pkg.tar.zst" | sha256sum --check || exit /b 1
+wget -q http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-10.2.0-11-any.pkg.tar.zst
+echo | set /p placeholder="8c3ee6e026be4194c6186c511ee7c0d1fabe14d53c870463d8f0af0a2fbdd8c7 mingw-w64-x86_64-gcc-10.2.0-11-any.pkg.tar.zst" | sha256sum --check || exit /b 1
+wget -q http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-libs-10.2.0-11-any.pkg.tar.zst
+echo | set /p placeholder="f416bb4280a62f3331a9541a4afc409c89574dd307c17a870e8ce6daf07df0cc mingw-w64-x86_64-gcc-libs-10.2.0-11-any.pkg.tar.zst" | sha256sum --check || exit /b 1
 wget -q http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-binutils-2.37-4-any.pkg.tar.zst
 echo | set /p placeholder="a518d2630c11fe363abd394763d0bb82fdde72386ffb58d87ecc8f46cbe878d6 mingw-w64-x86_64-binutils-2.37-4-any.pkg.tar.zst" | sha256sum --check || exit /b 1
-%BUILD_ROOT%\msys64\usr\bin\bash --login -c "pacman -U --noconfirm /t/src/mingw-w64-x86_64-gcc-10.2.0-9-any.pkg.tar.zst /t/src/mingw-w64-x86_64-gcc-libs-10.2.0-9-any.pkg.tar.zst /t/src/mingw-w64-x86_64-binutils-2.37-4-any.pkg.tar.zst"
+%BUILD_ROOT%\msys64\usr\bin\bash --login -c "pacman -U --noconfirm /t/src/mingw-w64-x86_64-gcc-10.2.0-11-any.pkg.tar.zst /t/src/mingw-w64-x86_64-gcc-libs-10.2.0-11-any.pkg.tar.zst /t/src/mingw-w64-x86_64-binutils-2.37-4-any.pkg.tar.zst"
 
 REM Configure build process to use the now installed MSYS2.
 set PATH=%BUILD_ROOT%\msys64\mingw64\bin;%BUILD_ROOT%\msys64\usr\bin;%PATH%
