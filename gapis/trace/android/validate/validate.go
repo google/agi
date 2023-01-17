@@ -262,7 +262,7 @@ func GetTrackIDs(ctx context.Context, s Scope, processor *perfetto.Processor) ([
 	return result, nil
 }
 
-// ValidateGpuSlices validates vulkan events and its associated render stage events, then 
+// ValidateGpuSlices validates vulkan events and its associated render stage events, then
 // returns nil if all validation passes.
 func ValidateGpuSlices(ctx context.Context, processor *perfetto.Processor) error {
 	tIds, err := GetTrackIDs(ctx, vulkanEventsTrackScope, processor)
