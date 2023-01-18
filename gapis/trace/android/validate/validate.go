@@ -291,10 +291,11 @@ func ValidateGpuSlices(ctx context.Context, processor *perfetto.Processor) error
 			if names[i] == "vkQueueSubmit" && submissionIds[i] == 0 {
 				return log.Errf(ctx, nil, "Vulkan event slice %v has null submission id", names[i])
 			}
-			trackedSubmissionIds[submissionIds[i]] = true
+			trackedSubmissionIds[submissionIds[i]] = false
 		}
 	}
 
+	invalidGpuSlices := make(map[int64]string)
 	tIds, err = GetTrackIDs(ctx, renderStageTrackScope, processor)
 	if err != nil {
 		return err
@@ -315,19 +316,42 @@ func ValidateGpuSlices(ctx context.Context, processor *perfetto.Processor) error
 		commandBuffers := columns[1].GetLongValues()
 		submissionIds := columns[2].GetLongValues()
 		for i := uint64(0); i < numRecords; i++ {
-			// GPU slices that don't have the same submission ID as one from the vulkan_events track
-			// may have a null command buffer as it did not originate from our sample app.
+			if submissionIds[i] == 0 {
+				return log.Errf(ctx, nil, "GPU activity slice %v has null submission id", names[i])
+			}
+
+			// Only check for GPU slices that originate from our sample app (has the same
+			// submission ID as ones from the vulkan_events track).
 			if _, ok := trackedSubmissionIds[submissionIds[i]]; !ok {
 				continue
 			}
 
-			if commandBuffers[i] == 0 {
-				return log.Errf(ctx, nil, "GPU activity slice %v has null command buffer", names[i])
+			// Submission IDs between different apps are not guaranteed to be unique. invalidGpuSlices
+			// is used to keep track of which ones were never verified.
+
+			// Keep track of slices that are invalid that had not previously passed the check (in case we
+			// run to the slice from our sample app then a slice from another app with the same ID).
+			if commandBuffers[i] == 0 && !trackedSubmissionIds[submissionIds[i]] {
+				invalidGpuSlices[submissionIds[i]] = names[i]
+				continue
 			}
-			if submissionIds[i] == 0 {
-				return log.Errf(ctx, nil, "GPU activity slice %v has null submission id", names[i])
+
+			trackedSubmissionIds[submissionIds[i]] = true
+
+			// If we previously mark this slice as invalid, remove it from the list.
+			if _, ok := invalidGpuSlices[submissionIds[i]]; ok {
+				delete(invalidGpuSlices, submissionIds[i])
 			}
 		}
 	}
+
+	if len(invalidGpuSlices) > 0 {
+		var builder strings.Builder
+		for id, name := range invalidGpuSlices {
+			fmt.Fprintf(&builder, "%v (%v), ", name, id)
+		}
+		return log.Errf(ctx, nil, "GPU activity slice %v has null command buffer", builder.String())
+	}
+
 	return nil
 }
