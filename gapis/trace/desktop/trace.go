@@ -66,7 +66,9 @@ func (t *DesktopTracer) ProcessProfilingData(ctx context.Context, buffer *bytes.
 }
 
 func (t *DesktopTracer) Validate(ctx context.Context, enableLocalFiles bool) (*service.DeviceValidationResult, error) {
-	return &service.DeviceValidationResult{}, nil
+	return &service.DeviceValidationResult{
+		ErrorCode: service.DeviceValidationResult_OK,
+	}, nil
 }
 
 // TraceConfiguration returns the device's supported trace configuration.
