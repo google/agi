@@ -43,7 +43,7 @@ var _ fuchsia.Device = (*binding)(nil)
 // executable was not found.
 var FFX file.Path
 
-func ffx() (file.Path, error) {
+func Ffx() (file.Path, error) {
 	if !FFX.IsEmpty() {
 		return FFX, nil
 	}
@@ -106,7 +106,7 @@ func (b *binding) Command(name string, args ...string) shell.Cmd {
 }
 
 func (b *binding) augmentFFXCommand(cmd shell.Cmd) (shell.Cmd, error) {
-	exe, err := ffx()
+	exe, err := Ffx()
 	if err != nil {
 		return cmd, err
 	}
@@ -127,7 +127,7 @@ func (b *binding) augmentFFXCommand(cmd shell.Cmd) (shell.Cmd, error) {
 
 // TraceProviders implements the fuchsia.Device interface.
 func (b *binding) TraceProviders(ctx context.Context) ([]string, error) {
-	exe, err := ffx()
+	exe, err := Ffx()
 	if err != nil {
 		return nil, err
 	}
