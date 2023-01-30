@@ -243,6 +243,9 @@ public class DeviceValidationView extends Composite {
       case Mali:
         validatorName = " with the Mali validator.";
         break;
+      case PowerVR:
+        validatorName = " with the PowerVR validator.";
+        break;
       case Generic:
         validatorName = " with the generic validator.";
         break;

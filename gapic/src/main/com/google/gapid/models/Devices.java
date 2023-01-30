@@ -476,6 +476,7 @@ public class Devices {
       Invalid,
       Adreno,
       Mali,
+      PowerVR,
       Generic,
       Cached,
     }
@@ -537,6 +538,8 @@ public class Devices {
           return ValidatorType.Mali;
         case GENERIC:
           return ValidatorType.Generic;
+        case POWER_VR:
+          return ValidatorType.PowerVR;
         default:
           return ValidatorType.Invalid;
       }
