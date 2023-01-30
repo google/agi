@@ -1,5 +1,5 @@
 load("@rules_python//python:defs.bzl", _py_test = "py_test")
-load("@python_deps//:requirements.bzl", "requirement")
+load("@pip//:requirements.bzl", "requirement")
 
 def _lint_pylint(name, srcs, deps = [], args = [], **kwargs):
     _py_test(

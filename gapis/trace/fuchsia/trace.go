@@ -150,9 +150,7 @@ func (t *fuchsiaTracer) ProcessProfilingData(ctx context.Context, buffer *bytes.
 // Validate validates the GPU profiling capabilities of the given device and returns
 // an error if validation failed or the GPU profiling data is invalid.
 func (t *fuchsiaTracer) Validate(ctx context.Context, enableLocalFiles bool) (*service.DeviceValidationResult, error) {
-	return &service.DeviceValidationResult{
-		ErrorCode: service.DeviceValidationResult_OK,
-	}, nil
+	return &service.DeviceValidationResult{}, nil
 }
 
 func NewTracer(d bind.Device) tracer.Tracer {

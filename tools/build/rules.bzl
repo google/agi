@@ -59,7 +59,7 @@ load("//tools/build/rules:go.bzl",
 load("//tools/build/rules:grpc.bzl",
     _java_grpc_library = "java_grpc_library",
 )
-load("//tools/build/rules:lingo.bzl",
+load("//tools/build/rules:lingo.bzl",\
     _lingo = "lingo",
 )
 load("//tools/build/rules:mm.bzl",

@@ -141,9 +141,6 @@ function run_autopep8() {
   $AUTOPEP8 --global-config=tools/build/python/pep8 -r --in-place vulkan_generator
 }
 
-# This is required due to docker build machines
-git config --global --add safe.directory /tmpfs/src/github/agi
-
 # Ensure we are clean to start out with.
 check "git workspace must be clean" true
 

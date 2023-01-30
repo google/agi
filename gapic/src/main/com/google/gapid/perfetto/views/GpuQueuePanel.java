@@ -76,7 +76,7 @@ public class GpuQueuePanel extends TrackPanel<GpuQueuePanel> implements Selectab
 
   @Override
   public double getHeight() {
-    return Math.max(SLICE_HEIGHT, queue.maxDepth * SLICE_HEIGHT);
+    return queue.maxDepth * SLICE_HEIGHT;
   }
 
   @Override

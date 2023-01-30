@@ -33,6 +33,7 @@ import com.google.gapid.models.Devices.DeviceValidationResult.ErrorCode;
 import com.google.gapid.models.Devices.DeviceValidationResult.ValidatorType;
 import com.google.gapid.models.Models;
 import com.google.gapid.proto.device.Device;
+import com.google.gapid.proto.service.Service;
 import com.google.gapid.rpc.SingleInFlight;
 import com.google.gapid.util.Logging;
 import com.google.gapid.util.OS;
@@ -218,9 +219,9 @@ public class DeviceValidationView extends Composite {
     }
 
     // Separate error text from help text as a workaround to enable proper text wrapping.
-    GridData gridData = new GridData(SWT.FILL, SWT.TOP, true, false);
-    gridData.heightHint = 60;
-    errorMessageGroup = withLayoutData(createGroup(this, ""), withSpans(gridData, 3, 1));
+    errorMessageGroup =
+        withLayoutData(
+            createGroup(this, ""), withSpans(new GridData(SWT.FILL, SWT.TOP, true, false), 3, 1));
     Text errText =
         withLayoutData(
             createTextbox(errorMessageGroup, SWT.READ_ONLY | SWT.WRAP, result.toString()),

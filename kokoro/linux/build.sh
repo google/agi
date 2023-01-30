@@ -28,11 +28,8 @@ mkdir bazel
 bash bazel-${BAZEL_VERSION}-installer-linux-x86_64.sh --prefix=$PWD/bazel
 
 # Get Clang-12.
-$CURL -O https://apt.llvm.org/llvm-snapshot.gpg.key
-echo "ce6eee4130298f79b0e0f09a89f93c1bc711cd68e7e3182d37c8e96c5227e2f0  llvm-snapshot.gpg.key" | sha256sum --check
-sudo apt-key add llvm-snapshot.gpg.key
-sudo add-apt-repository 'deb http://apt.llvm.org/focal/ llvm-toolchain-focal main'
-sudo apt-get -y update
+sudo add-apt-repository 'deb http://apt.llvm.org/xenial/  llvm-toolchain-xenial-12 main'
+sudo apt-get update
 sudo apt-get install -y clang-12
 export CC=/usr/bin/clang-12
 
@@ -48,7 +45,7 @@ unzip -q android-ndk-r21d-linux-x86_64.zip
 export ANDROID_NDK_HOME=$PWD/android-ndk-r21d
 
 # Get recent build tools.
-echo y | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install 'build-tools;30.0.3' 'platforms;android-26'
+echo y | $ANDROID_HOME/tools/bin/sdkmanager --install 'build-tools;30.0.3'
 
 # Get the JDK from our mirror.
 JDK_BUILD=zulu11.39.15-ca
@@ -58,9 +55,6 @@ $CURL -O https://storage.googleapis.com/jdk-mirror/$JDK_BUILD/$JDK_NAME.zip
 echo "afbaa594447596a7fcd78df4ee59436ee19b43e27111e2e5a21a3272a89074cf  $JDK_NAME.zip" | sha256sum --check
 unzip -q $JDK_NAME.zip
 export JAVA_HOME=$PWD/$JDK_NAME
-
-# Get required graphics packages
-sudo apt-get install -y mesa-common-dev libgl1-mesa-dev
 
 cd $SRC
 BUILD_SHA=${DEV_PREFIX}${KOKORO_GITHUB_COMMIT:-$KOKORO_GITHUB_PULL_REQUEST_COMMIT}

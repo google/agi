@@ -57,18 +57,12 @@ load("@rules_python//python:repositories.bzl", "python_register_toolchains")
 python_register_toolchains(
     name = "python3_9",
     python_version = "3.9",
-    ignore_root_user_error= True,
 )
 
 load("@python3_9//:defs.bzl", "interpreter")
-load("@rules_python//python:pip.bzl", "pip_parse")
+load("@rules_python//python:pip.bzl", "pip_install")
 
-pip_parse(
-    name = "python_deps",
+pip_install(
     python_interpreter_target = interpreter,
-    requirements_lock = "//tools/build/python:requirements.txt",
+    requirements = "//tools/build/python:requirements.txt",
 )
-
-load("@python_deps//:requirements.bzl", "install_deps")
-install_deps()
-

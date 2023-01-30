@@ -5,25 +5,20 @@
      `ln -s $(bazel info output_base)/external bazel-external`
    - Windows Command Prompt:  
      ``for /f usebackq %F in (`bazel info output_base`) do mklink /J bazel-external "%F/external"``
-
 2. Create and open a new Eclipse workspace.
-
-3. Open the Eclipse **Window** -> **Preferences** and navigate to **General** -> **Workspace** -> **Linked Resources**.
-   1. Click **New...** to define a new path variable:
-   2. Set the name to `GAPIC_PLATFORM_SRC`.
-   3. Set the value to the your platform's folder inside the gapic/src/platform folder of the AGI checkout, e.g. `<gitroot>/gapic/src/platform/<OS>`
-   4. Click **OK** to create the variable.
-   5. Click **Apply and Close** to dismiss the preferences dialog.
-
-4. Run the bazel build to build all the generated code.
-
-5. Select **File** -> **Import** and then **General** -> **Existing Projects into Workspace** and click **Next**.
+3. Open the Eclipse Preferences and navigate to **General** -> **Workspace** -> **Linked Resources**.
+4. Click **New...** to define a new path variable:
+   1. Set the name to `GAPIC_PLATFORM_SRC`.
+   2. Set the value to the your platform's folder inside the gapic/src/platform folder of the AGI checkout, e.g. `<gitroot>/gapic/src/platform/<OS>`
+   3. Click **OK** to create the variable.
+5. Click **Apply and Close** to dismiss the preferences dialog.
+6. Run the bazel build to build all the generated code.
+7. Select **File** -> **Import** and then **General** -> **Existing Projects into Workspace** and click **Next**.
    1. Enter the location of your AGI checkout into the root directory box.
    2. Click **Select All**. You should see a project named gapic.
    3. **IMPORTANT**: Uncheck **Copy projects into workspace**
    4. Click **Finish**.
-
-6. Select **Run** -> **Run Configurations**.
+8. Set up **Run Configurations**.
    1. Select **Java Application**.
    2. Press the button for a new configuration.
    3. Choose a name, e.g. "Default".
