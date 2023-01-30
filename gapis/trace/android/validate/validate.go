@@ -18,6 +18,8 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"sort"
+	"strings"
 
 	"github.com/google/gapid/core/log"
 	"github.com/google/gapid/gapis/perfetto"
@@ -26,7 +28,7 @@ import (
 )
 
 const (
-	counterIDQuery     = "select id from gpu_counter_track where name = '%v'"
+	counterIdQuery     = "select id from gpu_counter_track where name = '%v'"
 	counterValuesQuery = "" +
 		"select value from counter " +
 		"where track_id = %v order by ts " +
@@ -159,40 +161,50 @@ func CheckAverageApproximateTo(num, margin float64) Checker {
 }
 
 // ValidateGpuCounters queries for the GPU counter from the trace and
-// validates the value based on associated the requirement,
+// validates the value based on the associated check,
 // up to the amount specified in passThreshold.
 func ValidateGpuCounters(ctx context.Context, processor *perfetto.Processor, counters []GpuCounter, passThreshold int) error {
 	passCount := 0
 	var failedCounters []GpuCounter
+	var missingCounters []GpuCounter
+	counters = trimDuplicates(counters)
+	if passThreshold > len(counters) {
+		log.E(ctx, "Received passThreshold (%v) higher than amount of counters (%v)", passThreshold, len(counters))
+		passThreshold = len(counters)
+	}
+
 	for _, counter := range counters {
-		queryResult, err := processor.Query(fmt.Sprintf(counterIDQuery, counter.Name))
+		// Converts counter name to track table ID.
+		counterIdResult, err := processor.Query(fmt.Sprintf(counterIdQuery, counter.Name))
 		if err != nil {
-			return log.Errf(ctx, err, "Failed to query with %v", fmt.Sprintf(counterIDQuery, counter.Name))
+			return log.Errf(ctx, err, "Failed to query with %v", fmt.Sprintf(counterIdQuery, counter.Name))
 		}
-		if len(queryResult.GetColumns()) != 1 {
-			return log.Errf(ctx, err, "Expected one result with query: %v", fmt.Sprintf(counterIDQuery, counter.Name))
+
+		// Ensure that there's one track table ID for the current counter.
+		counterIdValues := counterIdResult.GetColumns()[0].GetLongValues()
+		if len(counterIdValues) == 0 {
+			log.E(ctx, "Trace does not contain expected counter %v", counter)
+			missingCounters = append(missingCounters, counter)
+			continue
+		} else if len(counterIdValues) != 1 {
+			// We should never run into situation where there are more than 1 results.
+			return log.Errf(ctx, nil, "Found unexpected %v results for counter %v", len(counterIdValues), counter)
 		}
-		var counterID int64
-		for _, column := range queryResult.GetColumns() {
-			longValues := column.GetLongValues()
-			if len(longValues) != 1 {
-				// This tends to happen when the device fails to report GPU counter values.
-				return log.Errf(ctx, nil, "Expected one result for %v but got %v", counter, len(longValues))
-			}
-			counterID = longValues[0]
-			break
-		}
-		queryResult, err = processor.Query(fmt.Sprintf(counterValuesQuery, counterID, sampleCounter))
+		trackTableId := counterIdValues[0]
+
+		valueQueryResult, err := processor.Query(fmt.Sprintf(counterValuesQuery, trackTableId, sampleCounter))
 		if err != nil {
-			return log.Errf(ctx, err, "Failed to query with %v for counter %v", fmt.Sprintf(counterValuesQuery, counterID), counter)
+			return log.Errf(ctx, err, "Failed to query with %v for counter %v", fmt.Sprintf(counterValuesQuery, trackTableId), counter)
 		}
 
 		// Query exactly #sampleCounter samples, fail if not enough samples
-		if queryResult.GetNumRecords() != sampleCounter {
-			return log.Errf(ctx, nil, "Number of samples is incorrect for counter: %v %v", counter, queryResult.GetNumRecords())
+		if valueQueryResult.GetNumRecords() != sampleCounter {
+			log.E(ctx, "Expected %v number of samples for counter %v but got: %v", sampleCounter, counter, valueQueryResult.GetNumRecords())
+			failedCounters = append(failedCounters, counter)
+			continue
 		}
 
-		if counter.Check(queryResult.GetColumns()[0], queryResult.GetColumnDescriptors()[0].GetType()) {
+		if counter.Check(valueQueryResult.GetColumns()[0], valueQueryResult.GetColumnDescriptors()[0].GetType()) {
 			passCount++
 			if passCount >= passThreshold {
 				return nil
@@ -201,7 +213,40 @@ func ValidateGpuCounters(ctx context.Context, processor *perfetto.Processor, cou
 			failedCounters = append(failedCounters, counter)
 		}
 	}
-	return log.Errf(ctx, nil, "Check failed for counters: %v", failedCounters)
+
+	var sb strings.Builder
+	sb.WriteString(fmt.Sprintf("Passed %v checks out of %v, expected to pass %v check(s). ", passCount, len(counters), passThreshold))
+
+	if len(missingCounters) > 0 {
+		sb.WriteString(fmt.Sprintf("Missing %v counter(s): %v\n", len(missingCounters), missingCounters))
+	}
+	if len(failedCounters) > 0 {
+		sb.WriteString(fmt.Sprintf("Failed check for %v counter(s): %v", len(failedCounters), failedCounters))
+	}
+
+	return log.Errf(ctx, nil, sb.String())
+}
+
+// trimDuplicates removes duplicates from the GPU counter array.
+func trimDuplicates(counters []GpuCounter) []GpuCounter {
+	duplicateMap := make(map[int]GpuCounter)
+	res := make([]GpuCounter, 0)
+	for _, counter := range counters {
+		duplicateMap[int(counter.Id)] = counter
+	}
+
+	// Sort the ids to retrieve from the map.
+	ids := make([]int, 0, len(res))
+	for id := range duplicateMap {
+		ids = append(ids, id)
+	}
+	sort.Ints(ids)
+
+	for _, id := range ids {
+		res = append(res, duplicateMap[id])
+	}
+
+	return res
 }
 
 // GetTrackIDs returns all track ids from gpu_track with the given scope.
@@ -217,44 +262,19 @@ func GetTrackIDs(ctx context.Context, s Scope, processor *perfetto.Processor) ([
 	return result, nil
 }
 
-// ValidateGpuSlices validates gpu slices, returns nil if all validation passes.
+// ValidateGpuSlices validates vulkan events and its associated render stage events, then
+// returns nil if all validation passes.
 func ValidateGpuSlices(ctx context.Context, processor *perfetto.Processor) error {
-	tIds, err := GetTrackIDs(ctx, renderStageTrackScope, processor)
-	if err != nil {
-		return err
-	}
-	for _, tId := range tIds {
-		queryResult, err := processor.Query(fmt.Sprintf(renderStageSlicesQuery, tId))
-		if err != nil {
-			return log.Errf(ctx, err, "Failed to query with %v", fmt.Sprintf(renderStageSlicesQuery, tId))
-		}
-		numRecords := queryResult.GetNumRecords()
-		if numRecords == 0 {
-			log.W(ctx, "No GPU activity slices found in GPU track: %v", tId)
-			continue
-		}
-		columns := queryResult.GetColumns()
-		names := columns[0].GetStringValues()
-		commandBuffers := columns[1].GetLongValues()
-		submissionIds := columns[2].GetLongValues()
-		for i := uint64(0); i < numRecords; i++ {
-			if commandBuffers[i] == 0 {
-				return log.Errf(ctx, nil, "GPU activity slice %v has null command buffer", names[i])
-			}
-			if submissionIds[i] == 0 {
-				return log.Errf(ctx, nil, "GPU activity slice %v has null submission id", names[i])
-			}
-		}
-	}
-	return nil
-}
-
-// ValidateVulkanEvents validates vulkan events slices, returns nil if all validation passes.
-func ValidateVulkanEvents(ctx context.Context, processor *perfetto.Processor) error {
 	tIds, err := GetTrackIDs(ctx, vulkanEventsTrackScope, processor)
 	if err != nil {
 		return err
 	}
+
+	// Use a map in place of a set to keep track of all the valid submission IDs from
+	// the vulkan_events track. This is used to screen gpu_slices in the gpu_render_stage
+	// tracks that could originate from elsewhere (not our sample app).
+	trackedSubmissionIds := make(map[int64]bool)
+
 	for _, tId := range tIds {
 		queryResult, err := processor.Query(fmt.Sprintf(vulkanEventSlicesQuery, tId))
 		if err != nil || queryResult.GetNumRecords() <= 0 {
@@ -271,7 +291,67 @@ func ValidateVulkanEvents(ctx context.Context, processor *perfetto.Processor) er
 			if names[i] == "vkQueueSubmit" && submissionIds[i] == 0 {
 				return log.Errf(ctx, nil, "Vulkan event slice %v has null submission id", names[i])
 			}
+			trackedSubmissionIds[submissionIds[i]] = false
 		}
 	}
+
+	invalidGpuSlices := make(map[int64]string)
+	tIds, err = GetTrackIDs(ctx, renderStageTrackScope, processor)
+	if err != nil {
+		return err
+	}
+
+	for _, tId := range tIds {
+		queryResult, err := processor.Query(fmt.Sprintf(renderStageSlicesQuery, tId))
+		if err != nil {
+			return log.Errf(ctx, err, "Failed to query with %v", fmt.Sprintf(renderStageSlicesQuery, tId))
+		}
+		numRecords := queryResult.GetNumRecords()
+		if numRecords == 0 {
+			log.W(ctx, "No GPU activity slices found in GPU track: %v", tId)
+			continue
+		}
+		columns := queryResult.GetColumns()
+		names := columns[0].GetStringValues()
+		commandBuffers := columns[1].GetLongValues()
+		submissionIds := columns[2].GetLongValues()
+		for i := uint64(0); i < numRecords; i++ {
+			if submissionIds[i] == 0 {
+				return log.Errf(ctx, nil, "GPU activity slice %v has null submission id", names[i])
+			}
+
+			// Only check for GPU slices that originate from our sample app (has the same
+			// submission ID as ones from the vulkan_events track).
+			if _, ok := trackedSubmissionIds[submissionIds[i]]; !ok {
+				continue
+			}
+
+			// Submission IDs between different apps are not guaranteed to be unique. invalidGpuSlices
+			// is used to keep track of which ones were never verified.
+
+			// Keep track of slices that are invalid that had not previously passed the check (in case we
+			// run to the slice from our sample app then a slice from another app with the same ID).
+			if commandBuffers[i] == 0 && !trackedSubmissionIds[submissionIds[i]] {
+				invalidGpuSlices[submissionIds[i]] = names[i]
+				continue
+			}
+
+			trackedSubmissionIds[submissionIds[i]] = true
+
+			// If we previously mark this slice as invalid, remove it from the list.
+			if _, ok := invalidGpuSlices[submissionIds[i]]; ok {
+				delete(invalidGpuSlices, submissionIds[i])
+			}
+		}
+	}
+
+	if len(invalidGpuSlices) > 0 {
+		var builder strings.Builder
+		for id, name := range invalidGpuSlices {
+			fmt.Fprintf(&builder, "%v (%v), ", name, id)
+		}
+		return log.Errf(ctx, nil, "GPU activity slice %v has null command buffer", builder.String())
+	}
+
 	return nil
 }

@@ -39,7 +39,7 @@ func NewGenericValidator(device bind.Device) *GenericValidator {
 }
 
 func counterChecker() validate.Checker {
-	return validate.And(validate.IsNumber, validate.CheckLargerThanZero())
+	return validate.And(validate.IsNumber, validate.Not(validate.CheckAllEqualTo(0)))
 }
 
 func (v *GenericValidator) Validate(ctx context.Context, processor *perfetto.Processor) error {
@@ -52,9 +52,6 @@ func (v *GenericValidator) Validate(ctx context.Context, processor *perfetto.Pro
 		return err
 	}
 	if err := validate.ValidateGpuSlices(ctx, processor); err != nil {
-		return err
-	}
-	if err := validate.ValidateVulkanEvents(ctx, processor); err != nil {
 		return err
 	}
 

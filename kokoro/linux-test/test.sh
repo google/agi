@@ -28,10 +28,12 @@ mkdir bazel
 bash bazel-${BAZEL_VERSION}-installer-linux-x86_64.sh --prefix=$PWD/bazel
 
 # Get Clang-12.
-wget https://apt.llvm.org/llvm.sh
-chmod +x llvm.sh
-sudo ./llvm.sh 12
-clang-12 --version
+$CURL -O https://apt.llvm.org/llvm-snapshot.gpg.key
+echo "ce6eee4130298f79b0e0f09a89f93c1bc711cd68e7e3182d37c8e96c5227e2f0  llvm-snapshot.gpg.key" | sha256sum --check
+sudo apt-key add llvm-snapshot.gpg.key
+sudo add-apt-repository 'deb http://apt.llvm.org/focal/ llvm-toolchain-focal main'
+sudo apt-get -y update
+sudo apt-get install -y clang-12
 export CC=/usr/bin/clang-12
 
 # Get the Android NDK.
@@ -41,7 +43,7 @@ unzip -q android-ndk-r21d-linux-x86_64.zip
 export ANDROID_NDK_HOME=$PWD/android-ndk-r21d
 
 # Get recent build tools.
-echo y | $ANDROID_HOME/tools/bin/sdkmanager --install 'build-tools;30.0.3'
+echo y | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install 'build-tools;30.0.3' 'platforms;android-26'
 
 # Get the JDK from our mirror.
 JDK_BUILD=zulu11.39.15-ca

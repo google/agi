@@ -47,9 +47,6 @@ func (v *AdrenoValidator) Validate(ctx context.Context, processor *perfetto.Proc
 	if err := validate.ValidateGpuSlices(ctx, processor); err != nil {
 		return err
 	}
-	if err := validate.ValidateVulkanEvents(ctx, processor); err != nil {
-		return err
-	}
 
 	return nil
 }
