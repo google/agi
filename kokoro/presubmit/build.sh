@@ -30,22 +30,22 @@ bash bazel-${BAZEL_VERSION}-installer-linux-x86_64.sh --prefix=$PWD/bazel
 # Get bazel build tools.
 mkdir tools
 export GOPATH=$PWD/tools
-go get github.com/bazelbuild/buildtools/buildifier github.com/bazelbuild/buildtools/buildozer
+go install github.com/bazelbuild/buildtools/buildifier@latest
+go install github.com/bazelbuild/buildtools/buildozer@latest
 
 # Get clang-format.
-sudo add-apt-repository 'deb http://apt.llvm.org/xenial/  llvm-toolchain-xenial-11 main'
-sudo add-apt-repository "deb http://ppa.launchpad.net/ubuntu-toolchain-r/test/ubuntu xenial main"
 $CURL -O https://apt.llvm.org/llvm-snapshot.gpg.key
 echo "ce6eee4130298f79b0e0f09a89f93c1bc711cd68e7e3182d37c8e96c5227e2f0  llvm-snapshot.gpg.key" | sha256sum --check
 sudo apt-key add llvm-snapshot.gpg.key
-sudo apt-get update
+sudo add-apt-repository 'deb http://apt.llvm.org/focal/ llvm-toolchain-focal main'
+sudo apt-get -y update
 sudo apt-get install -y clang-format-11
 
 # Get recent Android build tools.
-echo y | $ANDROID_HOME/tools/bin/sdkmanager --install 'build-tools;30.0.3'
+echo y | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install 'build-tools;30.0.3' 'platforms;android-26'
 
 # Python Format tool
-python3 -m pip install autopep8==1.6.0 --user
+pip install --root-user-action=ignore --user autopep8==1.6.0
 
 # Setup environment.
 export ANDROID_NDK_HOME=/opt/android-ndk-r16b

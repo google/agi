@@ -113,9 +113,6 @@ Bazel flag, e.g.:
 bazel build -c dbg pkg
 ```
 
-The recommended Go debugger is
-[delve](https://github.com/go-delve/delve).
-
 ### Debugging Gapic
 
 Gapic, the AGI UI, is written in Java.  Gapic is launched with `java` by gapid Go code in
@@ -145,9 +142,13 @@ You should see the following output: `Waiting for java debugger to attach to por
 debug from **vscode** normally using the new launch configuration that you you added in step (3)
 above.
 
+
 ### Debugging Gapis
 
-To debug gapis, you can do:
+Gapis is written in **Go**.  The recommended Go debugger is
+[delve](https://github.com/go-delve/delve).
+
+To debug gapis, using a debug build, you can do:
 
 ```
 dlv exec ./bazel-bin/pkg/gapis -- -enable-local-files -persist -rpc localhost:8888
