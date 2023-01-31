@@ -20,20 +20,29 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sort"
 	"sync/atomic"
 	"time"
 
 	"github.com/google/gapid/core/app"
 	"github.com/google/gapid/core/event/task"
+	"github.com/google/gapid/core/fault"
 	"github.com/google/gapid/core/log"
 	"github.com/google/gapid/core/os/device/bind"
 	"github.com/google/gapid/core/os/file"
 	"github.com/google/gapid/core/os/fuchsia"
+	"github.com/google/gapid/core/os/fuchsia/ffx"
+	"github.com/google/gapid/core/os/shell"
 	"github.com/google/gapid/gapis/api"
 	"github.com/google/gapid/gapis/api/sync"
 	"github.com/google/gapid/gapis/service"
 	"github.com/google/gapid/gapis/service/path"
 	"github.com/google/gapid/gapis/trace/tracer"
+)
+
+const (
+	// ErrNoVtcsList May be returned if the ffx fails to return a vtc list when asked.
+	ErrNoVtcsList = fault.Const("Vtc list not returned")
 )
 
 type traceSession struct {
@@ -47,6 +56,7 @@ type traceSession struct {
 // until start is fired.
 // Capturing will stop when the stop signal is fired (clean stop) or the
 // context is cancelled (abort).
+
 func (s *traceSession) Capture(ctx context.Context, start task.Signal, stop task.Signal, ready task.Task, w io.Writer, written *int64) (size int64, err error) {
 	// Create trace file.
 	traceFile, err := file.Temp()
@@ -99,31 +109,57 @@ type fuchsiaTracer struct {
 // TraceConfiguration returns the device's supported trace configuration.
 func (t *fuchsiaTracer) TraceConfiguration(ctx context.Context) (*service.DeviceTraceConfiguration, error) {
 	return &service.DeviceTraceConfiguration{
-		Types:                []*service.TraceTypeCapabilities{tracer.FuchsiaTraceOptions()},
+		Types:                []*service.TraceTypeCapabilities{tracer.FuchsiaTraceOptions(), tracer.VulkanTraceOptions()},
 		ServerLocalPath:      false,
 		CanSpecifyCwd:        true,
 		CanUploadApplication: false,
 		CanSpecifyEnv:        true,
-		PreferredRootUri:     "/",
+		PreferredRootUri:     "",
 		HasCache:             false,
 	}, nil
 }
 
 // GetTraceTargetNode returns a TraceTargetTreeNode for the given URI
-// on the device
+// on the device.
 func (t *fuchsiaTracer) GetTraceTargetNode(ctx context.Context, uri string, iconDensity float32) (*tracer.TraceTargetTreeNode, error) {
-	return nil, nil
+	if uri == "" {
+		exe, err := ffx.Ffx()
+		if err != nil {
+			return nil, err
+		}
+		stdout, err := shell.Command(exe.System(), "agis", "vtcs").Call(ctx)
+		children, err := ParseComponents(ctx, stdout)
+		if err != nil {
+			return nil, err
+		}
+		r := &tracer.TraceTargetTreeNode{}
+		for _, child := range children {
+			r.Children = append(r.Children, child)
+		}
+		sort.Strings(r.Children)
+		return r, nil
+	}
+	return &tracer.TraceTargetTreeNode{
+		Name:            uri,
+		Icon:            nil,
+		URI:             uri,
+		TraceURI:        uri,
+		Children:        nil,
+		Parent:          "",
+		ApplicationName: "",
+		ExecutableName:  ""}, nil
 }
 
 // FindTraceTargets finds TraceTargetTreeNodes for a given search string on
-// the device
+// the device.
 func (t *fuchsiaTracer) FindTraceTargets(ctx context.Context, uri string) ([]*tracer.TraceTargetTreeNode, error) {
+	log.E(ctx, "FindTraceTargets is returning nil")
 	return nil, nil
 }
 
 // SetupTrace starts the application on the device, and causes it to wait
 // for the trace to be started. It returns the process that was created, as
-// well as a function that can be used to clean up the device
+// well as a function that can be used to clean up the device.
 func (t *fuchsiaTracer) SetupTrace(ctx context.Context, o *service.TraceOptions) (tracer.Process, app.Cleanup, error) {
 	session := &traceSession{
 		device:  t.device,
@@ -132,18 +168,19 @@ func (t *fuchsiaTracer) SetupTrace(ctx context.Context, o *service.TraceOptions)
 	return session, nil, nil
 }
 
-// GetDevice returns the device associated with this tracer
+// GetDevice returns the device associated with this tracer.
 func (t *fuchsiaTracer) GetDevice() bind.Device {
 	return t.device
 }
 
 // ProcessProfilingData takes a buffer for a Perfetto trace and translates it into
-// a ProfilingData
+// a ProfilingData.
 func (t *fuchsiaTracer) ProcessProfilingData(ctx context.Context, buffer *bytes.Buffer,
 	capture *path.Capture, staticAnalysisResult chan *api.StaticAnalysisProfileData,
 	handleMapping map[uint64][]service.VulkanHandleMappingItem, syncData *sync.Data) (*service.ProfilingData, error) {
 
 	<-staticAnalysisResult // Ignore the static analysis result.
+	log.E(ctx, "ProcessProfilingData is returning nil")
 	return nil, nil
 }
 
@@ -157,4 +194,10 @@ func (t *fuchsiaTracer) Validate(ctx context.Context, enableLocalFiles bool) (*s
 
 func NewTracer(d bind.Device) tracer.Tracer {
 	return &fuchsiaTracer{device: d.(fuchsia.Device)}
+}
+
+// ParseComponents parses the vulkan traceable component list returned from `ffx agis vtcs“.
+func ParseComponents(ctx context.Context, stdout string) ([]string, error) {
+	log.E(ctx, "ParseComponents stdout: "+stdout)
+	return []string{stdout}, nil
 }

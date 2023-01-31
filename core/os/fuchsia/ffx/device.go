@@ -153,7 +153,7 @@ func newDevice(ctx context.Context, serial string) (*binding, error) {
 
 // scanDevices returns the list of attached Fuchsia devices.
 func scanDevices(ctx context.Context) error {
-	exe, err := ffx()
+	exe, err := Ffx()
 	if err != nil {
 		return log.Err(ctx, err, "")
 	}
