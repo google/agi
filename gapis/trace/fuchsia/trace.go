@@ -17,16 +17,17 @@ package fuchsia
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"sort"
+	"strconv"
 	"sync/atomic"
 	"time"
 
 	"github.com/google/gapid/core/app"
 	"github.com/google/gapid/core/event/task"
-	"github.com/google/gapid/core/fault"
 	"github.com/google/gapid/core/log"
 	"github.com/google/gapid/core/os/device/bind"
 	"github.com/google/gapid/core/os/file"
@@ -38,11 +39,6 @@ import (
 	"github.com/google/gapid/gapis/service"
 	"github.com/google/gapid/gapis/service/path"
 	"github.com/google/gapid/gapis/trace/tracer"
-)
-
-const (
-	// ErrNoVtcsList May be returned if the ffx fails to return a vtc list when asked.
-	ErrNoVtcsList = fault.Const("Vtc list not returned")
 )
 
 type traceSession struct {
@@ -196,8 +192,23 @@ func NewTracer(d bind.Device) tracer.Tracer {
 	return &fuchsiaTracer{device: d.(fuchsia.Device)}
 }
 
+type VtcJSON struct {
+	GlobalID    int    `json:"global_id"`
+	ProcessKoid int64  `json:"process_koid"`
+	ProcessName string `json:"process_name"`
+}
+
 // ParseComponents parses the vulkan traceable component list returned from `ffx agis vtcs“.
 func ParseComponents(ctx context.Context, stdout string) ([]string, error) {
-	log.E(ctx, "ParseComponents stdout: "+stdout)
-	return []string{stdout}, nil
+	var vtcs []VtcJSON
+	if err := json.Unmarshal([]byte(stdout), &vtcs); err != nil {
+		return nil, err
+	}
+	components := []string{}
+	for _, vtc := range vtcs {
+		components = append(components, strconv.Itoa(vtc.GlobalID)+" "+
+			strconv.FormatInt(int64(vtc.ProcessKoid), 10)+" "+vtc.ProcessName)
+	}
+
+	return components, nil
 }
