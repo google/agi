@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -202,6 +203,11 @@ type VtcJSON struct {
 func ParseComponents(ctx context.Context, stdout string) ([]string, error) {
 	var vtcs []VtcJSON
 	if err := json.Unmarshal([]byte(stdout), &vtcs); err != nil {
+		if stdout == "{}" || stdout == "[]" {
+			msg := "No Vulkan traceable components found"
+			log.E(ctx, msg+" in \""+stdout+"\"")
+			return nil, errors.New(msg)
+		}
 		return nil, err
 	}
 	components := []string{}
