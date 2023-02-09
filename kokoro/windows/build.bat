@@ -67,10 +67,10 @@ REM Install packages required by the build process.
 %BUILD_ROOT%\msys64\usr\bin\bash --login -c "pacman -S --noconfirm git patch zip unzip"
 
 REM Download and install specific compiler version.
-wget -q https://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-10.3.0-8-any.pkg.tar.zst
-echo | set /p placeholder="8c3ee6e026be4194c6186c511ee7c0d1fabe14d53c870463d8f0af0a2fbdd8c7 mingw-w64-x86_64-gcc-10.3.0-8-any.pkg.tar.zst" | sha256sum --check || exit /b 1
-wget -q https://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-libs-10.3.0-8-any.pkg.tar.zst
-echo | set /p placeholder="f416bb4280a62f3331a9541a4afc409c89574dd307c17a870e8ce6daf07df0cc mingw-w64-x86_64-gcc-libs-10.3.0-8-any.pkg.tar.zst" | sha256sum --check || exit /b 1
+wget -q http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-10.3.0-8-any.pkg.tar.zst
+echo | set /p placeholder="5a43ac94ae563c451d1b85418ae2803b9719509112e8d604098261182a709c08 mingw-w64-x86_64-gcc-10.3.0-8-any.pkg.tar.zst" | sha256sum --check || exit /b 1
+wget -q http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-libs-10.3.0-8-any.pkg.tar.zst
+echo | set /p placeholder="2e1ea0da3c9da3285067a8b2a2639aa0a6bf21cd64edca2a216f6b9c4c1382bd mingw-w64-x86_64-gcc-libs-10.3.0-8-any.pkg.tar.zst" | sha256sum --check || exit /b 1
 wget -q http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-binutils-2.37-4-any.pkg.tar.zst
 echo | set /p placeholder="a518d2630c11fe363abd394763d0bb82fdde72386ffb58d87ecc8f46cbe878d6 mingw-w64-x86_64-binutils-2.37-4-any.pkg.tar.zst" | sha256sum --check || exit /b 1
 %BUILD_ROOT%\msys64\usr\bin\bash --login -c "pacman -U --noconfirm /t/src/mingw-w64-x86_64-gcc-10.3.0-8-any.pkg.tar.zst /t/src/mingw-w64-x86_64-gcc-libs-10.3.0-8-any.pkg.tar.zst /t/src/mingw-w64-x86_64-binutils-2.37-4-any.pkg.tar.zst"
