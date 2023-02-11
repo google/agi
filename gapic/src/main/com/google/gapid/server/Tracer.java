@@ -71,6 +71,7 @@ public class Tracer {
       }
     });
 
+    // (ffx15) This sends the tracerequest to the Go code.
     sender.send(Service.TraceRequest.newBuilder()
         .setInitialize(request.options)
         .build());

@@ -41,6 +41,8 @@ const (
 	captureProcessNameProperty = "debug.agi.procname"
 )
 
+// (ffx8)
+
 // Process represents a running process to capture.
 type Process struct {
 	// The local host port used to connect to GAPII.
@@ -52,8 +54,9 @@ type Process struct {
 	// The options used for the capture.
 	Options Options
 
+	// (ffx9) - make this public so it can be initialized in Fuchsia ?
 	// The connection
-	conn net.Conn
+	Conn net.Conn
 }
 
 // Start launches an activity on an android device with the GAPII interceptor

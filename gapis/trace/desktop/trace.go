@@ -244,6 +244,7 @@ func (t *DesktopTracer) SetupTrace(ctx context.Context, o *service.TraceOptions)
 			// that they are present on the desktop.
 			log.W(ctx, "Loading Vulkan validation layer at capture time is not supported on desktop")
 		}
+		// (ffx3) - "loader" here is the Vulkan loader
 		cleanup, portFile, err = loader.SetupTrace(ctx, t.b, t.b.Instance().Configuration.ABIs[0], env)
 		if err != nil {
 			cleanup.Invoke(ctx)

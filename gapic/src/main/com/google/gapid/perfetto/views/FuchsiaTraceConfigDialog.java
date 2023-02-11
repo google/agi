@@ -94,9 +94,13 @@ public class FuchsiaTraceConfigDialog extends DialogBase {
     }
   }
 
-  public static Service.FuchsiaTraceConfig.Builder getConfig(Settings settings) {
+  public static Service.FuchsiaTraceConfig.Builder getCategories(Settings settings) {
     return Service.FuchsiaTraceConfig.newBuilder()
-        .addAllCategories(settings.fuchsiaTracing().getCategoriesList());
+       .addAllCategories(settings.fuchsiaTracing().getCategoriesList());
+  }
+
+  public static Service.FuchsiaTraceConfig.Builder getGlobalId(int globalId) {
+    return Service.FuchsiaTraceConfig.newBuilder().setGlobalId(globalId);
   }
 
   @Override

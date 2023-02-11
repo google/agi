@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Google Inc.
+// Copyright (C) 2022 Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,9 +21,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"os"
 	"sort"
 	"strconv"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -35,6 +37,7 @@ import (
 	"github.com/google/gapid/core/os/fuchsia"
 	"github.com/google/gapid/core/os/fuchsia/ffx"
 	"github.com/google/gapid/core/os/shell"
+	gapii "github.com/google/gapid/gapii/client"
 	"github.com/google/gapid/gapis/api"
 	"github.com/google/gapid/gapis/api/sync"
 	"github.com/google/gapid/gapis/service"
@@ -116,6 +119,20 @@ func (t *fuchsiaTracer) TraceConfiguration(ctx context.Context) (*service.Device
 	}, nil
 }
 
+type traceableComponent struct {
+	URI string
+}
+
+func (c *traceableComponent) ApplicationName(ctx context.Context) (string, error) {
+	tokens := strings.Split(c.URI, " ")
+	if len(tokens) != 3 {
+		msg := "Invalid component uri"
+		log.E(ctx, msg+". Expecting 3 tokens: <global_id> <koid> <process_name>")
+		return "", errors.New(msg)
+	}
+	return tokens[2], nil
+}
+
 // GetTraceTargetNode returns a TraceTargetTreeNode for the given URI
 // on the device.
 func (t *fuchsiaTracer) GetTraceTargetNode(ctx context.Context, uri string, iconDensity float32) (*tracer.TraceTargetTreeNode, error) {
@@ -136,6 +153,11 @@ func (t *fuchsiaTracer) GetTraceTargetNode(ctx context.Context, uri string, icon
 		sort.Strings(r.Children)
 		return r, nil
 	}
+	component := traceableComponent{URI: uri}
+	componentName, err := component.ApplicationName(ctx)
+	if err != nil {
+		return nil, err
+	}
 	return &tracer.TraceTargetTreeNode{
 		Name:            uri,
 		Icon:            nil,
@@ -143,8 +165,8 @@ func (t *fuchsiaTracer) GetTraceTargetNode(ctx context.Context, uri string, icon
 		TraceURI:        uri,
 		Children:        nil,
 		Parent:          "",
-		ApplicationName: "",
-		ExecutableName:  ""}, nil
+		ApplicationName: componentName,
+		ExecutableName:  componentName}, nil
 }
 
 // FindTraceTargets finds TraceTargetTreeNodes for a given search string on
@@ -158,11 +180,81 @@ func (t *fuchsiaTracer) FindTraceTargets(ctx context.Context, uri string) ([]*tr
 // for the trace to be started. It returns the process that was created, as
 // well as a function that can be used to clean up the device.
 func (t *fuchsiaTracer) SetupTrace(ctx context.Context, o *service.TraceOptions) (tracer.Process, app.Cleanup, error) {
+	log.I(ctx, "SetupTrace HAS BEEN CALLED")
+
+	// (ffx1) -
+	//    (0) Review desktop SetupTrace.
+	//    (1) Delineate w/ trace type "Graphics".
+	//    (2) Create unix pipe for forwarding to ffx daemon here.
+	//    (3) MUST launch component here so CreateInstance is captured as part of this tracing.
 	session := &traceSession{
 		device:  t.device,
 		options: o,
 	}
+	switch traceType := o.GetType(); traceType {
+	case service.TraceType_Graphics:
+		fuchsiaTraceConfig := o.GetFuchsiaTraceConfig()
+		globalId := strconv.FormatInt(int64(fuchsiaTraceConfig.GetGlobalId()), 10)
+		path := "/tmp/agis" + globalId
+		log.I(ctx, "SetupTrace: Going to Listen on Path: "+path)
+
+		listener, err := net.Listen("unix", path)
+
+		if err != nil {
+			log.E(ctx, "SetupTrace: failed to create unix pipe for ffx")
+			return nil, nil, err
+		} else {
+			log.I(ctx, "SetupTrace: Listening on /tmp/agis"+globalId)
+		}
+		cmd := t.device.Command("agis", "listen", globalId)
+		log.I(ctx, "SetupTrace: Command: "+cmd.Name)
+		for _, arg := range cmd.Args {
+			log.I(ctx, "\targ: "+arg)
+		}
+
+		result, err := cmd.Call(ctx)
+
+		if err != nil {
+			log.E(ctx, "SetupTrace: ffx agis listen command failed.  Result: "+result)
+			log.E(ctx, "\tError: "+err.Error())
+			return nil, nil, err
+		}
+		log.I(ctx, "SetupTrace: FFX command result: "+result)
+
+		conn, err := listener.Accept()
+
+		if err != nil {
+			log.E(ctx, "SetupTrace: Accept failed")
+		} else {
+			log.I(ctx, "SetupTrace: Accept Succeeded")
+		}
+		var cleanup app.Cleanup
+		process := &gapii.Process{Conn: conn, Device: t.device, Options: tracer.GapiiOptions(o)}
+		return process, cleanup, nil
+	case service.TraceType_Fuchsia:
+		log.I(ctx, "SetupTrace, TRACE TYPE: Fuchsia")
+	default:
+		log.E(ctx, "SetupTrace, TRACE TYPE: UNKNOWN")
+		return nil, nil, errors.New("Unrecognized Fuchsia trace type")
+	}
 	return session, nil, nil
+
+	// (ffx4)
+	// (ffx7) - Send the component global_id in the uri because it is how gapic designates the
+	//          thing to trace.
+	// (ffx8) - Port is used here for universal socket behavior (windows too).
+	// (ffx10) - Initialize conn here.  Call net.Listen. Network: unix  Address: path
+	//           Look up net.Conn / Listen in the Go standard library docs.
+	//           Instance conn w/ net.Listen.  Pass in conn instead of boundPort.
+	// net.Listen -> Listener instance -> call Accept on Listener -> that will give Conn.
+	// (ffx11) - Before calling Accept, need to shell out and call ffx listen.
+	//           Listen, Shell out to Ffx, Call Accept.
+	//           If Ffx command blocks (it doesn't), need to launch in thread.
+
+	/*
+		process := &gapii.Process{Port: boundPort, Device: t.b, Options: tracer.GapiiOptions(o)}
+		return process, cleanup, nil
+	*/
 }
 
 // GetDevice returns the device associated with this tracer.

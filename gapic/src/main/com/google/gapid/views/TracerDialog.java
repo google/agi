@@ -190,16 +190,26 @@ public class TracerDialog {
   private static void showTracingDialog(
       TraceType type, Client client, Shell shell, Models models, Widgets widgets) {
     models.analytics.postInteraction(View.Trace, ClientAction.Show);
+
     TraceInputDialog input =
         new TraceInputDialog(shell, type, models, widgets, models.devices::loadDevices);
+
     if (loadDevicesAndShowDialog(input, models) == Window.OK) {
-      TraceProgressDialog progress = new TraceProgressDialog(
-          shell, models.analytics, input.getValue(), widgets.theme);
+      TraceProgressDialog progress =
+        new TraceProgressDialog(shell, models.analytics, input.getValue(), widgets.theme);
+
+      // (ffx13) - This calls into the Go code and needs to be passed the global_id for Fuchsia.
+      // (ffx16) - input.getValue() yields a Tracer.traceRequest with a Service.TraceOptions field.
+      //           Service.TraceOptions should have the global_id field populated here.
       Tracer.Trace trace = Tracer.trace(client, shell, input.getValue(), progress);
+
       progress.setTrace(trace);
+
       if (progress.open() == Window.OK && progress.successful()) {
         models.capture.loadCapture(input.getValue().output);
       }
+    } else {
+      System.out.println("ERROR: loadDevicesAndShowDialog status is not OK");
     }
   }
 
@@ -429,7 +439,9 @@ public class TracerDialog {
             createGroup(this, "Application", new GridLayout(2, false)),
             new GridData(GridData.FILL_HORIZONTAL));
         targetLabel = createLabel(appGroup, TARGET_LABEL + ":");
+
         traceTarget = withLayoutData(new ActionTextbox(appGroup, trace.getUri()) {
+
           @Override
           protected String createAndShowDialog(String current) {
             DeviceCaptureInfo dev = getSelectedDevice();
@@ -450,6 +462,7 @@ public class TracerDialog {
             }
             return null;
           }
+
         }, new GridData(SWT.FILL, SWT.FILL, true, false));
 
         createLabel(appGroup, "Additional Arguments:");
@@ -894,6 +907,7 @@ public class TracerDialog {
               new TraceTargetPickerDialog(shell, models, dev.targets, widgets);
           if (dialog.open() == Window.OK) {
             TraceTargets.Node node = dialog.getSelected();
+            System.out.println("showTraceTargetPicker node is: " + node.getUri());
             return (node == null) ? null : node.getTraceTarget();
           }
         }
@@ -1070,11 +1084,27 @@ public class TracerDialog {
           options.setClearCache(clearCache.getSelection());
         }
 
+        if (dev.isFuchsia()) {
+           if(type == TraceType.System) {
+             options.setFuchsiaTraceConfig(FuchsiaTraceConfigDialog.getCategories(settings));
+           } else if (type == TraceType.Vulkan) {
+             // (ffx17) TODO - extract GlobalID from URI and set that value here.
+             String uri = trace.getUri();
+             if (!uri.isEmpty()) {
+               String[] tokens = uri.split("\\s+");
+               int globalId = Integer.parseInt(tokens[0]);
+               options.setFuchsiaTraceConfig(FuchsiaTraceConfigDialog.getGlobalId(globalId));
+             } else {
+               throw new AssertionError("No global ID found in URI");
+             }
+           } else {
+             throw new AssertionError("Invalid Fuchsia trace type");
+           }
+        }
+
         if (type == TraceType.System) {
           options.setDuration(duration.getSelection());
-          if (dev.isFuchsia()) {
-            options.setFuchsiaTraceConfig(FuchsiaTraceConfigDialog.getConfig(settings));
-          } else {
+          if (!dev.isFuchsia()) {
             int durationMs = duration.getSelection() * 1000;
             // TODO: this isn't really unlimited.
             durationMs = (durationMs == 0) ? (int)MINUTES.toMillis(10) : durationMs;

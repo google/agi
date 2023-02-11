@@ -188,6 +188,7 @@ public class TraceTargets
     }
 
     public Target getTraceTarget() {
+      System.out.println("GetTraceTarget, uri is: " + data.getTraceUri());
       return isTraceable() ? new Target(data.getTraceUri(), data.getFriendlyApplication()) : null;
     }
 
