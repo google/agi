@@ -55,7 +55,7 @@ type Process interface {
 	Capture(ctx context.Context, start task.Signal, stop task.Signal, ready task.Task, w io.Writer, written *int64) (size int64, err error)
 }
 
-// (ffx0) - Implement this interface for initiating pipe communication for Fuchsia tracing.
+// (ffx0) - Implement this interface for initiating unix socket communication for Fuchsia tracing.
 // Tracer is an option interface that a bind.Device can implement.
 // If it exists, it is used to set up and connect to a tracing application.
 type Tracer interface {

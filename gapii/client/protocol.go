@@ -49,8 +49,6 @@ func readHeader(conn net.Conn) (msgType messageType, dataSize uint64, err error)
 	n := 0
 
 	if n, err = io.ReadFull(conn, buf); err == nil {
-		// if n, err = conn.Read(buf); err == nil {
-
 		fmt.Printf("readHeader: Read %d bytes: %s", n, buf)
 
 		// first header byte contains the message type

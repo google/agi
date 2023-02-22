@@ -131,7 +131,7 @@ func (p *Process) connect(ctx context.Context) error {
 			return false, log.Err(ctx, err, "Failed to read magic")
 		}
 
-		// (ffx7) - Magic handshake is here.
+		// Magic handshake.
 		if magic != [...]byte{'g', 'a', 'p', 'i', 'i'} {
 			conn.Close()
 			return true, log.Errf(ctx, nil, "Got unexpected magic: %v", magic)
@@ -177,8 +177,6 @@ func handleCommError(ctx context.Context, commErr error, anyDataReceived bool) (
 // until start is fired.
 // Capturing will stop when the stop signal is fired (clean stop) or the
 // context is cancelled (abort).
-
-// (ffx4) - read design document for message communication with the device.
 func (p *Process) Capture(ctx context.Context, start task.Signal, stop task.Signal, ready task.Task, w io.Writer, written *int64) (size int64, err error) {
 	stopTiming := analytics.SendTiming("trace", "duration")
 	defer func() {
@@ -198,7 +196,7 @@ func (p *Process) Capture(ctx context.Context, start task.Signal, stop task.Sign
 	}()
 
 	if p.Conn == nil {
-		// (ffx6) - sends initial handshake header to the device.
+		// Sends initial handshake header to the device.
 		if err := p.connect(ctx); err != nil {
 			return 0, err
 		}
@@ -210,9 +208,6 @@ func (p *Process) Capture(ctx context.Context, start task.Signal, stop task.Sign
 
 	writeErr := make(chan error)
 
-	// (ffx12) - This creates a thread in parallel.
-	//           If the ffx shell command blocks, I need to launch a Go routine like
-	//           this to call ffx.
 	go func() {
 		if (p.Options.Flags & DeferStart) != 0 {
 			if start.Wait(ctx) {
@@ -253,8 +248,6 @@ mainLoop:
 			break mainLoop
 		}
 		msgType, dataSize, headerErr := readHeader(conn)
-		log.I(ctx, "Capture (mainLoop): readHeader() dataSize: %d", dataSize)
-		log.I(ctx, "Capture (mainLoop): readHeader() err: "+headerErr.Error())
 		if abort, err := handleCommError(ctx, headerErr, count > 0); abort {
 			return int64(count), err
 		}
@@ -265,8 +258,8 @@ mainLoop:
 			if dataErr != nil {
 				return int64(count), dataErr
 			}
-		// (ffx5) - Message sent, e.g., for capture 1 frame case.
-		//          Overall, this messaging protocol isn't completely finished.
+		// Message sent, e.g., for capture 1 frame case.
+		// Per Pascal, this messaging protocol isn't completely finished.
 		case messageEndTrace:
 			log.D(ctx, "Received end trace message: %v", count)
 			// if received error messages, return most recent

@@ -17,7 +17,6 @@ package ffx
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -161,19 +160,16 @@ func (b *binding) TraceProviders(ctx context.Context) ([]string, error) {
 
 // StartTrace implements the fuchsia.Device interface and starts a Fuchsia trace.
 func (b *binding) StartTrace(ctx context.Context, options *service.TraceOptions, traceFile file.Path, stop task.Signal, ready task.Task) error {
-	log.I(ctx, "StartTrace HAS BEEN CALLED")
 	var cmd shell.Cmd
 	switch t := options.GetType(); t {
 	case service.TraceType_Graphics:
-		log.E(ctx, "StartTrace, TRACE TYPE: GRAPHICS")
 		if fuchsiaConfig := options.GetFuchsiaTraceConfig(); fuchsiaConfig != nil {
 			// Initialize shell command.
 			cmd = b.Command("agis", "listen", strconv.FormatInt(int64(fuchsiaConfig.GetGlobalId()), 10))
 		} else {
-			log.E(ctx, "StartTrace, ERR fuchsiaConfig == nil for GRAPHICS trace")
+		    return fmt.Errorf("fuchsiaConfig is nil for graphics trace")
 		}
 	case service.TraceType_Fuchsia:
-		log.E(ctx, "StartTrace, TRACE TYPE: FUCHSIA")
 		var categoriesArg string
 		// Initialize shell command.
 		cmd = b.Command("trace", "start", "--output", traceFile.System())
@@ -194,13 +190,7 @@ func (b *binding) StartTrace(ctx context.Context, options *service.TraceOptions,
 			}
 		}
 	default:
-		log.E(ctx, "StartTrace, TRACE TYPE: UNKNOWN")
-		return errors.New("Unrecognized Fuchsia trace type")
-	}
-
-	log.I(ctx, "COMMAND is: "+cmd.Name)
-	for _, arg := range cmd.Args {
-		log.I(ctx, "\t"+arg)
+		return fmt.Errorf("Unknown Fuchsia trace type: %d", t)
 	}
 
 	log.I(ctx, "StartTrace is calling `ffx agis listen <global_id>`")
