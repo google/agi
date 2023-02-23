@@ -167,7 +167,7 @@ func (b *binding) StartTrace(ctx context.Context, options *service.TraceOptions,
 			// Initialize shell command.
 			cmd = b.Command("agis", "listen", strconv.FormatInt(int64(fuchsiaConfig.GetGlobalId()), 10))
 		} else {
-		    return fmt.Errorf("fuchsiaConfig is nil for graphics trace")
+			return fmt.Errorf("fuchsiaConfig is nil for graphics trace")
 		}
 	case service.TraceType_Fuchsia:
 		var categoriesArg string

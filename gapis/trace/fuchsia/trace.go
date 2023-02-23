@@ -182,11 +182,7 @@ func (t *fuchsiaTracer) FindTraceTargets(ctx context.Context, uri string) ([]*tr
 func (t *fuchsiaTracer) SetupTrace(ctx context.Context, o *service.TraceOptions) (tracer.Process, app.Cleanup, error) {
 	log.I(ctx, "SetupTrace HAS BEEN CALLED")
 
-	// (ffx1) -
-	//    (0) Review desktop SetupTrace.
-	//    (1) Delineate w/ trace type "Graphics".
-	//    (2) Create unix pipe for forwarding to ffx daemon here.
-	//    (3) MUST launch component here so CreateInstance is captured as part of this tracing.
+	// TODO(fuchsia) - MUST launch component here so CreateInstance is captured as part of this tracing.
 	session := &traceSession{
 		device:  t.device,
 		options: o,
@@ -238,23 +234,6 @@ func (t *fuchsiaTracer) SetupTrace(ctx context.Context, o *service.TraceOptions)
 		return nil, nil, errors.New("Unrecognized Fuchsia trace type")
 	}
 	return session, nil, nil
-
-	// (ffx4)
-	// (ffx7) - Send the component global_id in the uri because it is how gapic designates the
-	//          thing to trace.
-	// (ffx8) - Port is used here for universal socket behavior (windows too).
-	// (ffx10) - Initialize conn here.  Call net.Listen. Network: unix  Address: path
-	//           Look up net.Conn / Listen in the Go standard library docs.
-	//           Instance conn w/ net.Listen.  Pass in conn instead of boundPort.
-	// net.Listen -> Listener instance -> call Accept on Listener -> that will give Conn.
-	// (ffx11) - Before calling Accept, need to shell out and call ffx listen.
-	//           Listen, Shell out to Ffx, Call Accept.
-	//           If Ffx command blocks (it doesn't), need to launch in thread.
-
-	/*
-		process := &gapii.Process{Port: boundPort, Device: t.b, Options: tracer.GapiiOptions(o)}
-		return process, cleanup, nil
-	*/
 }
 
 // GetDevice returns the device associated with this tracer.

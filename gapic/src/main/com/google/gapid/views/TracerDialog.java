@@ -198,9 +198,6 @@ public class TracerDialog {
       TraceProgressDialog progress =
         new TraceProgressDialog(shell, models.analytics, input.getValue(), widgets.theme);
 
-      // (ffx13) - This calls into the Go code and needs to be passed the global_id for Fuchsia.
-      // (ffx16) - input.getValue() yields a Tracer.traceRequest with a Service.TraceOptions field.
-      //           Service.TraceOptions should have the global_id field populated here.
       Tracer.Trace trace = Tracer.trace(client, shell, input.getValue(), progress);
 
       progress.setTrace(trace);
@@ -1088,7 +1085,6 @@ public class TracerDialog {
            if(type == TraceType.System) {
              options.setFuchsiaTraceConfig(FuchsiaTraceConfigDialog.getCategories(settings));
            } else if (type == TraceType.Vulkan) {
-             // (ffx17) TODO - extract GlobalID from URI and set that value here.
              String uri = trace.getUri();
              if (!uri.isEmpty()) {
                String[] tokens = uri.split("\\s+");
