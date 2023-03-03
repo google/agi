@@ -180,9 +180,6 @@ func (t *fuchsiaTracer) FindTraceTargets(ctx context.Context, uri string) ([]*tr
 // for the trace to be started. It returns the process that was created, as
 // well as a function that can be used to clean up the device.
 func (t *fuchsiaTracer) SetupTrace(ctx context.Context, o *service.TraceOptions) (tracer.Process, app.Cleanup, error) {
-	log.I(ctx, "SetupTrace HAS BEEN CALLED")
-
-	// TODO(fuchsia) - MUST launch component here so CreateInstance is captured as part of this tracing.
 	session := &traceSession{
 		device:  t.device,
 		options: o,
@@ -222,7 +219,7 @@ func (t *fuchsiaTracer) SetupTrace(ctx context.Context, o *service.TraceOptions)
 		if err != nil {
 			log.E(ctx, "SetupTrace: Accept failed")
 		} else {
-			log.I(ctx, "SetupTrace: Accept Succeeded")
+			log.I(ctx, "SetupTrace: Accept succeeded")
 		}
 		var cleanup app.Cleanup
 		process := &gapii.Process{Conn: conn, Device: t.device, Options: tracer.GapiiOptions(o)}

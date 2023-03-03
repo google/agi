@@ -18,7 +18,6 @@ package client
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"net"
 	"sync/atomic"
@@ -46,22 +45,16 @@ func readHeader(conn net.Conn) (msgType messageType, dataSize uint64, err error)
 	now := time.Now()
 	conn.SetReadDeadline(now.Add(time.Millisecond * 500)) // Allow for stop event and UI refreshes.
 	buf := make([]byte, messageHeaderSize)
-	n := 0
 
-	if n, err = io.ReadFull(conn, buf); err == nil {
-		fmt.Printf("readHeader: Read %d bytes: %s", n, buf)
-
+	if _, err = io.ReadFull(conn, buf); err == nil {
 		// first header byte contains the message type
 		msgType = messageType(buf[0])
 		// next messageDataBytes contain the data size as little-endian unsigned integer
 		for i := uint(0); i < messageDataBytes; i++ {
 			dataSize += uint64(buf[i+1]) << (i * 8)
 		}
-	} else {
-		fmt.Printf("ERROR readHeader: Invalid message header.  Only %v bytes read and %d expected.", n,
-			messageHeaderSize)
-		return 0, 0, err
 	}
+
 	return msgType, dataSize, nil
 }
 

@@ -205,8 +205,6 @@ public class TracerDialog {
       if (progress.open() == Window.OK && progress.successful()) {
         models.capture.loadCapture(input.getValue().output);
       }
-    } else {
-      System.out.println("ERROR: loadDevicesAndShowDialog status is not OK");
     }
   }
 
@@ -904,7 +902,6 @@ public class TracerDialog {
               new TraceTargetPickerDialog(shell, models, dev.targets, widgets);
           if (dialog.open() == Window.OK) {
             TraceTargets.Node node = dialog.getSelected();
-            System.out.println("showTraceTargetPicker node is: " + node.getUri());
             return (node == null) ? null : node.getTraceTarget();
           }
         }

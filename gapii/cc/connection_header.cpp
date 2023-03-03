@@ -60,7 +60,8 @@ bool ConnectionHeader::read(core::StreamReader* reader) {
   if (!reader->read(mObserveFrameFrequency) || !reader->read(mStartFrame) ||
       !reader->read(mNumFrames) || !reader->read(mAPIs) ||
       !reader->read(mFlags)) {
-    GAPID_WARNING("ConnectionHeader bulk of header information read has FAILED");
+    GAPID_WARNING(
+        "ConnectionHeader bulk of header information read has FAILED");
     return false;
   }
 

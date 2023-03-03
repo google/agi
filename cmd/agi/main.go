@@ -30,7 +30,7 @@ import (
 const (
 	versionPrefix = `version "`
 	googleInfix   = "-google-"
-	minJavaMajor  = 17
+	minJavaMajor  = 11
 	minJavaMinor  = 0
 	colorReset    = "\033[0m"
 	colorYellow   = "\033[33m"

@@ -172,7 +172,7 @@ Spy::Spy()
 #else
     mConnection = ConnectionStream::listenSocket("127.0.0.1", "9286");
 #endif                                          // TARGET_OS
-    if (mConnection->write("gapii", 6) != 6) {  // handshake string
+    if (mConnection->write("gapii", 5) != 5) {  // handshake string
       GAPID_FATAL("Couldn't send \"gapii\" handshake string");
     } else {
       GAPID_INFO("Wrote \"gapii\" to vulkan socket.");
