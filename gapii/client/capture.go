@@ -197,21 +197,28 @@ func (p *Process) Capture(ctx context.Context, start task.Signal, stop task.Sign
 
 	if p.Conn == nil {
 		// Sends initial handshake header to the device.
+		log.I(ctx, "Sending CONNECTION HEADER")
 		if err := p.connect(ctx); err != nil {
+		    log.E(ctx, "Connection Header Send FAILED")
 			return 0, err
 		}
 	}
 	status.Event(ctx, status.ProcessScope, "Trace Connected")
 
 	conn := p.Conn
-	defer conn.Close()
+	defer func() {
+		log.I(ctx, "process - CLOSING CONNECTION")
+		conn.Close()
+	}()
 
 	writeErr := make(chan error)
 
 	go func() {
+		log.I(ctx, "Capture ASYNC FUNC")
 		if (p.Options.Flags & DeferStart) != 0 {
 			if start.Wait(ctx) {
 				if err := writeStartTrace(conn); err != nil {
+					log.E(ctx, "ERROR - writeStartTrace")
 					writeErr <- err
 					return
 				}
@@ -249,6 +256,7 @@ mainLoop:
 		}
 		msgType, dataSize, headerErr := readHeader(conn)
 		if abort, err := handleCommError(ctx, headerErr, count > 0); abort {
+			log.E(ctx, "GENERAL handleCommError POST %v", err)
 			return int64(count), err
 		}
 		switch msgType {
@@ -256,6 +264,7 @@ mainLoop:
 			read, dataErr := readData(ctx, conn, dataSize, w, written)
 			count += read
 			if dataErr != nil {
+			    log.E(ctx, "dataErr POST %v", dataErr)
 				return int64(count), dataErr
 			}
 		// Message sent, e.g., for capture 1 frame case.
@@ -274,6 +283,7 @@ mainLoop:
 				lastErrorMsg = errorMsg
 			}
 			if abort, err := handleCommError(ctx, errorErr, true); abort {
+			    log.E(ctx, "messageError handleCommError POST %v", err)
 				return int64(count), err
 			}
 		}

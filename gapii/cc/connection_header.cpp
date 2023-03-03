@@ -31,6 +31,7 @@ ConnectionHeader::ConnectionHeader()
 
 bool ConnectionHeader::read(core::StreamReader* reader) {
   if (!reader->read(mMagic)) {
+    GAPID_WARNING("ConnectionHeader read into mMagic (4 bytes), failed.");
     return false;
   }
   if (mMagic[0] != 's' || mMagic[1] != 'p' || mMagic[2] != 'y' ||
@@ -43,6 +44,7 @@ bool ConnectionHeader::read(core::StreamReader* reader) {
   // TODO: Endian-swap data if GAPII is running on a big-endian architecture.
 
   if (!reader->read(mVersion)) {
+    GAPID_WARNING("ConnectionHeader read into mVersion, failed.");
     return false;
   }
 
@@ -58,6 +60,7 @@ bool ConnectionHeader::read(core::StreamReader* reader) {
   if (!reader->read(mObserveFrameFrequency) || !reader->read(mStartFrame) ||
       !reader->read(mNumFrames) || !reader->read(mAPIs) ||
       !reader->read(mFlags)) {
+    GAPID_WARNING("ConnectionHeader bulk of header information read has FAILED");
     return false;
   }
 

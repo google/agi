@@ -18,6 +18,8 @@
 
 #include "zircon_socket_connection.h"
 
+#include <thread>
+
 #include <errno.h>
 #include <zircon/status.h>
 
@@ -39,11 +41,21 @@ size_t ZirconSocketConnection::send(const void* data, size_t size) {
 
 size_t ZirconSocketConnection::recv(void* data, size_t size) {
   size_t bytes_read = 0;
-  zx_status_t status = mSocket.read(0u, data, size, &bytes_read);
-  if (status != ZX_OK) {
-    GAPID_ERROR("Failed to read data from Zircon socket: %s",
-                zx_status_get_string(status));
-  }
+  int attempts = 0;
+  zx_status_t status = ZX_ERR_INTERNAL;
+  do  {
+    status = mSocket.read(0u, data, size, &bytes_read);
+    if (status != ZX_OK) {
+      GAPID_ERROR("Failed to read %zu bytes from Zircon socket: %s, attempts: %d",
+                   size, zx_status_get_string(status), attempts);
+      attempts++;
+    }
+    if (status == ZX_ERR_SHOULD_WAIT) {
+      GAPID_INFO("Zircon socket read: ZX_ERR_SHOULD_WAIT, waiting 6s ...");
+      std::this_thread::sleep_for(std::chrono::milliseconds(6000));
+    }
+  } while(status == ZX_ERR_SHOULD_WAIT);
+  // TODO(rosasco): release code should have a reasonable timeout for the loop above.
   return bytes_read;
 }
 
