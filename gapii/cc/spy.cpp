@@ -174,6 +174,8 @@ Spy::Spy()
 #endif                                          // TARGET_OS
     if (mConnection->write("gapii", 5) != 5) {  // handshake string
       GAPID_FATAL("Couldn't send \"gapii\" handshake string");
+    } else {
+      GAPID_INFO("Wrote \"gapii\" to vulkan socket.");
     }
     GAPID_INFO("Connection made");
   }
@@ -322,7 +324,8 @@ zx_handle_t Spy::AgisRegisterAndRetrieve(uint64_t client_id) {
                 register_result.error_value().FormatDescription().c_str());
   }
 
-  // Retrieve Vulkan socket.
+  // Issue hanging get to retrieve the Vulkan socket.
+  GAPID_INFO("Gapii - Issuing hanging get to wait for Vulkan socket");
   fidl::Result<fuchsia_gpu_agis::ComponentRegistry::GetVulkanSocket>
       socket_result = mAgisComponentRegistry->GetVulkanSocket(client_id);
   if (socket_result.is_error()) {
@@ -332,6 +335,8 @@ zx_handle_t Spy::AgisRegisterAndRetrieve(uint64_t client_id) {
   zx::socket vulkan_socket(std::move(socket_result->socket()));
   if (!vulkan_socket.is_valid()) {
     GAPID_ERROR("Spy(fuchsia) GetVulkanSocket() - invalid socket");
+  } else {
+    GAPID_INFO("Gapii - Retrieved valid Vulkan socket.");
   }
 
   // Release socket back to the caller.

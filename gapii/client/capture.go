@@ -113,13 +113,23 @@ func (s siSize) String() string {
 }
 
 func (p *Process) connect(ctx context.Context) error {
-	log.I(ctx, "Waiting for connection to localhost:%d...", p.Port)
+	if p.Port != 0 {
+		log.I(ctx, "Waiting for connection to localhost:%d...", p.Port)
+	}
 
-	// ADB has an annoying tendancy to insta-close forwarded sockets when
+	// ADB has an annoying tendency to insta-close forwarded sockets when
 	// there's no application waiting for the connection. Treat errors as
 	// another waiting-for-connection case.
 	return task.Retry(ctx, 0, 500*time.Millisecond, func(ctx context.Context) (retry bool, err error) {
-		conn, err := net.DialTimeout("tcp", fmt.Sprintf("localhost:%d", p.Port), 3*time.Second)
+		var conn net.Conn
+		if p.Conn == nil && p.Port == 0 {
+			log.F(ctx, true, "Either connection or port must be initialized.")
+		}
+		if p.Conn == nil {
+			conn, err = net.DialTimeout("tcp", fmt.Sprintf("localhost:%d", p.Port), 3*time.Second)
+		} else {
+			conn = p.Conn
+		}
 		if err != nil {
 			return false, log.Err(ctx, err, "Dial failed")
 		}
@@ -128,17 +138,21 @@ func (p *Process) connect(ctx context.Context) error {
 		var magic [5]byte
 		if _, err := io.ReadFull(r, magic[:]); err != nil {
 			conn.Close()
+			log.E(ctx, "Failed to read magic")
 			return false, log.Err(ctx, err, "Failed to read magic")
 		}
+
+		// Magic handshake.
 		if magic != [...]byte{'g', 'a', 'p', 'i', 'i'} {
 			conn.Close()
 			return true, log.Errf(ctx, nil, "Got unexpected magic: %v", magic)
 		}
 		if err := sendHeader(conn, p.Options); err != nil {
 			conn.Close()
+			log.E(ctx, "Failed to send header")
 			return true, log.Err(ctx, err, "Failed to send header")
 		}
-		p.conn = conn
+		p.Conn = conn
 		return true, nil
 	})
 }
@@ -193,21 +207,28 @@ func (p *Process) Capture(ctx context.Context, start task.Signal, stop task.Sign
 		}
 	}()
 
-	if p.conn == nil {
-		if err := p.connect(ctx); err != nil {
-			return 0, err
-		}
+	// Sends initial handshake header to the device.
+	log.I(ctx, "Sending CONNECTION HEADER")
+	if err := p.connect(ctx); err != nil {
+		log.E(ctx, "Connection Header Send FAILED")
+		return 0, err
 	}
+
 	status.Event(ctx, status.ProcessScope, "Trace Connected")
 
-	conn := p.conn
-	defer conn.Close()
+	conn := p.Conn
+	defer func() {
+		log.I(ctx, "process - CLOSING CONNECTION")
+		conn.Close()
+	}()
 
 	writeErr := make(chan error)
+
 	go func() {
 		if (p.Options.Flags & DeferStart) != 0 {
 			if start.Wait(ctx) {
 				if err := writeStartTrace(conn); err != nil {
+					log.E(ctx, "ERROR - writeStartTrace")
 					writeErr <- err
 					return
 				}
@@ -245,6 +266,7 @@ mainLoop:
 		}
 		msgType, dataSize, headerErr := readHeader(conn)
 		if abort, err := handleCommError(ctx, headerErr, count > 0); abort {
+			log.E(ctx, "GENERAL handleCommError POST %v", err)
 			return int64(count), err
 		}
 		switch msgType {
@@ -252,8 +274,11 @@ mainLoop:
 			read, dataErr := readData(ctx, conn, dataSize, w, written)
 			count += read
 			if dataErr != nil {
+				log.E(ctx, "dataErr POST %v", dataErr)
 				return int64(count), dataErr
 			}
+		// Message sent, e.g., for capture 1 frame case.
+		// Per Pascal, this messaging protocol isn't completely finished.
 		case messageEndTrace:
 			log.D(ctx, "Received end trace message: %v", count)
 			// if received error messages, return most recent
@@ -268,6 +293,7 @@ mainLoop:
 				lastErrorMsg = errorMsg
 			}
 			if abort, err := handleCommError(ctx, errorErr, true); abort {
+				log.E(ctx, "messageError handleCommError POST %v", err)
 				return int64(count), err
 			}
 		}

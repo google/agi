@@ -53,7 +53,7 @@ type Process struct {
 	Options Options
 
 	// The connection
-	conn net.Conn
+	Conn net.Conn
 }
 
 // Start launches an activity on an android device with the GAPII interceptor

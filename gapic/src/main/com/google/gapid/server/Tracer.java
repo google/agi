@@ -71,6 +71,7 @@ public class Tracer {
       }
     });
 
+    // Send the trace request to gapis.
     sender.send(Service.TraceRequest.newBuilder()
         .setInitialize(request.options)
         .build());

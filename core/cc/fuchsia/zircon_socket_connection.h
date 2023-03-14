@@ -37,7 +37,7 @@ class ZirconSocketConnection final : public Connection {
   ZirconSocketConnection& operator=(const ZirconSocketConnection&) = delete;
 
   // Implementation of the Connection interface.
-  size_t send(const void* data, size_t size) override;
+  size_t send(const void* data, const size_t size) override;
   size_t recv(void* data, size_t size) override;
   const char* error() override;
 

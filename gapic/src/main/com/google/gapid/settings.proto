@@ -203,6 +203,7 @@ message Perfetto {
 
 message FuchsiaTracing {
   repeated string categories = 1;
+  int32 global_id = 2;
 }
 
 message Settings {

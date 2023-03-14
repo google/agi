@@ -1519,6 +1519,9 @@ message DeviceValidationResult {
 }
 
 message FuchsiaTraceConfig {
-  // Tracing categories per Fuchsia's ffx tool.
+  // Tracing categories per Fuchsia's ffx tool, tracing type Fuchsia.
   repeated string categories = 1;
+
+  // Global ID of component to trace, tracing type Graphics.
+  int32 global_id = 2;
 }

@@ -45,6 +45,7 @@ func readHeader(conn net.Conn) (msgType messageType, dataSize uint64, err error)
 	now := time.Now()
 	conn.SetReadDeadline(now.Add(time.Millisecond * 500)) // Allow for stop event and UI refreshes.
 	buf := make([]byte, messageHeaderSize)
+
 	if _, err = io.ReadFull(conn, buf); err == nil {
 		// first header byte contains the message type
 		msgType = messageType(buf[0])
@@ -53,7 +54,8 @@ func readHeader(conn net.Conn) (msgType messageType, dataSize uint64, err error)
 			dataSize += uint64(buf[i+1]) << (i * 8)
 		}
 	}
-	return
+
+	return msgType, dataSize, nil
 }
 
 func readData(ctx context.Context, conn net.Conn, dataSize uint64, w io.Writer, written *int64) (read siSize, err error) {
