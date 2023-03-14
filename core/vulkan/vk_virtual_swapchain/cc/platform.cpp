@@ -27,7 +27,7 @@ void CreateSurface(const InstanceData* functions, VkInstance instance,
     auto pCreateInfo = static_cast<const VkAndroidSurfaceCreateInfoKHR*>(data);
     if (pCreateInfo->sType ==
         VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR) {
-      // Attempt to create android surface
+      // Attempt to create android surface.
       if (functions->vkCreateAndroidSurfaceKHR(
               instance, pCreateInfo, pAllocator, pSurface) != VK_SUCCESS) {
         *pSurface = 0;
@@ -39,7 +39,7 @@ void CreateSurface(const InstanceData* functions, VkInstance instance,
   {
     auto pCreateInfo = static_cast<const VkXcbSurfaceCreateInfoKHR*>(data);
     if (pCreateInfo->sType == VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR) {
-      // Attempt to create Xcb surface
+      // Attempt to create Xcb surface.
       if (functions->vkCreateXcbSurfaceKHR(instance, pCreateInfo, pAllocator,
                                            pSurface) != VK_SUCCESS) {
         *pSurface = 0;
@@ -51,9 +51,23 @@ void CreateSurface(const InstanceData* functions, VkInstance instance,
   {
     auto pCreateInfo = static_cast<const VkWin32SurfaceCreateInfoKHR*>(data);
     if (pCreateInfo->sType == VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR) {
-      // Attempt to create Win32 surface
+      // Attempt to create Win32 surface.
       if (functions->vkCreateWin32SurfaceKHR(instance, pCreateInfo, pAllocator,
                                              pSurface) != VK_SUCCESS) {
+        *pSurface = 0;
+      }
+    }
+  }
+#endif
+#ifdef VK_USE_PLATFORM_FUCHSIA
+  {
+    auto pCreateInfo =
+        static_cast<const VkImagePipeSurfaceCreateInfoFUCHSIA*>(data);
+    if (pCreateInfo->sType ==
+        VK_STRUCTURE_TYPE_IMAGEPIPE_SURFACE_CREATE_INFO_FUCHSIA) {
+      // Attempt to create the image pipe surface.
+      if (functions->vkCreateImagePipeSurfaceFUCHSIA(
+              instance, pCreateInfo, pAllocator, pSurface) != VK_SUCCESS) {
         *pSurface = 0;
       }
     }

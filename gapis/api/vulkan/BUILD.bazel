@@ -23,6 +23,7 @@ filegroup(
         "*.api",
         "api/*.api",
         "extensions/*.api",
+        "fuchsia/*.api",
         "linux/*.api",
         "windows/*.api",
         "mac/*.api",
