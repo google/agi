@@ -399,6 +399,8 @@ bool Vulkan::replayCreateVkDeviceImpl(Stack* stack, size_val physicalDevice,
     VkXcbSurfaceCreateInfoKHR xcbInfo = {};
 #elif TARGET_OS == GAPID_OS_WINDOWS
     VkWin32SurfaceCreateInfoKHR win32Info = {};
+#elif TARGET_OS == GAPID_OS_FUCHSIA
+    VkImagePipeSurfaceCreateInfoFUCHSIA fuchsiaInfo = {};
 #endif
     for (auto pNext = static_cast<const swapchain::CreateNext*>(newCreateInfo.pNext);
          pNext != nullptr;
@@ -455,7 +457,13 @@ bool Vulkan::replayCreateVkDeviceImpl(Stack* stack, size_val physicalDevice,
                     win32Info.hwnd = (HWND)info->window;
                   }
                   break;
+#elif TARGET_OS == FUCHSIA
+                case gapir::SurfaceType::Fuchsia:
+                  createInfo = &fuchsiaInfo;
+                  fuchsiaInfo.sType = VK_STRUCTURE_TYPE_IMAGEPIPE_SURFACE_CREATE_INFO_FUCHSIA;
+                  fuchsiaInfo.imagePipeHandle = (zx_handle_t)data;
 #endif
+                  break;
                 default:
                   break;
                 }

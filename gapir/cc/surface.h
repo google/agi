@@ -27,6 +27,8 @@ class ANativeWindow;
 #include <xcb/xcb.h>
 #elif TARGET_OS == GAPID_OS_WINDOWS
 #include <Windows.h>
+#elif TARGET_OS == GAPID_FUCHSIA
+#include <zircon/types.h>
 #endif
 
 namespace gapir {
@@ -43,9 +45,11 @@ struct Win32WindowInfo {
   HINSTANCE instance;
   HWND window;
 };
+#elif TARGET_OS == GAPID_OS_FUCHSIA
+zx_handle_t image_pipe_handle;
 #endif
 
-enum SurfaceType { Unknown, Android, Win32, Xcb };
+enum SurfaceType { Unknown, Android, Win32, Xcb, Fuchsia };
 
 // Get the platform-specific data pointer to create the surface
 const void* CreateSurface(uint32_t width, uint32_t height, SurfaceType& type);
