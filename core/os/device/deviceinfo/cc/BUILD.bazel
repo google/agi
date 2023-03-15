@@ -55,8 +55,8 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//core/cc",
-        "@com_google_protobuf//:protobuf",
         "//core/os/device:device_cc_proto",
+        "@com_google_protobuf//:protobuf",
     ] + select({
         "//tools/build:darwin": [":darwin_query"],
         "//tools/build:darwin_arm64": [":darwin_query"],
