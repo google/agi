@@ -75,7 +75,6 @@ class VkImagePipeSurfaceCreateInfoFUCHSIA {
 @platform("VK_USE_PLATFORM_FUCHSIA")
 @extension("VK_FUCHSIA_imagepipe_surface")
 @indirect("VkInstance")
-@custom
 cmd VkResult vkCreateImagePipeSurfaceFUCHSIA(
     VkInstance                                  instance,
     const VkImagePipeSurfaceCreateInfoFUCHSIA*  pCreateInfo,

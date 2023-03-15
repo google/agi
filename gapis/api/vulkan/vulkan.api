@@ -132,6 +132,7 @@ import "extensions/ext_index_type_uint8.api"
 import "extensions/ext_custom_border_color.api"
 
 import "android/vulkan_android.api"
+import "fuchsia/fuchsia_imagepipe_surface.api"
 import "linux/vulkan_linux.api"
 import "windows/vulkan_windows.api"
 import "mac/vulkan_mac.api"
@@ -233,6 +234,7 @@ sub ref!ExtensionSet supportedInstanceExtensions() {
   supported.ExtensionNames["VK_KHR_xcb_surface"] = true
   supported.ExtensionNames["VK_KHR_wayland_surface"] = true
   supported.ExtensionNames["VK_KHR_android_surface"] = true
+  supported.ExtensionNames["VK_FUCHSIA_imagepipe_surface"] = true
   supported.ExtensionNames["VK_KHR_win32_surface"] = true
   supported.ExtensionNames["VK_KHR_get_physical_device_properties2"] = true
   supported.ExtensionNames["VK_KHR_get_surface_capabilities2"] = true
