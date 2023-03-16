@@ -101,10 +101,10 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//core/cc",
+        "//core/vulkan/vk_virtual_swapchain/cc:headers",
         "//gapir/replay_service:proto",
         "//gapir/replay_service:vm",
         "@com_github_grpc_grpc//:grpc++_unsecure",
-        "//core/vulkan/vk_virtual_swapchain/cc:headers",
     ] + select({
         "//tools/build:darwin": [":darwin_renderer"],
         "//tools/build:darwin_arm64": [":darwin_renderer"],

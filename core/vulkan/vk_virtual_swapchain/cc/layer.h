@@ -72,6 +72,9 @@ struct InstanceData {
 #ifdef VK_USE_PLATFORM_WIN32_KHR
   PFN_vkCreateWin32SurfaceKHR vkCreateWin32SurfaceKHR;
 #endif
+#ifdef VK_USE_PLATFORM_FUCHSIA
+  PFN_vkCreateImagePipeSurfaceFUCHSIA vkCreateImagePipeSurfaceFUCHSIA;
+#endif
   PFN_vkDestroySurfaceKHR vkDestroySurfaceKHR;
 
   // All of the physical devices associated with this instance.

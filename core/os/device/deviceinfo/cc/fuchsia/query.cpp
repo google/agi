@@ -39,27 +39,34 @@ device::ABI* abi(device::ABI* abi) {
 namespace query {
 
 bool queryPlatform(PlatformInfo* info, std::string* errorMsg) {
+#if 0  // TODO: implement
   char hostname[HOST_NAME_MAX + 1];
   if (gethostname(hostname, sizeof(hostname)) != 0) {
     errorMsg->append("gethostname returned error: " + std::to_string(errno));
     return false;
   }
   info->name = hostname;
+#endif
+  info->name = "Sherlock";
   info->abis.resize(1);
   abi(&info->abis[0]);
 
+#if 0  // TODO: implement
   utsname ubuf;
   if (uname(&ubuf) != 0) {
     errorMsg->append("uname returned error: " + std::to_string(errno));
     return false;
   }
   info->hardwareName = STR_OR_EMPTY(ubuf.machine);
+#endif
 
   info->numCpuCores = sysconf(_SC_NPROCESSORS_CONF);
 
   info->osKind = device::Fuchsia;
+#if 0  // TODO: implement
   info->osName = STR_OR_EMPTY(ubuf.release);
   info->osBuild = STR_OR_EMPTY(ubuf.version);
+#endif
 
   return true;
 }

@@ -261,6 +261,11 @@ const void* CreateSurface(uint32_t width, uint32_t height, SurfaceType& type) {
     case SurfaceType::Unknown:
       type = SurfaceType::Win32;
       return createWin32Window(width, height);
+#elif TARGET_OS == GAPID_OS_FUCHSIA
+    case SurfaceType::Fuchsia:
+      type = SurfaceType::Fuchsia;
+      // TODO(rosasco): how do we fit in here ?
+      return (void*)image_pipe_handle;
 #endif
     default:
       return nullptr;

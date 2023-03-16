@@ -683,6 +683,19 @@ func (sb *stateBuilder) createSurface(s SurfaceObjectʳ) {
 			sb.MustAllocWriteData(s.VulkanHandle()).Ptr(),
 			VkResult_VK_SUCCESS,
 		))
+	case SurfaceType_SURFACE_TYPE_IMAGEPIPE_FUCHSIA:
+		sb.write(sb.cb.VkCreateImagePipeSurfaceFUCHSIA(
+			s.Instance(),
+			sb.MustAllocReadData(NewVkImagePipeSurfaceCreateInfoFUCHSIA(
+				VkStructureType_VK_STRUCTURE_TYPE_IMAGEPIPE_SURFACE_CREATE_INFO_FUCHSIA, // sType
+				0, // pNext
+				0, // flags
+				0, // imagePipeHandle
+			)).Ptr(),
+			memory.Nullptr,
+			sb.MustAllocWriteData(s.VulkanHandle()).Ptr(),
+			VkResult_VK_SUCCESS,
+		))
 	}
 	for _, phyDev := range s.PhysicalDeviceSupports().Keys() {
 		familyIndices := s.PhysicalDeviceSupports().Get(phyDev)
