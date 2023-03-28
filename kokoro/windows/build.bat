@@ -31,7 +31,7 @@ set WIX=%cd%
 cd ..
 
 REM Use a fixed JDK.
-set JAVA_HOME=c:\Program Files\Java\jdk1.8.0_152
+set JAVA_HOME=C:\Program Files\Java\jdk1.8.0_211
 
 REM Install the Android SDK components and NDK.
 set ANDROID_HOME=c:\Android\android-sdk
