@@ -42,7 +42,7 @@ const (
 	ErrUnrootFailed    = fault.Const("Device failed to switch out of root")
 
 	maxRootAttempts                         = 5
-	gpuRenderStagesDataSourceDescriptorName = "gpu.renderstages"
+	gpuRenderStagesDataSourceDescriptorName = "gpu.renderstages.intel"
 	gpuMemTotalDataSourceDescriptorName     = "android.gpu.memory"
 
 	perfettoPort = NamedFileSystemSocket("/dev/socket/traced_consumer")

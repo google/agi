@@ -43,7 +43,7 @@ import (
 
 const (
 	ftraceDataSourceName          = "linux.ftrace"
-	gpuRenderStagesDataSourceName = "gpu.renderstages"
+	gpuRenderStagesDataSourceName = "gpu.renderstages.intel"
 
 	// perfettoTraceFile is the location on the device where we'll ask Perfetto
 	// to store the trace data while tracing.

@@ -283,7 +283,7 @@ public class TraceConfigDialog extends DialogBase {
       if (gpuCaps.getHasRenderStage() && gpu.getSlices()) {
         config.addDataSourcesBuilder()
             .getConfigBuilder()
-                .setName("gpu.renderstages");
+                .setName("gpu.renderstages.intel");
         config.addDataSourcesBuilder()
             .getConfigBuilder()
                 .setName("VulkanAPI");
@@ -294,7 +294,7 @@ public class TraceConfigDialog extends DialogBase {
         if (enabledCounters != null && enabledCounters.getCounterIdsCount() > 0) {
           GpuCounterConfig.Builder counters = config.addDataSourcesBuilder()
               .getConfigBuilder()
-                  .setName("gpu.counters")
+                  .setName("gpu.counters.i915")
                   .getGpuCounterConfigBuilder()
                       .setCounterPeriodNs(MICROSECONDS.toNanos(gpu.getCounterRate()));
           counters.addAllCounterIds(enabledCounters.getCounterIdsList());

@@ -34,8 +34,8 @@ const (
 	counterPeriodNs                         = uint64(1000000)
 	bufferSizeKb                            = uint32(256 * 1024)
 	durationMs                              = 30000
-	gpuCountersDataSourceDescriptorName     = "gpu.counters"
-	gpuRenderStagesDataSourceDescriptorName = "gpu.renderstages"
+	gpuCountersDataSourceDescriptorName     = "gpu.counters.i915"
+	gpuRenderStagesDataSourceDescriptorName = "gpu.renderstages.intel"
 )
 
 func getPerfettoConfig(ctx context.Context, device *path.Device) (*perfetto_pb.TraceConfig, error) {

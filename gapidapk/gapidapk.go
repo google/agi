@@ -83,6 +83,7 @@ func ensureInstalled(ctx context.Context, d adb.Device, abi *device.ABI) (*APK, 
 	}
 
 	ctx = log.V{"gapid.apk": apkPath.System()}.Bind(ctx)
+
 	apkData, err := ioutil.ReadFile(apkPath.System())
 	if err != nil {
 		return nil, log.Err(ctx, err, "Opening gapid.apk")
@@ -179,6 +180,8 @@ func (a APK) LibsPath(abi *device.ABI) string {
 		return a.path + "/lib/arm"
 	case abi.SameAs(device.AndroidARM64v8a):
 		return a.path + "/lib/arm64"
+	case abi.SameAs(device.AndroidX86_64):
+		return a.path + "/lib/x86"
 	}
 	return a.path + "/lib/" + abi.Name
 }
@@ -195,6 +198,8 @@ func PackageName(abi *device.ABI) string {
 		return "com.google.android.gapid.armeabiv7a"
 	case abi.SameAs(device.AndroidARM64v8a):
 		return "com.google.android.gapid.arm64v8a"
+	case abi.SameAs(device.AndroidX86_64):
+		return "com.google.android.gapid.x86"
 	default:
 		return fmt.Sprintf("com.google.android.gapid.%v", abi.Name)
 	}

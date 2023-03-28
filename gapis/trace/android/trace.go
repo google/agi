@@ -68,8 +68,8 @@ const (
 	bufferSizeKb                            = uint32(131072)
 	counterPeriodNs                         = uint64(50000000)
 	durationMs                              = 7000
-	gpuCountersDataSourceDescriptorName     = "gpu.counters"
-	gpuRenderStagesDataSourceDescriptorName = "gpu.renderstages"
+	gpuCountersDataSourceDescriptorName     = "gpu.counters.i915"
+	gpuRenderStagesDataSourceDescriptorName = "gpu.renderstages.intel"
 	minimumSupportedApiLevel                = 29
 )
 

@@ -25,7 +25,7 @@ var (
 	AndroidARMv7a   = abi("armeabi-v7a", Android, ARMv7a, ARMv7aLayout)
 	AndroidARM64v8a = abi("arm64-v8a", Android, ARMv8a, ARM64v8aLayout)
 	AndroidX86      = abi("x86", Android, X86, X86IA32Layout)
-	AndroidX86_64   = abi("x86-64", Android, X86_64, X86_64Layout)
+	AndroidX86_64   = abi("x86_64", Android, X86_64, X86_64Layout)
 	AndroidMIPS     = abi("mips", Android, MIPS, Little32)
 	AndroidMIPS64   = abi("mips64", Android, MIPS64, Little64)
 
