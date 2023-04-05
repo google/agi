@@ -64,6 +64,7 @@ type stats struct {
 		GAPIDARMv8aAPK             int `name:"gapid-arm64-v8a"`
 		GAPIDARMv7aAPK             int `name:"gapid-armeabi-v7a"`
 		GAPIDX86APK                int `name:"gapid-x86"`
+		GAPIDX8664APK              int `name:"gapid-x86_64"`
 		GAPID                      int `name:"gapid"`
 		GAPIR                      int `name:"gapir"`
 		GAPIS                      int `name:"gapis"`
@@ -146,6 +147,7 @@ func run(ctx context.Context) error {
 			{filepath.Join(pkgDir, "gapid-armeabi-v7a.apk"), &r.FileSizes.GAPIDARMv7aAPK},
 			{filepath.Join(pkgDir, "gapid-arm64-v8a.apk"), &r.FileSizes.GAPIDARMv8aAPK},
 			{filepath.Join(pkgDir, "gapid-x86.apk"), &r.FileSizes.GAPIDX86APK},
+			{filepath.Join(pkgDir, "gapid-x86_64.apk"), &r.FileSizes.GAPIDX8664APK},
 			{filepath.Join(pkgDir, exeExt("gapid")), &r.FileSizes.GAPID},
 			{filepath.Join(pkgDir, exeExt("gapir")), &r.FileSizes.GAPIR},
 			{filepath.Join(pkgDir, exeExt("gapis")), &r.FileSizes.GAPIS},

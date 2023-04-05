@@ -92,5 +92,6 @@ echo "$(date): Done."
 [ -f "$BIN/gapidapk/android/apk/arm64-v8a_gapir.sym" ] && cp "$BIN/gapidapk/android/apk/arm64-v8a_gapir.sym" gapir-$VERSION-android-arm64-v8a.sym
 [ -f "$BIN/gapidapk/android/apk/armeabi-v7a_gapir.sym" ] && cp "$BIN/gapidapk/android/apk/armeabi-v7a_gapir.sym" gapir-$VERSION-android-armeabi-v7a.sym
 [ -f "$BIN/gapidapk/android/apk/x86_gapir.sym" ] && cp "$BIN/gapidapk/android/apk/x86_gapir.sym" gapir-$VERSION-android-x86.sym
+[ -f "$BIN/gapidapk/android/apk/x86_64_gapir.sym" ] && cp "$BIN/gapidapk/android/apk/x86_64_gapir.sym" gapir-$VERSION-android-x86_64.sym
 
 popd

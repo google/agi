@@ -94,6 +94,14 @@ config_setting(
 )
 
 config_setting(
+    name = "android-x86_64",
+    values = {
+        "cpu": "x86_64",
+    },
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
     name = "fuchsia-arm64",
     define_values = {
         "FUCHSIA_BUILD": "1",

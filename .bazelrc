@@ -23,7 +23,7 @@ test --test_output=errors
 query --nohost_deps --noimplicit_deps
 
 # Android special build configurations
-build --fat_apk_cpu armeabi-v7a,arm64-v8a,x86
+build --fat_apk_cpu armeabi-v7a,arm64-v8a,x86,x86_64
 
 # Default version defines
 build --define AGI_BUILD_NUMBER=0 --define AGI_BUILD_SHA=developer

@@ -98,6 +98,7 @@ filegroup(
             "//gapidapk/android/apk:arm64-v8a_gapir.sym",
             "//gapidapk/android/apk:armeabi-v7a_gapir.sym",
             "//gapidapk/android/apk:x86_gapir.sym",
+	    "//gapidapk/android/apk:x86_64_gapir.sym",
         ],
         "//conditions:default": [],
     }),
@@ -173,12 +174,14 @@ copy_to(
             "//gapidapk/android/apk:arm64-v8a.apk",
             "//gapidapk/android/apk:armeabi-v7a.apk",
             "//gapidapk/android/apk:x86.apk",
+	    "//gapidapk/android/apk:x86_64.apk",
         ],
     }),
     rename = {
         "armeabi-v7a.apk": "gapid-armeabi-v7a.apk",
         "arm64-v8a.apk": "gapid-arm64-v8a.apk",
         "x86.apk": "gapid-x86.apk",
+	"x86_64.apk": "gapid-x86_64.apk",
     },
     to = "pkg",
 )

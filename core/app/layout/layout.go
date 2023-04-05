@@ -149,7 +149,7 @@ var abiToApk = map[device.Architecture]string{
 	device.ARMv7a: "gapid-armeabi-v7a.apk",
 	device.ARMv8a: "gapid-arm64-v8a.apk",
 	device.X86:    "gapid-x86.apk",
-	device.X86_64: "gapid-x86.apk",
+	device.X86_64: "gapid-x86_64.apk",
 }
 
 func hostOS(ctx context.Context) device.OSKind {
@@ -267,6 +267,7 @@ var abiToApkPath = map[device.Architecture]string{
 	device.ARMv7a: "armeabi-v7a.apk",
 	device.ARMv8a: "arm64-v8a.apk",
 	device.X86:    "x86.apk",
+	device.X86_64: "x86_64.apk",
 }
 
 var libTypeToLibPath = map[LibraryType]string{

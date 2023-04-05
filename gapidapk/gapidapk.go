@@ -181,7 +181,7 @@ func (a APK) LibsPath(abi *device.ABI) string {
 	case abi.SameAs(device.AndroidARM64v8a):
 		return a.path + "/lib/arm64"
 	case abi.SameAs(device.AndroidX86_64):
-		return a.path + "/lib/x86"
+		return a.path + "/lib/x86_64"
 	}
 	return a.path + "/lib/" + abi.Name
 }
@@ -199,7 +199,7 @@ func PackageName(abi *device.ABI) string {
 	case abi.SameAs(device.AndroidARM64v8a):
 		return "com.google.android.gapid.arm64v8a"
 	case abi.SameAs(device.AndroidX86_64):
-		return "com.google.android.gapid.x86"
+		return "com.google.android.gapid.x86_64"
 	default:
 		return fmt.Sprintf("com.google.android.gapid.%v", abi.Name)
 	}

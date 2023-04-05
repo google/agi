@@ -29,6 +29,7 @@ agi\
 ├─ gapid-arm64-v8a.apk
 ├─ gapid-armeabi-v7a.apk
 ├─ gapid-x86.apk
+├─ gapid-x86_64.apk
 ├─ gapir.exe
 ├─ gapis.exe
 ├─ gapit.exe
@@ -71,6 +72,7 @@ inside the `Contents/MacOS/` folder of the `.app` package is built:
 ├─ gapid-arm64-v8a.apk
 ├─ gapid-armeabi-v7a.apk
 ├─ gapid-x86.apk
+├─ gapid-x86_64.apk
 ├─ gapir
 ├─ gapis
 └─ gapit
@@ -104,6 +106,7 @@ in `$JAVA_HOME`, and then on the `$PATH`. The file layout is:
 ├─ gapid-arm64-v8a.apk
 ├─ gapid-armeabi-v7a.apk
 ├─ gapid-x86.apk
+├─ gapid-x86_64.apk
 ├─ gapir
 ├─ gapis
 └─ gapit

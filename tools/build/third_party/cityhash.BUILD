@@ -33,6 +33,7 @@ cc_library(
     ],
     hdrs = [
         "src/city.h",
+        "src/citycrc.h",
         ":byteswap",
         ":config",
     ],

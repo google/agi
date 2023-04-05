@@ -28,6 +28,7 @@ go_library(
             "//gapidapk/android/apk:arm64-v8a.apk",
             "//gapidapk/android/apk:armeabi-v7a.apk",
             "//gapidapk/android/apk:x86.apk",
+	    "//gapidapk/android/apk:x86_64.apk",
         ],
     }),
     importpath = "github.com/google/gapid/cmd/perfetto",
