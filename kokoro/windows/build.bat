@@ -73,7 +73,7 @@ wget -q http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-libs-10.3.0-8-an
 echo | set /p placeholder="2e1ea0da3c9da3285067a8b2a2639aa0a6bf21cd64edca2a216f6b9c4c1382bd mingw-w64-x86_64-gcc-libs-10.3.0-8-any.pkg.tar.zst" | sha256sum --check || exit /b 1
 wget -q http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-binutils-2.37-4-any.pkg.tar.zst
 echo | set /p placeholder="a518d2630c11fe363abd394763d0bb82fdde72386ffb58d87ecc8f46cbe878d6 mingw-w64-x86_64-binutils-2.37-4-any.pkg.tar.zst" | sha256sum --check || exit /b 1
-%BUILD_ROOT%\msys64\usr\bin\bash --login -c "pacman -U --noconfirm /t/src/mingw-w64-x86_64-gcc-10.3.0-8-any.pkg.tar.zst /t/src/mingw-w64-x86_64-gcc-libs-10.3.0-8-any.pkg.tar.zst /t/src/mingw-w64-x86_64-binutils-2.37-4-any.pkg.tar.zst"
+%BUILD_ROOT%\msys64\usr\bin\bash --login -c "pacman -U --noconfirm mingw-w64-x86_64-gcc-10.3.0-8-any.pkg.tar.zst mingw-w64-x86_64-gcc-libs-10.3.0-8-any.pkg.tar.zst mingw-w64-x86_64-binutils-2.37-4-any.pkg.tar.zst"
 
 REM Configure build process to use the now installed MSYS2.
 set PATH=%BUILD_ROOT%\msys64\mingw64\bin;%BUILD_ROOT%\msys64\usr\bin;%PATH%
