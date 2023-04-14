@@ -27,6 +27,10 @@ REM Using 'set /p' prints without CRLF newline characters, which sha256sum can't
 REM If sha256sum fails, 'exit /b 1' will terminate batch with error code 1.
 echo | set /p placeholder="2c1888d5d1dba377fc7fa14444cf556963747ff9a0a289a3599cf09da03b9e2e wix311-binaries.zip" | sha256sum --check || exit /b 1
 unzip -q wix311-binaries.zip
+
+REM Grant read and execute access for WIX
+icacls *.* /grant ContainerAdministrator:rx
+
 set WIX=%cd%
 cd ..
 
