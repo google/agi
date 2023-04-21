@@ -162,7 +162,7 @@ copy_to(
     name = "pkg-root",
     srcs = [
         "//cmd/agi",
-        "//cmd/device-info:device-info",
+        "//cmd/device-info",
         "//cmd/gapir/cc:gapir",
         "//cmd/gapis",
         "//cmd/gapit",
