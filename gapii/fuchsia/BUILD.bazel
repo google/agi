@@ -33,6 +33,7 @@ fuchsia_component(
     manifest = ":manifest",
     deps = [
         ":gapii_server",
+        ":libgapii",
     ],
 )
 
@@ -50,9 +51,10 @@ fuchsia_package_resource(
 
 fuchsia_package(
     name = "gapii",
-    deps = [
+    components = [
         ":gapii-server",
+    ],
+    resources = [
         ":gpu_inspector_json",
-        ":libgapii",
     ],
 )
