@@ -881,15 +881,6 @@ int main(int argc, const char** argv) {
     }                                                         \
   } while (false)
 
-  // Set debug labels of objects created before the device.
-  SET_DEBUG_LABEL(instance, VK_OBJECT_TYPE_INSTANCE, "KubieInstance");
-  SET_DEBUG_LABEL(physical_device, VK_OBJECT_TYPE_PHYSICAL_DEVICE,
-                  "KubiePhysDevice");
-  SET_DEBUG_LABEL(device, VK_OBJECT_TYPE_DEVICE, "KubieDevice");
-  SET_DEBUG_LABEL(queue, VK_OBJECT_TYPE_QUEUE, "KubieQueue");
-  SET_DEBUG_LABEL(surface, VK_OBJECT_TYPE_SURFACE_KHR, "KubieSurface");
-  SET_DEBUG_LABEL(swapchain, VK_OBJECT_TYPE_SWAPCHAIN_KHR, "KubieSwapchain");
-
   // Immutable Data
   VkBuffer vertex_buffer;
   VkDeviceMemory vertex_buffer_memory;
