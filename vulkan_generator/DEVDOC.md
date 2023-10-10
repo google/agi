@@ -24,7 +24,7 @@ All the linting/testing tools should be able to installed via pip.
 ### Build target
 `//vulkan_generator`
 
-### Run target 
+### Run target
 `//vulkan_generator:main`
 
 ### Lint target
@@ -48,7 +48,7 @@ This target includes linting.
 If you would like to run tests in IDE or command line here is the testing tool and the version:
 
 ```
-pytest==7.1.2
+pytest==7.2.0
 ```
 
 ## Setup to run presubmit tests locally
@@ -121,5 +121,5 @@ every path should include the workspace directory as `tools/build/python` is rel
 
 ### Troubleshooting
 VSCode is very slow to discover tests due to the project size(including rest of the AGI). You may need to disable go test discovery and even then
-tests may not be able to discovered accordingly. You can try opening only the `vulkan_generator` folder for the tests or run them from the command line 
+tests may not be able to discovered accordingly. You can try opening only the `vulkan_generator` folder for the tests or run them from the command line
 instead.
