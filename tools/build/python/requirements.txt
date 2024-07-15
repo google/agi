@@ -16,7 +16,7 @@ pycodestyle==2.8.0
 pyflakes==2.4.0
 pylint==2.13.8
 pytest==7.2.0
-setuptools==65.5.1
+setuptools==70.0.0
 tomli==2.0.1
 typing-extensions==4.4.0
 wrapt==1.14.1
