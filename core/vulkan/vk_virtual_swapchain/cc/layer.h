@@ -17,6 +17,7 @@
 #ifndef VK_VIRTUAL_SWAPCHAIN_LAYER_H_
 #define VK_VIRTUAL_SWAPCHAIN_LAYER_H_
 
+#include <string>
 #include <unordered_map>
 #include <vector>
 
