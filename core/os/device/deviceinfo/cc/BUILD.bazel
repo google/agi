@@ -32,10 +32,7 @@ cc_library(
         "//tools/build:fuchsia-arm64": glob(["fuchsia/query.cpp"]),
         "//tools/build:fuchsia-x86_64": glob(["fuchsia/query.cpp"]),
         # Android
-        "//conditions:default": glob([
-            "android/*.cpp",
-            "android/*.h",
-        ]),
+        "//conditions:default": glob(["android/*.cpp"]),
     }),
     hdrs = glob(["*.h"]),
     copts = cc_copts(),

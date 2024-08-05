@@ -18,7 +18,6 @@ cc_library(
     name = "cc",
     srcs = glob([
         "*.cpp",
-        "*.h",
     ]),
     copts = cc_copts() + [
         "-fno-rtti",

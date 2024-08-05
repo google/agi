@@ -62,8 +62,8 @@ cc_library(
         exclude = ["*_test.cpp"],
     ) + select({
         "//tools/build:linux": glob(["linux/*.cpp"]),
-        "//tools/build:darwin": glob(["osx/*.cpp"]),
-        "//tools/build:darwin_arm64": glob(["osx/*.cpp"]),
+        "//tools/build:darwin": [],
+        "//tools/build:darwin_arm64": [],
         "//tools/build:windows": glob(["windows/*.cpp"]),
         # Android
         "//conditions:default": glob([
