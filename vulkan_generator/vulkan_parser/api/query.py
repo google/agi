@@ -18,47 +18,65 @@ from typing import Optional
 from vulkan_generator.vulkan_parser.api import types
 
 
-def try_get_type_or_deducted_type(typename: str, vulkan_types: types.VulkanTypeInfo) -> Optional[types.VulkanType]:
-    """This function will return the type object of given typename.
-    If type cannot found, then it will look for the type alias with given typename and return the aliased type of it
-    If no type alias can be found with given name, then it will return None"""
-    if typename in vulkan_types.all_types:
-        return vulkan_types.all_types[typename]
-    elif typename in vulkan_types.all_aliases:
-        return vulkan_types.all_aliases[typename].aliased_type
-    else:
-        return None
+def try_get_type_or_deducted_type(
+    typename: str, vulkan_types: types.VulkanTypeInfo
+) -> Optional[types.VulkanType]:
+  """This function will return the type object of given typename.
 
-
-def get_type_or_deducted_type(typename: str, vulkan_types: types.VulkanTypeInfo) -> types.VulkanType:
-    """This function will return the type object of given typename.
-    If type cannot found, then it will look for the type alias with given typename and return the aliased type of it"""
-    if typename in vulkan_types.all_types:
-        return vulkan_types.all_types[typename]
-
+  If type cannot found, then it will look for the type alias with given typename
+  and return the aliased type of it If no type alias can be found with given
+  name, then it will return None
+  """
+  if typename in vulkan_types.all_types:
+    return vulkan_types.all_types[typename]
+  elif typename in vulkan_types.all_aliases:
     return vulkan_types.all_aliases[typename].aliased_type
+  else:
+    return None
 
 
-def get_struct_or_deducted_struct(typename: str, vulkan_types: types.VulkanTypeInfo) -> types.VulkanStruct:
-    """This function will return the type object of given typename.
-    If type cannot found, then it will look for the type alias with given typename and return the aliased type of it"""
-    if typename in vulkan_types.structs:
-        return vulkan_types.structs[typename]
+def get_type_or_deducted_type(
+    typename: str, vulkan_types: types.VulkanTypeInfo
+) -> types.VulkanType:
+  """This function will return the type object of given typename.
 
-    aliased_struct = vulkan_types.struct_aliases[typename].aliased_type
+  If type cannot found, then it will look for the type alias with given typename
+  and return the aliased type of it
+  """
+  if typename in vulkan_types.all_types:
+    return vulkan_types.all_types[typename]
 
-    if not isinstance(aliased_struct, types.VulkanStruct):
-        raise ValueError(f"Unexpected aliased type: {aliased_struct.typename}")
-
-    return aliased_struct
+  return vulkan_types.all_aliases[typename].aliased_type
 
 
-def get_enum_field_or_deducted_field(enum: types.VulkanEnum, field_name: str) -> types.VulkanEnumField:
-    """
-    This will return the field for the field name.
-    If no field cannot be found, then it will search the alias and deduct the field from alias and return it.
-    """
-    if field_name in enum.fields:
-        return enum.fields[field_name]
+def get_struct_or_deducted_struct(
+    typename: str, vulkan_types: types.VulkanTypeInfo
+) -> types.VulkanStruct:
+  """This function will return the type object of given typename.
 
-    return enum.aliases[field_name].aliased_field
+  If type cannot found, then it will look for the type alias with given typename
+  and return the aliased type of it
+  """
+  if typename in vulkan_types.structs:
+    return vulkan_types.structs[typename]
+
+  aliased_struct = vulkan_types.struct_aliases[typename].aliased_type
+
+  if not isinstance(aliased_struct, types.VulkanStruct):
+    raise ValueError(f"Unexpected aliased type: {aliased_struct.typename}")
+
+  return aliased_struct
+
+
+def get_enum_field_or_deducted_field(
+    enum: types.VulkanEnum, field_name: str
+) -> types.VulkanEnumField:
+  """This will return the field for the field name.
+
+  If no field cannot be found, then it will search the alias and deduct the
+  field from alias and return it.
+  """
+  if field_name in enum.fields:
+    return enum.fields[field_name]
+
+  return enum.aliases[field_name].aliased_field

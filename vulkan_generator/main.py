@@ -21,13 +21,19 @@ from vulkan_generator import generator
 
 
 def main() -> None:
-    """ Entry point """
-    if len(sys.argv) == 4:
-        generator.generate(vulkan_xml_path=Path(sys.argv[1]), target=sys.argv[2], output_dir=Path(sys.argv[3]))
-    elif len(sys.argv) == 2:
-        generator.generate(vulkan_xml_path=Path(sys.argv[1]), target="", output_dir=Path())
-    else:
-        print("""
+  """Entry point"""
+  if len(sys.argv) == 4:
+    generator.generate(
+        vulkan_xml_path=Path(sys.argv[1]),
+        target=sys.argv[2],
+        output_dir=Path(sys.argv[3]),
+    )
+  elif len(sys.argv) == 2:
+    generator.generate(
+        vulkan_xml_path=Path(sys.argv[1]), target="", output_dir=Path()
+    )
+  else:
+    print("""
             Please run this as one of the following:
             1) ./main.py <path to xml>
                 This will parse the XML file and print a report.
@@ -37,4 +43,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+  main()

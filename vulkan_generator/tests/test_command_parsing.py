@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-This module is responsible for testing Vulkan commands and aliases
+"""This module is responsible for testing Vulkan commands and aliases
 
 Examples in this files stems from vk.xml that relesed by Khronos.
 Anytime the particular xml updated, test should be checked
@@ -22,13 +21,13 @@ if they reflect the new XML
 
 import xml.etree.ElementTree as ET
 
-from vulkan_generator.vulkan_parser.internal import internal_types
 from vulkan_generator.vulkan_parser.internal import commands_parser
+from vulkan_generator.vulkan_parser.internal import internal_types
 
 
 def test_vulkan_command() -> None:
-    """"Tests Vulkan command"""
-    xml = """<?xml version="1.0" encoding="UTF-8"?>
+  """ "Tests Vulkan command"""
+  xml = """<?xml version="1.0" encoding="UTF-8"?>
         <commands>
             <command>
                 <proto><type>void</type> <name>vkQueueEndDebugUtilsLabelEXT</name></proto>
@@ -37,28 +36,28 @@ def test_vulkan_command() -> None:
         </commands>
     """
 
-    typ = commands_parser.parse(ET.fromstring(xml))
+  typ = commands_parser.parse(ET.fromstring(xml))
 
-    assert len(typ.commands) == 1
-    assert "vkQueueEndDebugUtilsLabelEXT" in typ.commands
+  assert len(typ.commands) == 1
+  assert "vkQueueEndDebugUtilsLabelEXT" in typ.commands
 
-    command = typ.commands["vkQueueEndDebugUtilsLabelEXT"]
-    assert isinstance(command, internal_types.VulkanCommand)
+  command = typ.commands["vkQueueEndDebugUtilsLabelEXT"]
+  assert isinstance(command, internal_types.VulkanCommand)
 
-    assert command.return_type == "void"
+  assert command.return_type == "void"
 
-    assert len(command.parameters) == 1
+  assert len(command.parameters) == 1
 
-    parameter_names = list(command.parameters.keys())
+  parameter_names = list(command.parameters.keys())
 
-    assert parameter_names[0] == "queue"
-    assert command.parameters["queue"].parameter_type == "VkQueue"
-    assert command.parameters["queue"].parameter_name == "queue"
+  assert parameter_names[0] == "queue"
+  assert command.parameters["queue"].parameter_type == "VkQueue"
+  assert command.parameters["queue"].parameter_name == "queue"
 
 
 def test_vulkan_command_with_success_and_error_code() -> None:
-    """"Tests Vulkan command with successcodes and errorcodes attribute"""
-    xml = """<?xml version="1.0" encoding="UTF-8"?>
+  """ "Tests Vulkan command with successcodes and errorcodes attribute"""
+  xml = """<?xml version="1.0" encoding="UTF-8"?>
         <commands>
             <command successcodes="VK_SUCCESS,VK_INCOMPLETE"
                 errorcodes="VK_ERROR_OUT_OF_HOST_MEMORY,VK_ERROR_OUT_OF_DEVICE_MEMORY">
@@ -70,25 +69,25 @@ def test_vulkan_command_with_success_and_error_code() -> None:
         </commands>
     """
 
-    typ = commands_parser.parse(ET.fromstring(xml))
-    command = typ.commands["vkEnumerateInstanceLayerProperties"]
+  typ = commands_parser.parse(ET.fromstring(xml))
+  command = typ.commands["vkEnumerateInstanceLayerProperties"]
 
-    assert command.return_type == "VkResult"
+  assert command.return_type == "VkResult"
 
-    assert command.error_codes
-    assert command.error_codes and len(command.error_codes) == 2
-    assert "VK_ERROR_OUT_OF_HOST_MEMORY" in command.error_codes
-    assert "VK_ERROR_OUT_OF_DEVICE_MEMORY" in command.error_codes
+  assert command.error_codes
+  assert command.error_codes and len(command.error_codes) == 2
+  assert "VK_ERROR_OUT_OF_HOST_MEMORY" in command.error_codes
+  assert "VK_ERROR_OUT_OF_DEVICE_MEMORY" in command.error_codes
 
-    assert command.success_codes
-    assert len(command.success_codes) == 2
-    assert "VK_SUCCESS" in command.success_codes
-    assert "VK_INCOMPLETE" in command.success_codes
+  assert command.success_codes
+  assert len(command.success_codes) == 2
+  assert "VK_SUCCESS" in command.success_codes
+  assert "VK_INCOMPLETE" in command.success_codes
 
 
 def test_vulkan_command_with_renderpass_allowance() -> None:
-    """"Tests Vulkan command with renderpass attribute"""
-    xml = """<?xml version="1.0" encoding="UTF-8"?>
+  """ "Tests Vulkan command with renderpass attribute"""
+  xml = """<?xml version="1.0" encoding="UTF-8"?>
         <commands>
             <command queues="graphics" renderpass="both" cmdbufferlevel="primary,secondary">
                 <proto><type>void</type> <name>vkCmdSetLineWidth</name></proto>
@@ -98,14 +97,14 @@ def test_vulkan_command_with_renderpass_allowance() -> None:
         </commands>
     """
 
-    typ = commands_parser.parse(ET.fromstring(xml))
-    command = typ.commands["vkCmdSetLineWidth"]
-    assert command.renderpass_allowance == "both"
+  typ = commands_parser.parse(ET.fromstring(xml))
+  command = typ.commands["vkCmdSetLineWidth"]
+  assert command.renderpass_allowance == "both"
 
 
 def test_vulkan_command_with_command_buffer_levels() -> None:
-    """"Tests Vulkan command with cmdbufferlevel attribute"""
-    xml = """<?xml version="1.0" encoding="UTF-8"?>
+  """ "Tests Vulkan command with cmdbufferlevel attribute"""
+  xml = """<?xml version="1.0" encoding="UTF-8"?>
         <commands>
             <command queues="graphics" renderpass="both" cmdbufferlevel="primary,secondary">
                 <proto><type>void</type> <name>vkCmdSetLineWidth</name></proto>
@@ -115,18 +114,18 @@ def test_vulkan_command_with_command_buffer_levels() -> None:
         </commands>
     """
 
-    typ = commands_parser.parse(ET.fromstring(xml))
-    command = typ.commands["vkCmdSetLineWidth"]
+  typ = commands_parser.parse(ET.fromstring(xml))
+  command = typ.commands["vkCmdSetLineWidth"]
 
-    assert command.command_buffer_levels
-    assert len(command.command_buffer_levels) == 2
-    assert "primary" in command.command_buffer_levels
-    assert "secondary" in command.command_buffer_levels
+  assert command.command_buffer_levels
+  assert len(command.command_buffer_levels) == 2
+  assert "primary" in command.command_buffer_levels
+  assert "secondary" in command.command_buffer_levels
 
 
 def test_vulkan_command_with_queues() -> None:
-    """"Tests Vulkan command with queues attribute"""
-    xml = """<?xml version="1.0" encoding="UTF-8"?>
+  """ "Tests Vulkan command with queues attribute"""
+  xml = """<?xml version="1.0" encoding="UTF-8"?>
         <commands>
             <command queues="transfer,graphics,compute" renderpass="both" cmdbufferlevel="primary">
                 <proto><type>void</type> <name>vkCmdExecuteCommands</name></proto>
@@ -138,19 +137,19 @@ def test_vulkan_command_with_queues() -> None:
         </commands>
     """
 
-    typ = commands_parser.parse(ET.fromstring(xml))
-    command = typ.commands["vkCmdExecuteCommands"]
+  typ = commands_parser.parse(ET.fromstring(xml))
+  command = typ.commands["vkCmdExecuteCommands"]
 
-    assert command.queues
-    assert len(command.queues) == 3
-    assert "transfer" in command.queues
-    assert "graphics" in command.queues
-    assert "compute" in command.queues
+  assert command.queues
+  assert len(command.queues) == 3
+  assert "transfer" in command.queues
+  assert "graphics" in command.queues
+  assert "compute" in command.queues
 
 
 def test_vulkan_command_with_externally_synced_parameter() -> None:
-    """"Tests Vulkan command that has a parameter that must be externally synced"""
-    xml = """<?xml version="1.0" encoding="UTF-8"?>
+  """ "Tests Vulkan command that has a parameter that must be externally synced"""
+  xml = """<?xml version="1.0" encoding="UTF-8"?>
         <commands>
             <command queues="graphics" renderpass="inside" cmdbufferlevel="primary">
                 <proto><type>void</type> <name>vkCmdEndRenderPass</name></proto>
@@ -159,15 +158,15 @@ def test_vulkan_command_with_externally_synced_parameter() -> None:
         </commands>
     """
 
-    typ = commands_parser.parse(ET.fromstring(xml))
-    command = typ.commands["vkCmdEndRenderPass"]
-    assert command.parameters["commandBuffer"].externally_synced
-    assert not command.parameters["commandBuffer"].externally_synced_field
+  typ = commands_parser.parse(ET.fromstring(xml))
+  command = typ.commands["vkCmdEndRenderPass"]
+  assert command.parameters["commandBuffer"].externally_synced
+  assert not command.parameters["commandBuffer"].externally_synced_field
 
 
 def test_vulkan_command_with_externally_synced_field() -> None:
-    """"Tests Vulkan command that has a parameter that must be externally synced"""
-    xml = """<?xml version="1.0" encoding="UTF-8"?>
+  """ "Tests Vulkan command that has a parameter that must be externally synced"""
+  xml = """<?xml version="1.0" encoding="UTF-8"?>
         <commands>
             <command successcodes="VK_SUCCESS" errorcodes="VK_ERROR_OUT_OF_HOST_MEMORY,VK_ERROR_OUT_OF_DEVICE_MEMORY">
                 <proto><type>VkResult</type> <name>vkAllocateCommandBuffers</name></proto>
@@ -178,15 +177,18 @@ def test_vulkan_command_with_externally_synced_field() -> None:
         </commands>
     """
 
-    typ = commands_parser.parse(ET.fromstring(xml))
-    command = typ.commands["vkAllocateCommandBuffers"]
-    assert command.parameters["pAllocateInfo"].externally_synced
-    assert command.parameters["pAllocateInfo"].externally_synced_field == "pAllocateInfo->commandPool"
+  typ = commands_parser.parse(ET.fromstring(xml))
+  command = typ.commands["vkAllocateCommandBuffers"]
+  assert command.parameters["pAllocateInfo"].externally_synced
+  assert (
+      command.parameters["pAllocateInfo"].externally_synced_field
+      == "pAllocateInfo->commandPool"
+  )
 
 
 def test_vulkan_command_with_an_optional_parameter() -> None:
-    """"Tests Vulkan command that has a parameter that is optional"""
-    xml = """<?xml version="1.0" encoding="UTF-8"?>
+  """ "Tests Vulkan command that has a parameter that is optional"""
+  xml = """<?xml version="1.0" encoding="UTF-8"?>
         <commands>
             <command successcodes="VK_SUCCESS,VK_INCOMPLETE"
                 errorcodes="VK_ERROR_OUT_OF_HOST_MEMORY,VK_ERROR_OUT_OF_DEVICE_MEMORY">
@@ -199,15 +201,15 @@ def test_vulkan_command_with_an_optional_parameter() -> None:
         </commands>
     """
 
-    typ = commands_parser.parse(ET.fromstring(xml))
-    command = typ.commands["vkGetPhysicalDeviceDisplayPropertiesKHR"]
+  typ = commands_parser.parse(ET.fromstring(xml))
+  command = typ.commands["vkGetPhysicalDeviceDisplayPropertiesKHR"]
 
-    assert command.parameters["pProperties"].optional
+  assert command.parameters["pProperties"].optional
 
 
 def test_vulkan_command_with_an_array() -> None:
-    """"Tests Vulkan command that has a parameter that is an array"""
-    xml = """<?xml version="1.0" encoding="UTF-8"?>
+  """ "Tests Vulkan command that has a parameter that is an array"""
+  xml = """<?xml version="1.0" encoding="UTF-8"?>
         <commands>
             <command successcodes="VK_SUCCESS,VK_INCOMPLETE"
                 errorcodes="VK_ERROR_OUT_OF_HOST_MEMORY,VK_ERROR_OUT_OF_DEVICE_MEMORY">
@@ -220,16 +222,18 @@ def test_vulkan_command_with_an_array() -> None:
         </commands>
     """
 
-    typ = commands_parser.parse(ET.fromstring(xml))
-    command = typ.commands["vkGetPhysicalDeviceDisplayPropertiesKHR"]
+  typ = commands_parser.parse(ET.fromstring(xml))
+  command = typ.commands["vkGetPhysicalDeviceDisplayPropertiesKHR"]
 
-    assert command.parameters["pProperties"].array_size_reference == "pPropertyCount"
-    assert "pPropertyCount" in command.parameters
+  assert (
+      command.parameters["pProperties"].array_size_reference == "pPropertyCount"
+  )
+  assert "pPropertyCount" in command.parameters
 
 
 def test_vulkan_command_with_const_and_struct() -> None:
-    """"Tests Vulkan command that has a parameter that is an array"""
-    xml = """<?xml version="1.0" encoding="UTF-8"?>
+  """ "Tests Vulkan command that has a parameter that is an array"""
+  xml = """<?xml version="1.0" encoding="UTF-8"?>
         <commands>
             <command successcodes="VK_SUCCESS" errorcodes="VK_ERROR_OUT_OF_HOST_MEMORY,VK_ERROR_INVALID_EXTERNAL_HANDLE_KHR">
                 <proto><type>VkResult</type> <name>vkGetAndroidHardwareBufferPropertiesANDROID</name></proto>
@@ -240,27 +244,30 @@ def test_vulkan_command_with_const_and_struct() -> None:
         </commands>
     """
 
-    typ = commands_parser.parse(ET.fromstring(xml))
-    command = typ.commands["vkGetAndroidHardwareBufferPropertiesANDROID"]
+  typ = commands_parser.parse(ET.fromstring(xml))
+  command = typ.commands["vkGetAndroidHardwareBufferPropertiesANDROID"]
 
-    assert command.parameters["buffer"].parameter_type == "const struct AHardwareBuffer*"
+  assert (
+      command.parameters["buffer"].parameter_type
+      == "const struct AHardwareBuffer*"
+  )
 
 
 def test_vulkan_command_alias() -> None:
-    """"Tests Vulkan command alias"""
-    xml = """<?xml version="1.0" encoding="UTF-8"?>
+  """ "Tests Vulkan command alias"""
+  xml = """<?xml version="1.0" encoding="UTF-8"?>
         <commands>
             <command name="vkCmdEndRenderingKHR" alias="vkCmdEndRendering"/>
         </commands>
     """
 
-    typ = commands_parser.parse(ET.fromstring(xml))
+  typ = commands_parser.parse(ET.fromstring(xml))
 
-    assert len(typ.command_aliases) == 1
-    assert "vkCmdEndRenderingKHR" in typ.command_aliases
+  assert len(typ.command_aliases) == 1
+  assert "vkCmdEndRenderingKHR" in typ.command_aliases
 
-    alias = typ.command_aliases["vkCmdEndRenderingKHR"]
+  alias = typ.command_aliases["vkCmdEndRenderingKHR"]
 
-    assert isinstance(alias, internal_types.VulkanCommandAlias)
-    assert alias.command_name == "vkCmdEndRenderingKHR"
-    assert alias.aliased_command_name == "vkCmdEndRendering"
+  assert isinstance(alias, internal_types.VulkanCommandAlias)
+  assert alias.command_name == "vkCmdEndRenderingKHR"
+  assert alias.aliased_command_name == "vkCmdEndRendering"

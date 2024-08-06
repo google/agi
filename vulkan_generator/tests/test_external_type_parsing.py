@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-This module is responsible for testing Vulkan basetypes
+"""This module is responsible for testing Vulkan basetypes
 
 Examples in this files stems from vk.xml that relesed by Khronos.
 Anytime the particular xml updated, test should be checked
@@ -27,42 +26,42 @@ from vulkan_generator.vulkan_parser.internal import internal_types
 
 
 def test_ctype_external_type_with_no_require_field() -> None:
-    """""Test the case if the handle name is in an XML tag"""
+  """ ""Test the case if the handle name is in an XML tag"""
 
-    xml = """<?xml version="1.0" encoding="UTF-8"?>
+  xml = """<?xml version="1.0" encoding="UTF-8"?>
     <type name="int"/>"""
 
-    external_type = external_type_parser.parse(ET.fromstring(xml))
+  external_type = external_type_parser.parse(ET.fromstring(xml))
 
-    assert isinstance(external_type, internal_types.ExternalType)
-    assert external_type.typename == "int"
-    assert not external_type.source_header
-    assert external_type.ctype
+  assert isinstance(external_type, internal_types.ExternalType)
+  assert external_type.typename == "int"
+  assert not external_type.source_header
+  assert external_type.ctype
 
 
 def test_ctype_external_type_with_plafrom() -> None:
-    """""Test the case if the handle name is in an XML tag"""
+  """ ""Test the case if the handle name is in an XML tag"""
 
-    xml = """<?xml version="1.0" encoding="UTF-8"?>
+  xml = """<?xml version="1.0" encoding="UTF-8"?>
     <type requires="vk_platform" name="float"/>"""
 
-    external_type = external_type_parser.parse(ET.fromstring(xml))
+  external_type = external_type_parser.parse(ET.fromstring(xml))
 
-    assert isinstance(external_type, internal_types.ExternalType)
-    assert external_type.typename == "float"
-    assert external_type.source_header == "vk_platform"
-    assert external_type.ctype
+  assert isinstance(external_type, internal_types.ExternalType)
+  assert external_type.typename == "float"
+  assert external_type.source_header == "vk_platform"
+  assert external_type.ctype
 
 
 def test_non_ctype_external_type() -> None:
-    """""Test the case if the handle name is in an XML tag"""
+  """ ""Test the case if the handle name is in an XML tag"""
 
-    xml = """<?xml version="1.0" encoding="UTF-8"?>
+  xml = """<?xml version="1.0" encoding="UTF-8"?>
     <type requires="screen/screen.h" name="_screen_context"/>"""
 
-    external_type = external_type_parser.parse(ET.fromstring(xml))
+  external_type = external_type_parser.parse(ET.fromstring(xml))
 
-    assert isinstance(external_type, internal_types.ExternalType)
-    assert external_type.typename == "_screen_context"
-    assert external_type.source_header == "screen/screen.h"
-    assert not external_type.ctype
+  assert isinstance(external_type, internal_types.ExternalType)
+  assert external_type.typename == "_screen_context"
+  assert external_type.source_header == "screen/screen.h"
+  assert not external_type.ctype

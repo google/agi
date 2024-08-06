@@ -12,52 +12,61 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" This module is responsible for parsing Vulkan Handles and aliases of them"""
+"""This module is responsible for parsing Vulkan Handles and aliases of them"""
 
 import xml.etree.ElementTree as ET
 
-from vulkan_generator.vulkan_parser.internal import parser_utils
 from vulkan_generator.vulkan_parser.internal import internal_types
+from vulkan_generator.vulkan_parser.internal import parser_utils
 
 
-def parse_handle_by_attribute(root: ET.Element) -> internal_types.VulkanHandleAlias:
-    """Parses a Vulkan Handle if it has the attribute "name" and returns it.
+def parse_handle_by_attribute(
+    root: ET.Element,
+) -> internal_types.VulkanHandleAlias:
+  """Parses a Vulkan Handle if it has the attribute "name" and returns it.
 
-    if any handle defined like this, they are always an alias of an existing type
+  if any handle defined like this, they are always an alias of an existing type
 
-    Example from Vk.xml
-    <type category="handle" name="VkDescriptorUpdateTemplateKHR"
-    alias="VkDescriptorUpdateTemplate"/>
-    """
-    name = root.attrib["name"]
-    alias = root.attrib["alias"]
-    vulkan_handle = internal_types.VulkanHandleAlias(typename=name, aliased_typename=alias)
-    return vulkan_handle
+  Example from Vk.xml
+  <type category="handle" name="VkDescriptorUpdateTemplateKHR"
+  alias="VkDescriptorUpdateTemplate"/>
+  """
+  name = root.attrib["name"]
+  alias = root.attrib["alias"]
+  vulkan_handle = internal_types.VulkanHandleAlias(
+      typename=name, aliased_typename=alias
+  )
+  return vulkan_handle
 
 
 def parse_handle_by_tag(root: ET.Element) -> internal_types.VulkanHandle:
-    """Parses a Vulkan Handle if it has the tag "name" and returns it.
+  """Parses a Vulkan Handle if it has the tag "name" and returns it.
 
-    Example from Vk.xml
-    <type category="handle" parent="VkDevice" objtypeenum="VK_OBJECT_TYPE_QUEUE">
-    <type>VK_DEFINE_HANDLE</type>(<name>VkQueue</name>)</type>
-    """
+  Example from Vk.xml
+  <type category="handle" parent="VkDevice" objtypeenum="VK_OBJECT_TYPE_QUEUE">
+  <type>VK_DEFINE_HANDLE</type>(<name>VkQueue</name>)</type>
+  """
 
-    name = parser_utils.get_text_from_tag_in_children(root, "name")
-    handle_definer = parser_utils.get_text_from_tag_in_children(root, "type")
+  name = parser_utils.get_text_from_tag_in_children(root, "name")
+  handle_definer = parser_utils.get_text_from_tag_in_children(root, "type")
 
-    if handle_definer not in ["VK_DEFINE_HANDLE", "VK_DEFINE_NON_DISPATCHABLE_HANDLE"]:
-        raise SyntaxError(f"Unknown Handle definer {ET.tostring(root, 'utf-8')}")
+  if handle_definer not in [
+      "VK_DEFINE_HANDLE",
+      "VK_DEFINE_NON_DISPATCHABLE_HANDLE",
+  ]:
+    raise SyntaxError(f"Unknown Handle definer {ET.tostring(root, 'utf-8')}")
 
-    dispatchable = handle_definer == "VK_DEFINE_HANDLE"
+  dispatchable = handle_definer == "VK_DEFINE_HANDLE"
 
-    vulkan_handle = internal_types.VulkanHandle(typename=name, dispatchable=dispatchable)
-    return vulkan_handle
+  vulkan_handle = internal_types.VulkanHandle(
+      typename=name, dispatchable=dispatchable
+  )
+  return vulkan_handle
 
 
 def parse(root: ET.Element) -> internal_types.VulkanType:
-    """Returns a Vulkan handle or alias from the XML element that defines it"""
-    if "name" in root.attrib:
-        return parse_handle_by_attribute(root)
+  """Returns a Vulkan handle or alias from the XML element that defines it"""
+  if "name" in root.attrib:
+    return parse_handle_by_attribute(root)
 
-    return parse_handle_by_tag(root)
+  return parse_handle_by_tag(root)

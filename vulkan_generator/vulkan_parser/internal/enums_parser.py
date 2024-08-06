@@ -12,186 +12,195 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" This module is responsible for parsing Vulkan enums"""
+"""This module is responsible for parsing Vulkan enums"""
 
-from typing import Optional
-from typing import NamedTuple
-from typing import Union
 from typing import Dict
-
+from typing import NamedTuple
+from typing import Optional
+from typing import Union
 import xml.etree.ElementTree as ET
 
-from vulkan_generator.vulkan_parser.internal import parser_utils
 from vulkan_generator.vulkan_parser.internal import internal_types
+from vulkan_generator.vulkan_parser.internal import parser_utils
 
 
 class EnumInformation(NamedTuple):
-    """Temporary class to return argument information"""
-    fields: Dict[str, internal_types.VulkanEnumField]
-    aliases: Dict[str, internal_types.VulkanEnumFieldAlias]
+  """Temporary class to return argument information"""
+
+  fields: Dict[str, internal_types.VulkanEnumField]
+  aliases: Dict[str, internal_types.VulkanEnumFieldAlias]
 
 
 def parse_value_fields(enum_elem: ET.Element) -> EnumInformation:
-    """Parses the fields of an enum which is defined by values
+  """Parses the fields of an enum which is defined by values
 
-    A sample Vulkan enum
-    <enums name="VkSubpassContents" type="enum">
-        <enum value="0"     name="VK_SUBPASS_CONTENTS_INLINE"/>
-        <enum value="1"     name="VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS"/>
-    </enums>
-    """
+  A sample Vulkan enum
+  <enums name="VkSubpassContents" type="enum">
+      <enum value="0"     name="VK_SUBPASS_CONTENTS_INLINE"/>
+      <enum value="1"     name="VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS"/>
+  </enums>
+  """
 
-    fields: Dict[str, internal_types.VulkanEnumField] = {}
-    aliases: dict[str, internal_types.VulkanEnumFieldAlias] = {}
+  fields: Dict[str, internal_types.VulkanEnumField] = {}
+  aliases: dict[str, internal_types.VulkanEnumFieldAlias] = {}
 
-    parent = enum_elem.attrib["name"]
+  parent = enum_elem.attrib["name"]
 
-    for field_element in enum_elem:
-        if field_element.tag == "comment":
-            # We are not interested in comments
-            continue
+  for field_element in enum_elem:
+    if field_element.tag == "comment":
+      # We are not interested in comments
+      continue
 
-        if field_element.tag == "unused":
-            # We are not interested in unused values reserved
-            # for future
-            continue
+    if field_element.tag == "unused":
+      # We are not interested in unused values reserved
+      # for future
+      continue
 
-        name = field_element.attrib["name"]
-        alias = field_element.get("alias")
-        if alias:
-            aliases[name] = internal_types.VulkanEnumFieldAlias(
-                typename=name,
-                aliased_typename=alias,
-                parent=parent,
-                extension=False,
-            )
-            continue
+    name = field_element.attrib["name"]
+    alias = field_element.get("alias")
+    if alias:
+      aliases[name] = internal_types.VulkanEnumFieldAlias(
+          typename=name,
+          aliased_typename=alias,
+          parent=parent,
+          extension=False,
+      )
+      continue
 
-        field = parser_utils.get_enum_field_from_value(field_element.attrib["value"])
-
-        fields[name] = internal_types.VulkanEnumField(
-            name=name,
-            value=field.value,
-            representation=field.representation,
-            parent=parent,
-            extension=False,
-        )
-
-    return EnumInformation(
-        fields=fields,
-        aliases=aliases,
+    field = parser_utils.get_enum_field_from_value(
+        field_element.attrib["value"]
     )
+
+    fields[name] = internal_types.VulkanEnumField(
+        name=name,
+        value=field.value,
+        representation=field.representation,
+        parent=parent,
+        extension=False,
+    )
+
+  return EnumInformation(
+      fields=fields,
+      aliases=aliases,
+  )
 
 
 class BitfieldInfo(NamedTuple):
-    value: int
-    representation: str
+  value: int
+  representation: str
 
 
 def get_bitfield_info(field_element: ET.Element, bit64: bool) -> BitfieldInfo:
-    """Parses the value and representation of a bitfield in an enum"""
+  """Parses the value and representation of a bitfield in an enum"""
 
-    # Sometimes instead of a bitpos, bitfield has a direct value
-    value_string = field_element.get("value")
-    if value_string:
-        return BitfieldInfo(
-            value=int(value_string, 0),
-            representation=value_string
-        )
+  # Sometimes instead of a bitpos, bitfield has a direct value
+  value_string = field_element.get("value")
+  if value_string:
+    return BitfieldInfo(value=int(value_string, 0), representation=value_string)
 
-    field = parser_utils.get_enum_field_from_bitpos(field_element.attrib["bitpos"], bit64)
+  field = parser_utils.get_enum_field_from_bitpos(
+      field_element.attrib["bitpos"], bit64
+  )
 
-    return BitfieldInfo(
-        value=field.value,
-        representation=field.representation
-    )
+  return BitfieldInfo(value=field.value, representation=field.representation)
 
 
 def parse_bitmask_fields(enum_elem: ET.Element, bit64: bool) -> EnumInformation:
-    """Parses the fields of a bitmask enum
+  """Parses the fields of a bitmask enum
 
-    A sample Vulkan bitmask enum
-    <enums name="VkMemoryHeapFlagBits" type="bitmask">
-        <enum bitpos="0"    name="VK_MEMORY_HEAP_DEVICE_LOCAL_BIT"
-                           comment="If set, heap represents device memory"/>
-    </enums>
-    """
-    fields: Dict[str, internal_types.VulkanEnumField] = {}
-    aliases: Dict[str, internal_types.VulkanEnumFieldAlias] = {}
+  A sample Vulkan bitmask enum
+  <enums name="VkMemoryHeapFlagBits" type="bitmask">
+      <enum bitpos="0"    name="VK_MEMORY_HEAP_DEVICE_LOCAL_BIT"
+                         comment="If set, heap represents device memory"/>
+  </enums>
+  """
+  fields: Dict[str, internal_types.VulkanEnumField] = {}
+  aliases: Dict[str, internal_types.VulkanEnumFieldAlias] = {}
 
-    parent = enum_elem.attrib["name"]
+  parent = enum_elem.attrib["name"]
 
-    for field_element in enum_elem:
-        name = field_element.attrib["name"]
+  for field_element in enum_elem:
+    name = field_element.attrib["name"]
 
-        alias = field_element.get("alias")
-        if alias:
-            aliases[name] = internal_types.VulkanEnumFieldAlias(
-                typename=name,
-                aliased_typename=alias,
-                parent=parent,
-                extension=False,
-            )
-            continue
+    alias = field_element.get("alias")
+    if alias:
+      aliases[name] = internal_types.VulkanEnumFieldAlias(
+          typename=name,
+          aliased_typename=alias,
+          parent=parent,
+          extension=False,
+      )
+      continue
 
-        bitfield_info = get_bitfield_info(field_element, bit64)
+    bitfield_info = get_bitfield_info(field_element, bit64)
 
-        fields[name] = internal_types.VulkanEnumField(
-            name=name,
-            value=bitfield_info.value,
-            representation=bitfield_info.representation,
-            parent=parent,
-            extension=False,
-        )
-
-    return EnumInformation(
-        fields=fields,
-        aliases=aliases,
+    fields[name] = internal_types.VulkanEnumField(
+        name=name,
+        value=bitfield_info.value,
+        representation=bitfield_info.representation,
+        parent=parent,
+        extension=False,
     )
 
+  return EnumInformation(
+      fields=fields,
+      aliases=aliases,
+  )
 
-def parse_api_constants(enum_elem: ET.Element) -> Dict[str, internal_types.VulkanDefine]:
-    constants: Dict[str, internal_types.VulkanDefine] = {}
 
-    for enum in enum_elem:
-        name = enum.attrib["name"]
-        value = enum.attrib["value"] if "value" in enum.attrib else enum.attrib["alias"]
-        constants[name] = internal_types.VulkanDefine(key=name, variable_name=name, value=value, extension=False)
+def parse_api_constants(
+    enum_elem: ET.Element,
+) -> Dict[str, internal_types.VulkanDefine]:
+  constants: Dict[str, internal_types.VulkanDefine] = {}
 
-    return constants
+  for enum in enum_elem:
+    name = enum.attrib["name"]
+    value = (
+        enum.attrib["value"] if "value" in enum.attrib else enum.attrib["alias"]
+    )
+    constants[name] = internal_types.VulkanDefine(
+        key=name, variable_name=name, value=value, extension=False
+    )
+
+  return constants
 
 
 # We have to return union because api constants are defined under Enums, even though they are not enum
-def parse(enum_elem: ET.Element) -> Union[Dict[str, internal_types.VulkanDefine], Optional[internal_types.VulkanEnum]]:
-    """Returns a Vulkan enum from the XML element that defines it"""
+def parse(
+    enum_elem: ET.Element,
+) -> Union[
+    Dict[str, internal_types.VulkanDefine], Optional[internal_types.VulkanEnum]
+]:
+  """Returns a Vulkan enum from the XML element that defines it"""
 
-    enum_name = enum_elem.attrib["name"]
+  enum_name = enum_elem.attrib["name"]
 
-    if enum_name == "API Constants":
-        return parse_api_constants(enum_elem)
+  if enum_name == "API Constants":
+    return parse_api_constants(enum_elem)
 
-    enum_type = enum_elem.attrib["type"]
-    if enum_type not in ("enum", "bitmask"):
-        raise SyntaxError(f"Unknown enum type : {ET.tostring(enum_elem)!r}")
+  enum_type = enum_elem.attrib["type"]
+  if enum_type not in ("enum", "bitmask"):
+    raise SyntaxError(f"Unknown enum type : {ET.tostring(enum_elem)!r}")
 
-    bitwidth = enum_elem.get("bitwidth")
-    if bitwidth and bitwidth != "64":
-        raise SyntaxError(f"Unknown bitwidth: {ET.tostring(enum_elem)!r}")
+  bitwidth = enum_elem.get("bitwidth")
+  if bitwidth and bitwidth != "64":
+    raise SyntaxError(f"Unknown bitwidth: {ET.tostring(enum_elem)!r}")
 
-    bitmask = (enum_type == "bitmask")
-    bit64 = (bitwidth == "64")
+  bitmask = enum_type == "bitmask"
+  bit64 = bitwidth == "64"
 
-    enum_info: EnumInformation
-    if bitmask:
-        enum_info = parse_bitmask_fields(enum_elem, bit64)
-    else:
-        enum_info = parse_value_fields(enum_elem)
+  enum_info: EnumInformation
+  if bitmask:
+    enum_info = parse_bitmask_fields(enum_elem, bit64)
+  else:
+    enum_info = parse_value_fields(enum_elem)
 
-    enum = internal_types.VulkanEnum(
-        typename=enum_name,
-        fields=enum_info.fields,
-        aliases=enum_info.aliases,
-        bitmask=bitmask,
-        bit64=bit64)
+  enum = internal_types.VulkanEnum(
+      typename=enum_name,
+      fields=enum_info.fields,
+      aliases=enum_info.aliases,
+      bitmask=bitmask,
+      bit64=bit64,
+  )
 
-    return enum
+  return enum

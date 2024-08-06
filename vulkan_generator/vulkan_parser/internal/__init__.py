@@ -12,4 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" This package is responsible for internals of parsing Vulkan XML """
+"""This package is responsible for internals of parsing Vulkan XML"""

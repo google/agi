@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" This module is responsible for parsing Spirv capabilities"""
+"""This module is responsible for parsing Spirv capabilities"""
 
 from typing import Optional
 import xml.etree.ElementTree as ET
@@ -21,45 +21,51 @@ from vulkan_generator.vulkan_parser.internal import internal_types
 
 
 def parse(spirv_element: ET.Element) -> internal_types.SpirvCapability:
-    """Parses a Spirv capability or alias from the XML element that defines it
+  """Parses a Spirv capability or alias from the XML element that defines it
 
-    A sample spirv capability:
-    s<spirvcapability name="StoragePushConstant16">
-            <enable struct="VkPhysicalDeviceVulkan11Features" feature="storagePushConstant16"
-                requires="VK_VERSION_1_2"/>
-            <enable struct="VkPhysicalDevice16BitStorageFeatures" feature="storagePushConstant16"
-                requires="VK_KHR_16bit_storage"/>
-    </spirvcapability>
-    """
+  A sample spirv capability:
+  s<spirvcapability name="StoragePushConstant16">
+          <enable struct="VkPhysicalDeviceVulkan11Features"
+          feature="storagePushConstant16"
+              requires="VK_VERSION_1_2"/>
+          <enable struct="VkPhysicalDevice16BitStorageFeatures"
+          feature="storagePushConstant16"
+              requires="VK_KHR_16bit_storage"/>
+  </spirvcapability>
+  """
 
-    name = spirv_element.attrib["name"]
-    version: Optional[str] = None
-    feature: Optional[internal_types.SpirvCapabilityFeature] = None
-    vulkan_property: Optional[internal_types.SpirvCapabilityProperty] = None
-    extension: Optional[str] = None
+  name = spirv_element.attrib["name"]
+  version: Optional[str] = None
+  feature: Optional[internal_types.SpirvCapabilityFeature] = None
+  vulkan_property: Optional[internal_types.SpirvCapabilityProperty] = None
+  extension: Optional[str] = None
 
-    for enable in spirv_element:
-        if "version" in enable.attrib:
-            version = enable.attrib["version"]
-        elif "struct" in enable.attrib:
-            feature = internal_types.SpirvCapabilityFeature(
-                struct=enable.attrib["struct"],
-                feature=enable.attrib["feature"],
-            )
-        elif "property" in enable.attrib:
-            vulkan_property = internal_types.SpirvCapabilityProperty(
-                struct=enable.attrib["property"],
-                group=enable.attrib["member"],
-                value=enable.attrib["value"],
-            )
-        elif "extension" in enable.attrib:
-            extension = enable.attrib["extension"]
-        else:
-            raise SyntaxError(f"Unknown Spirv capability type: {ET.tostring(spirv_element, 'utf-8')}")
+  for enable in spirv_element:
+    if "version" in enable.attrib:
+      version = enable.attrib["version"]
+    elif "struct" in enable.attrib:
+      feature = internal_types.SpirvCapabilityFeature(
+          struct=enable.attrib["struct"],
+          feature=enable.attrib["feature"],
+      )
+    elif "property" in enable.attrib:
+      vulkan_property = internal_types.SpirvCapabilityProperty(
+          struct=enable.attrib["property"],
+          group=enable.attrib["member"],
+          value=enable.attrib["value"],
+      )
+    elif "extension" in enable.attrib:
+      extension = enable.attrib["extension"]
+    else:
+      raise SyntaxError(
+          "Unknown Spirv capability type:"
+          f" {ET.tostring(spirv_element, 'utf-8')}"
+      )
 
-    return internal_types.SpirvCapability(
-        name=name,
-        version=version,
-        feature=feature,
-        property=vulkan_property,
-        vulkan_extension=extension)
+  return internal_types.SpirvCapability(
+      name=name,
+      version=version,
+      feature=feature,
+      property=vulkan_property,
+      vulkan_extension=extension,
+  )

@@ -24,22 +24,22 @@ from vulkan_generator.vulkan_parser.postprocess import postprocess
 
 
 def parse(filename: Path, dump: bool = False) -> types.VulkanInfo:
-    metadata = postprocess.process(internal_parser.parse(filename))
+  metadata = postprocess.process(internal_parser.parse(filename))
 
-    if dump:
-        print(metadata)
+  if dump:
+    print(metadata)
 
-    return metadata
+  return metadata
 
 
 if __name__ == "__main__":
-    if len(sys.argv) == 2:
-        parse(Path(sys.argv[1]))
-        sys.exit(0)
+  if len(sys.argv) == 2:
+    parse(Path(sys.argv[1]))
+    sys.exit(0)
 
-    if len(sys.argv) == 3:
-        if sys.argv[2].strip().lower() == "dump":
-            parse(Path(sys.argv[1]), True)
-            sys.exit(0)
+  if len(sys.argv) == 3:
+    if sys.argv[2].strip().lower() == "dump":
+      parse(Path(sys.argv[1]), True)
+      sys.exit(0)
 
-    print("Please use as <xml location> Optional['dump']")
+  print("Please use as <xml location> Optional['dump']")

@@ -12,31 +12,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" This module is responsible for parsing Vulkan platforms"""
+"""This module is responsible for parsing Vulkan platforms"""
 
 
 from typing import Dict
-
 import xml.etree.ElementTree as ET
 
 from vulkan_generator.vulkan_parser.internal import internal_types
 
 
-def parse(platforms_elem: ET.Element) -> Dict[str, internal_types.ExternalPlatform]:
-    """Parses the platforms that Vulkan is targeting"""
+def parse(
+    platforms_elem: ET.Element,
+) -> Dict[str, internal_types.ExternalPlatform]:
+  """Parses the platforms that Vulkan is targeting"""
 
-    platforms: Dict[str, internal_types.ExternalPlatform] = {}
+  platforms: Dict[str, internal_types.ExternalPlatform] = {}
 
-    for platform in platforms_elem:
-        if platform.tag != "platform":
-            raise SyntaxError(f"Unexpected tag in platforms: {ET.tostring(platform, 'utf-8')!r}")
+  for platform in platforms_elem:
+    if platform.tag != "platform":
+      raise SyntaxError(
+          f"Unexpected tag in platforms: {ET.tostring(platform, 'utf-8')!r}"
+      )
 
-        name = platform.attrib["name"]
-        protect = platform.attrib["protect"]
+    name = platform.attrib["name"]
+    protect = platform.attrib["protect"]
 
-        platforms[name] = internal_types.ExternalPlatform(
-            name=name,
-            protect=protect,
-        )
+    platforms[name] = internal_types.ExternalPlatform(
+        name=name,
+        protect=protect,
+    )
 
-    return platforms
+  return platforms

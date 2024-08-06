@@ -15,82 +15,78 @@
 """This is the entry point for Vulkan Code Generator"""
 
 import abc
-
 from pathlib import Path
-from typing import List
-
 from textwrap import dedent
-from vulkan_generator.vulkan_parser.api import types
+from typing import List
 from vulkan_generator.codegen_utils import codegen
+from vulkan_generator.vulkan_parser.api import types
 
 
 def handle_map_name(handle: str) -> str:
-    return f"""{handle[0:1].lower() + handle[1:]}_handle_map_"""
+  return f"""{handle[0:1].lower() + handle[1:]}_handle_map_"""
 
 
 def handle_count_map_name(handle: str) -> str:
-    return f"""{handle[0:1].lower() + handle[1:]}_count_map_"""
+  return f"""{handle[0:1].lower() + handle[1:]}_count_map_"""
 
 
 def handle_add_name(handle: str) -> str:
-    return f"""Add{handle[0:1].upper() + handle[1:]}Handle"""
+  return f"""Add{handle[0:1].upper() + handle[1:]}Handle"""
 
 
 def handle_remove_name(handle: str) -> str:
-    return f"""Remove{handle[0:1].upper() + handle[1:]}Handle"""
+  return f"""Remove{handle[0:1].upper() + handle[1:]}Handle"""
 
 
 def handle_remap_name(handle: str) -> str:
-    return f"""Remap{handle[0:1].upper() + handle[1:]}Handle"""
+  return f"""Remap{handle[0:1].upper() + handle[1:]}Handle"""
 
 
 class HandleAccessorCodeGenerator(metaclass=abc.ABCMeta):
-    ''' Abstract base class for generating accessor code implementations '''
-    @abc.abstractmethod
-    def handle_add_code(self, handle: str) -> str:
-        pass
+  """Abstract base class for generating accessor code implementations"""
 
-    @abc.abstractmethod
-    def handle_remove_code(self, handle: str) -> str:
-        pass
+  @abc.abstractmethod
+  def handle_add_code(self, handle: str) -> str:
+    pass
 
-    @abc.abstractmethod
-    def handle_remap_code(self, handle: str) -> str:
-        pass
+  @abc.abstractmethod
+  def handle_remove_code(self, handle: str) -> str:
+    pass
+
+  @abc.abstractmethod
+  def handle_remap_code(self, handle: str) -> str:
+    pass
 
 
 class DispatchableHandleAccessorCodeGenerator(HandleAccessorCodeGenerator):
-    ''' Class for generating accessor code implementations for dispatchable handles'''
+  """Class for generating accessor code implementations for dispatchable handles"""
 
-    def handle_add_code(self, handle: str) -> str:
-        map_name = handle_map_name(handle)
-        return dedent(f"""
+  def handle_add_code(self, handle: str) -> str:
+    map_name = handle_map_name(handle)
+    return dedent(f"""
             if({map_name}.find(captureHandle) != {map_name}.end()) throw HandleCollisionException();
-            {map_name}[captureHandle] = replayHandle;"""
-                      )
+            {map_name}[captureHandle] = replayHandle;""")
 
-    def handle_remove_code(self, handle: str) -> str:
-        map_name = handle_map_name(handle)
-        return dedent(f"""
+  def handle_remove_code(self, handle: str) -> str:
+    map_name = handle_map_name(handle)
+    return dedent(f"""
             if({map_name}.find(captureHandle) == {map_name}.end()) throw RemoveNonExistantHandleException();
-            {map_name}.erase(captureHandle);"""
-                      )
+            {map_name}.erase(captureHandle);""")
 
-    def handle_remap_code(self, handle: str) -> str:
-        map_name = handle_map_name(handle)
-        return dedent(f"""
+  def handle_remap_code(self, handle: str) -> str:
+    map_name = handle_map_name(handle)
+    return dedent(f"""
             if({map_name}.find(captureHandle) == {map_name}.end()) throw RemapNonExistantHandleException();
-            return {map_name}[captureHandle];"""
-                      )
+            return {map_name}[captureHandle];""")
 
 
 class NonDispatchableHandleAccessorCodeGenerator(HandleAccessorCodeGenerator):
-    ''' Class for generating accessor code implementations for non-dispatchable handles'''
+  """Class for generating accessor code implementations for non-dispatchable handles"""
 
-    def handle_add_code(self, handle: str) -> str:
-        map_name = handle_map_name(handle)
-        map_count_name = handle_count_map_name(handle)
-        return dedent(f"""
+  def handle_add_code(self, handle: str) -> str:
+    map_name = handle_map_name(handle)
+    map_count_name = handle_count_map_name(handle)
+    return dedent(f"""
             auto map_iter = {map_name}.find(captureHandle);
             auto map_count_iter = {map_count_name}.find(captureHandle);
 
@@ -103,13 +99,12 @@ class NonDispatchableHandleAccessorCodeGenerator(HandleAccessorCodeGenerator):
             }}
 
             {map_name}[captureHandle] = replayHandle;
-            {map_count_name}[captureHandle]++;"""
-                      )
+            {map_count_name}[captureHandle]++;""")
 
-    def handle_remove_code(self, handle: str) -> str:
-        map_name = handle_map_name(handle)
-        map_count_name = handle_count_map_name(handle)
-        return dedent(f"""
+  def handle_remove_code(self, handle: str) -> str:
+    map_name = handle_map_name(handle)
+    map_count_name = handle_count_map_name(handle)
+    return dedent(f"""
             auto map_iter = {map_name}.find(captureHandle);
             auto map_count_iter = {map_count_name}.find(captureHandle);
 
@@ -123,13 +118,12 @@ class NonDispatchableHandleAccessorCodeGenerator(HandleAccessorCodeGenerator):
             if((--{map_count_name}[captureHandle]) <= 0){{
                 {map_name}.erase(map_iter);
                 {map_count_name}.erase(map_count_iter);
-            }}"""
-                      )
+            }}""")
 
-    def handle_remap_code(self, handle: str) -> str:
-        map_name = handle_map_name(handle)
-        map_count_name = handle_count_map_name(handle)
-        return dedent(f"""
+  def handle_remap_code(self, handle: str) -> str:
+    map_name = handle_map_name(handle)
+    map_count_name = handle_count_map_name(handle)
+    return dedent(f"""
             auto map_iter = {map_name}.find(captureHandle);
             auto map_count_iter = {map_count_name}.find(captureHandle);
 
@@ -140,17 +134,18 @@ class NonDispatchableHandleAccessorCodeGenerator(HandleAccessorCodeGenerator):
                 if(map_count_iter->second <= 0) throw InternalConsistencyException();
             }}
 
-            return map_iter->second;"""
-                      )
+            return map_iter->second;""")
 
 
-def generate_handle_remapper_h(file_path: Path, vulkan_metadata: types.VulkanInfo):
-    ''' Generates handle_remapper.h '''
-    with open(file_path, "w", encoding="ascii") as remapper_h:
+def generate_handle_remapper_h(
+    file_path: Path, vulkan_metadata: types.VulkanInfo
+):
+  """Generates handle_remapper.h"""
+  with open(file_path, "w", encoding="ascii") as remapper_h:
 
-        remapper_h.write(codegen.generated_license_header())
+    remapper_h.write(codegen.generated_license_header())
 
-        remapper_h.write(dedent("""
+    remapper_h.write(dedent("""
             #include <map>
             #include <iostream>
             #include <map>
@@ -163,57 +158,91 @@ def generate_handle_remapper_h(file_path: Path, vulkan_metadata: types.VulkanInf
 
         """))
 
-        private_members: List[str] = []
-        public_members: List[str] = []
-        public_functions: List[str] = []
+    private_members: List[str] = []
+    public_members: List[str] = []
+    public_functions: List[str] = []
 
-        public_members.append(codegen.create_exception_declaration("InternalConsistencyException"))
-        public_members.append(codegen.create_exception_declaration("HandleCollisionException"))
-        public_members.append(codegen.create_exception_declaration("NonDispatchableHandleRedefinitionException",
-                                                                   base_class="HandleCollisionException"))
-        public_members.append(codegen.create_exception_declaration("RemoveNonExistantHandleException"))
-        public_members.append(codegen.create_exception_declaration("RemapNonExistantHandleException"))
+    public_members.append(
+        codegen.create_exception_declaration("InternalConsistencyException")
+    )
+    public_members.append(
+        codegen.create_exception_declaration("HandleCollisionException")
+    )
+    public_members.append(
+        codegen.create_exception_declaration(
+            "NonDispatchableHandleRedefinitionException",
+            base_class="HandleCollisionException",
+        )
+    )
+    public_members.append(
+        codegen.create_exception_declaration("RemoveNonExistantHandleException")
+    )
+    public_members.append(
+        codegen.create_exception_declaration("RemapNonExistantHandleException")
+    )
 
-        for handle in vulkan_metadata.types.handles:
+    for handle in vulkan_metadata.types.handles:
 
-            private_members.append(f"""std::map<VulkanHandle, VulkanHandle> {handle_map_name(handle)};""")
+      private_members.append(
+          f"""std::map<VulkanHandle, VulkanHandle> {handle_map_name(handle)};"""
+      )
 
-            if not vulkan_metadata.types.handles[handle].dispatchable:
-                private_members.append(f"""std::map<VulkanHandle, int> {handle_count_map_name(handle)};""")
+      if not vulkan_metadata.types.handles[handle].dispatchable:
+        private_members.append(
+            f"""std::map<VulkanHandle, int> {handle_count_map_name(handle)};"""
+        )
 
-            private_members.append("")
+      private_members.append("")
 
-            public_functions.append(codegen.create_function_declaration(handle_add_name(handle),
-                                                                        arguments={"captureHandle": "VulkanHandle",
-                                                                                   "replayHandle": "VulkanHandle"}))
-            public_functions.append(codegen.create_function_declaration(handle_remove_name(handle),
-                                                                        arguments={"captureHandle": "VulkanHandle"}))
-            public_functions.append(codegen.create_function_declaration(handle_remap_name(handle),
-                                                                        return_type="VulkanHandle",
-                                                                        arguments={"captureHandle": "VulkanHandle"}))
-            public_functions.append("")
+      public_functions.append(
+          codegen.create_function_declaration(
+              handle_add_name(handle),
+              arguments={
+                  "captureHandle": "VulkanHandle",
+                  "replayHandle": "VulkanHandle",
+              },
+          )
+      )
+      public_functions.append(
+          codegen.create_function_declaration(
+              handle_remove_name(handle),
+              arguments={"captureHandle": "VulkanHandle"},
+          )
+      )
+      public_functions.append(
+          codegen.create_function_declaration(
+              handle_remap_name(handle),
+              return_type="VulkanHandle",
+              arguments={"captureHandle": "VulkanHandle"},
+          )
+      )
+      public_functions.append("")
 
-        remapper_class_def = codegen.create_class_definition("HandleRemapper",
-                                                             public_inheritance=["NonCopyable"],
-                                                             public_functions=public_functions,
-                                                             public_members=public_members,
-                                                             private_members=private_members)
-        remapper_h.write(remapper_class_def + "\n")
+    remapper_class_def = codegen.create_class_definition(
+        "HandleRemapper",
+        public_inheritance=["NonCopyable"],
+        public_functions=public_functions,
+        public_members=public_members,
+        private_members=private_members,
+    )
+    remapper_h.write(remapper_class_def + "\n")
 
-        remapper_h.write(dedent("""
+    remapper_h.write(dedent("""
             }
             }
 
         """))
 
 
-def generate_handle_remapper_cpp(file_path: Path, vulkan_metadata: types.VulkanInfo):
-    ''' Generates handle_remapper.cc '''
-    with open(file_path, "w", encoding="ascii") as remapper_cpp:
+def generate_handle_remapper_cpp(
+    file_path: Path, vulkan_metadata: types.VulkanInfo
+):
+  """Generates handle_remapper.cc"""
+  with open(file_path, "w", encoding="ascii") as remapper_cpp:
 
-        remapper_cpp.write(codegen.generated_license_header())
+    remapper_cpp.write(codegen.generated_license_header())
 
-        remapper_cpp.write(dedent("""
+    remapper_cpp.write(dedent("""
             #include "handle_remapper.h"
 
             namespace agi {
@@ -221,60 +250,83 @@ def generate_handle_remapper_cpp(file_path: Path, vulkan_metadata: types.VulkanI
 
         """))
 
-        dispatchable_implgen = DispatchableHandleAccessorCodeGenerator()
-        nondispatchable_implgen = NonDispatchableHandleAccessorCodeGenerator()
+    dispatchable_implgen = DispatchableHandleAccessorCodeGenerator()
+    nondispatchable_implgen = NonDispatchableHandleAccessorCodeGenerator()
 
-        for handle in vulkan_metadata.types.handles:
+    for handle in vulkan_metadata.types.handles:
 
-            dispatchable = vulkan_metadata.types.handles[handle].dispatchable
-            implgenerator = dispatchable_implgen if dispatchable else nondispatchable_implgen
+      dispatchable = vulkan_metadata.types.handles[handle].dispatchable
+      implgenerator = (
+          dispatchable_implgen if dispatchable else nondispatchable_implgen
+      )
 
-            add_definition = codegen.create_function_definition(
-                f"""HandleRemapper::{handle_add_name(handle)}""",
-                arguments={"captureHandle": "VulkanHandle",
-                           "replayHandle": "VulkanHandle"},
-                code=implgenerator.handle_add_code(handle))
+      add_definition = codegen.create_function_definition(
+          f"""HandleRemapper::{handle_add_name(handle)}""",
+          arguments={
+              "captureHandle": "VulkanHandle",
+              "replayHandle": "VulkanHandle",
+          },
+          code=implgenerator.handle_add_code(handle),
+      )
 
-            remove_definition = codegen.create_function_definition(
-                f"""HandleRemapper::{handle_remove_name(handle)}""",
-                arguments={"captureHandle": "VulkanHandle"},
-                code=implgenerator.handle_remove_code(handle))
+      remove_definition = codegen.create_function_definition(
+          f"""HandleRemapper::{handle_remove_name(handle)}""",
+          arguments={"captureHandle": "VulkanHandle"},
+          code=implgenerator.handle_remove_code(handle),
+      )
 
-            remap_definition = codegen.create_function_definition(
-                f"""HandleRemapper::{handle_remap_name(handle)}""",
-                arguments={"captureHandle": "VulkanHandle"},
-                return_type="VulkanHandle",
-                code=implgenerator.handle_remap_code(handle))
+      remap_definition = codegen.create_function_definition(
+          f"""HandleRemapper::{handle_remap_name(handle)}""",
+          arguments={"captureHandle": "VulkanHandle"},
+          return_type="VulkanHandle",
+          code=implgenerator.handle_remap_code(handle),
+      )
 
-            remapper_cpp.write(codegen.comment_code(code=add_definition,
-                                                    comment="record the creation of a new handle") + "\n")
-            remapper_cpp.write(codegen.comment_code(code=remove_definition,
-                                                    comment="record the destruction of a handle") + "\n")
-            remapper_cpp.write(codegen.comment_code(code=remap_definition,
-                                                    comment="remap a handle from the capture to replay handle") + "\n")
+      remapper_cpp.write(
+          codegen.comment_code(
+              code=add_definition, comment="record the creation of a new handle"
+          )
+          + "\n"
+      )
+      remapper_cpp.write(
+          codegen.comment_code(
+              code=remove_definition,
+              comment="record the destruction of a handle",
+          )
+          + "\n"
+      )
+      remapper_cpp.write(
+          codegen.comment_code(
+              code=remap_definition,
+              comment="remap a handle from the capture to replay handle",
+          )
+          + "\n"
+      )
 
-        remapper_cpp.write(dedent("""
+    remapper_cpp.write(dedent("""
             }
             }
 
         """))
 
 
-def generate_handle_remapper_tests(file_path: Path, vulkan_metadata: types.VulkanInfo):
-    ''' Generates handle_remapper_tests.cc '''
-    with open(file_path, "w", encoding="ascii") as tests_cpp:
+def generate_handle_remapper_tests(
+    file_path: Path, vulkan_metadata: types.VulkanInfo
+):
+  """Generates handle_remapper_tests.cc"""
+  with open(file_path, "w", encoding="ascii") as tests_cpp:
 
-        tests_cpp.write(codegen.generated_license_header())
+    tests_cpp.write(codegen.generated_license_header())
 
-        tests_cpp.write(dedent("""
+    tests_cpp.write(dedent("""
             #include "handle_remapper.h"
             #include <gtest/gtest.h>
 
             using namespace agi::replay2;
             """))
 
-        for handle in vulkan_metadata.types.handles:
-            tests_cpp.write(dedent(f"""
+    for handle in vulkan_metadata.types.handles:
+      tests_cpp.write(dedent(f"""
             TEST(HandleRemapper, {handle}BasicRemap) {{
                 HandleRemapper mapper;
                 EXPECT_THROW(mapper.{handle_remap_name(handle)}(1234), HandleRemapper::RemapNonExistantHandleException);
@@ -284,15 +336,15 @@ def generate_handle_remapper_tests(file_path: Path, vulkan_metadata: types.Vulka
                 EXPECT_THROW(mapper.{handle_remap_name(handle)}(1234), HandleRemapper::RemapNonExistantHandleException);
             }}"""))
 
-            tests_cpp.write(dedent(f"""
+      tests_cpp.write(dedent(f"""
             TEST(HandleRemapper, {handle}UnknownRemap) {{
                 HandleRemapper mapper;
                 EXPECT_NO_THROW(mapper.{handle_add_name(handle)}(1234, 5678));
                 EXPECT_THROW(mapper.{handle_remap_name(handle)}(5678), HandleRemapper::RemapNonExistantHandleException);
             }}"""))
 
-            if vulkan_metadata.types.handles[handle].dispatchable:
-                tests_cpp.write(dedent(f"""
+      if vulkan_metadata.types.handles[handle].dispatchable:
+        tests_cpp.write(dedent(f"""
                 TEST(HandleRemapper, Dispatchable{handle}Redefinition) {{
                     HandleRemapper mapper;
                     EXPECT_NO_THROW(mapper.{handle_add_name(handle)}(1234, 5678));
@@ -306,8 +358,8 @@ def generate_handle_remapper_tests(file_path: Path, vulkan_metadata: types.Vulka
                     EXPECT_THROW(mapper.{handle_remove_name(handle)}(1234), HandleRemapper::RemoveNonExistantHandleException);
                     EXPECT_THROW(mapper.{handle_remap_name(handle)}(1234), HandleRemapper::RemapNonExistantHandleException);
                 }}"""))
-            else:
-                tests_cpp.write(dedent(f"""
+      else:
+        tests_cpp.write(dedent(f"""
                 TEST(HandleRemapper, NonDispatchable{handle}Redefinition) {{
                     HandleRemapper mapper;
                     EXPECT_NO_THROW(mapper.{handle_add_name(handle)}(1234, 5678));
@@ -322,7 +374,7 @@ def generate_handle_remapper_tests(file_path: Path, vulkan_metadata: types.Vulka
                     EXPECT_THROW(mapper.{handle_remap_name(handle)}(1234), HandleRemapper::RemapNonExistantHandleException);
                 }}"""))
 
-        tests_cpp.write(dedent("""
+    tests_cpp.write(dedent("""
         int main(int argc, char **argv) {
             ::testing::InitGoogleTest(&argc, argv);
             return RUN_ALL_TESTS();

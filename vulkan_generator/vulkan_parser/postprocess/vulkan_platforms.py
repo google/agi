@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-This module responsible for postprocessing the Vulkan Platforms
+"""This module responsible for postprocessing the Vulkan Platforms
 
 All the stringly typed references will be linked during this stage.
 """
@@ -24,14 +23,16 @@ from vulkan_generator.vulkan_parser.api import types
 from vulkan_generator.vulkan_parser.internal import internal_types
 
 
-def process(internal_platforms: Dict[str, internal_types.ExternalPlatform]) -> Dict[str, types.ExternalPlatform]:
-    """Post process platforms"""
-    new_platforms: Dict[str, types.ExternalPlatform] = {}
+def process(
+    internal_platforms: Dict[str, internal_types.ExternalPlatform],
+) -> Dict[str, types.ExternalPlatform]:
+  """Post process platforms"""
+  new_platforms: Dict[str, types.ExternalPlatform] = {}
 
-    for platform in internal_platforms.values():
-        new_platforms[platform.name] = types.ExternalPlatform(
-            name=platform.name,
-            protect=platform.protect,
-        )
+  for platform in internal_platforms.values():
+    new_platforms[platform.name] = types.ExternalPlatform(
+        name=platform.name,
+        protect=platform.protect,
+    )
 
-    return new_platforms
+  return new_platforms

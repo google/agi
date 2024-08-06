@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" This module is responsible for parsing Spirv extensions"""
+"""This module is responsible for parsing Spirv extensions"""
 
 from typing import Optional
 import xml.etree.ElementTree as ET
@@ -21,29 +21,36 @@ from vulkan_generator.vulkan_parser.internal import internal_types
 
 
 def parse(spirv_element: ET.Element) -> internal_types.SpirvExtension:
-    """Returns a Spirv extension or alias from the XML element that defines it
+  """Returns a Spirv extension or alias from the XML element that defines it
 
-    A sample Spirv extension:
-    <spirvextension name="SPV_KHR_variable_pointers">
-        <enable version="VK_VERSION_1_1"/>
-        <enable extension="VK_KHR_variable_pointers"/>
-    </spirvextension>
-    """
+  A sample Spirv extension:
+  <spirvextension name="SPV_KHR_variable_pointers">
+      <enable version="VK_VERSION_1_1"/>
+      <enable extension="VK_KHR_variable_pointers"/>
+  </spirvextension>
+  """
 
-    name = spirv_element.attrib["name"]
-    version: Optional[str] = None
-    extension: Optional[str] = None
+  name = spirv_element.attrib["name"]
+  version: Optional[str] = None
+  extension: Optional[str] = None
 
-    for enable in spirv_element:
-        if "version" in enable.attrib:
-            version = enable.attrib["version"]
-        elif "extension" in enable.attrib:
-            extension = enable.attrib["extension"]
-        else:
-            raise SyntaxError(f"Unknown Spirv capability type: {ET.tostring(spirv_element, 'utf-8')}")
+  for enable in spirv_element:
+    if "version" in enable.attrib:
+      version = enable.attrib["version"]
+    elif "extension" in enable.attrib:
+      extension = enable.attrib["extension"]
+    else:
+      raise SyntaxError(
+          "Unknown Spirv capability type:"
+          f" {ET.tostring(spirv_element, 'utf-8')}"
+      )
 
-    if not extension:
-        raise SyntaxError(
-            f"Vulkan extension for the Spirv extension could not found:{ET.tostring(spirv_element, 'utf-8')!r}")
+  if not extension:
+    raise SyntaxError(
+        "Vulkan extension for the Spirv extension could not"
+        f" found:{ET.tostring(spirv_element, 'utf-8')!r}"
+    )
 
-    return internal_types.SpirvExtension(name=name, version=version, vulkan_extension=extension)
+  return internal_types.SpirvExtension(
+      name=name, version=version, vulkan_extension=extension
+  )

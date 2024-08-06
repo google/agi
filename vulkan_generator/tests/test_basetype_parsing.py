@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-This module is responsible for testing Vulkan basetypes
+"""This module is responsible for testing Vulkan basetypes
 
 Examples in this files stems from vk.xml that relesed by Khronos.
 Anytime the particular xml updated, test should be checked
@@ -27,38 +26,38 @@ from vulkan_generator.vulkan_parser.internal import internal_types
 
 
 def test_vulkan_basetype_type_declaration() -> None:
-    """""Test the case if the handle name is in an XML tag"""
+  """ ""Test the case if the handle name is in an XML tag"""
 
-    xml = """<?xml version="1.0" encoding="UTF-8"?>
+  xml = """<?xml version="1.0" encoding="UTF-8"?>
     <type category="basetype">typedef <type>uint32_t</type> <name>VkSampleMask</name>;</type>"""
 
-    basetype = basetype_parser.parse(ET.fromstring(xml))
+  basetype = basetype_parser.parse(ET.fromstring(xml))
 
-    assert isinstance(basetype, internal_types.VulkanBaseType)
-    assert basetype.typename == "VkSampleMask"
-    assert basetype.basetype == "uint32_t"
+  assert isinstance(basetype, internal_types.VulkanBaseType)
+  assert basetype.typename == "VkSampleMask"
+  assert basetype.basetype == "uint32_t"
 
 
 def test_vulkan_basetype_forward_declaration() -> None:
-    """""Test the case if the handle name is in an XML tag"""
+  """ ""Test the case if the handle name is in an XML tag"""
 
-    xml = """<?xml version="1.0" encoding="UTF-8"?>
+  xml = """<?xml version="1.0" encoding="UTF-8"?>
     <type category="basetype">struct <name>ANativeWindow</name>;</type>"""
 
-    basetype = basetype_parser.parse(ET.fromstring(xml))
+  basetype = basetype_parser.parse(ET.fromstring(xml))
 
-    assert isinstance(basetype, internal_types.VulkanBaseType)
-    assert basetype.typename == "ANativeWindow"
-    assert not basetype.basetype
+  assert isinstance(basetype, internal_types.VulkanBaseType)
+  assert basetype.typename == "ANativeWindow"
+  assert not basetype.basetype
 
 
 def test_vulkan_basetype_with_pointer() -> None:
-    """""Test the case if the basetype has a pointer"""
+  """ ""Test the case if the basetype has a pointer"""
 
-    xml = """<?xml version="1.0" encoding="UTF-8"?>
+  xml = """<?xml version="1.0" encoding="UTF-8"?>
     <type category="basetype">typedef <type>void</type>* <name>VkRemoteAddressNV</name>;</type>"""
 
-    basetype = basetype_parser.parse(ET.fromstring(xml))
+  basetype = basetype_parser.parse(ET.fromstring(xml))
 
-    assert isinstance(basetype, internal_types.VulkanBaseType)
-    assert basetype.basetype == "void*"
+  assert isinstance(basetype, internal_types.VulkanBaseType)
+  assert basetype.basetype == "void*"

@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-This module responsible for postprocessing the Vulkan defines
+"""This module responsible for postprocessing the Vulkan defines
 
 All the stringly typed references will be linked during this stage.
 """
@@ -24,14 +23,16 @@ from vulkan_generator.vulkan_parser.api import types
 from vulkan_generator.vulkan_parser.internal import internal_types
 
 
-def process(includes: Dict[str, internal_types.ExternalInclude]) -> Dict[str, types.ExternalInclude]:
-    """Post process Includes"""
-    new_includes: Dict[str, types.ExternalInclude] = {}
+def process(
+    includes: Dict[str, internal_types.ExternalInclude],
+) -> Dict[str, types.ExternalInclude]:
+  """Post process Includes"""
+  new_includes: Dict[str, types.ExternalInclude] = {}
 
-    for include in includes.values():
-        new_includes[include.header] = types.ExternalInclude(
-            header=include.header,
-            directive=include.directive,
-        )
+  for include in includes.values():
+    new_includes[include.header] = types.ExternalInclude(
+        header=include.header,
+        directive=include.directive,
+    )
 
-    return new_includes
+  return new_includes

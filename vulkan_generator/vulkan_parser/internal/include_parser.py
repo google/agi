@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" This module is responsible for parsing the includes used by Vulkan.
+"""This module is responsible for parsing the includes used by Vulkan.
 
-    Some of these includes are platform specific but no information given on that
+Some of these includes are platform specific but no information given on that
 """
 
 
@@ -24,13 +24,13 @@ from vulkan_generator.vulkan_parser.internal import internal_types
 
 
 def parse(include_elem: ET.Element) -> internal_types.ExternalInclude:
-    """Returns an include definition from the XML element that defines it.
+  """Returns an include definition from the XML element that defines it.
 
-      A sample Vulkan Include:
-      <type name="vk_platform" category="include">#include "vk_platform.h"</type>
-    """
+  A sample Vulkan Include:
+  <type name="vk_platform" category="include">#include "vk_platform.h"</type>
+  """
 
-    header = include_elem.attrib["name"]
-    directive = include_elem.text
+  header = include_elem.attrib["name"]
+  directive = include_elem.text
 
-    return internal_types.ExternalInclude(header=header, directive=directive)
+  return internal_types.ExternalInclude(header=header, directive=directive)

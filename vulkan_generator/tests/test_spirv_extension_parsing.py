@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-This module is responsible for testing Spirv information
+"""This module is responsible for testing Spirv information
 
 Examples in this files stems from vk.xml that relesed by Khronos.
 Anytime the particular xml updated, test should be checked
@@ -22,35 +21,35 @@ if they reflect the new XML
 
 import xml.etree.ElementTree as ET
 
-from vulkan_generator.vulkan_parser.internal import spirv_extensions_parser
 from vulkan_generator.vulkan_parser.internal import internal_types
+from vulkan_generator.vulkan_parser.internal import spirv_extensions_parser
 
 
 def test_spirv_extension() -> None:
-    """""Test the case with a spirv extension enables a Vulkan extension"""
+  """ ""Test the case with a spirv extension enables a Vulkan extension"""
 
-    xml = """<?xml version="1.0" encoding="UTF-8"?>
+  xml = """<?xml version="1.0" encoding="UTF-8"?>
     <spirvextension name="SPV_AMD_gcn_shader">
         <enable extension="VK_AMD_gcn_shader"/>
     </spirvextension>"""
 
-    spirv_extension = spirv_extensions_parser.parse(ET.fromstring(xml))
+  spirv_extension = spirv_extensions_parser.parse(ET.fromstring(xml))
 
-    assert isinstance(spirv_extension, internal_types.SpirvExtension)
-    assert spirv_extension.name == "SPV_AMD_gcn_shader"
-    assert spirv_extension.vulkan_extension == "VK_AMD_gcn_shader"
+  assert isinstance(spirv_extension, internal_types.SpirvExtension)
+  assert spirv_extension.name == "SPV_AMD_gcn_shader"
+  assert spirv_extension.vulkan_extension == "VK_AMD_gcn_shader"
 
 
 def test_spirv_extension_with_version() -> None:
-    """""Test the case with a spirv extension with version"""
+  """ ""Test the case with a spirv extension with version"""
 
-    xml = """<?xml version="1.0" encoding="UTF-8"?>
+  xml = """<?xml version="1.0" encoding="UTF-8"?>
     <spirvextension name="SPV_KHR_variable_pointers">
         <enable version="VK_VERSION_1_1"/>
         <enable extension="VK_KHR_variable_pointers"/>
     </spirvextension>"""
 
-    spirv_extension = spirv_extensions_parser.parse(ET.fromstring(xml))
+  spirv_extension = spirv_extensions_parser.parse(ET.fromstring(xml))
 
-    assert isinstance(spirv_extension, internal_types.SpirvExtension)
-    assert spirv_extension.version == "VK_VERSION_1_1"
+  assert isinstance(spirv_extension, internal_types.SpirvExtension)
+  assert spirv_extension.version == "VK_VERSION_1_1"

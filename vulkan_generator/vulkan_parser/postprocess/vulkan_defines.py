@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-This module responsible for postprocessing the Vulkan defines
+"""This module responsible for postprocessing the Vulkan defines
 
 All the stringly typed references will be linked during this stage.
 """
@@ -24,16 +23,18 @@ from vulkan_generator.vulkan_parser.api import types
 from vulkan_generator.vulkan_parser.internal import internal_types
 
 
-def process(internal_defines: Dict[str, internal_types.VulkanDefine]) -> Dict[str, types.VulkanDefine]:
-    """Post process defines"""
-    new_defines: Dict[str, types.VulkanDefine] = {}
+def process(
+    internal_defines: Dict[str, internal_types.VulkanDefine],
+) -> Dict[str, types.VulkanDefine]:
+  """Post process defines"""
+  new_defines: Dict[str, types.VulkanDefine] = {}
 
-    for define in internal_defines.values():
-        new_defines[define.key] = types.VulkanDefine(
-            key=define.key,
-            name=define.variable_name,
-            value=define.value,
-            extension=define.extension,
-        )
+  for define in internal_defines.values():
+    new_defines[define.key] = types.VulkanDefine(
+        key=define.key,
+        name=define.variable_name,
+        value=define.value,
+        extension=define.extension,
+    )
 
-    return new_defines
+  return new_defines

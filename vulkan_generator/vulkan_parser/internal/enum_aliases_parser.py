@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" This module is responsible for parsing Vulkan Enum aliases
+"""This module is responsible for parsing Vulkan Enum aliases
 
-    Unfortunately the actual enums defined under a different subtree of `enums` tag
-    in Vulkan XML. Therefore they will be parsed by a different module.
+Unfortunately the actual enums defined under a different subtree of `enums` tag
+in Vulkan XML. Therefore they will be parsed by a different module.
 """
 
 from typing import Optional
@@ -25,18 +25,20 @@ from vulkan_generator.vulkan_parser.internal import internal_types
 
 
 def parse(enum_elem: ET.Element) -> Optional[internal_types.VulkanEnumAlias]:
-    """Returns a Vulkan enum alias from the XML element that defines it.
+  """Returns a Vulkan enum alias from the XML element that defines it.
 
-    A sample Vulkan Enum Alias:
-    <type category="enum" name="VkSemaphoreTypeKHR" alias="VkSemaphoreType"/>
-    """
+  A sample Vulkan Enum Alias:
+  <type category="enum" name="VkSemaphoreTypeKHR" alias="VkSemaphoreType"/>
+  """
 
-    alias_name = enum_elem.get("alias")
+  alias_name = enum_elem.get("alias")
 
-    if not alias_name:
-        # The actual enums and their fields of enums are defined under enums tag
-        # in the XML so they will be parsed separately.
-        return None
+  if not alias_name:
+    # The actual enums and their fields of enums are defined under enums tag
+    # in the XML so they will be parsed separately.
+    return None
 
-    enum_name = enum_elem.attrib["name"]
-    return internal_types.VulkanEnumAlias(typename=enum_name, aliased_typename=alias_name)
+  enum_name = enum_elem.attrib["name"]
+  return internal_types.VulkanEnumAlias(
+      typename=enum_name, aliased_typename=alias_name
+  )

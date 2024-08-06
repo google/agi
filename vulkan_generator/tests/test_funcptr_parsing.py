@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-This module is responsible for testing Vulkan function pointers
+"""This module is responsible for testing Vulkan function pointers
 
 Examples in this files stems from vk.xml that relesed by Khronos.
 Anytime the particular xml updated, test should be checked
@@ -27,8 +26,8 @@ from vulkan_generator.vulkan_parser.internal import internal_types
 
 
 def test_vulkan_func_pointer() -> None:
-    """""Test the parsing of a function pointer"""
-    xml = """<?xml version="1.0" encoding="UTF-8"?>
+  """ ""Test the parsing of a function pointer"""
+  xml = """<?xml version="1.0" encoding="UTF-8"?>
     <type category="funcpointer">typedef void (VKAPI_PTR *
     <name>PFN_vkInternalAllocationNotification</name>)(
     <type>void</type>*                                       pUserData,
@@ -36,32 +35,38 @@ def test_vulkan_func_pointer() -> None:
     <type>VkInternalAllocationType</type>                    allocationType,
     <type>VkSystemAllocationScope</type>                     allocationScope);</type>
     """
-    funcptr = funcptr_parser.parse(ET.fromstring(xml))
+  funcptr = funcptr_parser.parse(ET.fromstring(xml))
 
-    assert isinstance(funcptr, internal_types.VulkanFunctionPtr)
+  assert isinstance(funcptr, internal_types.VulkanFunctionPtr)
 
-    assert funcptr.typename == "PFN_vkInternalAllocationNotification"
-    assert funcptr.return_type == "void"
-    assert len(funcptr.arguments) == 4
+  assert funcptr.typename == "PFN_vkInternalAllocationNotification"
+  assert funcptr.return_type == "void"
+  assert len(funcptr.arguments) == 4
 
-    argument_names = list(funcptr.arguments.keys())
+  argument_names = list(funcptr.arguments.keys())
 
-    assert argument_names[0] == "pUserData"
-    assert funcptr.arguments["pUserData"].argument_type == "void*"
+  assert argument_names[0] == "pUserData"
+  assert funcptr.arguments["pUserData"].argument_type == "void*"
 
-    assert argument_names[1] == "size"
-    assert funcptr.arguments["size"].argument_type == "size_t"
+  assert argument_names[1] == "size"
+  assert funcptr.arguments["size"].argument_type == "size_t"
 
-    assert argument_names[2] == "allocationType"
-    assert funcptr.arguments["allocationType"].argument_type == "VkInternalAllocationType"
+  assert argument_names[2] == "allocationType"
+  assert (
+      funcptr.arguments["allocationType"].argument_type
+      == "VkInternalAllocationType"
+  )
 
-    assert argument_names[3] == "allocationScope"
-    assert funcptr.arguments["allocationScope"].argument_type == "VkSystemAllocationScope"
+  assert argument_names[3] == "allocationScope"
+  assert (
+      funcptr.arguments["allocationScope"].argument_type
+      == "VkSystemAllocationScope"
+  )
 
 
 def test_vulkan_func_pointer_with_pointer_return_value() -> None:
-    """""Test the parsing of a function pointer with a pointer return type"""
-    xml = """<?xml version="1.0" encoding="UTF-8"?>
+  """ ""Test the parsing of a function pointer with a pointer return type"""
+  xml = """<?xml version="1.0" encoding="UTF-8"?>
     <type category="funcpointer">typedef void* (VKAPI_PTR *
     <name>PFN_vkReallocationFunction</name>)(
     <type>void</type>*                                       pUserData,
@@ -71,16 +76,16 @@ def test_vulkan_func_pointer_with_pointer_return_value() -> None:
     <type>VkSystemAllocationScope</type>                     allocationScope);</type>
     """
 
-    funcptr = funcptr_parser.parse(ET.fromstring(xml))
+  funcptr = funcptr_parser.parse(ET.fromstring(xml))
 
-    assert isinstance(funcptr, internal_types.VulkanFunctionPtr)
-    assert funcptr.return_type == "void*"
+  assert isinstance(funcptr, internal_types.VulkanFunctionPtr)
+  assert funcptr.return_type == "void*"
 
 
 def test_vulkan_func_pointer_with_const_member() -> None:
-    """""Test the parsing of a function pointer with a const pointer argument"""
+  """ ""Test the parsing of a function pointer with a const pointer argument"""
 
-    xml = """<?xml version="1.0" encoding="UTF-8"?>
+  xml = """<?xml version="1.0" encoding="UTF-8"?>
     <type category="funcpointer">typedef VkBool32 (VKAPI_PTR *
     <name>PFN_vkDebugReportCallbackEXT</name>)(
     <type>VkDebugReportFlagsEXT</type>                       flags,
@@ -93,8 +98,8 @@ def test_vulkan_func_pointer_with_const_member() -> None:
     <type>void</type>*                                       pUserData);</type>
     """
 
-    funcptr = funcptr_parser.parse(ET.fromstring(xml))
+  funcptr = funcptr_parser.parse(ET.fromstring(xml))
 
-    argument_names = list(funcptr.arguments.keys())
-    assert argument_names[4] == "messageCode"
-    assert funcptr.arguments["pLayerPrefix"].argument_type == "const char*"
+  argument_names = list(funcptr.arguments.keys())
+  assert argument_names[4] == "messageCode"
+  assert funcptr.arguments["pLayerPrefix"].argument_type == "const char*"

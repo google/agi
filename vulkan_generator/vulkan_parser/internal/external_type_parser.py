@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" This module is responsible for parsing Vulkan baseinternal_types.
+"""This module is responsible for parsing Vulkan baseinternal_types.
 
-    Vulkan basetypes can be considered as C++ typedefs for
-    either type declaration or forward declaration
-    e.g.
+Vulkan basetypes can be considered as C++ typedefs for
+either type declaration or forward declaration
+e.g.
 """
 
 
@@ -26,25 +26,31 @@ from vulkan_generator.vulkan_parser.internal import internal_types
 
 
 def parse(external_type_elem: ET.Element) -> internal_types.ExternalType:
-    """Returns a C Basetype from the XML element that defines it.
+  """Returns a C Basetype from the XML element that defines it.
 
-      C types thin Vulkan XML are defined with no tag. They can be recognised with either
-      the require attribute or having no attribute
+  C types thin Vulkan XML are defined with no tag. They can be recognised with
+  either
+  the require attribute or having no attribute
 
-      A sample Vulkan C type with no attribute:
-      <type name="int"/>
+  A sample Vulkan C type with no attribute:
+  <type name="int"/>
 
-      A sample Vulkan C type with attribute:
-      <type requires="vk_platform" name="float"/>
-    """
+  A sample Vulkan C type with attribute:
+  <type requires="vk_platform" name="float"/>
+  """
 
-    typename = external_type_elem.get("name")
-    if not typename:
-        raise SyntaxError(f"No type name found for C type: {ET.tostring(external_type_elem, 'utf-8')!r}")
+  typename = external_type_elem.get("name")
+  if not typename:
+    raise SyntaxError(
+        "No type name found for C type:"
+        f" {ET.tostring(external_type_elem, 'utf-8')!r}"
+    )
 
-    source_header = external_type_elem.get("requires")
-    ctype = False
-    if not source_header or source_header == "vk_platform":
-        ctype = True
+  source_header = external_type_elem.get("requires")
+  ctype = False
+  if not source_header or source_header == "vk_platform":
+    ctype = True
 
-    return internal_types.ExternalType(typename=typename, source_header=source_header, ctype=ctype)
+  return internal_types.ExternalType(
+      typename=typename, source_header=source_header, ctype=ctype
+  )
