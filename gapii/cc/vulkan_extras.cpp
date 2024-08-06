@@ -1045,12 +1045,11 @@ uint32_t VulkanSpy::SpyOverride_vkAllocateMemory(
       device, pAllocateInfo, pAllocator, pMemory);
   auto l_physical_device =
       mState.PhysicalDevices[mState.Devices[device]->mPhysicalDevice];
-  if (0 !=
-      (l_physical_device->mMemoryProperties
-           .mmemoryTypes[pAllocateInfo->mmemoryTypeIndex]
-           .mpropertyFlags &
-       ((uint32_t)(
-           VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)))) {
+  if (0 != (l_physical_device->mMemoryProperties
+                .mmemoryTypes[pAllocateInfo->mmemoryTypeIndex]
+                .mpropertyFlags &
+            ((uint32_t)(VkMemoryPropertyFlagBits::
+                            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)))) {
     // This is host-coherent memory. Some drivers actually allocate these pages
     // on-demand. This forces all of the pages to be created. This is needed as
     // our coherent memory tracker relies on page-faults which interferes with
