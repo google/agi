@@ -18,7 +18,7 @@ BAZEL=${BAZEL:-bazel}
 BUILDIFIER=${BUILDIFIER:-buildifier}
 BUILDOZER=${BUILDOZER:-buildozer}
 CLANG_FORMAT=${CLANG_FORMAT:-clang-format}
-AUTOPEP8=${AUTOPEP8:-autopep8}
+PYFORMAT=${PYFORMAT:-pyformat}
 
 if test -t 1; then
   ncolors=$(tput colors)
@@ -132,13 +132,13 @@ function run_gofmt() {
   find . -name "*.go" | xargs $GOFMT -w
 }
 
-function run_autopep8() {
-  # Check if autopep8 python script is accessible
-  if ! command -v $AUTOPEP8 &> /dev/null; then
-    echo "ERROR: '${AUTOPEP8}' could not be found. Make sure it's installed in PATH or provide the location with 'AUTOPEP8' environment variable."
+function run_pyformat() {
+  # Check if pyformat python script is accessible
+  if ! command -v $PYFORMAT &> /dev/null; then
+    echo "ERROR: '${PYFORAMT}' could not be found. Make sure it's installed in PATH or provide the location with 'PYFORMAT' environment variable."
     return 1
   fi
-  $AUTOPEP8 --global-config=tools/build/python/pep8 -r --in-place vulkan_generator
+  $PYFORMAT -r --in_place vulkan_generator
 }
 
 # This is required due to docker build machines
@@ -170,7 +170,7 @@ check "gazelle" run_gazelle
 check gofmt run_gofmt
 
 # Check python Formatter(autopep8)
-check autopep8 run_autopep8
+check pyformat run_pyformat
 
 # Check clang-format.
 check clang-format run_clang_format
