@@ -20,6 +20,7 @@ try-import %workspace%/user.bazelrc
 # Adjusting defaults to favour developer workflows
 build --verbose_failures
 test --test_output=errors
+test --cxxopt="-std=c++17"
 query --nohost_deps --noimplicit_deps
 
 # Android special build configurations
