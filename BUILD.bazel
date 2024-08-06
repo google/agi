@@ -14,12 +14,12 @@
 
 # Root BUILD file for Android GPU Inspector.
 
+load("@bazel_gazelle//:def.bzl", "gazelle")
+load("//tools/build:rules.bzl", "copy_to", "copy_tree")
+
 licenses(["notice"])  # Apache 2.0
 
 exports_files(["LICENSE"])
-
-load("@bazel_gazelle//:def.bzl", "gazelle")
-load("//tools/build:rules.bzl", "copy_to", "copy_tree")
 
 # gazelle:prefix github.com/google/gapid
 # gazelle:resolve go    go    protos/perfetto/common                       //tools/build/third_party/perfetto:common_go_proto
