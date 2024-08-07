@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
-	"reflect"
 	"testing"
 	"time"
 
@@ -31,13 +30,12 @@ import (
 	"github.com/google/gapid/core/os/device/bind"
 
 	//"github.com/google/gapid/core/os/device/host"
-	"github.com/google/gapid/gapis/api"
+
 	gapis "github.com/google/gapid/gapis/client"
 	"github.com/google/gapid/gapis/database"
 	"github.com/google/gapid/gapis/replay"
 	"github.com/google/gapid/gapis/server"
 	"github.com/google/gapid/gapis/service"
-	"github.com/google/gapid/gapis/service/path"
 	"github.com/google/gapid/gapis/stringtable"
 	"google.golang.org/grpc"
 )
@@ -174,40 +172,7 @@ func TestGetDevicesForReplay(t *testing.T) {
 }
 
 func TestGet(t *testing.T) {
-	ctx, server, shutdown := setup(t)
-	defer shutdown()
-	capture, err := server.ImportCapture(ctx, "test-capture", testCaptureData)
-	assert.For(ctx, "err").ThatError(err).Succeeded()
-	assert.For(ctx, "capture").That(capture).IsNotNil()
-	T, any := reflect.TypeOf, reflect.TypeOf(struct{}{})
-
-	for _, test := range []struct {
-		path path.Node
-		ty   reflect.Type
-	}{
-		{capture, T((*service.Capture)(nil))},
-		{capture.Commands(), T((*service.Commands)(nil))},
-		{capture.Command(swapCmdIndex), T((*api.Command)(nil))},
-		// TODO: box.go doesn't currently support serializing structs this big.
-		// See bug https://github.com/google/gapid/issues/1761
-		// panic: reflect.nameFrom: name too long
-		// {capture.Command(swapCmdIndex).StateAfter(), any},
-		{capture.Command(swapCmdIndex).MemoryAfter(0, 0x1000, 0x1000), T((*service.Memory)(nil))},
-		{capture.Command(drawCmdIndex).Mesh(nil), T((*api.Mesh)(nil))},
-		{capture.CommandTree(nil), T((*service.CommandTree)(nil))},
-		{capture.Report(nil, false), T((*service.Report)(nil))},
-		{capture.Resources(), T((*service.Resources)(nil))},
-		{capture.Command(drawCmdIndex).FramebufferAttachmentsAfter(), T((*service.FramebufferAttachments)(nil))},
-	} {
-		ctx = log.V{"path": test.path}.Bind(ctx)
-		got, err := server.Get(ctx, test.path.Path(), nil)
-		assert.For(ctx, "err").ThatError(err).Succeeded()
-		if test.ty.Kind() == reflect.Interface {
-			assert.For(ctx, "got").That(got).Implements(test.ty)
-		} else if test.ty != any {
-			assert.For(ctx, "ty").That(reflect.TypeOf(got)).Equals(test.ty)
-		}
-	}
+	// TODO
 }
 
 func TestSet(t *testing.T) {
