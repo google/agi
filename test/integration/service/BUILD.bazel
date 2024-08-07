@@ -31,6 +31,7 @@ go_test(
     deps = [
         "//core/app/auth:go_default_library",
         "//core/assert:go_default_library",
+        "//core/event/task:go_default_library",
         "//core/log:go_default_library",
         "//core/net/grpcutil:go_default_library",
         "//core/os/device/bind:go_default_library",

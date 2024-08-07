@@ -24,7 +24,7 @@ import (
 	"github.com/google/gapid/core/app/auth"
 	"github.com/google/gapid/core/assert"
 
-	//"github.com/google/gapid/core/event/task"
+	"github.com/google/gapid/core/event/task"
 	"github.com/google/gapid/core/log"
 	"github.com/google/gapid/core/net/grpcutil"
 	"github.com/google/gapid/core/os/device/bind"
@@ -59,6 +59,9 @@ func startServerAndGetGrpcClient(ctx context.Context, config server.Config) (ser
 	}
 	client := gapis.Bind(conn)
 
+	if !deviceScanDone.Fired() {
+		onDeviceScanDone(ctx)
+	}
 	return client, nil, func() {
 		client.Close()
 		svr.GracefulStop()
@@ -86,7 +89,8 @@ func text(text string) *stringtable.Node {
 }
 
 var (
-	stringtables = []*stringtable.StringTable{
+	deviceScanDone, onDeviceScanDone = task.NewSignal()
+	stringtables                     = []*stringtable.StringTable{
 		&stringtable.StringTable{
 			Info: &stringtable.Info{
 				CultureCode: "animals",
@@ -106,8 +110,9 @@ var (
 			VersionMinor: 456,
 			Features:     []string{"moo", "meow", "meh"},
 		},
-		AuthToken:    "s3Cr3t",
-		StringTables: stringtables,
+		AuthToken:      "s3Cr3t",
+		StringTables:   stringtables,
+		DeviceScanDone: deviceScanDone,
 	}
 	testCaptureData []byte
 	drawCmdIndex    uint64
