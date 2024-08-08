@@ -57,9 +57,9 @@ set ANDROID_NDK_HOME=%CD%\android-ndk-r21d
 
 REM Download and install MSYS2, because the pre-installed version is too old.
 REM Do NOT do a system update (pacman -Syu) because it is a moving target.
-wget -q http://repo.msys2.org/distrib/x86_64/msys2-base-x86_64-20220128.sfx.exe
-echo | set /p placeholder="ac6aa4e96af36a5ae207e683963b270eb8cecd7e26d29b48241b5d43421805d4 msys2-base-x86_64-20220128.sfx.exe" | sha256sum --check || exit /b 1
-.\msys2-base-x86_64-20220128.sfx.exe -y -o%BUILD_ROOT%\
+wget -q https://repo.msys2.org/distrib/x86_64/msys2-base-x86_64-20240727.sfx.exe
+echo | set /p placeholder="587b86c7e2b7e77d133a4422d4c9b0ae68312442b905277ea3d4ccd0e75cbdea msys2-base-x86_64-20240727.sfx.exe" | sha256sum --check || exit /b 1
+.\msys2-base-x86_64-20240727.sfx.exe -y -o%BUILD_ROOT%\
 
 REM Start empty shell to initialize MSYS2.
 %BUILD_ROOT%\msys64\usr\bin\bash --login -c " "
