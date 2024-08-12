@@ -130,7 +130,7 @@ def main():
         # Since June 2020, using the 'command' field in the 'isolate' file is
         # deprecated on Swarming infra, so we MUST use the --raw-cmd flag.
         cmd += [
-            '--raw-cmd', '--',
+            '--',
             'python3',
             './bot-harness.py',
             swarming_params['timeout'],

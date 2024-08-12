@@ -117,7 +117,7 @@ export PATH="`pwd`/depot_tools:$PATH"
 # Note that the '${platform}' must appear as-is in the ensure file,
 # hence the single quotes.
 (
-  INFRA_GIT_REVISION=3e441e9ac2b55457d69c37136b5d6f02d380da79
+  INFRA_GIT_REVISION=005642dce87726eae04085a2e0aa3cfbf49868dc
   echo 'infra/tools/luci/isolate/${platform} git_revision:'"${INFRA_GIT_REVISION}"
   echo 'infra/tools/luci/swarming/${platform} git_revision:'"${INFRA_GIT_REVISION}"
 ) > ${LUCI_ROOT}/ensure_file.txt
