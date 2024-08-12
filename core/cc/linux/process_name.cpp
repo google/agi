@@ -18,6 +18,7 @@
 #include <unistd.h>
 
 #include <cstring>
+#include <cstdint>
 #include <string>
 
 namespace core {
