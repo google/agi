@@ -89,8 +89,6 @@ func newValidator(dev bind.Device) validate.Validator {
 	gpuName := gpu.GetName()
 	if strings.Contains(gpuName, "Adreno") {
 		return &adreno.AdrenoValidator{}
-	} else if strings.Contains(gpuName, "Mali") {
-		return mali.NewMaliValidator(gpuName, gpu.GetVersion())
 	} else if strings.Contains(gpuName, "PowerVR") {
 		return powervr.NewPowerVRValidator(dev)
 	}
