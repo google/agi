@@ -71,13 +71,13 @@ REM Install packages required by the build process.
 %BUILD_ROOT%\msys64\usr\bin\bash --login -c "pacman -S --noconfirm git patch zip unzip"
 
 REM Download and install specific compiler version.
-wget -q http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-10.3.0-8-any.pkg.tar.zst
-echo | set /p placeholder="5a43ac94ae563c451d1b85418ae2803b9719509112e8d604098261182a709c08 mingw-w64-x86_64-gcc-10.3.0-8-any.pkg.tar.zst" | sha256sum --check || exit /b 1
-wget -q http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-libs-10.3.0-8-any.pkg.tar.zst
-echo | set /p placeholder="2e1ea0da3c9da3285067a8b2a2639aa0a6bf21cd64edca2a216f6b9c4c1382bd mingw-w64-x86_64-gcc-libs-10.3.0-8-any.pkg.tar.zst" | sha256sum --check || exit /b 1
-wget -q http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-binutils-2.37-4-any.pkg.tar.zst
-echo | set /p placeholder="a518d2630c11fe363abd394763d0bb82fdde72386ffb58d87ecc8f46cbe878d6 mingw-w64-x86_64-binutils-2.37-4-any.pkg.tar.zst" | sha256sum --check || exit /b 1
-%BUILD_ROOT%\msys64\usr\bin\bash --login -c "pacman -U --noconfirm mingw-w64-x86_64-gcc-10.3.0-8-any.pkg.tar.zst mingw-w64-x86_64-gcc-libs-10.3.0-8-any.pkg.tar.zst mingw-w64-x86_64-binutils-2.37-4-any.pkg.tar.zst"
+wget -q http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-14.2.0-1-any.pkg.tar.zst
+echo | set /p placeholder="851c5ebcc4f787bce96c309b5c0c85c9f537053765520180f72f343b94d86b3b mingw-w64-x86_64-gcc-14.2.0-1-any.pkg.tar.zst" | sha256sum --check || exit /b 1
+wget -q http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-libs-14.2.0-1-any.pkg.tar.zst
+echo | set /p placeholder="3ac4352d1a4dec21508a71d744ff055d5643b2937c799b11114a33066abfb963 mingw-w64-x86_64-gcc-libs-14.2.0-1-any.pkg.tar.zst" | sha256sum --check || exit /b 1
+wget -q http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-binutils-2.42-2-any.pkg.tar.zst
+echo | set /p placeholder="b5a95772f674f54494cd8e4dd0f8702295ceb9099a30741cb0a86a670f32f499 mingw-w64-x86_64-binutils-2.42-2-any.pkg.tar.zst" | sha256sum --check || exit /b 1
+%BUILD_ROOT%\msys64\usr\bin\bash --login -c "pacman -U --noconfirm mingw-w64-x86_64-gcc-14.2.0-1-any.pkg.tar.zst mingw-w64-x86_64-gcc-libs-14.2.0-1-any.pkg.tar.zst mingw-w64-x86_64-binutils-2.42-2-any.pkg.tar.zst"
 
 REM Configure build process to use the now installed MSYS2.
 set PATH=%BUILD_ROOT%\msys64\mingw64\bin;%BUILD_ROOT%\msys64\usr\bin;%PATH%
