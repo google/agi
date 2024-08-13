@@ -206,10 +206,9 @@ def gapid_dependencies(android = True, mingw = True, locals = {}):
         locals = locals,
         organization = "google",
         project = "perfetto",
-        commit = "0ff403688efce9d5de43d69cae3c835e993e4730",  # 29+
-        sha256 = "e609a91a6d64caf9a4e4b64f1826d160eba8fd84f7e5e94025ba287374e78e30",
+        commit = "c74251226a8caa0b43377902ee06d2570faa0c15",  # v47.0
+        sha256 = "d17b0633bd22ee438131d4305aabb3bf9931d211ca7ed77502c4c9582c2355be",
         patches = [
-            # Fix a Windows MinGW build issue.
             "@gapid//tools/build/third_party:perfetto.patch",
         ]
     )
@@ -218,9 +217,9 @@ def gapid_dependencies(android = True, mingw = True, locals = {}):
         http_archive,
         name = "sqlite",
         locals = locals,
-        url = "https://storage.googleapis.com/perfetto/sqlite-amalgamation-3350400.zip",
-        sha256 = "f3bf0df69f5de0675196f4644e05d07dbc698d674dc563a12eff17d5b215cdf5",
-        strip_prefix = "sqlite-amalgamation-3350400",
+        url = "https://storage.googleapis.com/perfetto/sqlite-amalgamation-3440200.zip",
+        sha256 = "833be89b53b3be8b40a2e3d5fedb635080e3edb204957244f3d6987c2bb2345f",
+        strip_prefix = "sqlite-amalgamation-3440200",
         build_file = "@perfetto//bazel:sqlite.BUILD",
     )
 
@@ -228,9 +227,9 @@ def gapid_dependencies(android = True, mingw = True, locals = {}):
         http_archive,
         name = "sqlite_src",
         locals = locals,
-        url = "https://storage.googleapis.com/perfetto/sqlite-src-3320300.zip",
-        sha256 = "9312f0865d3692384d466048f746d18f88e7ffd1758b77d4f07904e03ed5f5b9",
-        strip_prefix = "sqlite-src-3320300",
+        url = "https://storage.googleapis.com/perfetto/sqlite-src-3440200.zip",
+        sha256 = "73187473feb74509357e8fa6cb9fd67153b2d010d00aeb2fddb6ceeb18abaf27",
+        strip_prefix = "sqlite-src-3440200",
         build_file = "@perfetto//bazel:sqlite.BUILD",
     )
 

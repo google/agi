@@ -1,73 +1,7 @@
-diff --git a/include/perfetto/ext/base/sys_types.h b/include/perfetto/ext/base/sys_types.h
---- a/include/perfetto/ext/base/sys_types.h
-+++ b/include/perfetto/ext/base/sys_types.h
-@@ -26,9 +26,10 @@
-
- #if PERFETTO_BUILDFLAG(PERFETTO_OS_WIN)
-
-+using uid_t = unsigned int;
-+
- #if !PERFETTO_BUILDFLAG(PERFETTO_COMPILER_GCC)
- // MinGW has these. clang-cl and MSVC, which use just the Windows SDK, don't.
--using uid_t = unsigned int;
- using pid_t = int;
- #endif  // !GCC
-
-diff --git a/include/perfetto/ext/base/uuid.h b/include/perfetto/ext/base/uuid.h
-index 13f6b6634..e862713e3 100644
---- a/include/perfetto/ext/base/uuid.h
-+++ b/include/perfetto/ext/base/uuid.h
-@@ -20,3 +20,4 @@
- #include <array>
-+#include <cstdint>
+diff --git a/src/traced/probes/sys_stats/sys_stats_data_source.h
+--- a/src/traced/probes/sys_stats/sys_stats_data_source.h
++++ b/src/traced/probes/sys_stats/sys_stats_data_source.h
+@@ -23,2 +23,3 @@
+ #include <memory>
++#include <optional>
  #include <string>
-
-diff --git a/src/traced/probes/common/cpu_freq_info.h b/src/traced/probes/common/cpu_freq_info.h
-index <original_file_index>..<modified_file_index> 100644  # Adjust these if needed
---- a/src/traced/probes/common/cpu_freq_info.h
-+++ b/src/traced/probes/common/cpu_freq_info.h
-@@ -20,2 +20,3 @@
- #include <map>
-+#include <cstdint> 
- #include <string>
- 
-diff --git a/src/trace_processor/sqlite/query_constraints.h b/src/trace_processor/sqlite/query_constraints.h
-index <original_file_index>..<modified_file_index> 100644  # Adjust these if needed
---- a/src/trace_processor/sqlite/query_constraints.h
-+++ b/src/trace_processor/sqlite/query_constraints.h
-@@ -20,3 +20,4 @@
- #define SRC_TRACE_PROCESSOR_SQLITE_QUERY_CONSTRAINTS_H_
- 
-+#include <cstdint>
- #include <limits>
-
-diff --git a/src/trace_processor/read_trace_internal.h b/src/trace_processor/read_trace_internal.h
-index <original_file_index>..<modified_file_index> 100644  # Adjust these if needed
---- a/src/trace_processor/read_trace_internal.h
-+++ b/src/trace_processor/read_trace_internal.h
-@@ -20,3 +20,4 @@
- #define SRC_TRACE_PROCESSOR_READ_TRACE_INTERNAL_H_
- 
-+#include <cstdint>
- #include <functional>
-
-diff --git a/src/trace_processor/importers/proto/proto_importer_module.h b/src/trace_processor/importers/proto/proto_importer_module.h
-index <original_file_index>..<modified_file_index> 100644  # Adjust these if needed
---- a/src/trace_processor/importers/proto/proto_importer_module.h
-+++ b/src/trace_processor/importers/proto/proto_importer_module.h
-@@ -20,3 +20,5 @@
- #define SRC_TRACE_PROCESSOR_IMPORTERS_PROTO_PROTO_IMPORTER_MODULE_H_
- 
-+#include <cstdint>
-+
- #include "perfetto/ext/base/optional.h"
-
-diff --git a/include/perfetto/trace_processor/read_trace.h b/include/perfetto/trace_processor/read_trace.h
-index <original_file_index>..<modified_file_index> 100644  # Adjust these if needed
---- a/include/perfetto/trace_processor/read_trace.h
-+++ b/include/perfetto/trace_processor/read_trace.h
-@@ -20,3 +20,4 @@
- #define INCLUDE_PERFETTO_TRACE_PROCESSOR_READ_TRACE_H_
- 
-+#include <cstdint>
- #include <functional>

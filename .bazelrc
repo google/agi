@@ -19,6 +19,7 @@ try-import %workspace%/user.bazelrc
 
 # Adjusting defaults to favour developer workflows
 build --verbose_failures
+build --cxxopt="-std=c++17"
 test --test_output=errors
 query --nohost_deps --noimplicit_deps
 

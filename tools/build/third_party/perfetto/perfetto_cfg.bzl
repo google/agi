@@ -63,6 +63,7 @@ PERFETTO_CONFIG = struct(
     jsoncpp = [],
     linenoise = [],
     llvm_demangle = [],
+    base_platform = ["//:perfetto_base_default_platform"],
     protobuf_descriptor_proto = ["@com_google_protobuf//:descriptor_proto"],
     protobuf_lite = ["@com_google_protobuf//:protobuf_lite"],
     protobuf_full = ["@com_google_protobuf//:protobuf"],
@@ -71,6 +72,10 @@ PERFETTO_CONFIG = struct(
     sqlite = ["@sqlite//:sqlite"],
     sqlite_ext_percentile = ["@sqlite_src//:percentile_ext"],
     version_header = [],
+    protobuf_py = [],
+    pandas_py = [],
+    tp_vendor_py = [],
+    tp_resolvers_py = [],    
     zlib = ["@net_zlib//:zlib"],
   ),
   public_visibility = [
@@ -85,6 +90,10 @@ PERFETTO_CONFIG = struct(
     sqlite = _ALWAYS_OPTIMIZE_COPTS,
     llvm_demangle = [],
   ),
+  default_copts = [
+      "--std=c++17",
+  ]
+  ,  
   rule_overrides = struct(
     cc_library =_always_optimize_cc_library,
     cc_binary = _always_optimize_cc_binary,
