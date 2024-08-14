@@ -1,6 +1,6 @@
 # Building Android GPU Inspector
 
-AGI uses the [Bazel build system](https://bazel.build/). The recommended version of Bazel is **5.2.0**.
+AGI uses the [Bazel build system](https://bazel.build/). The recommended version of Bazel is **6.5.0**.
 
 Bazel is able to fetch most of the dependencies required to build AGI, but currently the Android SDK and NDK both need to be downloaded and installed by hand.
 
@@ -27,7 +27,7 @@ The build output will be at `<path-to-agi-source>/bazel-bin/pkg`.
 
 Start a console, with administrator privilege, and type:
 
-`choco install bazel --version 5.2.0`
+`choco install bazel --version 6.5.0`
 
 In the same console, install Python and MSYS2 as well:
 
