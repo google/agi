@@ -89,8 +89,8 @@ def gapid_dependencies(android = True, mingw = True, locals = {}):
         locals = locals,
         organization = "grpc",
         project = "grpc",
-        commit = "d2054ec6c6e8abcecf0e24b0b4ee75035d80c3cc",  # 1.48.0
-        sha256 = "ea0da456d849eafa5287dc1e9d53c065896dca2cd896a984101ebe0708979dca",
+        commit = "e241f37befe7ba4688effd84bfbf99b0f681a2f7",  # 1.49.4
+        sha256 = "23bcfa3c6b2d608be8fa5b1abc1a27e47f7d540235af7eb788113496a8cc968f",
         repo_mapping = {"@zlib": "@net_zlib"},
         patches = [
             # Remove calling the go dependencies, since we do that ourselves.
@@ -159,7 +159,7 @@ def gapid_dependencies(android = True, mingw = True, locals = {}):
         locals = locals,
         organization = "abseil",
         project = "abseil-cpp",
-        commit = "273292d1cfc0a94a65082ee350509af1d113344d",  # LTS 20220623, Patch 0
+                commit = "273292d1cfc0a94a65082ee350509af1d113344d",  # LTS 20220623, Patch 0
         sha256 = "6764f226bd6e2d8ab9fe2f3cab5f45fb1a4a15c04b58b87ba7fa87456054f98b",
         patches = [
             # Workaround for https://github.com/abseil/abseil-cpp/issues/326.
