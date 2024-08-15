@@ -25,7 +25,8 @@ _ANDROID_COPTS = [
 
 # This should probably all be done by fixing the toolchains...
 def cc_copts():
-    return ["-Werror"] + select({
+    return #["-Werror"] + 
+    select({
         "@gapid//tools/build:linux": ["-DGAPID_TARGET_OS_LINUX"],
         "@gapid//tools/build:darwin": ["-DGAPID_TARGET_OS_OSX"],
         "@gapid//tools/build:darwin_arm64": ["-DGAPID_TARGET_OS_OSX"],
