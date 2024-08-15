@@ -36,6 +36,9 @@ sudo apt-get -y update
 sudo apt-get install -y clang-13
 export CC=/usr/bin/clang-13
 
+# Install Gcc-13
+sudo apt-get install gcc-13 g++-13
+
 # Upgrade libstdc++6 for Swiftshader
 sudo add-apt-repository ppa:ubuntu-toolchain-r/test
 sudo apt-get update
