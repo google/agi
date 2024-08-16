@@ -58,6 +58,8 @@ echo "455589bbaedf26e7bdb949288f777492ba1c53d67fd8329bfe066fb988df0e5c  bazel-${
 mkdir bazel
 sh bazel-${BAZEL_VERSION}-installer-darwin-x86_64.sh --prefix=$PWD/bazel
 
+sudo xcode-select -s /Applications/Xcode_12.4.app/Contents/Developer
+
 # Specify the version of XCode.
 export DEVELOPER_DIR=/Applications/Xcode_12.4.app/Contents/Developer
 
