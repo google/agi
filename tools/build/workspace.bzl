@@ -78,6 +78,20 @@ def gapid_dependencies(android = True, mingw = True, locals = {}):
         locals = locals,
         organization = "google",
         project = "protobuf",
+        repo_mapping = {"@zlib": "@net_zlib"},
+        commit = "e915ce24b3d43c0fffcbf847354288c07dda1de0",  # 3.25.4
+        sha256 = "cfaf4871b55a86a5d04f19bacd64e940c2e2e015dbfa27d951bf63283dc8ee4e",
+        patches = [
+            "@gapid//tools/build/third_party:com_google_protobuf.patch",
+        ],
+    )
+
+    maybe_repository(
+        github_repository,
+        name = "com_google_protobuf_3_21_5",
+        locals = locals,
+        organization = "google",
+        project = "protobuf",
         commit = "ab840345966d0fa8e7100d771c92a73bfbadd25c",  # 3.21.5
         sha256 = "0025119f5c97871436b4b271fee48bd6bfdc99956023e0d4fd653dd8eaaeff52",
         repo_mapping = {"@zlib": "@net_zlib"},
@@ -89,8 +103,8 @@ def gapid_dependencies(android = True, mingw = True, locals = {}):
         locals = locals,
         organization = "grpc",
         project = "grpc",
-        commit = "e241f37befe7ba4688effd84bfbf99b0f681a2f7",  # 1.49.4
-        sha256 = "23bcfa3c6b2d608be8fa5b1abc1a27e47f7d540235af7eb788113496a8cc968f",
+        commit = "aef0f0ccc3d21a328282144b8aa666f3c570dfb9",  # 1.64.3
+        sha256 = "7e586cf8d6e386227ef779b91b9e91874bbf012de4442de047ded053e114a8da",
         repo_mapping = {"@zlib": "@net_zlib"},
         patches = [
             # Remove calling the go dependencies, since we do that ourselves.
@@ -159,14 +173,8 @@ def gapid_dependencies(android = True, mingw = True, locals = {}):
         locals = locals,
         organization = "abseil",
         project = "abseil-cpp",
-                commit = "273292d1cfc0a94a65082ee350509af1d113344d",  # LTS 20220623, Patch 0
-        sha256 = "6764f226bd6e2d8ab9fe2f3cab5f45fb1a4a15c04b58b87ba7fa87456054f98b",
-        patches = [
-            # Workaround for https://github.com/abseil/abseil-cpp/issues/326.
-            "@gapid//tools/build/third_party:abseil_macos_fix.patch",
-            # Pick up bcrypt library on Windows.
-            "@gapid//tools/build/third_party:abseil_windows_fix.patch",
-        ],
+        commit = "4a2c63365eff8823a5221db86ef490e828306f9d",  # Abseil LTS 20240116.0
+        sha256 = "f49929d22751bf70dd61922fb1fd05eb7aec5e7a7f870beece79a6e28f0a06c1",
     )
 
     maybe_repository(
@@ -208,6 +216,7 @@ def gapid_dependencies(android = True, mingw = True, locals = {}):
         project = "perfetto",
         commit = "c74251226a8caa0b43377902ee06d2570faa0c15",  # v47.0
         sha256 = "d17b0633bd22ee438131d4305aabb3bf9931d211ca7ed77502c4c9582c2355be",
+        repo_mapping = {"@com_google_protobuf": "@com_google_protobuf_3_21_5"},
         patches = [
             "@gapid//tools/build/third_party:perfetto.patch",
         ]

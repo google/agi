@@ -5,3 +5,21 @@ diff --git a/src/traced/probes/sys_stats/sys_stats_data_source.h
  #include <memory>
 +#include <optional>
  #include <string>
+
+diff --git a/src/trace_processor/util/regex.h
+--- a/src/trace_processor/util/regex.h
++++ b/src/trace_processor/util/regex.h
+@@ -23,3 +23,3 @@
+   }
+-  Regex(Regex&) = delete;
++  Regex(const Regex&) = delete;
+   Regex(Regex&& other) {
+
+diff --git a/src/trace_processor/perfetto_sql/engine/created_function.cc
+--- a/src/trace_processor/perfetto_sql/engine/created_function.cc
++++ b/src/trace_processor/perfetto_sql/engine/created_function.cc
+@@ -19,2 +19,3 @@
+ #include <cstddef>
++ using std::nullptr_t;
+ #include <queue>
+    
