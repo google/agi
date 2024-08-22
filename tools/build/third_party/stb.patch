@@ -1,0 +1,7 @@
+--- a/stb_image_write.h
++++ b/stb_image_write.h
+@@ -775,3 +775,3 @@
+ #else
+-      len = sprintf(buffer, "EXPOSURE=          1.0000000000000\n\n-Y %d +X %d\n", y, x);
++      len = snprintf(buffer, sizeof(buffer), "EXPOSURE=          1.0000000000000\n\n-Y %d +X %d\n", y, x);
+ #endif

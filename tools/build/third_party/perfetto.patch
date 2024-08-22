@@ -71,3 +71,12 @@ index <original_file_index>..<modified_file_index> 100644  # Adjust these if nee
  
 +#include <cstdint>
  #include <functional>
+
+--- a/src/protozero/protoc_plugin/cppgen_plugin.cc
++++ b/src/protozero/protoc_plugin/cppgen_plugin.cc
+@@ -32,5 +32,3 @@
+ #include <google/protobuf/io/zero_copy_stream_impl.h>
+-#include <google/protobuf/util/field_comparator.h>
+-#include <google/protobuf/util/message_differencer.h>
+ 
+ #include "perfetto/ext/base/string_utils.h"

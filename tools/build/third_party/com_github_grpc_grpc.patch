@@ -1,10 +1,9 @@
 diff --git a/pbazel/grpc_extra_deps.bzl b/bazel/grpc_extra_deps.bzl
 --- a/bazel/grpc_extra_deps.bzl
 +++ b/bazel/grpc_extra_deps.bzl
-@@ -13,14 +13,12 @@
- # limitations under the License.
+@@ -14,14 +14,12 @@
  """Loads the dependencies necessary for the external repositories defined in grpc_deps.bzl."""
-
+ 
 -load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
  load("@build_bazel_apple_support//lib:repositories.bzl", "apple_support_dependencies")
  load("@build_bazel_rules_apple//apple:repositories.bzl", "apple_rules_dependencies")
@@ -12,18 +11,26 @@ diff --git a/pbazel/grpc_extra_deps.bzl b/bazel/grpc_extra_deps.bzl
  load("@com_google_googleapis//:repository_rules.bzl", "switched_rules_by_language")
  load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
  load("@envoy_api//bazel:repositories.bzl", "api_dependencies")
+ load("@google_cloud_cpp//bazel:google_cloud_cpp_deps.bzl", "google_cloud_cpp_deps")
 -load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
- load("@upb//bazel:workspace_deps.bzl", "upb_deps")
-
+ load("@rules_python//python:repositories.bzl", "py_repositories")
+ 
  def grpc_extra_deps(ignore_version_differences = False):
-@@ -52,10 +50,6 @@
-
+@@ -52,7 +50,4 @@
      api_dependencies()
-
+ 
 -    go_rules_dependencies()
--    go_register_toolchains(version = "1.18")
+-    go_register_toolchains(version = "1.20")
 -    gazelle_dependencies()
--
+ 
      # Pull-in the go 3rd party dependencies for protoc_gen_validate, which is
-     # needed for building C++ xDS protos
-     go_third_party()
+
+
+--- a/src/core/BUILD
++++ b/src/core/BUILD
+@@ -2508,2 +2508,3 @@
+         "error",
++        "event_engine_common",
+         "event_engine_tcp_socket_utils",
+
+

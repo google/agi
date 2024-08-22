@@ -1,0 +1,7 @@
+--- a/spirv_common.hpp
++++ b/spirv_common.hpp
+@@ -669,3 +669,3 @@
+ 	SPIRExpression(std::string expr, TypeID expression_type_, bool immutable_)
+-	    : expression(move(expr))
++	    : expression(std::move(expr))
+ 	    , expression_type(expression_type_)
