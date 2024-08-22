@@ -126,7 +126,9 @@ def _cc_autoconf_impl(repository_ctx):
   if cpu_value == "x64_windows":
     _configure_windows_toolchain(repository_ctx)
   elif cpu_value == "darwin" or cpu_value == "darwin_arm64":
-    configure_osx_toolchain(repository_ctx, cpu_value, {})
+    configure_osx_toolchain(repository_ctx, cpu_value, {
+            "cxx_flags": ["-std=c++17"],  # Add this line to set the C++ standard
+        })
   else:
     configure_unix_toolchain(repository_ctx, cpu_value, {})
 
