@@ -33,33 +33,34 @@ def gapid_dependencies(android = True, mingw = True, locals = {}):
     # Get repositories with workspace rules we need first
 
     maybe_repository(
-        github_repository,
+        http_archive,
         name = "io_bazel_rules_go",
         locals = locals,
-        organization = "bazelbuild",
-        project = "rules_go",
-        commit = "efc3212592320c1ab7f986c9a7882770ee06ad3b",  # 0.34.0
-        sha256 = "eb10f4436ddc732127afedf78636637d0cc9b256aba9f643a452914289266e6b",
+        sha256 = "6dc2da7ab4cf5d7bfc7c949776b1b7c733f05e56edc4bcd9022bb249d2e2a996",
+        urls = [
+            "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.39.1/rules_go-v0.39.1.zip",
+            "https://github.com/bazelbuild/rules_go/releases/download/v0.39.1/rules_go-v0.39.1.zip",
+        ],
     )
 
     maybe_repository(
-        github_repository,
+        http_archive,
         name = "rules_python",
         locals = locals,
-        organization = "bazelbuild",
-        project = "rules_python",
-        commit = "9bf7c49ea1920e497f857ccc1e9c2d1189c8a1c9",
-        sha256 = "ebeae40415e1ac0ab4e4323f91d6213ec799ad8fcacecd4c499009e1d8d2eb51",
+        sha256 = "be04b635c7be4604be1ef20542e9870af3c49778ce841ee2d92fcb42f9d9516a",
+        strip_prefix = "rules_python-0.35.0",
+        url = "https://github.com/bazelbuild/rules_python/releases/download/0.35.0/rules_python-0.35.0.tar.gz",
     )
 
     maybe_repository(
-        github_repository,
+        http_archive,
         name = "bazel_gazelle",
         locals = locals,
-        organization = "bazelbuild",
-        project = "bazel-gazelle",
-        commit = "e9091445339de2ba7c01c3561f751b64a7fab4a5",  # 0.23.0
-        sha256 = "03e266ed67fd21f6fbede975773a569d397312daae71980d34ff7f7e087b7b14",
+        sha256 = "727f3e4edd96ea20c29e8c2ca9e8d2af724d8c7778e7923a854b2c80952bc405",
+        urls = [
+            "https://mirror.bazel.build/github.com/bazelbuild/bazel-gazelle/releases/download/v0.30.0/bazel-gazelle-v0.30.0.tar.gz",
+            "https://github.com/bazelbuild/bazel-gazelle/releases/download/v0.30.0/bazel-gazelle-v0.30.0.tar.gz",
+        ],
     )
 
     maybe_repository(github_repository,
@@ -78,9 +79,12 @@ def gapid_dependencies(android = True, mingw = True, locals = {}):
         locals = locals,
         organization = "google",
         project = "protobuf",
-        commit = "ab840345966d0fa8e7100d771c92a73bfbadd25c",  # 3.21.5
-        sha256 = "0025119f5c97871436b4b271fee48bd6bfdc99956023e0d4fd653dd8eaaeff52",
         repo_mapping = {"@zlib": "@net_zlib"},
+        commit = "e915ce24b3d43c0fffcbf847354288c07dda1de0",  # 3.25.4
+        sha256 = "cfaf4871b55a86a5d04f19bacd64e940c2e2e015dbfa27d951bf63283dc8ee4e",
+        patches = [
+            "@gapid//tools/build/third_party:com_google_protobuf.patch",
+        ],
     )
 
     maybe_repository(
@@ -89,8 +93,8 @@ def gapid_dependencies(android = True, mingw = True, locals = {}):
         locals = locals,
         organization = "grpc",
         project = "grpc",
-        commit = "d2054ec6c6e8abcecf0e24b0b4ee75035d80c3cc",  # 1.48.0
-        sha256 = "ea0da456d849eafa5287dc1e9d53c065896dca2cd896a984101ebe0708979dca",
+        commit = "aef0f0ccc3d21a328282144b8aa666f3c570dfb9",  # 1.64.3
+        sha256 = "7e586cf8d6e386227ef779b91b9e91874bbf012de4442de047ded053e114a8da",
         repo_mapping = {"@zlib": "@net_zlib"},
         patches = [
             # Remove calling the go dependencies, since we do that ourselves.
@@ -159,13 +163,10 @@ def gapid_dependencies(android = True, mingw = True, locals = {}):
         locals = locals,
         organization = "abseil",
         project = "abseil-cpp",
-        commit = "273292d1cfc0a94a65082ee350509af1d113344d",  # LTS 20220623, Patch 0
-        sha256 = "6764f226bd6e2d8ab9fe2f3cab5f45fb1a4a15c04b58b87ba7fa87456054f98b",
+        commit = "4a2c63365eff8823a5221db86ef490e828306f9d",  # Abseil LTS 20240116.0
+        sha256 = "f49929d22751bf70dd61922fb1fd05eb7aec5e7a7f870beece79a6e28f0a06c1",
         patches = [
-            # Workaround for https://github.com/abseil/abseil-cpp/issues/326.
             "@gapid//tools/build/third_party:abseil_macos_fix.patch",
-            # Pick up bcrypt library on Windows.
-            "@gapid//tools/build/third_party:abseil_windows_fix.patch",
         ],
     )
 
@@ -177,6 +178,9 @@ def gapid_dependencies(android = True, mingw = True, locals = {}):
         project = "glslang",
         commit = "73c9630da979017b2f7e19c6549e2bdb93d9b238",  # 11.11.0
         sha256 = "9304cb73d86fc8e3f1cbcdbd157cd2750baad10cb9e3a798986bca3c3a1be1f0",
+        patches = [
+            "@gapid//tools/build/third_party:glslang.patch",
+        ]
     )
 
     maybe_repository(
@@ -188,6 +192,9 @@ def gapid_dependencies(android = True, mingw = True, locals = {}):
         commit = "af1a5bc352164740c1cc1354942b1c6b72eacb8a",
         sha256 = "e3d0edbecd356506d3d69b87419de2f9d180a98099134c6343177885f6c2cbef",
         build_file = "@gapid//tools/build/third_party:stb.BUILD",
+        patches = [
+            "@gapid//tools/build/third_party:stb.patch",
+        ],
     )
 
     maybe_repository(
@@ -209,7 +216,6 @@ def gapid_dependencies(android = True, mingw = True, locals = {}):
         commit = "0ff403688efce9d5de43d69cae3c835e993e4730",  # 29+
         sha256 = "e609a91a6d64caf9a4e4b64f1826d160eba8fd84f7e5e94025ba287374e78e30",
         patches = [
-            # Fix a Windows MinGW build issue.
             "@gapid//tools/build/third_party:perfetto.patch",
         ]
     )
@@ -218,9 +224,9 @@ def gapid_dependencies(android = True, mingw = True, locals = {}):
         http_archive,
         name = "sqlite",
         locals = locals,
-        url = "https://storage.googleapis.com/perfetto/sqlite-amalgamation-3350400.zip",
-        sha256 = "f3bf0df69f5de0675196f4644e05d07dbc698d674dc563a12eff17d5b215cdf5",
-        strip_prefix = "sqlite-amalgamation-3350400",
+        url = "https://storage.googleapis.com/perfetto/sqlite-amalgamation-3440200.zip",
+        sha256 = "833be89b53b3be8b40a2e3d5fedb635080e3edb204957244f3d6987c2bb2345f",
+        strip_prefix = "sqlite-amalgamation-3440200",
         build_file = "@perfetto//bazel:sqlite.BUILD",
     )
 
@@ -228,9 +234,9 @@ def gapid_dependencies(android = True, mingw = True, locals = {}):
         http_archive,
         name = "sqlite_src",
         locals = locals,
-        url = "https://storage.googleapis.com/perfetto/sqlite-src-3320300.zip",
-        sha256 = "9312f0865d3692384d466048f746d18f88e7ffd1758b77d4f07904e03ed5f5b9",
-        strip_prefix = "sqlite-src-3320300",
+        url = "https://storage.googleapis.com/perfetto/sqlite-src-3440200.zip",
+        sha256 = "73187473feb74509357e8fa6cb9fd67153b2d010d00aeb2fddb6ceeb18abaf27",
+        strip_prefix = "sqlite-src-3440200",
         build_file = "@perfetto//bazel:sqlite.BUILD",
     )
 
@@ -261,6 +267,9 @@ def gapid_dependencies(android = True, mingw = True, locals = {}):
         commit = "0e2880ab990e79ce6cc8c79c219feda42d98b1e8",  # 2021-08-30
         build_file = "@gapid//tools/build/third_party:spirv-cross.BUILD",
         sha256 = "7ae1069c29f507730ffa5143ac23a5be87444d18262b3b327dfb00ca53ae07cd",
+        patches = [
+            "@gapid//tools/build/third_party:spirv_cross.patch",
+        ]
     )
 
     maybe_repository(
