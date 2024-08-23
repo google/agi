@@ -33,33 +33,34 @@ def gapid_dependencies(android = True, mingw = True, locals = {}):
     # Get repositories with workspace rules we need first
 
     maybe_repository(
-        github_repository,
+        http_archive,
         name = "io_bazel_rules_go",
         locals = locals,
-        organization = "bazelbuild",
-        project = "rules_go",
-        commit = "efc3212592320c1ab7f986c9a7882770ee06ad3b",  # 0.34.0
-        sha256 = "eb10f4436ddc732127afedf78636637d0cc9b256aba9f643a452914289266e6b",
+        sha256 = "6dc2da7ab4cf5d7bfc7c949776b1b7c733f05e56edc4bcd9022bb249d2e2a996",
+        urls = [
+            "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.39.1/rules_go-v0.39.1.zip",
+            "https://github.com/bazelbuild/rules_go/releases/download/v0.39.1/rules_go-v0.39.1.zip",
+        ],
     )
 
     maybe_repository(
-        github_repository,
+        http_archive,
         name = "rules_python",
         locals = locals,
-        organization = "bazelbuild",
-        project = "rules_python",
-        commit = "9bf7c49ea1920e497f857ccc1e9c2d1189c8a1c9",
-        sha256 = "ebeae40415e1ac0ab4e4323f91d6213ec799ad8fcacecd4c499009e1d8d2eb51",
+        sha256 = "be04b635c7be4604be1ef20542e9870af3c49778ce841ee2d92fcb42f9d9516a",
+        strip_prefix = "rules_python-0.35.0",
+        url = "https://github.com/bazelbuild/rules_python/releases/download/0.35.0/rules_python-0.35.0.tar.gz",
     )
 
     maybe_repository(
-        github_repository,
+        http_archive,
         name = "bazel_gazelle",
         locals = locals,
-        organization = "bazelbuild",
-        project = "bazel-gazelle",
-        commit = "e9091445339de2ba7c01c3561f751b64a7fab4a5",  # 0.23.0
-        sha256 = "03e266ed67fd21f6fbede975773a569d397312daae71980d34ff7f7e087b7b14",
+        sha256 = "727f3e4edd96ea20c29e8c2ca9e8d2af724d8c7778e7923a854b2c80952bc405",
+        urls = [
+            "https://mirror.bazel.build/github.com/bazelbuild/bazel-gazelle/releases/download/v0.30.0/bazel-gazelle-v0.30.0.tar.gz",
+            "https://github.com/bazelbuild/bazel-gazelle/releases/download/v0.30.0/bazel-gazelle-v0.30.0.tar.gz",
+        ],
     )
 
     maybe_repository(github_repository,
