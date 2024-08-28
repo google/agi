@@ -22,7 +22,7 @@ def _gen_java_source_impl(ctx):
   args.add(ctx.executable._plugin, format = "--plugin=protoc-gen-rpc-plugin=%s")
   args.add(srcdotjar, format = "--rpc-plugin_out=%s")
   args.add_joined("--descriptor_set_in", dsi,
-      join_with = ctx.host_configuration.host_path_separator,
+      join_with = ctx.configuration.host_path_separator,
       uniquify = True,
   )
   args.add_all(protos)
