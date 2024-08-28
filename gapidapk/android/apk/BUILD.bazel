@@ -53,3 +53,11 @@ gapid_apk(
     libs = _NATIVE_LIBRARIES,
     pkg = "x86",
 )
+
+gapid_apk(
+    name = "x86-64",
+    abi = "x86_64",
+    bins = _NATIVE_BINARIES,
+    libs = _NATIVE_LIBRARIES,
+    pkg = "x86_64",
+)

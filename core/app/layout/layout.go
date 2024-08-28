@@ -149,6 +149,7 @@ var abiToApk = map[device.Architecture]string{
 	device.ARMv7a: "gapid-armeabi-v7a.apk",
 	device.ARMv8a: "gapid-arm64-v8a.apk",
 	device.X86:    "gapid-x86.apk",
+	device.X86_64: "gapid-x86-64.apk",
 }
 
 func hostOS(ctx context.Context) device.OSKind {
