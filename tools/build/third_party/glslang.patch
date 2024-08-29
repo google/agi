@@ -1,0 +1,104 @@
+--- a/glslang/Include/ConstantUnion.h
++++ b/glslang/Include/ConstantUnion.h
+@@ -39,6 +39,6 @@
+ #define _CONSTANT_UNION_INCLUDED_
+ 
+-#include "../Include/Common.h"
+-#include "../Include/BaseTypes.h"
++#include "Common.h"
++#include "BaseTypes.h"
+ 
+ namespace glslang {
+
+--- a/glslang/Include/InfoSink.h
++++ b/glslang/Include/InfoSink.h
+@@ -36,4 +36,4 @@
+ #define _INFOSINK_INCLUDED_
+ 
+-#include "../Include/Common.h"
++#include "Common.h"
+ #include <cmath>
+
+--- a/glslang/Include/intermediate.h
++++ b/glslang/Include/intermediate.h
+@@ -54,7 +54,7 @@
+ #endif
+ 
+-#include "../Include/Common.h"
+-#include "../Include/Types.h"
+-#include "../Include/ConstantUnion.h"
++#include "Common.h"
++#include "Types.h"
++#include "ConstantUnion.h"
+ 
+ namespace glslang {
+
+--- a/glslang/Include/Types.h
++++ b/glslang/Include/Types.h
+@@ -41,5 +41,5 @@
+ #define _TYPES_INCLUDED
+ 
+-#include "../Include/Common.h"
+-#include "../Include/BaseTypes.h"
++#include "Common.h"
++#include "BaseTypes.h"
+ #include "../Public/ShaderLang.h"
+
+--- a/BUILD.bazel
++++ b/BUILD.bazel
+@@ -125,2 +125,3 @@
+     ],
++    includes=["glslang",],
+     copts = COMMON_COPTS,
+
+--- a/glslang/MachineIndependent/preprocessor/PpContext.h
++++ b/glslang/MachineIndependent/preprocessor/PpContext.h
+@@ -84,4 +84,4 @@
+ #include <sstream>
+ 
+-#include "../ParseHelper.h"
++#include <MachineIndependent/ParseHelper.h>
+ #include "PpTokens.h"
+
+--- a/glslang/Include/Types.h
++++ b/glslang/Include/Types.h
+@@ -44,3 +44,3 @@
+ #include "BaseTypes.h"
+-#include "../Public/ShaderLang.h"
++#include <Public/ShaderLang.h>
+ #include "arrays.h"
+
+--- a/glslang/Public/ShaderLang.h
++++ b/glslang/Public/ShaderLang.h
+@@ -38,6 +38,6 @@
+ #define _COMPILER_INTERFACE_INCLUDED_
+ 
+-#include "../Include/ResourceLimits.h"
+-#include "../MachineIndependent/Versions.h"
++#include <Include/ResourceLimits.h>
++#include <MachineIndependent/Versions.h>
+ 
+ #include <cstring>
+
+--- a/glslang/MachineIndependent/Initialize.h
++++ b/glslang/MachineIndependent/Initialize.h
+@@ -38,6 +38,6 @@
+ #define _INITIALIZE_INCLUDED_
+ 
+-#include "../Include/ResourceLimits.h"
+-#include "../Include/Common.h"
+-#include "../Include/ShHandle.h"
++#include <Include/ResourceLimits.h>
++#include <Include/Common.h>
++#include <Include/ShHandle.h>
+ #include "SymbolTable.h"
+
+--- a/OGLCompilersDLL/InitializeDll.h
++++ b/OGLCompilersDLL/InitializeDll.h
+@@ -35,5 +35,5 @@
+ #define __INITIALIZEDLL_H
+ 
+-#include "../glslang/OSDependent/osinclude.h"
++#include <OSDependent/osinclude.h>
+ 
+ namespace glslang {
