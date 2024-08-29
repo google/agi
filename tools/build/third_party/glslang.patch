@@ -123,3 +123,13 @@
 +#include <OSDependent/osinclude.h>
  
  namespace glslang {
+
+--- a/glslang/Include/ShHandle.h
++++ b/glslang/Include/ShHandle.h
+@@ -45,4 +45,4 @@
+ #define SH_EXPORTING
+-#include "../Public/ShaderLang.h"
+-#include "../MachineIndependent/Versions.h"
++#include <Public/ShaderLang.h>
++#include <MachineIndependent/Versions.h>
+ #include "InfoSink.h"
