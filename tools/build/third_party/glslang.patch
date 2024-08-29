@@ -100,6 +100,20 @@
 +#include <Include/ShHandle.h>
  #include "SymbolTable.h"
 
+--- a/glslang/MachineIndependent/SymbolTable.h
++++ b/glslang/MachineIndependent/SymbolTable.h
+@@ -66,6 +66,6 @@
+ //
+ 
+-#include "../Include/Common.h"
+-#include "../Include/intermediate.h"
+-#include "../Include/InfoSink.h"
++#include <Include/Common.h>
++#include <Include/intermediate.h>
++#include <Include/InfoSink.h>
+ 
+ namespace glslang {
+
 --- a/OGLCompilersDLL/InitializeDll.h
 +++ b/OGLCompilersDLL/InitializeDll.h
 @@ -35,5 +35,5 @@
