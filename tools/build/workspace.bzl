@@ -184,8 +184,8 @@ def gapid_dependencies(android = True, mingw = True, locals = {}):
         locals = locals,
         organization = "KhronosGroup",
         project = "glslang",
-        commit = "d1517d64cfca91f573af1bf7341dc3a5113349c0",  # 12.2.0
-        sha256 = "abe91f21c2ab339f98f002765c7acfbc0bd70143d6dda336e4e3ae820cd92928",
+        commit = "73c9630da979017b2f7e19c6549e2bdb93d9b238",  # 11.11.0
+        sha256 = "9304cb73d86fc8e3f1cbcdbd157cd2750baad10cb9e3a798986bca3c3a1be1f0",
         patches = [
             "@gapid//tools/build/third_party:glslang.patch",
         ]
