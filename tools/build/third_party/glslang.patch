@@ -1,3 +1,10 @@
+--- a/glslang/Include/Common.h
++++ b/glslang/Include/Common.h
+@@ -47,2 +47,3 @@
+ #include <cstdio>
++#include <cstdint>
+ #include <cstdlib>
+
 --- a/glslang/Include/ConstantUnion.h
 +++ b/glslang/Include/ConstantUnion.h
 @@ -39,6 +39,6 @@
