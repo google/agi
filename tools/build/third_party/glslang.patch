@@ -141,7 +141,37 @@
  
 -#include "../Include/Common.h"
 -#include "../Include/ConstantUnion.h"
-+#include "../Include/Common.h"
-+#include "../Include/ConstantUnion.h"
++#include <Include/Common.h>
++#include <Include/ConstantUnion.h>
  
  namespace glslang {
+
+--- a/glslang/MachineIndependent/ParseHelper.h
++++ b/glslang/MachineIndependent/ParseHelper.h
+@@ -51,3 +51,3 @@
+ #include "parseVersions.h"
+-#include "../Include/ShHandle.h"
++#include <Include/ShHandle.h>
+ #include "SymbolTable.h"
+
+--- a/glslang/MachineIndependent/localintermediate.h
++++ b/glslang/MachineIndependent/localintermediate.h
+@@ -40,5 +40,5 @@
+ #define _LOCAL_INTERMEDIATE_INCLUDED_
+ 
+-#include "../Include/intermediate.h"
+-#include "../Public/ShaderLang.h"
++#include <Include/intermediate.h>
++#include <Public/ShaderLang.h>
+ #include "Versions.h"
+
+--- a/glslang/MachineIndependent/parseVersions.h
++++ b/glslang/MachineIndependent/parseVersions.h
+@@ -40,5 +40,5 @@
+ #define _PARSE_VERSIONS_INCLUDED_
+ 
+-#include "../Public/ShaderLang.h"
+-#include "../Include/InfoSink.h"
++#include <Public/ShaderLang.h>
++#include <Include/InfoSink.h>
+ #include "Scan.h"
