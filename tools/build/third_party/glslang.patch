@@ -133,3 +133,15 @@
 +#include <Public/ShaderLang.h>
 +#include <MachineIndependent/Versions.h>
  #include "InfoSink.h"
+
+--- a/glslang/MachineIndependent/attribute.h
++++ b/glslang/MachineIndependent/attribute.h
+@@ -38,6 +38,6 @@
+ #define _ATTRIBUTE_INCLUDED_
+ 
+-#include "../Include/Common.h"
+-#include "../Include/ConstantUnion.h"
++#include "../Include/Common.h"
++#include "../Include/ConstantUnion.h"
+ 
+ namespace glslang {
