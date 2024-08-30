@@ -55,7 +55,7 @@
 +++ b/BUILD.bazel
 @@ -125,2 +125,3 @@
      ],
-+    includes=["glslang",],
++    includes=["glslang","."],
      copts = COMMON_COPTS,
 
 --- a/glslang/MachineIndependent/preprocessor/PpContext.h
@@ -251,3 +251,28 @@
  
  #include <list>
 
+--- a/glslang/MachineIndependent/ShaderLang.cpp
++++ b/glslang/MachineIndependent/ShaderLang.cpp
+@@ -51,16 +51,16 @@
+ #include "ScanContext.h"
+ 
+ #ifdef ENABLE_HLSL
+-#include "../HLSL/hlslParseHelper.h"
+-#include "../HLSL/hlslParseables.h"
+-#include "../HLSL/hlslScanContext.h"
++#include <HLSL/hlslParseHelper.h>
++#include <HLSL/hlslParseables.h>
++#include <HLSL/hlslScanContext.h>
+ #endif
+ 
+-#include "../Include/ShHandle.h"
+-#include "../../OGLCompilersDLL/InitializeDll.h"
++#include <Include/ShHandle.h>
++#include <OGLCompilersDLL/InitializeDll.h>
+ 
+ #include "preprocessor/PpContext.h"
+ 
+ #define SH_EXPORTING
+-#include "../Public/ShaderLang.h"
++#include <Public/ShaderLang.h>
+ #include "reflection.h"
