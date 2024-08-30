@@ -175,3 +175,79 @@
 +#include <Public/ShaderLang.h>
 +#include <Include/InfoSink.h>
  #include "Scan.h"
+
+--- a/glslang/HLSL/hlslAttributes.h
++++ b/glslang/HLSL/hlslAttributes.h
+@@ -40,5 +40,5 @@
+ #include <functional>
+ 
+-#include "../MachineIndependent/attribute.h"
+-#include "../MachineIndependent/SymbolTable.h"
++#include <MachineIndependent/attribute.h>
++#include <MachineIndependent/SymbolTable.h>
+ #include "hlslScanContext.h"
+
+--- a/glslang/HLSL/hlslParseables.h
++++ b/glslang/HLSL/hlslParseables.h
+@@ -37,5 +37,5 @@
+ #define _HLSLPARSEABLES_INCLUDED_
+ 
+-#include "../MachineIndependent/Initialize.h"
++#include <MachineIndependent/Initialize.h>
+ 
+ namespace glslang {
+
+--- a/glslang/HLSL/hlslParseHelper.h
++++ b/glslang/HLSL/hlslParseHelper.h
+@@ -37,7 +37,7 @@
+ #define HLSL_PARSE_INCLUDED_
+ 
+-#include "../MachineIndependent/parseVersions.h"
+-#include "../MachineIndependent/ParseHelper.h"
+-#include "../MachineIndependent/attribute.h"
++#include <MachineIndependent/parseVersions.h>
++#include <MachineIndependent/ParseHelper.h>
++#include <MachineIndependent/attribute.h>
+ 
+ #include <array>
+
+--- a/glslang/HLSL/hlslScanContext.h
++++ b/glslang/HLSL/hlslScanContext.h
+@@ -42,4 +42,4 @@
+ #define HLSLSCANCONTEXT_H_
+ 
+-#include "../MachineIndependent/ParseHelper.h"
++#include <MachineIndependent/ParseHelper.h>
+ #include "hlslTokens.h"
+
+--- a/glslang/MachineIndependent/LiveTraverser.h
++++ b/glslang/MachineIndependent/LiveTraverser.h
+@@ -36,4 +36,4 @@
+ #pragma once
+ 
+-#include "../Include/Common.h"
++#include <Include/Common.h>
+ #include "reflection.h"
+
+--- a/glslang/MachineIndependent/propagateNoContraction.h
++++ b/glslang/MachineIndependent/propagateNoContraction.h
+@@ -40,5 +40,5 @@
+ #pragma once
+ 
+-#include "../Include/intermediate.h"
++#include <Include/intermediate.h>
+ 
+ namespace glslang {
+
+--- a/glslang/MachineIndependent/reflection.h
++++ b/glslang/MachineIndependent/reflection.h
+@@ -39,6 +39,6 @@
+ #define _REFLECTION_INCLUDED
+ 
+-#include "../Public/ShaderLang.h"
+-#include "../Include/Types.h"
++#include <Public/ShaderLang.h>
++#include <Include/Types.h>
+ 
+ #include <list>
+
