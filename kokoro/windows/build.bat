@@ -105,8 +105,6 @@ echo | set /p placeholder="258c5d6546f870cd354f094ced9c77f46849281e017ab9d1c31c3
 unzip -q bazel-%BAZEL_VERSION%-windows-x86_64.zip
 set PATH=C:\python35;%PATH%
 
-pip install external
-
 cd %SRC%
 
 REM Invoke the build.
