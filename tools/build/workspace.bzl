@@ -273,6 +273,9 @@ def gapid_dependencies(android = True, mingw = True, locals = {}):
         commit = "0e2880ab990e79ce6cc8c79c219feda42d98b1e8",  # 2021-08-30
         build_file = "@gapid//tools/build/third_party:spirv-cross.BUILD",
         sha256 = "7ae1069c29f507730ffa5143ac23a5be87444d18262b3b327dfb00ca53ae07cd",
+        patches = [
+            "@gapid//tools/build/third_party:spirv_cross.patch",
+        ]
     )
 
     maybe_repository(
