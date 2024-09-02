@@ -137,7 +137,7 @@ REM Build vulkan sample and logo
     build -c opt ^
     --define AGI_BUILD_NUMBER="%KOKORO_BUILD_NUMBER%" ^
     --define AGI_BUILD_SHA="%BUILD_SHA%" ^
-    /cmd/vulkan_sample:vulkan_sample //tools/logo:agi_ico
+    //cmd/vulkan_sample:vulkan_sample //tools/logo:agi_ico
 if %ERRORLEVEL% GEQ 1 exit /b %ERRORLEVEL%
 echo %DATE% %TIME%
 
