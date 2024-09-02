@@ -200,6 +200,9 @@ def gapid_dependencies(android = True, mingw = True, locals = {}):
         commit = "af1a5bc352164740c1cc1354942b1c6b72eacb8a",
         sha256 = "e3d0edbecd356506d3d69b87419de2f9d180a98099134c6343177885f6c2cbef",
         build_file = "@gapid//tools/build/third_party:stb.BUILD",
+        patches = [
+            "@gapid//tools/build/third_party:stb.patch",
+        ],
     )
 
     maybe_repository(
