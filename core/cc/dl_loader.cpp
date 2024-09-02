@@ -48,12 +48,14 @@ void* load(const char* name, ConstCharPtrs... fallback_names) {
   // effective work-around.
   // TODO: not thread-safe.
   void* res = nullptr;
+  int fd;
   char tmp[] = "/tmp/dlopen.XXXXXX";
-  if (mktemp(tmp) != nullptr) {
+  if ((fd = mkstemp(tmp)) != -1) {
     if (symlink(name, tmp) == 0) {
       res = dlopen(tmp, RTLD_NOW | RTLD_LOCAL | RTLD_FIRST);
-      remove(tmp);
+      unlink(tmp);
     }
+    close(fd);
   }
   if (res == nullptr) {
     res = dlopen(name, RTLD_NOW | RTLD_LOCAL | RTLD_FIRST);
