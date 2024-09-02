@@ -133,6 +133,26 @@ REM Build VkLayer_VirtualSwapchain.
 if %ERRORLEVEL% GEQ 1 exit /b %ERRORLEVEL%
 echo %DATE% %TIME%
 
+REM Build GAPIS api dependencies.
+%BUILD_ROOT%\bazel ^
+    --output_user_root=%BAZEL_OUTPUT_USER_ROOT% ^
+    build -c opt ^
+    --define AGI_BUILD_NUMBER="%KOKORO_BUILD_NUMBER%" ^
+    --define AGI_BUILD_SHA="%BUILD_SHA%" ^
+    @com_github_golang_protobuf//proto:go_default_library @com_github_pkg_errors//:go_default_library
+if %ERRORLEVEL% GEQ 1 exit /b %ERRORLEVEL%
+echo %DATE% %TIME%
+
+REM Build GAPIS api dependencies.
+%BUILD_ROOT%\bazel ^
+    --output_user_root=%BAZEL_OUTPUT_USER_ROOT% ^
+    build -c opt ^
+    --define AGI_BUILD_NUMBER="%KOKORO_BUILD_NUMBER%" ^
+    --define AGI_BUILD_SHA="%BUILD_SHA%" ^
+    //gapis/replay/builder:go_default_library //gapis/replay/value:go_default_library
+if %ERRORLEVEL% GEQ 1 exit /b %ERRORLEVEL%
+echo %DATE% %TIME%
+
 REM Build GAPIS api modules.
 %BUILD_ROOT%\bazel ^
     --output_user_root=%BAZEL_OUTPUT_USER_ROOT% ^
