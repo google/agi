@@ -120,6 +120,11 @@ REM likely to be locked by system checks.
 set BAZEL_OUTPUT_USER_ROOT=%BUILD_ROOT%\build
 mkdir %BAZEL_OUTPUT_USER_ROOT%
 
+dir C:/tmpfs/src/msys64/mingw64/lib
+dir C:/tmpfs/src/msys64/mingw64/lib/gcc
+dir C:/tmpfs/src/msys64/mingw64/lib/gcc/x86_64-w64-mingw32
+dir C:/tmpfs/src/msys64/mingw64/lib/gcc/x86_64-w64-mingw32/14.2.0
+
 REM Build in several steps in order to avoid running out of memory.
 
 REM Build GAPIS api modules.
