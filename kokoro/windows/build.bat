@@ -141,16 +141,6 @@ REM Build vulkan sample and logo
 if %ERRORLEVEL% GEQ 1 exit /b %ERRORLEVEL%
 echo %DATE% %TIME%
 
-REM Build everything else.
-%BUILD_ROOT%\bazel ^
-    --output_user_root=%BAZEL_OUTPUT_USER_ROOT% ^
-    build -c opt ^
-    --define AGI_BUILD_NUMBER="%KOKORO_BUILD_NUMBER%" ^
-    --define AGI_BUILD_SHA="%BUILD_SHA%" ^
-    //:pkg
-if %ERRORLEVEL% GEQ 1 exit /b %ERRORLEVEL%
-echo %DATE% %TIME%
-
 REM Build pkg-lib.
 %BUILD_ROOT%\bazel ^
     --output_user_root=%BAZEL_OUTPUT_USER_ROOT% ^
