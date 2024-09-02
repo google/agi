@@ -120,11 +120,6 @@ REM likely to be locked by system checks.
 set BAZEL_OUTPUT_USER_ROOT=%BUILD_ROOT%\build
 mkdir %BAZEL_OUTPUT_USER_ROOT%
 
-dir C:/tmpfs/src/msys64/mingw64/lib
-dir C:/tmpfs/src/msys64/mingw64/lib/gcc
-dir C:/tmpfs/src/msys64/mingw64/lib/gcc/x86_64-w64-mingw32
-dir C:/tmpfs/src/msys64/mingw64/lib/gcc/x86_64-w64-mingw32/14.2.0
-
 REM Build in several steps in order to avoid running out of memory.
 
 REM Build GAPIS api modules.
@@ -136,13 +131,43 @@ REM Build GAPIS api modules.
     //gapis/api/vulkan:go_default_library
 if %ERRORLEVEL% GEQ 1 exit /b %ERRORLEVEL%
 
+REM Build vulkan sample and logo
+%BUILD_ROOT%\bazel ^
+    --output_user_root=%BAZEL_OUTPUT_USER_ROOT% ^
+    build -c opt ^
+    --define AGI_BUILD_NUMBER="%KOKORO_BUILD_NUMBER%" ^
+    --define AGI_BUILD_SHA="%BUILD_SHA%" ^
+    /cmd/vulkan_sample:vulkan_sample //tools/logo:agi_ico
+if %ERRORLEVEL% GEQ 1 exit /b %ERRORLEVEL%
+echo %DATE% %TIME%
+
 REM Build everything else.
 %BUILD_ROOT%\bazel ^
     --output_user_root=%BAZEL_OUTPUT_USER_ROOT% ^
     build -c opt ^
     --define AGI_BUILD_NUMBER="%KOKORO_BUILD_NUMBER%" ^
     --define AGI_BUILD_SHA="%BUILD_SHA%" ^
-    //:pkg //cmd/vulkan_sample:vulkan_sample //tools/logo:agi_ico
+    //:pkg
+if %ERRORLEVEL% GEQ 1 exit /b %ERRORLEVEL%
+echo %DATE% %TIME%
+
+REM Build pkg-lib.
+%BUILD_ROOT%\bazel ^
+    --output_user_root=%BAZEL_OUTPUT_USER_ROOT% ^
+    build -c opt ^
+    --define AGI_BUILD_NUMBER="%KOKORO_BUILD_NUMBER%" ^
+    --define AGI_BUILD_SHA="%BUILD_SHA%" ^
+    //:pkg-lib
+if %ERRORLEVEL% GEQ 1 exit /b %ERRORLEVEL%
+echo %DATE% %TIME%
+
+REM Build pkg.
+%BUILD_ROOT%\bazel ^
+    --output_user_root=%BAZEL_OUTPUT_USER_ROOT% ^
+    build -c opt ^
+    --define AGI_BUILD_NUMBER="%KOKORO_BUILD_NUMBER%" ^
+    --define AGI_BUILD_SHA="%BUILD_SHA%" ^
+    //:pkg
 if %ERRORLEVEL% GEQ 1 exit /b %ERRORLEVEL%
 echo %DATE% %TIME%
 
