@@ -83,8 +83,7 @@ std::vector<Resource> ResourceCache::anticipateNextResources(
   // in the case of a cache mispredict. This compromise works well in my
   // measurements so I'm going to keep it simple for now.
 
-  for (unsigned int i = 0;
-       resIter != mResources.end() && bytesSoFar < bytesToFetch; ++i) {
+  for (; resIter != mResources.end() && bytesSoFar < bytesToFetch;) {
     expectedResources.push_back(*resIter);
     bytesSoFar += resIter->getSize();
     resIter++;
