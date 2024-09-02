@@ -122,6 +122,7 @@ mkdir %BAZEL_OUTPUT_USER_ROOT%
 
 REM Build in several steps in order to avoid running out of memory.
 
+set BAZEL_JAVAC_OPTS="-J-Xmx4g -J-Xms2g"
 REM Build VkLayer_VirtualSwapchain.
 %BUILD_ROOT%\bazel ^
     --output_user_root=%BAZEL_OUTPUT_USER_ROOT% ^
