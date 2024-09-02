@@ -122,6 +122,16 @@ mkdir %BAZEL_OUTPUT_USER_ROOT%
 
 REM Build in several steps in order to avoid running out of memory.
 
+REM Build VkLayer_VirtualSwapchain.
+%BUILD_ROOT%\bazel ^
+    --output_user_root=%BAZEL_OUTPUT_USER_ROOT% ^
+    build -c opt ^
+    --define AGI_BUILD_NUMBER="%KOKORO_BUILD_NUMBER%" ^
+    --define AGI_BUILD_SHA="%BUILD_SHA%" ^
+    //core/vulkan/vk_virtual_swapchain/apk:VkLayer_VirtualSwapchain
+if %ERRORLEVEL% GEQ 1 exit /b %ERRORLEVEL%
+echo %DATE% %TIME%
+
 REM Build GAPIS api modules.
 %BUILD_ROOT%\bazel ^
     --output_user_root=%BAZEL_OUTPUT_USER_ROOT% ^
@@ -130,6 +140,7 @@ REM Build GAPIS api modules.
     --define AGI_BUILD_SHA="%BUILD_SHA%" ^
     //gapis/api/vulkan:go_default_library
 if %ERRORLEVEL% GEQ 1 exit /b %ERRORLEVEL%
+echo %DATE% %TIME%
 
 REM Build vulkan sample and logo
 %BUILD_ROOT%\bazel ^
