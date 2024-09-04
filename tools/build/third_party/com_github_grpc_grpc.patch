@@ -24,3 +24,13 @@ diff --git a/pbazel/grpc_extra_deps.bzl b/bazel/grpc_extra_deps.bzl
 -    gazelle_dependencies()
  
      # Pull-in the go 3rd party dependencies for protoc_gen_validate, which is
+
+
+--- a/src/core/BUILD
++++ b/src/core/BUILD
+@@ -2508,2 +2508,3 @@
+         "error",
++        "event_engine_common",
+         "event_engine_tcp_socket_utils",
+
+
