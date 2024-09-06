@@ -89,17 +89,6 @@ def gapid_dependencies(android = True, mingw = True, locals = {}):
 
     maybe_repository(
         github_repository,
-        name = "com_google_protobuf_3_21_5",
-        locals = locals,
-        organization = "google",
-        project = "protobuf",
-        commit = "ab840345966d0fa8e7100d771c92a73bfbadd25c",  # 3.21.5
-        sha256 = "0025119f5c97871436b4b271fee48bd6bfdc99956023e0d4fd653dd8eaaeff52",
-        repo_mapping = {"@zlib": "@net_zlib"},
-    )
-
-    maybe_repository(
-        github_repository,
         name = "com_github_grpc_grpc",
         locals = locals,
         organization = "grpc",
@@ -223,7 +212,6 @@ def gapid_dependencies(android = True, mingw = True, locals = {}):
         project = "perfetto",
         commit = "0ff403688efce9d5de43d69cae3c835e993e4730",  # 29+
         sha256 = "e609a91a6d64caf9a4e4b64f1826d160eba8fd84f7e5e94025ba287374e78e30",
-        repo_mapping = {"@com_google_protobuf": "@com_google_protobuf_3_21_5"},
         patches = [
             "@gapid//tools/build/third_party:perfetto.patch",
         ]
