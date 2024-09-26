@@ -19,7 +19,6 @@ try-import %workspace%/user.bazelrc
 
 # Adjusting defaults to favour developer workflows
 build --verbose_failures
-build --cxxopt="-std=c++17"
 test --test_output=errors
 query --nohost_deps --noimplicit_deps
 
@@ -61,3 +60,5 @@ common:fuchsia_x64 --cxxopt="-Wno-extra-semi"
 common:fuchsia_x64 --copt="-Wno-deprecated-non-prototype"
 common:fuchsia_x64 --copt="-Wno-unused-function"
 common:fuchsia_x64 --define FUCHSIA_BUILD=1 --action_env=AGI_FUCHSIA_BUILD=1
+
+build --cxxopt="-std=c++17"
