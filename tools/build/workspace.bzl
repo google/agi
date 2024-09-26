@@ -165,6 +165,9 @@ def gapid_dependencies(android = True, mingw = True, locals = {}):
         project = "abseil-cpp",
         commit = "4a2c63365eff8823a5221db86ef490e828306f9d",  # Abseil LTS 20240116.0
         sha256 = "f49929d22751bf70dd61922fb1fd05eb7aec5e7a7f870beece79a6e28f0a06c1",
+        patches = [
+            "@gapid//tools/build/third_party:abseil_macos_fix.patch",
+        ],
     )
 
     maybe_repository(
