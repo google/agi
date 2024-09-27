@@ -58,7 +58,7 @@ def _strip_impl(ctx):
         flags = ["--strip-unneeded", "-p"]
     elif cc_toolchain.cpu == "darwin_x86_64" or cc_toolchain.cpu == "darwin_arm64":
         # Melih TODO: Ensure that this flag has not changed for the Arm processor compilers for Apple
-        flags = ["-x", "-std=c++17"]
+        flags = ["-x"]
     elif cc_toolchain.cpu == "darwin":
         fail("Please install Xcode and setup the path using xcode-select. You need Xcode, the CLI tools are not enough.")
     else:
