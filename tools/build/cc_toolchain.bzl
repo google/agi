@@ -16,9 +16,9 @@
 # Bazel's cc_configure, but will use mingw on Windows.
 
 load("@bazel_tools//tools/cpp:lib_cc_configure.bzl", "get_cpu_value", "resolve_labels")
-load("@bazel_tools//tools/cpp:osx_cc_configure.bzl", "configure_osx_toolchain")
 load("@bazel_tools//tools/cpp:unix_cc_configure.bzl", "configure_unix_toolchain")
 load("@bazel_tools//tools/osx:xcode_configure.bzl", "run_xcode_locator")
+load("//tools/build/third_party/bazel_tools/tools/osx:osx_cc_configure.bzl", "configure_osx_toolchain")
 
 def _find_cc(repository_ctx):
     cc = repository_ctx.os.environ.get("CC")
