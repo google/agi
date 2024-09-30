@@ -21,7 +21,9 @@ cd C:\src
 set BUILD_ROOT=%cd%
 set SRC=%cd%\github\agi
 xcopy C:\tmpfs\src\github %BUILD_ROOT%\github /s /e /y >null
-rm -r -f C:\tmpfs\src\github\agi
+rem rm -r -f C:\tmpfs\src\github\agi
+ls C:\tmpfs\src\github
+wmic computersystem get TotalPhysicalMemory
 
 REM Install WiX (https://wixtoolset.org/, used in package.bat to create ".msi")
 mkdir wix
