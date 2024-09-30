@@ -16,10 +16,11 @@ limitations under the License.
 Windows Build Script.
 
 :start
-mkdir C:\prj
-cd C:\prj
+mkdir C:\src
+cd C:\src
 set BUILD_ROOT=%cd%
 set SRC=%cd%\github\agi
+move C:\tmpfs\src\github %BUILD_ROOT%
 
 REM Install WiX (https://wixtoolset.org/, used in package.bat to create ".msi")
 mkdir wix
