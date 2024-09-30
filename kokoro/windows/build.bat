@@ -16,11 +16,11 @@ limitations under the License.
 Windows Build Script.
 
 :start
-mkdir C:\src
+mkdir C:\src\github
 cd C:\src
 set BUILD_ROOT=%cd%
 set SRC=%cd%\github\agi
-xcopy C:\tmpfs\src\github %BUILD_ROOT% /s /e /y >null
+xcopy C:\tmpfs\src\github %BUILD_ROOT%\github /s /e /y >null
 
 ls %BUILD_ROOT%
 ls %BUILD_ROOT%\github
