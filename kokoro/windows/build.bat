@@ -122,7 +122,6 @@ mkdir %BAZEL_OUTPUT_USER_ROOT%
 
 REM Build in several steps in order to avoid running out of memory.
 
-set BAZEL_JAVAC_OPTS="-J-Xmx4g -J-Xms2g"
 set BUILD_TARGETS=//core/vulkan/vk_virtual_swapchain/apk:VkLayer_VirtualSwapchain
 set BUILD_TARGETS=%BUILD_TARGETS%;@com_github_golang_protobuf//proto:go_default_library @com_github_pkg_errors//:go_default_library
 set BUILD_TARGETS=%BUILD_TARGETS%;//gapis/replay/builder:go_default_library //gapis/replay/value:go_default_library
