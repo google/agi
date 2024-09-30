@@ -25,6 +25,9 @@ rem rm -r -f C:\tmpfs\src\github\agi
 ls C:\tmpfs\src\github
 wmic computersystem get TotalPhysicalMemory
 
+dir /s c:\tmpfs
+psinfo \\development -h -d
+
 REM Install WiX (https://wixtoolset.org/, used in package.bat to create ".msi")
 mkdir wix
 cd wix
