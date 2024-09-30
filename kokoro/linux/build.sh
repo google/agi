@@ -38,6 +38,8 @@ sudo add-apt-repository ppa:ubuntu-toolchain-r/test
 sudo apt-get update
 sudo apt-get upgrade -y libstdc++6
 
+sudo apt install ffmpeg
+
 # Get the Android NDK.
 $CURL -O https://dl.google.com/android/repository/android-ndk-r21d-linux-x86_64.zip
 echo "dd6dc090b6e2580206c64bcee499bc16509a5d017c6952dcd2bed9072af67cbd  android-ndk-r21d-linux-x86_64.zip" | sha256sum --check
