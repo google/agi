@@ -151,7 +151,7 @@ for %%T in (%BUILD_TARGETS%) do (
     echo %DATE% %TIME%
 
     %BUILD_ROOT%\bazel shutdown
-    
+    taskkill /f /im java.exe   
     tasklist /fi "memusage gt 150000"
 )
 
