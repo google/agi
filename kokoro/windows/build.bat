@@ -155,8 +155,8 @@ for %%T in (%BUILD_TARGETS%) do (
     if %ERRORLEVEL% GEQ 1 exit /b %ERRORLEVEL%
     echo %DATE% %TIME%
 
-    %BUILD_ROOT%\bazel shutdown
-    taskkill /f /im java.exe   
+#    %BUILD_ROOT%\bazel shutdown
+#    taskkill /f /im java.exe   
     tasklist /fi "memusage gt 150000"
 )
 
