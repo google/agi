@@ -20,9 +20,12 @@ mkdir C:\src
 cd C:\src
 set BUILD_ROOT=%cd%
 set SRC=%cd%\github\agi
-cp C:\tmpfs\src\github %BUILD_ROOT%
-copy C:\tmpfs\src\github %BUILD_ROOT%
-xcopy C:\tmpfs\src\github %BUILD_ROOT% /s /e /y
+xcopy C:\tmpfs\src\github %BUILD_ROOT% /s /e /y >null
+
+ls %BUILD_ROOT%
+ls %BUILD_ROOT%\github
+ls %BUILD_ROOT%\github\agi
+
 
 REM Install WiX (https://wixtoolset.org/, used in package.bat to create ".msi")
 mkdir wix
