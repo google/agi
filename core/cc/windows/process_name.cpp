@@ -16,7 +16,9 @@
 
 #include <Shlwapi.h>
 
+#include <cstdint>
 #include <string>
+
 namespace core {
 
 std::string get_process_name() {
