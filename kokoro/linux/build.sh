@@ -27,19 +27,18 @@ echo "c0161a346b9c0d00e6eb3d3e8f9c4dece32f6292520248c5ab2e3527265601c1  bazel-${
 mkdir bazel
 bash bazel-${BAZEL_VERSION}-installer-linux-x86_64.sh --prefix=$PWD/bazel
 
-# Get Clang-12.
-$CURL -O https://apt.llvm.org/llvm-snapshot.gpg.key
-echo "ce6eee4130298f79b0e0f09a89f93c1bc711cd68e7e3182d37c8e96c5227e2f0  llvm-snapshot.gpg.key" | sha256sum --check
-sudo apt-key add llvm-snapshot.gpg.key
-sudo add-apt-repository 'deb http://apt.llvm.org/focal/ llvm-toolchain-focal main'
-sudo apt-get -y update
-sudo apt-get install -y clang-12
-export CC=/usr/bin/clang-12
+# Install Gcc-13
+sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+sudo apt update
+sudo apt install --yes gcc-13 g++-13
+export CC=gcc-13
 
 # Upgrade libstdc++6 for Swiftshader
 sudo add-apt-repository ppa:ubuntu-toolchain-r/test
 sudo apt-get update
 sudo apt-get upgrade -y libstdc++6
+
+sudo apt install --yes ffmpeg
 
 # Get the Android NDK.
 $CURL -O https://dl.google.com/android/repository/android-ndk-r21d-linux-x86_64.zip
