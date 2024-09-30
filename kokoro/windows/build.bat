@@ -151,6 +151,8 @@ for %%T in (%BUILD_TARGETS%) do (
     echo %DATE% %TIME%
 
     %BUILD_ROOT%\bazel shutdown
+    
+    tasklist /fi "memusage gt 150000"
 )
 
 REM Smoketests
