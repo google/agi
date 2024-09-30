@@ -136,6 +136,10 @@ set BUILD_TARGETS=%BUILD_TARGETS%;//core/vulkan/loader:go_default_library
 set BUILD_TARGETS=%BUILD_TARGETS%;//gapis/api/vulkan:go_default_library
 set BUILD_TARGETS=%BUILD_TARGETS%;//cmd/vulkan_sample:vulkan_sample //tools/logo:agi_ico
 set BUILD_TARGETS=%BUILD_TARGETS%;//:pkg-lib
+set BUILD_TARGETS=%BUILD_TARGETS%;//:pkg-strings
+set BUILD_TARGETS=%BUILD_TARGETS%;//cmd/gapis 
+set BUILD_TARGETS=%BUILD_TARGETS%;//cmd/device-info //cmd/gapir/cc:gapir //cmd/gapit
+set BUILD_TARGETS=%BUILD_TARGETS%;//cmd/agi 
 set BUILD_TARGETS=%BUILD_TARGETS%;//:pkg
 
 REM Loop through the build targets
