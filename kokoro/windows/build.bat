@@ -55,7 +55,7 @@ copy /Y "%SRC%\kokoro\windows\android-sdk-license" "%ANDROID_HOME%\licenses\"
 
 REM Install Android SDK platform, build tools and NDK
 setlocal
-call %ANDROID_HOME%\tools\bin\sdkmanager.bat platforms;android-26 build-tools;30.0.3
+call %ANDROID_HOME%\tools\bin\sdkmanager.bat platforms;android-34 build-tools;30.0.3
 endlocal
 echo on
 

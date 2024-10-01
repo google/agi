@@ -40,7 +40,8 @@ import (
 
 // These versions must match the ones in gapidapk/android/apk/AndroidManifest.xml.in
 const minSdkVersion = 21
-const targetSdkVersion = 26
+
+const targetSdkVersion = 34
 
 type exportReplayVerb struct{ ExportReplayFlags }
 

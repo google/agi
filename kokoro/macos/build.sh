@@ -29,7 +29,7 @@ $CURL -O https://dl.google.com/android/repository/tools_r25.2.3-macosx.zip
 echo "593544d4ca7ab162705d0032fb0c0c88e75bd0f42412d09a1e8daa3394681dc6  tools_r25.2.3-macosx.zip" | shasum --check
 mkdir android
 unzip -q tools_r25.2.3-macosx.zip -d android
-echo y | ./android/tools/bin/sdkmanager build-tools\;30.0.3 platforms\;android-26
+echo y | ./android/tools/bin/sdkmanager build-tools\;30.0.3 platforms\;android-34
 $CURL -O https://dl.google.com/android/repository/android-ndk-r21d-darwin-x86_64.zip
 echo "5851115c6fc4cce26bc320295b52da240665d7ff89bda2f5d5af1887582f5c48  android-ndk-r21d-darwin-x86_64.zip" | shasum --check
 unzip -q android-ndk-r21d-darwin-x86_64.zip -d android
