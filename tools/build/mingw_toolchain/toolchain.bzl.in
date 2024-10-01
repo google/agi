@@ -231,7 +231,7 @@ def _impl(ctx):
         ),
         tool_path(
             name = "gcc",
-            path = "%{GCC_WRAPPER}",
+            path = "%{BINDIR}/gcc.exe",
         ),
         tool_path(
             name = "gcov",
