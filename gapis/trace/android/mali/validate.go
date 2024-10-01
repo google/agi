@@ -48,16 +48,28 @@ var (
 	// hardware-independent numerical IDs.
 	csfCounters2 = []validate.GpuCounter{
 		{6, "GPU active cycles", counterChecker()},
-		{1, "Any iterator active cycles", counterChecker()},
 		{45, "Fragment jobs", counterChecker()},
 		{196, "Fragment active cycles", counterChecker()},
 		{65536, "GPU utilization", counterChecker()},
 		{65579, "Execution core utilization", counterChecker()},
 	}
+
+	// csfCounters3 are the new set of hardware counters that is guaranteed to be found on new CSF based GPUs.
+	csfCounters3 = []validate.GpuCounter{
+		{65536, "GPU utilization", counterChecker()},
+	}
 )
 
 func counterChecker() validate.Checker {
 	return validate.And(validate.IsNumber, validate.CheckNonNegative(), validate.Not(validate.CheckAllEqualTo(0)))
+}
+
+func GetDriverMajorVersion(driverVersion uint32) uint32 {
+	return ((driverVersion >> 22) & 0x7F)
+}
+
+func GetDriverMinorVersion(driverVersion uint32) uint32 {
+	return ((driverVersion >> 12) & 0x3FF)
 }
 
 type MaliValidator struct {
@@ -99,9 +111,12 @@ func (v *MaliValidator) GetCounters() []validate.GpuCounter {
 		// | 31 .. 29 | 28 .. 22 | 21 .. 12 | 11 .. 0 |
 		// | variant  |  major   |  minor   |  patch  |
 		isDevDriver := (v.driverVersion & 0xFFF) != 0
-		isDriverWithStableCounterIds := ((v.driverVersion >> 22) & 0x7F) >= 37
+		isDriverWithStableCounterIds := GetDriverMajorVersion(v.driverVersion) >= 37
+		isDriverWithReducedCounters := ((GetDriverMajorVersion(v.driverVersion) >= 50) || ((GetDriverMajorVersion(v.driverVersion) == 49) && (GetDriverMinorVersion(v.driverVersion) >= 1)))
 
-		if isDevDriver || isDriverWithStableCounterIds {
+		if isDevDriver || isDriverWithReducedCounters {
+			return csfCounters3
+		} else if isDriverWithStableCounterIds {
 			return csfCounters2
 		} else {
 			return csfCounters
