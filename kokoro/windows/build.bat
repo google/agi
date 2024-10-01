@@ -21,8 +21,6 @@ cd C:\src
 set BUILD_ROOT=%cd%
 set SRC=%cd%\github\agi
 xcopy C:\tmpfs\src\github %BUILD_ROOT%\github /s /e /y >null
-rem rm -r -f C:\tmpfs\src\github\agi
-ls C:\tmpfs\src\github
 wmic computersystem get TotalPhysicalMemory
 wmic OS get TotalVirtualMemorySize
 wmic OS get FreePhysicalMemory
@@ -118,6 +116,10 @@ set PATH=C:\python35;%PATH%
 
 cd %SRC%
 
+set BAZEL_JAVAC_OPTS="-J-Xmx2g -J-Xms1g"
+
+@echo off
+
 REM Invoke the build.
 echo %DATE% %TIME%
 if "%KOKORO_GITHUB_COMMIT%." == "." (
@@ -135,6 +137,8 @@ REM Build in several steps in order to avoid running out of memory.
 
 set BUILD_TARGETS=//core/vulkan/tools
 set BUILD_TARGETS=%BUILD_TARGETS%;//core/vulkan/vk_virtual_swapchain/apk:VkLayer_VirtualSwapchain
+set BUILD_TARGETS=%BUILD_TARGETS%;//core/vulkan/vk_debug_marker_layer/apk:VkLayer_DebugMarker
+set BUILD_TARGETS=%BUILD_TARGETS%;//gapidapk/android/apk:all
 set BUILD_TARGETS=%BUILD_TARGETS%;@com_github_golang_protobuf//proto:go_default_library @com_github_pkg_errors//:go_default_library
 set BUILD_TARGETS=%BUILD_TARGETS%;//gapis/replay/builder:go_default_library //gapis/replay/value:go_default_library
 set BUILD_TARGETS=%BUILD_TARGETS%;//core/app/status:go_default_library //core/context/keys:go_default_library //core/data:go_default_library
@@ -155,9 +159,7 @@ set BUILD_TARGETS=%BUILD_TARGETS%;//:pkg
 
 REM Loop through the build targets
 for %%T in (%BUILD_TARGETS%) do (
-    wmic OS get FreePhysicalMemory
-    wmic OS get FreeVirtualMemory
-
+    echo Building target %%T
     %BUILD_ROOT%\bazel ^
         --output_user_root=%BAZEL_OUTPUT_USER_ROOT% ^
         build -c opt ^
@@ -168,10 +170,10 @@ for %%T in (%BUILD_TARGETS%) do (
     if %ERRORLEVEL% GEQ 1 exit /b %ERRORLEVEL%
     echo %DATE% %TIME%
 
-    tasklist /fi "memusage gt 10000"
+    tasklist /fi "memusage gt 50000"
     wmic OS get FreePhysicalMemory
     wmic OS get FreeVirtualMemory
-    taskkill /f /im java.exe
+    REM Kill java.exe to fix windows build memory issue
     wmic OS get FreePhysicalMemory
     wmic OS get FreeVirtualMemory
     taskkill /f /im java.exe   
