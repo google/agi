@@ -133,7 +133,8 @@ mkdir %BAZEL_OUTPUT_USER_ROOT%
 
 REM Build in several steps in order to avoid running out of memory.
 
-set BUILD_TARGETS=//core/vulkan/vk_virtual_swapchain/apk:VkLayer_VirtualSwapchain
+set BUILD_TARGETS=//core/vulkan/tools
+set BUILD_TARGETS=%BUILD_TARGETS%;//core/vulkan/vk_virtual_swapchain/apk:VkLayer_VirtualSwapchain
 set BUILD_TARGETS=%BUILD_TARGETS%;@com_github_golang_protobuf//proto:go_default_library @com_github_pkg_errors//:go_default_library
 set BUILD_TARGETS=%BUILD_TARGETS%;//gapis/replay/builder:go_default_library //gapis/replay/value:go_default_library
 set BUILD_TARGETS=%BUILD_TARGETS%;//core/app/status:go_default_library //core/context/keys:go_default_library //core/data:go_default_library
@@ -167,7 +168,15 @@ for %%T in (%BUILD_TARGETS%) do (
     if %ERRORLEVEL% GEQ 1 exit /b %ERRORLEVEL%
     echo %DATE% %TIME%
 
-    tasklist /fi "memusage gt 150000"
+    tasklist /fi "memusage gt 10000"
+    wmic OS get FreePhysicalMemory
+    wmic OS get FreeVirtualMemory
+    taskkill /f /im java.exe
+    wmic OS get FreePhysicalMemory
+    wmic OS get FreeVirtualMemory
+    taskkill /f /im java.exe   
+    wmic OS get FreePhysicalMemory
+    wmic OS get FreeVirtualMemory
 )
 
 REM Smoketests
