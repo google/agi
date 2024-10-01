@@ -19,10 +19,14 @@
     android:versionCode="1"
     android:versionName="0.3 ({srchash})"
     >
+    
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
     <uses-sdk
         android:minSdkVersion="21"
-        android:targetSdkVersion="26" />
+
+        android:targetSdkVersion="34" />
     <application
         android:allowBackup="true"
         android:icon="@drawable/logo"
@@ -34,7 +38,8 @@
             android:name="com.android.graphics.developerdriver.enable"
             android:value="true" />
         <activity android:name="com.google.android.gapid.ReplayerActivity"
-                  android:label="GAPID - ${name}">
+                  android:label="GAPID - ${name}"
+                  android:exported="true">
             <meta-data android:name="android.app.lib_name"
                        android:value="gapir"/>
             <intent-filter>
@@ -44,7 +49,8 @@
         <activity android:name="com.google.android.gapid.VkSampleActivity"
                   android:label="GAPID - Vulkan Sample"
                   android:configChanges="orientation|screenSize"
-                  android:screenOrientation="portrait">
+                  android:screenOrientation="portrait"
+                  android:exported="true">
             <meta-data android:name="android.app.lib_name"
                        android:value="vulkan_sample" />
             <intent-filter>
@@ -53,6 +59,7 @@
         </activity>
         <service
             android:name="com.google.android.gapid.DeviceInfoService"
+            android:foregroundServiceType="dataSync"
             android:exported="true">
             <intent-filter>
                 <action android:name="com.google.android.gapid.action.SEND_DEV_INFO"/>
@@ -60,6 +67,7 @@
         </service>
         <service
             android:name="com.google.android.gapid.PackageInfoService"
+            android:foregroundServiceType="dataSync"
             android:exported="true">
             <intent-filter>
                 <action android:name="com.google.android.gapid.action.SEND_PKG_INFO"/>

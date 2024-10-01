@@ -56,7 +56,7 @@ Make sure the `JAVA_HOME` environment variable points to the JDK.
 ### Install Android SDK and NDK
 
 If you have Android Studio installed, use it to install:
-* SDK Platform: `Android 8.0 (Oreo) - API Level 26`
+* SDK Platform: `API Level 34`
 * SDK Tools: `NDK (Side by side) - 21.3.6528147`
 
 Otherwise you can use the basic Android command line tools:
@@ -68,7 +68,7 @@ Otherwise you can use the basic Android command line tools:
 
     ```
     cd <sdk-path>
-    cmdline-tools\latest\bin\sdkmanager.bat "platforms;android-26"
+    cmdline-tools\latest\bin\sdkmanager.bat "platforms;android-34"
     cmdline-tools\latest\bin\sdkmanager.bat "build-tools;30.0.3"
     cmdline-tools\latest\bin\sdkmanager.bat "ndk;21.3.6528147"
     ```
@@ -128,7 +128,7 @@ To fetch the required packages, using a console type:
 
 ```
 cd <sdk-path>
-tools/bin/sdkmanager "platforms;android-26" "build-tools;30.0.3"
+tools/bin/sdkmanager "platforms;android-34" "build-tools;30.0.3"
 ```
 
 If you do not have adb installed you can do so with:
@@ -224,7 +224,7 @@ To fetch the required packages, using a console type:
 
 ```
 cd <sdk-path>
-tools/bin/sdkmanager "platforms;android-26" "build-tools;30.0.3"
+tools/bin/sdkmanager "platforms;android-34" "build-tools;30.0.3"
 ```
 
 If you do not have adb installed you can do so with:
