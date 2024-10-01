@@ -335,7 +335,7 @@ def gapid_dependencies(android = True, mingw = True, locals = {}):
             native.android_sdk_repository,
             name = "androidsdk",
             locals = locals,
-            api_level = 26, # This is the target API
+            api_level = 34, # This is the target API
             build_tools_version = "30.0.3",
         )
 
