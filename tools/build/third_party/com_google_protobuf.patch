@@ -1,7 +1,31 @@
-diff --git a/src/google/protobuf/port_def.inc b/src/google/protobuf/port_def.inc
 --- a/src/google/protobuf/port_def.inc
 +++ b/src/google/protobuf/port_def.inc
 @@ -1048,3 +1048,2 @@
  // via http://wg21.link/p1120r0.
 -#pragma clang diagnostic error "-Wdeprecated-enum-enum-conversion"
  // This error has been generally flaky, but we need to disable it specifically
+
+--- a/src/google/protobuf/json/BUILD.bazel
++++ b/src/google/protobuf/json/BUILD.bazel
+@@ -60,2 +60,3 @@
+     hdrs = ["internal/zero_copy_buffered_stream.h"],
++    includes = ["../../../../src"],
+     copts = COPTS,
+
+--- a/src/google/protobuf/compiler/objectivec/BUILD.bazel
++++ b/src/google/protobuf/compiler/objectivec/BUILD.bazel
+@@ -30,2 +30,3 @@
+     include_prefix = "google/protobuf/compiler/objectivec",
++    includes = ["../../../../../src"],
+     visibility = ["//pkg:__pkg__"],
+@@ -91,2 +91,3 @@
+     include_prefix = "google/protobuf/compiler/objectivec",
++    includes = ["../../../../../src"],
+     visibility = [
+
+--- a/src/google/protobuf/compiler/csharp/BUILD.bazel
++++ b/src/google/protobuf/compiler/csharp/BUILD.bazel
+@@ -64,2 +64,3 @@
+     }),
++    includes = ["../../../../../src"],
+     include_prefix = "google/protobuf/compiler/csharp",
