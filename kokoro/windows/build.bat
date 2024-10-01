@@ -24,9 +24,11 @@ xcopy C:\tmpfs\src\github %BUILD_ROOT%\github /s /e /y >null
 rem rm -r -f C:\tmpfs\src\github\agi
 ls C:\tmpfs\src\github
 wmic computersystem get TotalPhysicalMemory
+wmic OS get TotalVirtualMemorySize
+wmic OS get FreePhysicalMemory
+wmic OS get FreeVirtualMemory
 
-dir /s c:\tmpfs
-psinfo \\development -h -d
+psinfo -h -d
 
 REM Install WiX (https://wixtoolset.org/, used in package.bat to create ".msi")
 mkdir wix
@@ -152,6 +154,9 @@ set BUILD_TARGETS=%BUILD_TARGETS%;//:pkg
 
 REM Loop through the build targets
 for %%T in (%BUILD_TARGETS%) do (
+    wmic OS get FreePhysicalMemory
+    wmic OS get FreeVirtualMemory
+
     %BUILD_ROOT%\bazel ^
         --output_user_root=%BAZEL_OUTPUT_USER_ROOT% ^
         build -c opt ^
