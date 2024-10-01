@@ -22,6 +22,10 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Intent;
 import android.os.Build;
+import android.os.Build.VERSION;
+import android.os.Build.VERSION_CODES;
+
+import static android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC;
 
 /**
  * {@link IntentService} that can be run in the foreground. Newer versions of Android no longer
@@ -49,7 +53,7 @@ public abstract class GapidService extends IntentService {
         // gapidapk/android/app/src/main/BUILD.bazel
         .setSmallIcon(com.google.android.gapid.R.drawable.logo)
         // TODO: Show something if the user taps the notification?
-        .setContentIntent(PendingIntent.getActivity(this, 0, new Intent(), 0));
+        .setContentIntent(PendingIntent.getActivity(this, 0, new Intent(), PendingIntent.FLAG_IMMUTABLE));
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       NotificationChannel channel = new NotificationChannel(
@@ -60,8 +64,11 @@ public abstract class GapidService extends IntentService {
     } else {
       notification.setPriority(Notification.PRIORITY_LOW);
     }
-
-    startForeground(type.notificationId, notification.build());
+    if (VERSION.SDK_INT >= VERSION_CODES.UPSIDE_DOWN_CAKE) {
+      startForeground(type.notificationId, notification.build(), FOREGROUND_SERVICE_TYPE_DATA_SYNC);
+    } else {
+      startForeground(type.notificationId, notification.build());
+    }
   }
 
   protected static enum Type {
