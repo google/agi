@@ -148,13 +148,13 @@ set BUILD_TARGETS=%BUILD_TARGETS%;//core/image:go_default_library //core/image/a
 set BUILD_TARGETS=%BUILD_TARGETS%;//core/log:go_default_library //core/math/interval:go_default_library //core/math/u64:go_default_library
 set BUILD_TARGETS=%BUILD_TARGETS%;//core/os/device:go_default_library //core/stream:go_default_library //core/stream/fmts:go_default_library
 set BUILD_TARGETS=%BUILD_TARGETS%;//core/vulkan/loader:go_default_library
-set BUILD_TARGETS=%BUILD_TARGETS%;//gapis/api/vulkan:go_default_library
 set BUILD_TARGETS=%BUILD_TARGETS%;//cmd/vulkan_sample:vulkan_sample //tools/logo:agi_ico
-set BUILD_TARGETS=%BUILD_TARGETS%;//:pkg-lib
-set BUILD_TARGETS=%BUILD_TARGETS%;//:pkg-strings
-set BUILD_TARGETS=%BUILD_TARGETS%;//cmd/gapis 
+set BUILD_TARGETS=%BUILD_TARGETS%;//:pkg-lib //:pkg-strings
+set BUILD_TARGETS=%BUILD_TARGETS%;//gapii/cc:libgapii_android //gapii/apk:gapii //gapii/apk:VkLayer_GraphicsSpy
+set BUILD_TARGETS=%BUILD_TARGETS%;//gapis/api/vulkan:go_default_library
+set BUILD_TARGETS=%BUILD_TARGETS%;//cmd/gapis
 set BUILD_TARGETS=%BUILD_TARGETS%;//cmd/device-info //cmd/gapir/cc:gapir //cmd/gapit
-set BUILD_TARGETS=%BUILD_TARGETS%;//cmd/agi 
+set BUILD_TARGETS=%BUILD_TARGETS%;//cmd/agi
 set BUILD_TARGETS=%BUILD_TARGETS%;//:pkg
 
 REM Loop through the build targets
@@ -170,12 +170,10 @@ for %%T in (%BUILD_TARGETS%) do (
     if %ERRORLEVEL% GEQ 1 exit /b %ERRORLEVEL%
     echo %DATE% %TIME%
 
+    wmic OS get FreePhysicalMemory
+    wmic OS get FreeVirtualMemory
     tasklist /fi "memusage gt 50000"
-    wmic OS get FreePhysicalMemory
-    wmic OS get FreeVirtualMemory
     REM Kill java.exe to fix windows build memory issue
-    wmic OS get FreePhysicalMemory
-    wmic OS get FreeVirtualMemory
     taskkill /f /im java.exe   
     wmic OS get FreePhysicalMemory
     wmic OS get FreeVirtualMemory
