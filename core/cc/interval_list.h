@@ -162,8 +162,8 @@ inline void CustomIntervalList<T>::replace(const T& i) {
       // i sits within a single interval. Split it into two.
       //           ┏━━━━━━━━━━━━━━┓
       //           ┗━━━━━━━━━━━━━━┛
-      //━━━━━━━━━━━┳═─═─═─═─═─═─═─┳━━━━━━━━━━━
-      //━━━━━━━━━━━┻─═─═─═─═─═─═─═┻━━━━━━━━━━━
+      // ━━━━━━━━━━━┳═─═─═─═─═─═─═─┳━━━━━━━━━━━
+      // ━━━━━━━━━━━┻─═─═─═─═─═─═─═┻━━━━━━━━━━━
       auto interval = mIntervals.begin() + first;
       mIntervals.insert(interval, *interval);
       last++;
@@ -172,16 +172,16 @@ inline void CustomIntervalList<T>::replace(const T& i) {
       // Trim end of first interval.
       //           ┏━━━━━━━━━━━━━━━━
       //           ┗━━━━━━━━━━━━━━━━
-      //━━━━━━━━━━━┳═─═─╗
-      //━━━━━━━━━━━┻─═─═┘
+      // ━━━━━━━━━━━┳═─═─╗
+      // ━━━━━━━━━━━┻─═─═┘
       auto interval = mIntervals.begin() + first;
       interval->adjust(interval->start(), i.start());
       first++;  // Don't erase the first interval.
     }
     if (trimHead) {
       // Trim front of last interval.
-      //━━━━━━━━━━━━━━━━┓
-      //━━━━━━━━━━━━━━━━┛
+      // ━━━━━━━━━━━━━━━━┓
+      // ━━━━━━━━━━━━━━━━┛
       //           ┌═─═─┳━━━━━━━━━━━
       //           ╚─═─═┻━━━━━━━━━━━
       auto interval = mIntervals.begin() + last;

@@ -17,8 +17,8 @@
 #include <libgen.h>
 #include <unistd.h>
 
-#include <cstring>
 #include <cstdint>
+#include <cstring>
 #include <string>
 
 namespace core {
