@@ -417,7 +417,7 @@ class HostAllocation {
         alignment(alignment_),
         scope(scope_),
         caller_api(caller_api_),
-        allocator_type(allocator_type_) {};
+        allocator_type(allocator_type_){};
   VulkanMemoryEventPtr GetVulkanMemoryEvent();
 
  private:
