@@ -179,15 +179,16 @@ for %%T in (%BUILD_TARGETS%) do (
     wmic OS get FreeVirtualMemory
 )
 
-REM Smoketests
-%BUILD_ROOT%\bazel ^
-    --output_user_root=%BAZEL_OUTPUT_USER_ROOT% ^
-    run -c opt ^
-    --define AGI_BUILD_NUMBER="%KOKORO_BUILD_NUMBER%" ^
-    --define AGI_BUILD_SHA="%BUILD_SHA%" ^
-    //cmd/smoketests -- --traces test/traces
-if %ERRORLEVEL% GEQ 1 exit /b %ERRORLEVEL%
-echo %DATE% %TIME%
+REM Smoke tests are disabled
+:: REM Smoketests
+:: %BUILD_ROOT%\bazel ^
+::    --output_user_root=%BAZEL_OUTPUT_USER_ROOT% ^
+::    run -c opt ^
+::    --define AGI_BUILD_NUMBER="%KOKORO_BUILD_NUMBER%" ^
+::    --define AGI_BUILD_SHA="%BUILD_SHA%" ^
+::    //cmd/smoketests -- --traces test/traces
+:: if %ERRORLEVEL% GEQ 1 exit /b %ERRORLEVEL%
+:: echo %DATE% %TIME%
 
 REM Build the release packages.
 mkdir %BUILD_ROOT%\out

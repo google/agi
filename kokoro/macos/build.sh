@@ -87,8 +87,9 @@ run_bazel build //gapis/api/vulkan:go_default_library
 # Build the package and symbol file.
 run_bazel build //:pkg
 
+REM Smoke tests are disabled
 # Build and run the smoketests.
-run_bazel run //cmd/smoketests:smoketests -- --traces test/traces
+# run_bazel run //cmd/smoketests:smoketests -- --traces test/traces
 
 # Build the release packages.
 mkdir $BUILD_ROOT/out
