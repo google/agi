@@ -74,7 +74,7 @@ cc_library(
         ":vulkan_cc",
         ":vulkan_h",
     ],
-    copts = cc_copts() + ["-Wno-deprecated-declarations",],
+    copts = cc_copts() + ["-Wno-deprecated-declarations"],
     linkopts = select({
         "//tools/build:linux": [
         ],
