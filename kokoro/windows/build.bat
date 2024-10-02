@@ -16,8 +16,15 @@ limitations under the License.
 Windows Build Script.
 
 :start
+mkdir C:\src\github
+cd C:\src
 set BUILD_ROOT=%cd%
 set SRC=%cd%\github\agi
+xcopy C:\tmpfs\src\github %BUILD_ROOT%\github /s /e /y >null
+wmic computersystem get TotalPhysicalMemory
+wmic OS get TotalVirtualMemorySize
+wmic OS get FreePhysicalMemory
+wmic OS get FreeVirtualMemory
 
 REM Install WiX (https://wixtoolset.org/, used in package.bat to create ".msi")
 mkdir wix
@@ -71,13 +78,13 @@ REM Install packages required by the build process.
 %BUILD_ROOT%\msys64\usr\bin\bash --login -c "pacman -S --noconfirm git patch zip unzip"
 
 REM Download and install specific compiler version.
-wget -q http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-10.3.0-8-any.pkg.tar.zst
-echo | set /p placeholder="5a43ac94ae563c451d1b85418ae2803b9719509112e8d604098261182a709c08 mingw-w64-x86_64-gcc-10.3.0-8-any.pkg.tar.zst" | sha256sum --check || exit /b 1
-wget -q http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-libs-10.3.0-8-any.pkg.tar.zst
-echo | set /p placeholder="2e1ea0da3c9da3285067a8b2a2639aa0a6bf21cd64edca2a216f6b9c4c1382bd mingw-w64-x86_64-gcc-libs-10.3.0-8-any.pkg.tar.zst" | sha256sum --check || exit /b 1
-wget -q http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-binutils-2.37-4-any.pkg.tar.zst
-echo | set /p placeholder="a518d2630c11fe363abd394763d0bb82fdde72386ffb58d87ecc8f46cbe878d6 mingw-w64-x86_64-binutils-2.37-4-any.pkg.tar.zst" | sha256sum --check || exit /b 1
-%BUILD_ROOT%\msys64\usr\bin\bash --login -c "pacman -U --noconfirm mingw-w64-x86_64-gcc-10.3.0-8-any.pkg.tar.zst mingw-w64-x86_64-gcc-libs-10.3.0-8-any.pkg.tar.zst mingw-w64-x86_64-binutils-2.37-4-any.pkg.tar.zst"
+wget -q http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-14.2.0-1-any.pkg.tar.zst
+echo | set /p placeholder="851c5ebcc4f787bce96c309b5c0c85c9f537053765520180f72f343b94d86b3b mingw-w64-x86_64-gcc-14.2.0-1-any.pkg.tar.zst" | sha256sum --check || exit /b 1
+wget -q http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-libs-14.2.0-1-any.pkg.tar.zst
+echo | set /p placeholder="3ac4352d1a4dec21508a71d744ff055d5643b2937c799b11114a33066abfb963 mingw-w64-x86_64-gcc-libs-14.2.0-1-any.pkg.tar.zst" | sha256sum --check || exit /b 1
+wget -q http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-binutils-2.42-2-any.pkg.tar.zst
+echo | set /p placeholder="b5a95772f674f54494cd8e4dd0f8702295ceb9099a30741cb0a86a670f32f499 mingw-w64-x86_64-binutils-2.42-2-any.pkg.tar.zst" | sha256sum --check || exit /b 1
+%BUILD_ROOT%\msys64\usr\bin\bash --login -c "pacman -U --noconfirm mingw-w64-x86_64-gcc-14.2.0-1-any.pkg.tar.zst mingw-w64-x86_64-gcc-libs-14.2.0-1-any.pkg.tar.zst mingw-w64-x86_64-binutils-2.42-2-any.pkg.tar.zst"
 
 REM Configure build process to use the now installed MSYS2.
 set PATH=%BUILD_ROOT%\msys64\mingw64\bin;%BUILD_ROOT%\msys64\usr\bin;%PATH%
@@ -107,6 +114,10 @@ set PATH=C:\python35;%PATH%
 
 cd %SRC%
 
+set BAZEL_JAVAC_OPTS="-J-Xmx2g -J-Xms1g"
+
+@echo off
+
 REM Invoke the build.
 echo %DATE% %TIME%
 if "%KOKORO_GITHUB_COMMIT%." == "." (
@@ -122,34 +133,60 @@ mkdir %BAZEL_OUTPUT_USER_ROOT%
 
 REM Build in several steps in order to avoid running out of memory.
 
-REM Build GAPIS api modules.
-%BUILD_ROOT%\bazel ^
-    --output_user_root=%BAZEL_OUTPUT_USER_ROOT% ^
-    build -c opt ^
-    --define AGI_BUILD_NUMBER="%KOKORO_BUILD_NUMBER%" ^
-    --define AGI_BUILD_SHA="%BUILD_SHA%" ^
-    //gapis/api/vulkan:go_default_library
-if %ERRORLEVEL% GEQ 1 exit /b %ERRORLEVEL%
+set BUILD_TARGETS=//core/vulkan/tools
+set BUILD_TARGETS=%BUILD_TARGETS%;//core/vulkan/vk_virtual_swapchain/apk:VkLayer_VirtualSwapchain
+set BUILD_TARGETS=%BUILD_TARGETS%;//core/vulkan/vk_debug_marker_layer/apk:VkLayer_DebugMarker
+set BUILD_TARGETS=%BUILD_TARGETS%;//gapidapk/android/apk:all
+set BUILD_TARGETS=%BUILD_TARGETS%;@com_github_golang_protobuf//proto:go_default_library @com_github_pkg_errors//:go_default_library
+set BUILD_TARGETS=%BUILD_TARGETS%;//gapis/replay/builder:go_default_library //gapis/replay/value:go_default_library
+set BUILD_TARGETS=%BUILD_TARGETS%;//core/app/status:go_default_library //core/context/keys:go_default_library //core/data:go_default_library
+set BUILD_TARGETS=%BUILD_TARGETS%;//core/data/binary:go_default_library //core/data/dictionary:go_default_library //core/data/endian:go_default_library
+set BUILD_TARGETS=%BUILD_TARGETS%;//core/data/id:go_default_library //core/data/protoconv:go_default_library //core/event/task:go_default_library
+set BUILD_TARGETS=%BUILD_TARGETS%;//core/image:go_default_library //core/image/astc:go_default_library //core/image/etc:go_default_library
+set BUILD_TARGETS=%BUILD_TARGETS%;//core/log:go_default_library //core/math/interval:go_default_library //core/math/u64:go_default_library
+set BUILD_TARGETS=%BUILD_TARGETS%;//core/os/device:go_default_library //core/stream:go_default_library //core/stream/fmts:go_default_library
+set BUILD_TARGETS=%BUILD_TARGETS%;//core/vulkan/loader:go_default_library
+set BUILD_TARGETS=%BUILD_TARGETS%;//cmd/vulkan_sample:vulkan_sample //tools/logo:agi_ico
+set BUILD_TARGETS=%BUILD_TARGETS%;//:pkg-lib //:pkg-strings
+set BUILD_TARGETS=%BUILD_TARGETS%;//gapii/cc:libgapii_android //gapii/apk:gapii //gapii/apk:VkLayer_GraphicsSpy
+set BUILD_TARGETS=%BUILD_TARGETS%;//gapis/api/vulkan:go_default_library
+set BUILD_TARGETS=%BUILD_TARGETS%;//cmd/gapis
+set BUILD_TARGETS=%BUILD_TARGETS%;//cmd/device-info //cmd/gapir/cc:gapir //cmd/gapit
+set BUILD_TARGETS=%BUILD_TARGETS%;//cmd/agi
+set BUILD_TARGETS=%BUILD_TARGETS%;//:pkg
 
-REM Build everything else.
-%BUILD_ROOT%\bazel ^
-    --output_user_root=%BAZEL_OUTPUT_USER_ROOT% ^
-    build -c opt ^
-    --define AGI_BUILD_NUMBER="%KOKORO_BUILD_NUMBER%" ^
-    --define AGI_BUILD_SHA="%BUILD_SHA%" ^
-    //:pkg //cmd/vulkan_sample:vulkan_sample //tools/logo:agi_ico
-if %ERRORLEVEL% GEQ 1 exit /b %ERRORLEVEL%
-echo %DATE% %TIME%
+REM Loop through the build targets
+for %%T in (%BUILD_TARGETS%) do (
+    REM Kill java.exe to fix windows build memory issue
+    taskkill /f /im java.exe   
+    wmic OS get FreePhysicalMemory
+    wmic OS get FreeVirtualMemory
+    echo Building target %%T
+    %BUILD_ROOT%\bazel ^
+        --output_user_root=%BAZEL_OUTPUT_USER_ROOT% ^
+        build -c opt ^
+        --define AGI_BUILD_NUMBER="%KOKORO_BUILD_NUMBER%" ^
+        --define AGI_BUILD_SHA="%BUILD_SHA%" ^
+        %%T
 
-REM Smoketests
-%BUILD_ROOT%\bazel ^
-    --output_user_root=%BAZEL_OUTPUT_USER_ROOT% ^
-    run -c opt ^
-    --define AGI_BUILD_NUMBER="%KOKORO_BUILD_NUMBER%" ^
-    --define AGI_BUILD_SHA="%BUILD_SHA%" ^
-    //cmd/smoketests -- --traces test/traces
-if %ERRORLEVEL% GEQ 1 exit /b %ERRORLEVEL%
-echo %DATE% %TIME%
+    if %ERRORLEVEL% GEQ 1 exit /b %ERRORLEVEL%
+    echo %DATE% %TIME%
+
+    wmic OS get FreePhysicalMemory
+    wmic OS get FreeVirtualMemory
+    tasklist /fi "memusage gt 50000"
+)
+
+REM Smoke tests are disabled
+:: REM Smoketests
+:: %BUILD_ROOT%\bazel ^
+::    --output_user_root=%BAZEL_OUTPUT_USER_ROOT% ^
+::    run -c opt ^
+::    --define AGI_BUILD_NUMBER="%KOKORO_BUILD_NUMBER%" ^
+::    --define AGI_BUILD_SHA="%BUILD_SHA%" ^
+::    //cmd/smoketests -- --traces test/traces
+:: if %ERRORLEVEL% GEQ 1 exit /b %ERRORLEVEL%
+:: echo %DATE% %TIME%
 
 REM Build the release packages.
 mkdir %BUILD_ROOT%\out
