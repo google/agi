@@ -67,9 +67,9 @@ Do the following to contribute to the AGI project:
 1.  Make changes, commit the changes, and squash them into a single commit.
 1.  Make sure you've setup your environment correctly before running the presubmit tests:
     ```
-    # Install clang-format 11
-    sudo apt-get install -y clang-format-11
-    export CLANG_FORMAT=clang-format-11
+    # Install clang-format 16
+    sudo apt-get install -y clang-format-16
+    export CLANG_FORMAT=clang-format-16
 
     # Provide path for the autopep8 binary (or you can add its location to your PATH)
     export AUTOPEP8=~/.local/bin/autopep8

@@ -39,7 +39,7 @@ echo "ce6eee4130298f79b0e0f09a89f93c1bc711cd68e7e3182d37c8e96c5227e2f0  llvm-sna
 sudo apt-key add llvm-snapshot.gpg.key
 sudo add-apt-repository 'deb http://apt.llvm.org/focal/ llvm-toolchain-focal main'
 sudo apt-get -y update
-sudo apt-get install -y clang-format-11
+sudo apt-get install -y clang-format-16
 
 # Get recent Android build tools.
 echo y | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install 'build-tools;30.0.3' 'platforms;android-26'
@@ -52,7 +52,7 @@ export ANDROID_NDK_HOME=/opt/android-ndk-r16b
 export BAZEL=$BUILD_ROOT/bazel/bin/bazel
 export BUILDIFIER=$BUILD_ROOT/tools/bin/buildifier
 export BUILDOZER=$BUILD_ROOT/tools/bin/buildozer
-export CLANG_FORMAT=clang-format-11
+export CLANG_FORMAT=clang-format-16
 export AUTOPEP8=~/.local/bin/autopep8
 
 cd $SRC
