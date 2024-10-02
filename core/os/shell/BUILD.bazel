@@ -43,8 +43,17 @@ go_test(
     deps = [
         ":go_default_library",
         "//core/assert:go_default_library",
-        "//core/event/task:go_default_library",
-        "//core/fault:go_default_library",
-        "//core/log:go_default_library",
-    ],
+    ] + select({
+        "@io_bazel_rules_go//go/platform:darwin": [
+            "//core/event/task:go_default_library",
+            "//core/fault:go_default_library",
+            "//core/log:go_default_library",
+        ],
+        "@io_bazel_rules_go//go/platform:linux": [
+            "//core/event/task:go_default_library",
+            "//core/fault:go_default_library",
+            "//core/log:go_default_library",
+        ],
+        "//conditions:default": [],
+    }),
 )
