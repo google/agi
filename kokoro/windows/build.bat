@@ -136,7 +136,6 @@ REM Build in several steps in order to avoid running out of memory.
 set BUILD_TARGETS=//core/vulkan/tools
 set BUILD_TARGETS=%BUILD_TARGETS%;//core/vulkan/vk_virtual_swapchain/apk:VkLayer_VirtualSwapchain
 set BUILD_TARGETS=%BUILD_TARGETS%;//core/vulkan/vk_debug_marker_layer/apk:VkLayer_DebugMarker
-set BUILD_TARGETS=%BUILD_TARGETS%;//gapidapk/android/apk:all
 set BUILD_TARGETS=%BUILD_TARGETS%;@com_github_golang_protobuf//proto:go_default_library @com_github_pkg_errors//:go_default_library
 set BUILD_TARGETS=%BUILD_TARGETS%;//gapis/replay/builder:go_default_library //gapis/replay/value:go_default_library
 set BUILD_TARGETS=%BUILD_TARGETS%;//core/app/status:go_default_library //core/context/keys:go_default_library //core/data:go_default_library
@@ -162,27 +161,27 @@ for %%T in (%BUILD_TARGETS%) do (
     taskkill /f /im java.exe   
     wmic OS get FreePhysicalMemory
     wmic OS get FreeVirtualMemory
-    echo Building target %%T
-    
-    set retryCount=0
+    set TARGET=%%T
+    set RETRY_COUNT=0
+    echo Building target !TARGET!
     :retry
     %BUILD_ROOT%\bazel ^
         --output_user_root=%BAZEL_OUTPUT_USER_ROOT% ^
         build -c opt ^
         --define AGI_BUILD_NUMBER="%KOKORO_BUILD_NUMBER%" ^
         --define AGI_BUILD_SHA="%BUILD_SHA%" ^
-        %%T
+        !TARGET!
     
-    if %ERRORLEVEL% EQU 0 (
-        echo Build successful for target %%T
+    if !ERRORLEVEL! EQU 0 (
+        echo Build successful for target !TARGET!
     ) else (
-        set /a retryCount+=1
-        if !retryCount! lss 5 (
-            echo Build failed. Retrying... Attempt !retryCount! of 5
+        set /a RETRY_COUNT+=1
+        if !RETRY_COUNT! lss 5 (
+            echo Build failed. Retrying... Attempt !RETRY_COUNT! of 5
             goto retry
         ) else (
-            echo Build failed after 5 attempts for target %%T
-            exit /b %ERRORLEVEL%
+            echo Build failed after 5 attempts for target !TARGET!
+            exit /b !ERRORLEVEL!
         )
     )
     
