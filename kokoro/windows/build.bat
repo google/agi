@@ -138,10 +138,6 @@ set BUILD_TARGETS=//:pkg
 REM Loop through the build targets
 setlocal enabledelayedexpansion
 for %%T in (%BUILD_TARGETS%) do (
-    REM Kill java.exe to fix windows build memory issue
-    taskkill /f /im java.exe   
-    wmic OS get FreePhysicalMemory
-    wmic OS get FreeVirtualMemory
     set TARGET=%%T
     set RETRY_COUNT=0
     echo Building target !TARGET!
@@ -159,6 +155,13 @@ for %%T in (%BUILD_TARGETS%) do (
         set /a RETRY_COUNT+=1
         if !RETRY_COUNT! lss 10 (
             echo Build failed. Retrying... Attempt !RETRY_COUNT! of 10
+            wmic OS get FreePhysicalMemory
+            wmic OS get FreeVirtualMemory
+            tasklist /fi "memusage gt 50000"
+            REM Kill java.exe to fix windows build memory issue
+            taskkill /f /im java.exe   
+            wmic OS get FreePhysicalMemory
+            wmic OS get FreeVirtualMemory
             goto retry
         ) else (
             echo Build failed after 10 attempts for target !TARGET!
@@ -167,9 +170,6 @@ for %%T in (%BUILD_TARGETS%) do (
     )
     
     echo %DATE% %TIME%
-    wmic OS get FreePhysicalMemory
-    wmic OS get FreeVirtualMemory
-    tasklist /fi "memusage gt 50000"
 )
 endlocal
 
