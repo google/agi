@@ -172,14 +172,13 @@ for %%T in (%BUILD_TARGETS%) do (
         --define AGI_BUILD_NUMBER="%KOKORO_BUILD_NUMBER%" ^
         --define AGI_BUILD_SHA="%BUILD_SHA%" ^
         %%T
-    echo ERRORLEVEL=%ERRORLEVEL% after build
     
     if %ERRORLEVEL% EQU 0 (
         echo Build successful for target %%T
     ) else (
         set /a retryCount+=1
         if !retryCount! lss 5 (
-            echo Build failed. Retrying... (Attempt !retryCount! of 5)
+            echo Build failed. Retrying... Attempt !retryCount! of 5
             goto retry
         ) else (
             echo Build failed after 5 attempts for target %%T
