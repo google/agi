@@ -114,7 +114,7 @@ set PATH=C:\python35;%PATH%
 
 cd %SRC%
 
-set BAZEL_JAVAC_OPTS="-J-Xmx2g -J-Xms1g"
+set BAZEL_JAVAC_OPTS="-J-Xmx1g -J-Xms512m"
 
 @echo off
 
