@@ -133,7 +133,10 @@ mkdir %BAZEL_OUTPUT_USER_ROOT%
 
 REM Build in several steps in order to avoid running out of memory.
 
-set BUILD_TARGETS=//:pkg
+set BUILD_TARGETS=//gapidapk/android/apk:armeabi-v7a 
+set BUILD_TARGETS=%BUILD_TARGETS%;//gapidapk/android/apk:arm64-v8a
+set BUILD_TARGETS=%BUILD_TARGETS%;//gapidapk/android/apk:x86
+set BUILD_TARGETS=%BUILD_TARGETS%;//:pkg
 
 REM Loop through the build targets
 setlocal enabledelayedexpansion
