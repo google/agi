@@ -15,6 +15,7 @@
   limitations under the License.
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="com.google.android.gapid.${name}"
     android:versionCode="1"
     android:versionName="0.3 ({srchash})"
@@ -22,6 +23,11 @@
     
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <!--Need this permission to get all installed apps when targeting at SDK level 31.
+    See https://developer.android.com/training/package-visibility-->
+    <uses-permission
+        android:name="android.permission.QUERY_ALL_PACKAGES"
+        tools:ignore="QueryAllPackagesPermission" />
 
     <uses-sdk
         android:minSdkVersion="21"

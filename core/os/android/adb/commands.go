@@ -163,11 +163,6 @@ func (b *binding) InstallAPK(ctx context.Context, path string, reinstall bool, g
 	if reinstall {
 		args = append(args, "-r")
 	}
-	if grantPermissions && b.Instance().GetConfiguration().GetOS().GetAPIVersion() >= 23 {
-		// Starting with API 23, permissions are not granted by default
-		// during installation. Before API 23, the flag did not exist.
-		args = append(args, "-g")
-	}
 	if b.Instance().GetConfiguration().GetOS().GetAPIVersion() >= 30 {
 		// Starting with API 30, non-system applications can not be queried by
 		// application targeting api level 30 by default. This flag allows the
