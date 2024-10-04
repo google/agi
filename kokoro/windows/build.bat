@@ -114,7 +114,7 @@ set PATH=C:\python35;%PATH%
 
 cd %SRC%
 
-set BAZEL_JAVAC_OPTS="-J-Xmx2g -J-Xms1g"
+set BAZEL_JAVAC_OPTS="-J-Xmx1g -J-Xms512m"
 
 @echo off
 
@@ -133,49 +133,45 @@ mkdir %BAZEL_OUTPUT_USER_ROOT%
 
 REM Build in several steps in order to avoid running out of memory.
 
-set BUILD_TARGETS=//core/vulkan/tools
-set BUILD_TARGETS=%BUILD_TARGETS%;//core/vulkan/vk_virtual_swapchain/apk:VkLayer_VirtualSwapchain
-set BUILD_TARGETS=%BUILD_TARGETS%;//core/vulkan/vk_debug_marker_layer/apk:VkLayer_DebugMarker
-set BUILD_TARGETS=%BUILD_TARGETS%;//gapidapk/android/apk:all
-set BUILD_TARGETS=%BUILD_TARGETS%;@com_github_golang_protobuf//proto:go_default_library @com_github_pkg_errors//:go_default_library
-set BUILD_TARGETS=%BUILD_TARGETS%;//gapis/replay/builder:go_default_library //gapis/replay/value:go_default_library
-set BUILD_TARGETS=%BUILD_TARGETS%;//core/app/status:go_default_library //core/context/keys:go_default_library //core/data:go_default_library
-set BUILD_TARGETS=%BUILD_TARGETS%;//core/data/binary:go_default_library //core/data/dictionary:go_default_library //core/data/endian:go_default_library
-set BUILD_TARGETS=%BUILD_TARGETS%;//core/data/id:go_default_library //core/data/protoconv:go_default_library //core/event/task:go_default_library
-set BUILD_TARGETS=%BUILD_TARGETS%;//core/image:go_default_library //core/image/astc:go_default_library //core/image/etc:go_default_library
-set BUILD_TARGETS=%BUILD_TARGETS%;//core/log:go_default_library //core/math/interval:go_default_library //core/math/u64:go_default_library
-set BUILD_TARGETS=%BUILD_TARGETS%;//core/os/device:go_default_library //core/stream:go_default_library //core/stream/fmts:go_default_library
-set BUILD_TARGETS=%BUILD_TARGETS%;//core/vulkan/loader:go_default_library
-set BUILD_TARGETS=%BUILD_TARGETS%;//cmd/vulkan_sample:vulkan_sample //tools/logo:agi_ico
-set BUILD_TARGETS=%BUILD_TARGETS%;//:pkg-lib //:pkg-strings
-set BUILD_TARGETS=%BUILD_TARGETS%;//gapii/cc:libgapii_android //gapii/apk:gapii //gapii/apk:VkLayer_GraphicsSpy
-set BUILD_TARGETS=%BUILD_TARGETS%;//gapis/api/vulkan:go_default_library
-set BUILD_TARGETS=%BUILD_TARGETS%;//cmd/gapis
-set BUILD_TARGETS=%BUILD_TARGETS%;//cmd/device-info //cmd/gapir/cc:gapir //cmd/gapit
-set BUILD_TARGETS=%BUILD_TARGETS%;//cmd/agi
-set BUILD_TARGETS=%BUILD_TARGETS%;//:pkg
+set BUILD_TARGETS=//:pkg
 
 REM Loop through the build targets
+setlocal enabledelayedexpansion
 for %%T in (%BUILD_TARGETS%) do (
     REM Kill java.exe to fix windows build memory issue
     taskkill /f /im java.exe   
     wmic OS get FreePhysicalMemory
     wmic OS get FreeVirtualMemory
-    echo Building target %%T
+    set TARGET=%%T
+    set RETRY_COUNT=0
+    echo Building target !TARGET!
+    :retry
     %BUILD_ROOT%\bazel ^
         --output_user_root=%BAZEL_OUTPUT_USER_ROOT% ^
         build -c opt ^
         --define AGI_BUILD_NUMBER="%KOKORO_BUILD_NUMBER%" ^
         --define AGI_BUILD_SHA="%BUILD_SHA%" ^
-        %%T
-
-    if %ERRORLEVEL% GEQ 1 exit /b %ERRORLEVEL%
+        !TARGET!
+    
+    if !ERRORLEVEL! EQU 0 (
+        echo Build successful for target !TARGET!
+    ) else (
+        set /a RETRY_COUNT+=1
+        if !RETRY_COUNT! lss 10 (
+            echo Build failed. Retrying... Attempt !RETRY_COUNT! of 10
+            goto retry
+        ) else (
+            echo Build failed after 10 attempts for target !TARGET!
+            exit /b !ERRORLEVEL!
+        )
+    )
+    
     echo %DATE% %TIME%
-
     wmic OS get FreePhysicalMemory
     wmic OS get FreeVirtualMemory
     tasklist /fi "memusage gt 50000"
 )
+endlocal
 
 REM Smoke tests are disabled
 :: REM Smoketests
