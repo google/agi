@@ -156,26 +156,43 @@ set BUILD_TARGETS=%BUILD_TARGETS%;//cmd/agi
 set BUILD_TARGETS=%BUILD_TARGETS%;//:pkg
 
 REM Loop through the build targets
+setlocal enabledelayedexpansion
 for %%T in (%BUILD_TARGETS%) do (
     REM Kill java.exe to fix windows build memory issue
     taskkill /f /im java.exe   
     wmic OS get FreePhysicalMemory
     wmic OS get FreeVirtualMemory
     echo Building target %%T
+    
+    set retryCount=0
+    :retry
     %BUILD_ROOT%\bazel ^
         --output_user_root=%BAZEL_OUTPUT_USER_ROOT% ^
         build -c opt ^
         --define AGI_BUILD_NUMBER="%KOKORO_BUILD_NUMBER%" ^
         --define AGI_BUILD_SHA="%BUILD_SHA%" ^
         %%T
-
-    if %ERRORLEVEL% GEQ 1 exit /b %ERRORLEVEL%
+    echo ERRORLEVEL=%ERRORLEVEL% after build
+    
+    if %ERRORLEVEL% EQU 0 (
+        echo Build successful for target %%T
+    ) else (
+        set /a retryCount+=1
+        if !retryCount! lss 5 (
+            echo Build failed. Retrying... (Attempt !retryCount! of 5)
+            goto retry
+        ) else (
+            echo Build failed after 5 attempts for target %%T
+            exit /b %ERRORLEVEL%
+        )
+    )
+    
     echo %DATE% %TIME%
-
     wmic OS get FreePhysicalMemory
     wmic OS get FreeVirtualMemory
     tasklist /fi "memusage gt 50000"
 )
+endlocal
 
 REM Smoke tests are disabled
 :: REM Smoketests
