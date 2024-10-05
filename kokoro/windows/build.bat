@@ -133,48 +133,51 @@ mkdir %BAZEL_OUTPUT_USER_ROOT%
 
 REM Build in several steps in order to avoid running out of memory.
 
-set BUILD_TARGETS=//gapidapk/android/apk:armeabi-v7a 
+set BUILD_TARGETS=//gapidapk/android/apk:armeabi-v7a
 set BUILD_TARGETS=%BUILD_TARGETS%;//gapidapk/android/apk:arm64-v8a
 set BUILD_TARGETS=%BUILD_TARGETS%;//gapidapk/android/apk:x86
 set BUILD_TARGETS=%BUILD_TARGETS%;//:pkg
 
 REM Loop through the build targets
-setlocal enabledelayedexpansion
 for %%T in (%BUILD_TARGETS%) do (
-    set TARGET=%%T
-    set RETRY_COUNT=0
-    echo Building target !TARGET!
-    :retry
-    %BUILD_ROOT%\bazel ^
-        --output_user_root=%BAZEL_OUTPUT_USER_ROOT% ^
-        build -c opt ^
-        --define AGI_BUILD_NUMBER="%KOKORO_BUILD_NUMBER%" ^
-        --define AGI_BUILD_SHA="%BUILD_SHA%" ^
-        !TARGET!
-    
-    if !ERRORLEVEL! EQU 0 (
-        echo Build successful for target !TARGET!
-    ) else (
-        set /a RETRY_COUNT+=1
-        if !RETRY_COUNT! lss 10 (
-            echo Build failed. Retrying... Attempt !RETRY_COUNT! of 10
-            wmic OS get FreePhysicalMemory
-            wmic OS get FreeVirtualMemory
-            tasklist /fi "memusage gt 50000"
-            REM Kill java.exe to fix windows build memory issue
-            taskkill /f /im java.exe   
-            wmic OS get FreePhysicalMemory
-            wmic OS get FreeVirtualMemory
-            goto retry
-        ) else (
-            echo Build failed after 10 attempts for target !TARGET!
-            exit /b !ERRORLEVEL!
-        )
-    )
-    
+    call :build_target %%T   
     echo %DATE% %TIME%
 )
-endlocal
+goto :loop_end
+
+:build_target
+set TARGET=%1
+set RETRY_COUNT=0
+echo Building target %TARGET%
+:retry
+%BUILD_ROOT%\bazel ^
+    --output_user_root=%BAZEL_OUTPUT_USER_ROOT% ^
+    build -c opt ^
+    --define AGI_BUILD_NUMBER="%KOKORO_BUILD_NUMBER%" ^
+    --define AGI_BUILD_SHA="%BUILD_SHA%" ^
+    %TARGET%
+
+if %ERRORLEVEL% EQU 0 (
+    echo Build successful for target %TARGET%
+) else (
+    set /a RETRY_COUNT+=1
+    if %RETRY_COUNT% lss 10 (
+        echo Build failed. Retrying... Attempt %RETRY_COUNT% of 10
+        wmic OS get FreePhysicalMemory
+        wmic OS get FreeVirtualMemory
+        tasklist /fi "memusage gt 50000"
+        REM Kill java.exe to fix windows build memory issue
+        taskkill /f /im java.exe   
+        wmic OS get FreePhysicalMemory
+        wmic OS get FreeVirtualMemory
+        goto retry
+    ) else (
+        echo Build failed after 10 attempts for target %TARGET%
+        exit /b %ERRORLEVEL%
+    )
+)
+goto :eof
+:loop_end
 
 REM Smoke tests are disabled
 :: REM Smoketests
