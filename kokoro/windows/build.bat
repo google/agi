@@ -137,6 +137,9 @@ set BUILD_TARGETS=//gapidapk/android/apk:armeabi-v7a
 set BUILD_TARGETS=%BUILD_TARGETS%;//gapidapk/android/apk:arm64-v8a
 set BUILD_TARGETS=%BUILD_TARGETS%;//gapidapk/android/apk:x86
 set BUILD_TARGETS=%BUILD_TARGETS%;//:pkg
+set BUILD_TARGETS=%BUILD_TARGETS%;//cmd/vulkan_sample:vulkan_sample
+set BUILD_TARGETS=%BUILD_TARGETS%;//tools/logo:agi_ico
+ 
 
 REM Loop through the build targets
 for %%T in (%BUILD_TARGETS%) do (
