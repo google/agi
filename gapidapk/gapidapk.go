@@ -108,7 +108,7 @@ func ensureInstalled(ctx context.Context, d adb.Device, abi *device.ABI) (*APK, 
 		gapid, err := d.InstalledPackage(ctx, name)
 		if err != nil {
 			log.I(ctx, "Installing gapid.apk...")
-			if err := d.InstallAPK(ctx, apkPath.System(), false, true); err != nil {
+			if err := d.InstallAPK(ctx, apkPath.System(), false, false); err != nil {
 				return nil, log.Err(ctx, err, "Installing gapid.apk")
 			}
 			continue
