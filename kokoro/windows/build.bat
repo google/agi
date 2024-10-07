@@ -16,11 +16,8 @@ limitations under the License.
 Windows Build Script.
 
 :start
-mkdir C:\src\github
-cd C:\src
 set BUILD_ROOT=%cd%
 set SRC=%cd%\github\agi
-xcopy C:\tmpfs\src\github %BUILD_ROOT%\github /s /e /y >null
 wmic computersystem get TotalPhysicalMemory
 wmic OS get TotalVirtualMemorySize
 wmic OS get FreePhysicalMemory
