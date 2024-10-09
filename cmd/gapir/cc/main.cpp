@@ -120,48 +120,46 @@ struct Options {
 #endif
 
   static void PrintHelp() {
-    GAPID_WARNING(
-        "gapir: gapir is a VM for the graphics api debugger system\n");
-    GAPID_WARNING("Usage: gapir [args]\n");
-    GAPID_WARNING("Args:\n");
-    GAPID_WARNING("  --replay-archive string\n");
-    GAPID_WARNING(
-        "    Path to an archive directory to replay, and then exit\n");
-    GAPID_WARNING("  --postback-dir string\n");
-    GAPID_WARNING(
-        "    Path to a directory to use for outputs of the replay-archive\n");
-    GAPID_WARNING("  --auth-token-file string\n");
-    GAPID_WARNING(
-        "    Path to the a file containing the authentication token\n");
-    GAPID_WARNING("  --enable-disk-cache\n");
-    GAPID_WARNING(
-        "    If set, then gapir will create and use a disk cache for "
+    printf("gapir: gapir is a VM for the graphics api debugger system\n");
+    printf("Usage: gapir [args]\n");
+    printf("Args:\n");
+    printf("  --replay-archive string\n");
+    printf("        Path to an archive directory to replay, and then exit\n");
+    printf("  --postback-dir string\n");
+    printf(
+        "        Path to a directory to use for outputs of the "
+        "replay-archive\n");
+    printf("  --auth-token-file string\n");
+    printf("        Path to the a file containing the authentication token\n");
+    printf("  --enable-disk-cache\n");
+    printf(
+        "        If set, then gapir will create and use a disk cache for "
         "resources.\n");
-    GAPID_WARNING("  --disk-cache-path string\n");
-    GAPID_WARNING(
-        "    Path to a directory that will be used for the disk cache.\n");
-    GAPID_WARNING("    If it contains an existing cache, that will be used\n");
-    GAPID_WARNING(
-        "    If unset, the disk cache will default to a temp directory\n");
-    GAPID_WARNING("  --cleanup-disk-cache\n");
-    GAPID_WARNING(
-        "    If set, the disk cache will be deleted when gapir exits.\n");
-    GAPID_WARNING("  --port int\n");
-    GAPID_WARNING("    The port to use when listening for connections\n");
-    GAPID_WARNING("  --log-level <F|E|W|I|D|V>\n");
-    GAPID_WARNING("    Sets the log level for gapir.\n");
-    GAPID_WARNING("  --log string\n");
-    GAPID_WARNING("    Sets the path for the log file\n");
-    GAPID_WARNING("  --idle-timeout-sec int\n");
-    GAPID_WARNING(
-        "    Timeout if gapir has not received communication from the server "
-        "(default infinity)\n");
-    GAPID_WARNING("  --wait-for-debugger\n");
-    GAPID_WARNING(
-        "    Causes gapir to pause on init, and wait for a debugger to "
+    printf("  --disk-cache-path string\n");
+    printf(
+        "        Path to a directory that will be used for the disk cache.\n");
+    printf("        If it contains an existing cache, that will be used\n");
+    printf(
+        "        If unset, the disk cache will default to a temp directory\n");
+    printf("  --cleanup-disk-cache\n");
+    printf(
+        "        If set, the disk cache will be deleted when gapir exits.\n");
+    printf("  --port int\n");
+    printf("        The port to use when listening for connections\n");
+    printf("  --log-level <F|E|W|I|D|V>\n");
+    printf("        Sets the log level for gapir.\n");
+    printf("  --log string\n");
+    printf("        Sets the path for the log file\n");
+    printf("  --idle-timeout-sec int\n");
+    printf(
+        "        Timeout if gapir has not received communication from the "
+        "server (default infinity)\n");
+    printf("  --wait-for-debugger\n");
+    printf(
+        "        Causes gapir to pause on init, and wait for a debugger to "
         "connect\n");
-    GAPID_WARNING("   -h,-help,--help\n");
-    GAPID_WARNING("    Prints this help text and exits.\n");
+    printf("   -h,-help,--help\n");
+    printf("        Prints this help text and exits.\n");
   }
 
   static void warnAndroid(const char* flag) {
