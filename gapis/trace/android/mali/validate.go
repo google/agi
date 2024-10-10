@@ -16,47 +16,17 @@ package mali
 
 import (
 	"context"
-	"strings"
+	"strconv"
 
+	"github.com/google/gapid/core/log"
 	"github.com/google/gapid/gapis/perfetto"
 	"github.com/google/gapid/gapis/service"
 	"github.com/google/gapid/gapis/trace/android/validate"
 )
 
 var (
-	// jmCounters are the hardware counters found on JM based GPUs.
-	jmCounters = []validate.GpuCounter{
-		{6, "GPU active cycles", counterChecker()},
-		{8, "Fragment jobs", counterChecker()},
-		{196, "Fragment active cycles", counterChecker()},
-		{65536, "GPU utilization", counterChecker()},
-		{65538, "Fragment queue utilization", counterChecker()},
-		{65579, "Execution core utilization", counterChecker()},
-	}
-
-	// csfCounters are the hardware counters found on CSF based GPUs.
-	csfCounters = []validate.GpuCounter{
-		{4, "GPU active cycles", counterChecker()},
-		{6, "Any iterator active cycles", counterChecker()},
-		{33, "Fragment jobs", counterChecker()},
-		{196, "Fragment active cycles", counterChecker()},
-		{65536, "GPU utilization", counterChecker()},
-		{65581, "Execution core utilization", counterChecker()},
-	}
-
-	// csfCounters2 are the hardware counters found on CSF based GPUs, with
-	// hardware-independent numerical IDs.
-	csfCounters2 = []validate.GpuCounter{
-		{6, "GPU active cycles", counterChecker()},
-		{1, "Any iterator active cycles", counterChecker()},
-		{45, "Fragment jobs", counterChecker()},
-		{196, "Fragment active cycles", counterChecker()},
-		{65536, "GPU utilization", counterChecker()},
-		{65579, "Execution core utilization", counterChecker()},
-	}
-
-	// csfCounters3 are the new set of hardware counters that is guaranteed to be found on new CSF based GPUs.
-	csfCounters3 = []validate.GpuCounter{
+	// GPU counters that are guaranteed to be found on Mali GPUs.
+	counters = []validate.GpuCounter{
 		{65536, "GPU utilization", counterChecker()},
 	}
 )
@@ -83,6 +53,16 @@ func NewMaliValidator(gpuName string, driverVersion uint32) *MaliValidator {
 }
 
 func (v *MaliValidator) Validate(ctx context.Context, processor *perfetto.Processor) error {
+	driverType := "prod"
+	if (v.driverVersion & 0xFFF) != 0 {
+		driverType = "dev"
+	}
+	log.I(ctx, "Validating (%v) with %v driver %v.%v(0x%v)",
+		v.gpuName,
+		driverType,
+		GetDriverMajorVersion(v.driverVersion),
+		GetDriverMinorVersion(v.driverVersion),
+		strconv.FormatInt(int64(v.driverVersion), 16))
 	if err := validate.ValidateGpuCounters(ctx, processor, v.GetCounters(), len(v.GetCounters())); err != nil {
 		return err
 	}
@@ -94,35 +74,7 @@ func (v *MaliValidator) Validate(ctx context.Context, processor *perfetto.Proces
 }
 
 func (v *MaliValidator) GetCounters() []validate.GpuCounter {
-	gpuName := v.gpuName
-	if strings.HasSuffix(gpuName, "G31") ||
-		strings.HasSuffix(gpuName, "G51") ||
-		strings.HasSuffix(gpuName, "G52") ||
-		strings.HasSuffix(gpuName, "G71") ||
-		strings.HasSuffix(gpuName, "G72") ||
-		strings.HasSuffix(gpuName, "G76") ||
-		strings.HasSuffix(gpuName, "G57") ||
-		strings.HasSuffix(gpuName, "G68") ||
-		strings.HasSuffix(gpuName, "G77") ||
-		strings.HasSuffix(gpuName, "G78") ||
-		strings.HasSuffix(gpuName, "G78AE") {
-		return jmCounters
-	} else {
-		// Driver versions reported via Vulkan have the following format:
-		// | 31 .. 29 | 28 .. 22 | 21 .. 12 | 11 .. 0 |
-		// | variant  |  major   |  minor   |  patch  |
-		isDevDriver := (v.driverVersion & 0xFFF) != 0
-		isDriverWithStableCounterIds := GetDriverMajorVersion(v.driverVersion) >= 37
-		isDriverWithReducedCounters := ((GetDriverMajorVersion(v.driverVersion) >= 50) || ((GetDriverMajorVersion(v.driverVersion) == 49) && (GetDriverMinorVersion(v.driverVersion) >= 1)))
-
-		if isDevDriver || isDriverWithReducedCounters {
-			return csfCounters3
-		} else if isDriverWithStableCounterIds {
-			return csfCounters2
-		} else {
-			return csfCounters
-		}
-	}
+	return counters
 }
 
 func (v *MaliValidator) GetType() service.DeviceValidationResult_ValidatorType {
