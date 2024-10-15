@@ -509,7 +509,7 @@ public class TracerDialog {
             optGroup, "Disable Buffering", trace.getWithoutBuffering());
         withoutBuffering.setEnabled(true);
         clearCache = createCheckbox(
-            optGroup, "Clear Package Cache", trace.getClearCache());
+            optGroup, "Clear Package Storage", trace.getClearCache());
         clearCache.setEnabled(false);
         includeUnsupportedExtensions = createCheckbox(optGroup, "Include Unsupported Extensions", false);
         includeUnsupportedExtensions.setEnabled(false);
