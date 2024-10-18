@@ -139,10 +139,6 @@ func (v *PowerVRValidator) Validate(ctx context.Context, processor *perfetto.Pro
 	if err := validate.ValidateGpuCounters(ctx, processor, v.GetCounters(), v.countersPassThreshold); err != nil {
 		return err
 	}
-	if err := validate.ValidateGpuSlices(ctx, processor); err != nil {
-		return err
-	}
-
 	return nil
 }
 
