@@ -107,12 +107,14 @@ public class TrackConfig {
     public Builder addGroup(String parent, String id, String name, Group.UiFactory ui) {
       groups.computeIfAbsent(parent, $ -> Lists.newArrayList())
           .add(newElement(id, name, false, ui));
+      groups.computeIfAbsent(id, $ -> Lists.newArrayList());
       return this;
     }
 
     public Builder addLabelGroup(String parent, String id, String name, Group.UiFactory ui) {
       groups.computeIfAbsent(parent, $ -> Lists.newArrayList())
           .add(newElement(id, name, true, ui));
+      groups.computeIfAbsent(id, $ -> Lists.newArrayList());
       return this;
     }
 
@@ -143,7 +145,9 @@ public class TrackConfig {
       ImmutableList.Builder<Element<?>> children = ImmutableList.builder();
       for (ElementBuilder child : groups.get(id)) {
         if (groups.containsKey(child.id)) {
-          children.add(buildGroup(child.id));
+          if(!groups.get(child.id).isEmpty()) {
+            children.add(buildGroup(child.id));
+          }
         } else {
           children.add(child.track());
         }
