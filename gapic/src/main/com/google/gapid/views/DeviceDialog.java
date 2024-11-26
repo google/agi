@@ -17,6 +17,7 @@ package com.google.gapid.views;
 
 import static com.google.gapid.util.Logging.throttleLogRpcError;
 import static com.google.gapid.util.MoreFutures.logFailure;
+import static com.google.gapid.widgets.Widgets.createCheckbox;
 import static com.google.gapid.widgets.Widgets.createGroup;
 import static com.google.gapid.widgets.Widgets.createLabel;
 import static com.google.gapid.widgets.Widgets.createLink;
@@ -156,6 +157,7 @@ public class DeviceDialog implements Devices.Listener, Capture.Listener {
     private TableViewer compatibleDeviceTable;
     private TableViewer incompatibleDeviceTable;
     private Button refreshDeviceButton;
+    private Button skipDeviceValidation;
 
     private final SingleInFlight rpcController = new SingleInFlight();
 
@@ -224,6 +226,19 @@ public class DeviceDialog implements Devices.Listener, Capture.Listener {
       compatibleDeviceTable.getTable().addListener(SWT.Selection, e -> {
         deviceValidationView.ValidateDevice(getSelectedDevice());
       });
+      
+      skipDeviceValidation = withLayoutData(
+        createCheckbox(compatibleGroup,  "Skip Device Validation", Devices.skipDeviceValidation.get()),
+        new GridData(GridData.FILL_HORIZONTAL));
+      skipDeviceValidation.addListener(SWT.Selection, e -> {
+      if (skipDeviceValidation.getSelection()) {
+          Devices.skipDeviceValidation.setValue("true");
+        } else {
+          Devices.skipDeviceValidation.setValue("false");
+        }
+        deviceValidationView.ValidateDevice(getSelectedDevice());
+      });
+      Label skipDeviceValidationLabel = createLabel(compatibleGroup, "");
 
       // Validation widgets
       deviceValidationView = new DeviceValidationView(compatibleGroup, models, widgets);
