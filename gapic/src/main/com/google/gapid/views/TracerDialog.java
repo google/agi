@@ -427,16 +427,10 @@ public class TracerDialog {
         });
 
         Label skipDeviceValidationLabel = createLabel(mainGroup, "");
-        Composite skipDeviceValidationComposite = withLayoutData(createComposite(mainGroup,
-            withMarginOnly(new GridLayout(2, false), 0, 0)),
-            new GridData(SWT.FILL, SWT.FILL, true, false));
 
         skipDeviceValidation = withLayoutData(
-          createCheckbox(
-            skipDeviceValidationComposite, 
-            "Skip Device Validation", 
-            Devices.skipDeviceValidation.get()), 
-          new GridData(SWT.END, SWT.FILL, false, false));
+          createCheckbox(mainGroup, "Skip Device Validation", Devices.skipDeviceValidation.get()), 
+          new GridData(GridData.FILL_HORIZONTAL));
         skipDeviceValidation.addListener(SWT.Selection, e -> {
         if (skipDeviceValidation.getSelection()) {
             Devices.skipDeviceValidation.setValue("true");
