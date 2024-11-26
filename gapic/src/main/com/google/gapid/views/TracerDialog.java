@@ -431,9 +431,14 @@ public class TracerDialog {
             withMarginOnly(new GridLayout(2, false), 0, 0)),
             new GridData(SWT.FILL, SWT.FILL, true, false));
 
-        skipDeviceValidation = withLayoutData(createCheckbox(skipDeviceValidationComposite, "Skip Device Validation", Devices.skipDeviceValidation.get()), new GridData(SWT.END, SWT.FILL, false, false));
+        skipDeviceValidation = withLayoutData(
+          createCheckbox(
+            skipDeviceValidationComposite, 
+            "Skip Device Validation", 
+            Devices.skipDeviceValidation.get()), 
+          new GridData(SWT.END, SWT.FILL, false, false));
         skipDeviceValidation.addListener(SWT.Selection, e -> {
-          if(skipDeviceValidation.getSelection()) {
+        if (skipDeviceValidation.getSelection()) {
             Devices.skipDeviceValidation.setValue("true");
           } else {
             Devices.skipDeviceValidation.setValue("false");
@@ -441,7 +446,7 @@ public class TracerDialog {
           logFailure(LOG, Scheduler.EXECUTOR.schedule(refreshDevices, 300, TimeUnit.MILLISECONDS));
         });
 
-          // Align label with first line of text.
+        // Align label with first line of text.
         withLayoutData(createLabel(mainGroup, "Validation:"),
           withIndents(new GridData(GridData.HORIZONTAL_ALIGN_FILL | GridData.VERTICAL_ALIGN_BEGINNING), 0, 12));
         deviceValidationView = new DeviceValidationView(mainGroup, this.models, widgets);
