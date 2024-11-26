@@ -343,6 +343,7 @@ public class TracerDialog {
       private final Label startUnit;
       private final Button useAndroidFrameBoundaryExtension;
       private final Button withoutBuffering;
+      private final Button skipDeviceValidation;
       private final Button includeUnsupportedExtensions;
       private final Button loadValidationLayer;
       private final Button clearCache;
@@ -425,7 +426,22 @@ public class TracerDialog {
           logFailure(LOG, Scheduler.EXECUTOR.schedule(refreshDevices, 300, TimeUnit.MILLISECONDS));
         });
 
-        // Align label with first line of text.
+        Label skipDeviceValidationLabel = createLabel(mainGroup, "");
+        Composite skipDeviceValidationComposite = withLayoutData(createComposite(mainGroup,
+            withMarginOnly(new GridLayout(2, false), 0, 0)),
+            new GridData(SWT.FILL, SWT.FILL, true, false));
+
+        skipDeviceValidation = withLayoutData(createCheckbox(skipDeviceValidationComposite, "Skip Device Validation", Devices.skipDeviceValidation.get()), new GridData(SWT.END, SWT.FILL, false, false));
+        skipDeviceValidation.addListener(SWT.Selection, e -> {
+          if(skipDeviceValidation.getSelection()) {
+            Devices.skipDeviceValidation.setValue("true");
+          } else {
+            Devices.skipDeviceValidation.setValue("false");
+          }
+          logFailure(LOG, Scheduler.EXECUTOR.schedule(refreshDevices, 300, TimeUnit.MILLISECONDS));
+        });
+
+          // Align label with first line of text.
         withLayoutData(createLabel(mainGroup, "Validation:"),
           withIndents(new GridData(GridData.HORIZONTAL_ALIGN_FILL | GridData.VERTICAL_ALIGN_BEGINNING), 0, 12));
         deviceValidationView = new DeviceValidationView(mainGroup, this.models, widgets);

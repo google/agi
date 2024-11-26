@@ -222,7 +222,7 @@ public class Flags {
       return specified;
     }
 
-    void setValue(String value) {
+    public void setValue(String value) {
       this.value = parser.parse(value);
       this.specified = true;
     }
