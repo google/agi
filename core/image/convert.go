@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"github.com/google/gapid/core/data/protoutil"
+	"github.com/google/gapid/core/stream/fmts"
 	"github.com/google/gapid/gapis/database"
 )
 
@@ -86,6 +87,15 @@ func Convert(data []byte, width, height, depth int, srcFmt, dstFmt *Format) ([]b
 }
 
 func convertDirect(data []byte, width, height, depth int, srcFmt, dstFmt *Format) ([]byte, error) {
+
+	// Source format of depth/stencil images may be packed into a depth-only representation that
+	// differs in size from the original format
+	if srcFmt.Name == "VK_FORMAT_X8_D24_UNORM_PACK32" {
+		srcFmt = NewUncompressed("VK_FORMAT_X8_D24_UNORM_PACK32", fmts.D_U24_NORM)
+	} else if srcFmt.Name == "VK_FORMAT_D16_UNORM_S8_UINT" {
+		srcFmt = NewUncompressed("VK_FORMAT_D16_UNORM_S8_UINT", fmts.D_U16_NORM)
+	}
+
 	srcKey, dstKey := srcFmt.Key(), dstFmt.Key()
 	if srcKey == dstKey {
 		return data, nil // No conversion required.
