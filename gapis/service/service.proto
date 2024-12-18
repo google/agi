@@ -1370,12 +1370,15 @@ message TraceOptions {
   bool load_validation_layer = 28;
   // The config options to use if doing a Fuchsia trace.
   FuchsiaTraceConfig fuchsia_trace_config = 29;
+  // Do we need to set fixed performance mode on device
+  bool fixed_performance_mode = 30;
 }
 
 enum TraceEvent {
   Begin = 0;   // Begin tracing (only valid if started with MidExecution)
   Stop = 1;    // Flush and stop the trace
-  Status = 2;  // Get the status of the trace
+  Cancel = 2;  // Cancel the trace
+  Status = 3;  // Get the status of the trace
 }
 
 message StatusResponse {

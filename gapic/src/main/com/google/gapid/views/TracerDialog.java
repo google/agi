@@ -347,6 +347,7 @@ public class TracerDialog {
       private final Button includeUnsupportedExtensions;
       private final Button loadValidationLayer;
       private final Button clearCache;
+      private final Button fixedPerformanceMode;
       private final Composite systemTracingConfig;
       private final Label systemTracingConfigLabel;
       private final FileTextbox.Directory directory;
@@ -532,6 +533,10 @@ public class TracerDialog {
             optGroup, "Load Vulkan Validation Layer", trace.getLoadValidationLayer());
         loadValidationLayer.setEnabled(false);
         loadValidationLayer.setVisible(enableLoadValidationLayer.get());
+        fixedPerformanceMode = createCheckbox(
+            optGroup, "Fixed Performance Mode", trace.getFixedPerformanceMode());
+        fixedPerformanceMode.setEnabled(false);
+        fixedPerformanceMode.setVisible(false);
 
         systemTracingConfig = withLayoutData(
             createComposite(optGroup, withMargin(new GridLayout(2, false), 5, 0)),
@@ -775,6 +780,13 @@ public class TracerDialog {
         durationUnit.requestLayout();
 
         systemTracingConfig.setVisible(isSystem);
+
+        boolean hasFixedPerformanceMode = 
+            isSystem 
+            && dev != null 
+            && dev.device.getConfiguration().getPerfettoCapability().getHasFixedPerformanceMode();
+        fixedPerformanceMode.setEnabled(hasFixedPerformanceMode);
+        fixedPerformanceMode.setVisible(hasFixedPerformanceMode);
 
         if (!userHasChangedOutputFile) {
           file.setText(formatTraceName(friendlyName));
@@ -1092,6 +1104,8 @@ public class TracerDialog {
           trace.setClearCache(clearCache.getSelection());
           options.setClearCache(clearCache.getSelection());
         }
+        trace.setFixedPerformanceMode(fixedPerformanceMode.getSelection());
+        options.setFixedPerformanceMode(fixedPerformanceMode.getSelection());
 
         if (dev.isFuchsia()) {
            if(type == TraceType.System) {
@@ -1300,6 +1314,18 @@ public class TracerDialog {
       update();
     }
 
+    @Override 
+    protected void handleShellCloseEvent() {
+//      trace.cancel();
+      super.handleShellCloseEvent();
+    }
+
+    @Override 
+    protected void cancelPressed() {
+//      trace.cancel();
+      super.handleShellCloseEvent();
+    }
+
     @Override
     public void onFailure(Throwable e) {
       error = e;
@@ -1341,7 +1367,7 @@ public class TracerDialog {
       // Make sure the stop signal is issued when the dialog is closed.
       getShell().addListener(SWT.Close, e -> {
           if (!successful()) {
-              trace.stop();
+              trace.cancel();
           }
       });
 

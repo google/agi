@@ -94,6 +94,8 @@ type Device interface {
 	StartPerfettoTrace(ctx context.Context, config *perfetto_pb.TraceConfig, out string, stop task.Signal, ready task.Task) error
 	// SupportsAngle returns true if this device will work with ANGLE
 	SupportsAngle(ctx context.Context) bool
+	// Enable/Disable Fixed Performance Mode
+	SetFixedPerformanceMode(ctx context.Context, value bool) error
 }
 
 // LogcatMessage represents a single logcat message.

@@ -375,6 +375,8 @@ func (b *binding) QueryPerfettoServiceState(ctx context.Context) (*device.Perfet
 
 		// This has anecdotally not worked well in Q, but appears to be fine in R.
 		result.CanDownloadWhileTracing = true
+
+		result.HasFixedPerformanceMode = true
 	}
 
 	services, err := b.Shell("service", "list").Call(ctx)
@@ -435,6 +437,21 @@ func (b *binding) QueryPerfettoGpuProfilingDataSources(ctx context.Context) (*de
 func (b *binding) SupportsAngle(ctx context.Context) bool {
 	os := b.Instance().GetConfiguration().GetOS()
 	return os.GetAPIVersion() >= 29
+}
+
+func (b *binding) SetFixedPerformanceMode(ctx context.Context, value bool) error {
+	var stringValue string = "false"
+	if value {
+		stringValue = "true"
+	}
+	res, err := b.Shell("cmd power", "set-fixed-performance-mode-enabled", stringValue).Call(ctx)
+	if res != "" {
+		return log.Errf(ctx, nil, "cmd power set-fixed-performance-mode-enabled error: \n%s", res)
+	}
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (b *binding) QueryAngle(ctx context.Context) (*device.ANGLE, error) {
