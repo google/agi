@@ -92,6 +92,11 @@ public class Tracer {
         return sendEvent(Service.TraceEvent.Stop);
       }
 
+      @Override
+      public boolean cancel() {
+        return sendEvent(Service.TraceEvent.Cancel);
+      }
+
       private boolean sendEvent(Service.TraceEvent event) {
         if (done.get()) {
           return false;
@@ -145,6 +150,12 @@ public class Tracer {
      * @returns whether the stop request was sent.
      */
     public boolean stop();
+
+    /**
+     * Requests the current trace to be canceled.
+     * @returns whether the cancel request was sent.
+     */
+    public boolean cancel();
   }
 
   /**

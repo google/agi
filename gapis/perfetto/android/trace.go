@@ -78,6 +78,20 @@ func hasDataSourceEnabled(perfettoConfig *perfetto_pb.TraceConfig, ds string) bo
 	return false
 }
 
+func setupFixedPerformanceMode(ctx context.Context, d adb.Device, opts *service.TraceOptions) (app.Cleanup, error) {
+	if opts.FixedPerformanceMode {
+		var cleanup app.Cleanup
+		cleanup = cleanup.Then(func(ctx context.Context) {
+			d.SetFixedPerformanceMode(ctx, false)
+		})
+		if err := d.SetFixedPerformanceMode(ctx, true); err != nil {
+			return cleanup.Invoke(ctx), err
+		}
+		return cleanup, nil
+	}
+	return nil, nil
+}
+
 // SetupProfileLayersSource configures the device to allow packages to be used as layer sources for profiling
 func SetupProfileLayersSource(ctx context.Context, d adb.Device, apk *android.InstalledPackage, abi *device.ABI) (app.Cleanup, error) {
 	supported, packageName, cleanup, err := d.PrepareGpuProfiling(ctx, apk)
@@ -136,6 +150,14 @@ func Start(ctx context.Context, d adb.Device, a *android.ActivityAction, opts *s
 	}
 
 	var cleanup app.Cleanup
+
+	nextCleanup, err := setupFixedPerformanceMode(ctx, d, opts)
+	if nextCleanup != nil {
+		cleanup = cleanup.Then(nextCleanup)
+	}
+	if err != nil {
+		return nil, cleanup.Invoke(ctx), err
+	}
 
 	if a != nil {
 		ctx = log.V{
@@ -240,8 +262,14 @@ func (p *Process) Capture(ctx context.Context, start task.Signal, stop task.Sign
 	// Signal that we are ready to start.
 	atomic.StoreInt64(written, 1)
 
-	if p.deferred && !start.Wait(ctx) {
-		return 0, log.Err(ctx, nil, "Cancelled")
+	if p.deferred {
+		select {
+		case <-start:
+			break
+		case <-stop:
+		case <-task.ShouldStop(ctx):
+			return 0, log.Err(ctx, nil, "Cancelled")
+		}
 	}
 
 	if err := p.device.StartPerfettoTrace(ctx, p.config, perfettoTraceFile, stop, ready); err != nil {
@@ -356,9 +384,15 @@ func (p *Process) captureWithClientApi(ctx context.Context, start task.Signal, s
 	delayedReady := task.Delay(ready, 250*time.Millisecond)
 
 	atomic.StoreInt64(written, 1)
-	if p.deferred && !start.Wait(ctx) {
-		ts.Stop(ctx)
-		return 0, errors.New("Cancelled")
+	if p.deferred {
+		select {
+		case <-start:
+			break
+		case <-stop:
+		case <-task.ShouldStop(ctx):
+			ts.Stop(ctx)
+			return 0, errors.New("Cancelled")
+		}
 	}
 	delayedReady(ctx)
 	ts.Start(ctx)

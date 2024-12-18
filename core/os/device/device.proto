@@ -195,6 +195,7 @@ message PerfettoCapability {
   // Whether the Perfetto tracing API supports tracing to a file on the device
   // given a path, rather than a file descriptor.
   bool can_provide_trace_file_path = 7;
+  bool has_fixed_performance_mode = 8;
 }
 
 message GPUProfiling {

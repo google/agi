@@ -794,6 +794,9 @@ func (r *traceHandler) Event(ctx context.Context, req service.TraceEvent) (*serv
 		}
 		r.stopFunc(ctx)
 		r.doneSignal.Wait(ctx)
+	case service.TraceEvent_Cancel:
+		r.stopFunc(ctx)
+		r.doneSignal.Wait(ctx)
 	case service.TraceEvent_Status:
 		// intentionally empty
 	}
