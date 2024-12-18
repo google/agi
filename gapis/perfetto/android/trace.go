@@ -262,14 +262,8 @@ func (p *Process) Capture(ctx context.Context, start task.Signal, stop task.Sign
 	// Signal that we are ready to start.
 	atomic.StoreInt64(written, 1)
 
-	if p.deferred {
-		select {
-		case <-start:
-			break
-		case <-stop:
-		case <-task.ShouldStop(ctx):
-			return 0, log.Err(ctx, nil, "Cancelled")
-		}
+	if !p.waitForStartOrCancel(ctx, start, stop) {
+		return 0, log.Err(ctx, nil, "Cancelled")
 	}
 
 	if err := p.device.StartPerfettoTrace(ctx, p.config, perfettoTraceFile, stop, ready); err != nil {
@@ -305,6 +299,21 @@ func (w *trackingWriter) Write(p []byte) (int, error) {
 	w.done += int64(n)
 	atomic.StoreInt64(w.written, w.done)
 	return n, err
+}
+
+// Waits for start capture signal or cancel signal.
+// Returns true if start signal received or false if need to cancel.
+func (p *Process) waitForStartOrCancel(ctx context.Context, start task.Signal, stop task.Signal) bool {
+	if p.deferred {
+		select {
+		case <-start:
+			return true
+		case <-stop:
+		case <-task.ShouldStop(ctx):
+			return false
+		}
+	}
+	return true
 }
 
 func (p *Process) captureWithClientApi(ctx context.Context, start task.Signal, stop task.Signal, ready task.Task, w io.Writer, written *int64) (int64, error) {
@@ -384,15 +393,9 @@ func (p *Process) captureWithClientApi(ctx context.Context, start task.Signal, s
 	delayedReady := task.Delay(ready, 250*time.Millisecond)
 
 	atomic.StoreInt64(written, 1)
-	if p.deferred {
-		select {
-		case <-start:
-			break
-		case <-stop:
-		case <-task.ShouldStop(ctx):
-			ts.Stop(ctx)
-			return 0, errors.New("Cancelled")
-		}
+	if !p.waitForStartOrCancel(ctx, start, stop) {
+		ts.Stop(ctx)
+		return 0, errors.New("Cancelled")
 	}
 	delayedReady(ctx)
 	ts.Start(ctx)
