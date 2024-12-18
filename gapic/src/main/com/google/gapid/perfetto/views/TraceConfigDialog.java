@@ -808,7 +808,7 @@ public class TraceConfigDialog extends DialogBase {
               cpuTimingGroup, "Physical Device", hasCategory(sVk, CPU_TIMING_PHYSICAL_DEVICE));
           vulkanCPUTimingDevice =
               createCheckbox(cpuTimingGroup, "Device", hasCategory(sVk, CPU_TIMING_DEVICE));
-              vulkanCPUTimingQueue =
+          vulkanCPUTimingQueue =
               createCheckbox(cpuTimingGroup, "Queue", hasCategory(sVk, CPU_TIMING_QUEUE));
           vulkanCPUTimingCommandBuffer = createCheckbox(cpuTimingGroup, "Command Buffer", hasCategory(sVk, CPU_TIMING_COMMAND_BUFFER));
         } else {
