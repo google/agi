@@ -128,10 +128,6 @@ public abstract class GlCanvas extends Canvas {
       set(attr, GLX.GLX_GREEN_SIZE, 8);
       set(attr, GLX.GLX_BLUE_SIZE, 8);
       set(attr, GLX.GLX_DEPTH_SIZE, 24);
-      if (glxCaps.GLX14 || glxCaps.GLX_ARB_multisample) {
-        set(attr, GLX14.GLX_SAMPLE_BUFFERS, 1);
-        set(attr, GLX14.GLX_SAMPLES, 4);
-      }
       set(attr, X11.None, X11.None);
 
       ((Buffer)attr).flip(); // cast is there to work with JDK9.
@@ -140,10 +136,23 @@ public abstract class GlCanvas extends Canvas {
         LOG.log(SEVERE, "glXChooseFBConfig returned no matching configs");
         return -1;
       }
-
-      long config = configs.get(0);
+      long selectedConfig = configs.get(0);
+      if (glxCaps.GLX14 || glxCaps.GLX_ARB_multisample) {
+        int sampleBuffers[] = new int[1];
+        int samples[] = new int[1];
+        for(int i = 0; i < configs.limit(); ++i) {
+          long config = configs.get(i);
+          GLX13.glXGetFBConfigAttrib(display, config, GLX14.GLX_SAMPLE_BUFFERS, sampleBuffers);
+          GLX13.glXGetFBConfigAttrib(display, config, GLX14.GLX_SAMPLES, samples);
+          if(sampleBuffers[0] > 0 && samples[0] == 4) {
+            // Found config with 4 samples supported
+            selectedConfig = config;
+            break;
+          }
+        }
+      }
       X11.XFree(configs);
-      return config;
+      return selectedConfig;
     }
   }
 
