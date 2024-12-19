@@ -278,7 +278,8 @@ public class ThreadPanel extends TrackPanel<ThreadPanel> implements Selectable {
       for (int i = 0; i < data.schedStarts.length; i++) {
         if (data.schedStarts[i] <= t && t <= data.schedEnds[i]) {
           int index = i;
-          hoveredTitle = data.schedStates[i].label;
+          hoveredTitle = data.schedStates[i].label 
+              + " (" + TimeSpan.timeToString(data.schedEnds[i] - data.schedStarts[i]) + ")";
           hoveredCategory = "";
           hoveredSize = m.measure(Fonts.Style.Normal, hoveredTitle);
 
@@ -344,6 +345,7 @@ public class ThreadPanel extends TrackPanel<ThreadPanel> implements Selectable {
             hoveredTitle = hoveredCategory;
             hoveredCategory = "";
           }
+          hoveredTitle += " (" + TimeSpan.timeToString(slices.ends[i] - slices.starts[i]) + ")";
 
           hoveredSize = Size.vertCombine(HOVER_PADDING, HOVER_PADDING / 2,
               m.measure(Fonts.Style.Normal, hoveredTitle),
