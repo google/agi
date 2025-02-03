@@ -101,7 +101,7 @@ void PerfettoProducerData<T>::OnSetup(const typename perfetto::DataSourceBase::S
         e.first->SetupTracing(a.config);
     }
     have_data_source_config_ = false; 
-    if(a.config) {
+    if (a.config) {
         have_data_source_config_ = true;
         data_source_config_ = *a.config;
     }
