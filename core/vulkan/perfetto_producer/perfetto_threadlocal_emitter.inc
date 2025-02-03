@@ -236,8 +236,7 @@ void ThreadlocalEmitter<T>::EmitProcessData() {
 
 template <typename T>
 void ThreadlocalEmitter<T>::SetupTracing(
-    const typename perfetto::DataSourceBase::SetupArgs& a) {
-  auto config = a.config;
+    const typename perfetto::DataSourceConfig* config) {
   if (config) {
     enabled_categories_.clear();
     std::istringstream f(config->legacy_config());
