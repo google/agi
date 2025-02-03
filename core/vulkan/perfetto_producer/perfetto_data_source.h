@@ -23,6 +23,7 @@
 #include "core/vulkan/perfetto_producer/threadlocal_emitter_base.h"
 #include "gapil/runtime/cc/map.h"
 #include "gapil/runtime/cc/map.inc"
+#include "perfetto/tracing/core/data_source_config.h"
 #include "perfetto/tracing/core/data_source_descriptor.h"
 #include "perfetto/tracing/data_source.h"
 #include "perfetto/tracing/tracing.h"
@@ -66,6 +67,8 @@ class PerfettoProducerData {
   core::RecursiveSpinLock emitter_lock_;
   gapil::Map<ThreadlocalEmitterBase*, bool, false> emitters_;
   bool started_ = false;
+  bool have_data_source_config_ = false;
+  perfetto::DataSourceConfig data_source_config_;
 };
 }  // namespace core
 

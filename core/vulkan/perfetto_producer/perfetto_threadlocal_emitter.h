@@ -49,8 +49,7 @@ class ThreadlocalEmitter : ThreadlocalEmitterBase {
     reset_ = true;
     enabled_ = true;
   }
-  void SetupTracing(
-      const typename perfetto::DataSourceBase::SetupArgs&) override;
+  void SetupTracing(const typename perfetto::DataSourceConfig*) override;
   void StopTracing() override { enabled_ = false; }
   bool Enabled() { return enabled_; }
   bool CategoryEnabled(const char* category) {

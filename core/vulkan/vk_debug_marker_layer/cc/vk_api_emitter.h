@@ -32,8 +32,7 @@ class VkApiEmitter : ThreadlocalEmitterBase {
   ~VkApiEmitter();
 
   void StartTracing() override;
-  void SetupTracing(
-      const typename perfetto::DataSourceBase::SetupArgs&) override{};
+  void SetupTracing(const typename perfetto::DataSourceConfig*) override{};
   void StopTracing() override;
   void EmitDebugUtilsObjectName(uint64_t vk_device, int32_t object_type,
                                 uint64_t handle, const char* name);

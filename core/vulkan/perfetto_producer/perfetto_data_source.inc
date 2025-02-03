@@ -65,6 +65,7 @@ void PerfettoProducerData<T>::RegisterEmitter(ThreadlocalEmitterBase* v) {
     emitter_lock_.Lock();
     emitters_[v] = true;
     if (started_) {
+        v->SetupTracing(have_data_source_config_ ? &data_source_config_ : nullptr);
         v->StartTracing();
     }
     emitter_lock_.Unlock();
@@ -97,7 +98,12 @@ void PerfettoProducerData<T>::OnSetup(const typename perfetto::DataSourceBase::S
     emitter_lock_.Lock();
     started_ = true;
     for (auto& e : emitters_) {
-        e.first->SetupTracing(a);
+        e.first->SetupTracing(a.config);
+    }
+    have_data_source_config_ = false; 
+    if(a.config) {
+        have_data_source_config_ = true;
+        data_source_config_ = *a.config;
     }
     emitter_lock_.Unlock();
 }
